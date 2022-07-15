@@ -62,7 +62,23 @@ namespace Helper
 		return Params.ReturnValue;
 	}
 
-	FVector GetPlayerStart(UObject* PC)
+	bool TeleportTo(UObject* Actor, FVector Location, FRotator Rot = FRotator())
+	{
+		struct {
+			FVector& Location;
+			FRotator& Rotation; // DestinationActor->GetActorRotation());
+			bool Res;
+		} params{ Location, Rot, false };
+
+		auto fn = Actor->Function(_("K2_TeleportTo"));
+
+		if (fn)
+			Actor->ProcessEvent(fn, &params);
+
+		return params.Res;
+	}
+
+	FVector GetPlayerStart()
 	{
 		static auto WarmupClass = FindObject(_("Class /Script/FortniteGame.FortPlayerStartWarmup"));
 		TArray<UObject*> OutActors = GetAllActorsOfClass(WarmupClass);

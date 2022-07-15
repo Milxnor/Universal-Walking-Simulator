@@ -11,6 +11,20 @@ uint64_t KickPlayerAddr = 0;
 uint64_t World_NotifyControlMessageAddr = 0;
 uint64_t SpawnPlayActorAddr = 0;
 uint64_t Beacon_NotifyControlMessageAddr = 0;
+uint64_t ReceiveFStringAddr = 0;
+uint64_t ReceiveUniqueIdReplAddr = 0;
+uint64_t WelcomePlayerAddr = 0;
+uint64_t InitHostAddr = 0;
+uint64_t PauseBeaconRequestsAddr = 0;
+uint64_t NetDebugAddr = 0;
+uint64_t IdkfAddr = 0;
+uint64_t SendChallengeAddr = 0;
+uint64_t SetWorldAddr = 0;
+uint64_t NoReserveAddr = 0;
+uint64_t ValidationFailureAddr = 0;
+uint64_t ClientTravelAddr = 0;
+uint64_t CreateNetDriverAddr = 0;
+uint64_t HasClientLoadedCurrentWorldAddr = 0;
 
 static __int64 (*GetNetMode)(__int64* a1);
 bool (*LP_SpawnPlayActor)(UObject* Player, const FString& URL, FString& OutError, UObject* World); // LocalPlayer
@@ -41,7 +55,11 @@ inline void (*PauseBeaconRequests)(UObject* Beacon, bool bPause);
 
 static void* (*NetDebug)(UObject* a);
 
-static int ServerReplicateActorsOffset = 0x53; // UE4.20
+static __int64 (*__fastcall ClientTravel)(UObject* Controller, const FString& URL, ETravelType TravelType, bool bSeamless, FGuid MapPackageGuid);
+
+static UObject* (*CreateNetDriver)(UObject* Engine, UObject* InWorld, FName NetDriverDefinition);
+
+static bool(__fastcall* HasClientLoadedCurrentWorld)(UObject* pc);
 
 static std::unordered_map<UFunction*, std::function<void(UObject*, UFunction*, void*)>> FunctionsToHook;
 

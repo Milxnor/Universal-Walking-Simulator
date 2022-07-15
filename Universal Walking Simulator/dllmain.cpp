@@ -1,3 +1,4 @@
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <iostream>
 
@@ -9,40 +10,148 @@
 
 void InitializePatterns()
 {
+    static const auto FnVerDouble = std::stod(FN_Version);
+
     static auto ReallocAddr = FindPattern(Patterns::Realloc);
     CheckPattern(_("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
+
     GetNetModeAddr = FindPattern(Patterns::GetNetMode);
-    GetNetMode = decltype(GetNetMode)(GetNetModeAddr);
+
+    if (!GetNetModeAddr)
+        GetNetModeAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 49 8B C8 48 C1 E9 20 85 C9 0F 94 C2 41 81 F8 ? ? ? ?"));
+
+    CheckPattern(_("GetNetMode"), GetNetModeAddr, &GetNetMode);
+
     LP_SpawnPlayActorAddr = FindPattern(Patterns::LocalPlayerSpawnPlayActor);
-    LP_SpawnPlayActor = decltype(LP_SpawnPlayActor)(LP_SpawnPlayActorAddr);
-    CollectGarbage = decltype(CollectGarbage)(FindPattern(Patterns::CollectGarbage));
-    SetWorld = decltype(SetWorld)(FindPattern(Patterns::SetWorld));
+    CheckPattern(_("LocalPlayer::SpawnPlayActor"), LP_SpawnPlayActorAddr, &LP_SpawnPlayActor);
+
+    // CollectGarbage = decltype(CollectGarbage)(FindPattern(Patterns::CollectGarbage));
+
     InitListen = decltype(InitListen)(FindPattern(Patterns::InitListen));
+
     TickFlushAddr = FindPattern(Patterns::TickFlush);
-    TickFlush = decltype(TickFlush)(TickFlushAddr);
-    ReceiveFString = decltype(ReceiveFString)(FindPattern(Patterns::ReceiveFString));
-    ReceiveUniqueIdRepl = decltype(ReceiveUniqueIdRepl)(FindPattern(Patterns::ReceiveUniqueIdRepl));
-    WelcomePlayer = decltype(WelcomePlayer)(FindPattern(Patterns::WelcomePlayer));
+
+    if (!TickFlushAddr)
+        TickFlushAddr = FindPattern(_("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0"));
+    
+    CheckPattern(_("TickFlush"), TickFlushAddr, &TickFlush);
+
+    ReceiveFStringAddr = FindPattern(Patterns::ReceiveFString);
+    CheckPattern(_("ReceiveFString"), ReceiveFStringAddr, &ReceiveFString);
+
+    ReceiveUniqueIdReplAddr = FindPattern(Patterns::ReceiveUniqueIdRepl);
+
+    if (!ReceiveUniqueIdReplAddr)
+        ReceiveUniqueIdReplAddr = FindPattern(_("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9"));
+
+    CheckPattern(_("ReceiveUniqueIdRepl"), ReceiveUniqueIdReplAddr, &ReceiveUniqueIdRepl);
+
+    WelcomePlayerAddr = FindPattern(Patterns::WelcomePlayer);
+
+    if (!WelcomePlayerAddr) // s6
+        WelcomePlayerAddr = FindPattern(_(""));
+
+    CheckPattern(_("WelcomePlayer"), WelcomePlayerAddr, &WelcomePlayer);
+
     World_NotifyControlMessageAddr = FindPattern(Patterns::World_NotifyControlMessage);
-    World_NotifyControlMessage = decltype(World_NotifyControlMessage)(World_NotifyControlMessageAddr);
+
+    if (!World_NotifyControlMessageAddr)
+        World_NotifyControlMessageAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B D9 89 7C 24 60"));
+
+    CheckPattern(_("World_NotifyControlMessage"), World_NotifyControlMessageAddr, &World_NotifyControlMessage);
+
     SpawnPlayActorAddr = FindPattern(Patterns::SpawnPlayActor);
-    SpawnPlayActor = decltype(SpawnPlayActor)(SpawnPlayActorAddr);
-    InitHost = decltype(InitHost)(FindPattern(Patterns::InitHost));
-    Beacon_NotifyControlMessageAddr = FindPattern(Patterns::Beacon_NotifyControlMessage);
-    Beacon_NotifyControlMessage = decltype(Beacon_NotifyControlMessage)(Beacon_NotifyControlMessageAddr);
-    PauseBeaconRequests = decltype(PauseBeaconRequests)(FindPattern(Patterns::PauseBeaconRequests));
-    NetDebug = decltype(NetDebug)(FindPattern(Patterns::NetDebug));
+    CheckPattern(_("SpawnPlayActor"), SpawnPlayActorAddr, &SpawnPlayActor);
+
+    NetDebugAddr = FindPattern(Patterns::NetDebug);
+    CheckPattern(_("NetDebug"), NetDebugAddr, &NetDebug);
+
+    if ((FnVerDouble >= 5 && FnVerDouble < 7) || FnVerDouble >= 8)
+    {
+        if (FnVerDouble >= 5 && FnVerDouble < 7)
+        {
+            IdkfAddr = FindPattern(Patterns::Idkf);
+            CheckPattern(_("Idkf"), IdkfAddr, &Idkf);
+
+            SendChallengeAddr = FindPattern(Patterns::SendChallenge);
+
+            if (!SendChallengeAddr)
+                SendChallengeAddr = FindPattern(_("48 89 5C 24 ? 55 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B DA 48 85 D2 0F 84 ? ? ? ? 83 BA ? ? ? ? ? 0F 86 ? ? ? ? 48 83 7A ? ? 0F 84 ? ? ? ? 48 8D 4D 68 48 89 BC 24 ? ? ? ? FF 15 ? ? ? ? 44 8B 45 68 48 8D 15 ? ? ? ? 48 8D 4C 24 ? E8 ? ? ? ? 48 8D 44 24 ? 48 8D BB ? ? ? ? 48 3B F8 74 25 48 8B 0F 48 85 C9 74 05 E8 ? ? ? ? 48 8B 44 24 ? 48 89 07 8B 44 24 38 89 47 08 8B 44 24 3C 89 47 0C EB 0F 48 8B 4C 24 ? 48 85 C9 74 05 E8 ? ? ? ? B2 05 48 8B CB E8 ? ? ? ? 48 8B 83 ? ? ? ?"));
+            
+            CheckPattern(_("SendChallenge"), SendChallengeAddr, &SendChallenge);
+        }
+
+        SetWorldAddr = FindPattern(Patterns::SetWorld);
+        CheckPattern(_("SetWorld"), SetWorldAddr, &SetWorld);
+
+        CreateNetDriverAddr = FindPattern(Patterns::CreateNetDriver);
+        CheckPattern(_("CreateNetDriver"), CreateNetDriverAddr, &CreateNetDriver);
+
+        if (FnVerDouble >= 8)
+        {
+            HasClientLoadedCurrentWorldAddr = FindPattern(Patterns::HasClientLoadedCurrentWorld);
+            CheckPattern(_("HasClientLoadedCurrentWorld"), HasClientLoadedCurrentWorldAddr, &HasClientLoadedCurrentWorld);
+        }
+
+        /* if(false) // FnVerDouble >= 8)
+        {
+            ClientTravelAddr = FindPattern(Patterns::ClientTravel);
+            CheckPattern(_("ClientTravel"), ClientTravelAddr, &ClientTravel);
+        } */
+    }
+
+    // if (!CreateNetDriver) // This means we are not using beacons
+    {
+        PauseBeaconRequestsAddr = FindPattern(Patterns::PauseBeaconRequests);
+        CheckPattern(_("PauseBeaconRequests"), PauseBeaconRequestsAddr, &PauseBeaconRequests);
+
+        InitHostAddr = FindPattern(Patterns::InitHost);
+        CheckPattern(_("InitHost"), InitHostAddr, &InitHost);
+
+        Beacon_NotifyControlMessageAddr = FindPattern(Patterns::Beacon_NotifyControlMessage);
+
+        if (!Beacon_NotifyControlMessageAddr)
+            Beacon_NotifyControlMessageAddr = FindPattern(_("4C 8B DC 49 89 5B 18 49 89 73 20 49 89 4B 08 55 57 41 54 41 56 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B F1"));
+
+        CheckPattern(_("Beacon_NotifyControlMessage"), Beacon_NotifyControlMessageAddr, &Beacon_NotifyControlMessage);
+    }
+
+    // NetDebugAddr = FindPattern(Patterns::NetDebug);
+    // CheckPattern(_("NetDebug"), NetDebugAddr, &NetDebug);
+
     KickPlayerAddr = FindPattern(Patterns::KickPlayer);
-    KickPlayer = decltype(KickPlayer)(KickPlayerAddr);
+    CheckPattern(_("KickPlayer"), KickPlayerAddr, &KickPlayer);
+
+    // static const auto FnVerDouble = std::stod(FN_Version);
 }
 
 DWORD WINAPI Input(LPVOID)
 {
     while (1)
     {
-        if (GetAsyncKeyState(VK_F6) & 1)
+        if (GetAsyncKeyState(VK_F5) & 1)
+        {
+            LoadInMatch();
+        }
+
+        else if (GetAsyncKeyState(VK_F6) & 1)
         {
             initStuff();
+        }
+
+        else if (GetAsyncKeyState(VK_F7) & 1)
+        {
+            if (MyPawn)
+            {
+                Helper::TeleportTo(MyPawn, Helper::GetPlayerStart());
+            }
+        }
+
+        else if (GetAsyncKeyState(VK_F8) & 1)
+        {
+            InitializeNetHooks();
+
+            std::cout << _("Initialized NetHooks!\n");
         }
 
         Sleep(1000 / 30);
@@ -62,7 +171,7 @@ DWORD WINAPI Main(LPVOID)
 
     if (stat != MH_OK)
     {
-        std::cout << std::format(_("Failed to initialize MinHook! Error: {}\n"), MH_StatusToString(stat));
+        std::cout << std::format("Failed to initialize MinHook! Error: {}\n", MH_StatusToString(stat));
         return 1;
     }
 
@@ -86,7 +195,7 @@ DWORD WINAPI Main(LPVOID)
 
     std::cout << _("Press play button to host!\n");
 
-    std::cout << dye::aqua("[Base Address] ") << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
+    std::cout << dye::aqua(_("[Base Address] ")) << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
 
     return 0;
 }

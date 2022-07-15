@@ -1,5 +1,7 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
+
 #include <Windows.h>
 #include <string>
 #include <locale>
@@ -144,7 +146,8 @@ public:
 
 	FString()
 	{
-		Set(L"");
+		// const wchar_t* Lmaoo = new wchar_t[1000]();
+		// Set(Lmaoo);
 	}
 
 	~FString()
@@ -629,7 +632,7 @@ static int GetOffset(UObject* Object, const std::string& MemberName)
 	}
 	else
 	{
-		std::cout << std::format(_("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, __int64(Object));
+		// std::cout << std::format(_("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, __int64(Object));
 	}
 
 	return 0;
@@ -693,6 +696,8 @@ uint64_t ToStringAddr = 0;
 uint64_t ProcessEventAddr = 0;
 uint64_t ObjectsAddr = 0;
 uint64_t FreeMemoryAddr = 0;
+
+static int ServerReplicateActorsOffset = 0x53; // UE4.20
 
 bool Setup(/* void* ProcessEventHookAddr */)
 {
@@ -805,6 +810,11 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		bOldObjects = true;
 	}
 
+	if (Engine_Version == 421)
+		ServerReplicateActorsOffset = 0x54;
+	else if (Engine_Version >= 422)
+		ServerReplicateActorsOffset = 0x56;
+
 	if (Engine_Version >= 421 && Engine_Version <= 424)
 	{
 		ToStringAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 30 83 79 04 00 48 8B DA 48 8B F9"));
@@ -827,6 +837,9 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 		if (!ObjectsAddr)
 			ObjectsAddr = FindPattern(_("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1"), true, 3);
+
+		if (!ObjectsAddr)
+			ObjectsAddr = FindPattern(_("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8D 04 D1"), true, 3); // stupid 5.41
 	}
 
 	if (FnVerDouble >= 16.00) // 4.26.1
