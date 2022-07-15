@@ -21,7 +21,7 @@ static bool bStarted = false;
 
 inline void initStuff()
 {
-	if (!bStarted)
+	if (!bStarted && bTraveled)
 	{
 		bStarted = true;
 		auto world = Helper::GetWorld();
@@ -105,10 +105,6 @@ void LoadInMatch()
 
 inline void PlayButtonHook(UObject* Object, UFunction* Function, void* Parameters)
 {
-	InitializeNetHooks();
-
-	std::cout << _("Initialized NetHooks!\n");
-
 	LoadInMatch();
 }
 

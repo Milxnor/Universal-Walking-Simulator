@@ -92,7 +92,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     auto PlayerController = SpawnPlayActor(Helper::GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex); // crashes 0x356 here sometimes when rejoining
     *NewPlayer->Member<UObject*>(_("PlayerController")) = PlayerController;
 
-    auto PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
+    UObject* PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
 
     static auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBars"));
     *PlayerController->Member<UObject*>(_("QuickBars")) = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator());
@@ -152,45 +152,26 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (OnRep_bHasStartedPlaying)
         PlayerState->ProcessEvent(OnRep_bHasStartedPlaying, nullptr);
 
-    static auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_029_Athena_Commando_F_Halloween.HID_029_Athena_Commando_F_Halloween"));
-    /* static const auto FortRegisteredPlayerInfo = (*World->Member<UObject*>(_("OwningGameInstance")))->Member<TArray<UObject*>>(_("RegisteredPlayers"))->At(0);
+    static const auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
 
+    /* static const auto FortRegisteredPlayerInfo = (*World->Member<UObject*>(_("OwningGameInstance")))->Member<TArray<UObject*>>(_("RegisteredPlayers"))->At(0);
     if (FortRegisteredPlayerInfo)
     {
         auto Hero = *FortRegisteredPlayerInfo->Member<UObject*>(_("AthenaMenuHeroDef"));
-
         if (Hero)
         {
-            // std::cout << "HERO FROM LOBBY: " << Hero->GetFullName() << '\n';
-
-            static const auto GetHeroTypefn = Hero->Function(_("GetHeroTypeBP"));
-
-            if (GetHeroTypefn)
-            {
-                struct { UObject* heroType; } params;
-                Hero->ProcessEvent(GetHeroTypefn, &params);
-
-                if (params.heroType)
-                {
-                    std::cout << "HeroTYPE NAME: " << params.heroType->GetFullName() << '\n';
-                    HeroType = params.heroType;
-                }
-            }
+            *PlayerController->Member<UObject*>(_("StrongMyHero")) = Hero;
+            std::cout << "Set Hero!\n";
         }
         else
             std::cout << "no hero!\n";
     }
     else
         std::cout << "No Rwegistefrpl!\n"; */
-    if (HeroType)
-    {
-        *PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
-        static auto OnRepHeroType = PlayerState->Function(_("OnRep_HeroType"));
-        PlayerState->ProcessEvent(OnRepHeroType);
-        std::cout << _("Set HeroType!\n");
-    }
-    else
-        std::cout << _("Could not find HeroType!\n");
+
+    *PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
+    static auto OnRepHeroType = PlayerState->Function(_("OnRep_HeroType"));
+    PlayerState->ProcessEvent(OnRepHeroType);
 
     static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
     static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
@@ -199,12 +180,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     {
         Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
         Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
-        static const auto OnRep_CharacterParts = PlayerState->Function(_("OnRep_CharacterParts"));
-        PlayerState->ProcessEvent(OnRep_CharacterParts, nullptr);
-        std::cout << "Applied Parts!\n";
+        PlayerState->ProcessEvent(PlayerState->Function(_("OnRep_CharacterParts")), nullptr);
     }
-    else
-        std::cout << _("Could not find CharacterPart!\n");
 
     *PlayerState->Member<uint8_t>(_("TeamIndex")) = 11;
     *PlayerState->Member<unsigned char>(_("SquadId")) = 1;
@@ -451,8 +428,8 @@ void InitializeNetHooks()
     MH_CreateHook((PVOID)KickPlayerAddr, KickPlayerDetour, (void**)&KickPlayer);
     MH_EnableHook((PVOID)KickPlayerAddr);
 
-    MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
-    MH_EnableHook((PVOID)LP_SpawnPlayActorAddr);
+    /* MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
+    MH_EnableHook((PVOID)LP_SpawnPlayActorAddr); */
 
     // if (NetDebug)
     {
