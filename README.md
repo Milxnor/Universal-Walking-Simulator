@@ -1,6 +1,5 @@
 # Universal-Walking-Simulator
-## Firstly, this isn't universal, there are many bugs on each season. I hope to add more versions in the future.
-## This support S3.5-S7.40
+## Firstly, this isn't universal, there are many bugs on each season. I hope to add more versions in the future. <br>This support S3.5-S7.40
 
 # PLANS
 
