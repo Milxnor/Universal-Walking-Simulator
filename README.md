@@ -18,6 +18,8 @@ S5+ movement is broken by default, because ServerAcknowledgePossession is stripp
 My fix was to set the AcknowledgedPawn. But there are more issues, ClientVeryShortAdjustment gets repeatedly called whenever a client goes out of sync.
 The head does not rotate up and down, making the mesh look very weird at certain points.
 
+Console Colors are a 50/50.
+
 # CONTRIBUTING
 
 In order to find a UFunction, please use Object->Function instead of FindObject("Function ..").
