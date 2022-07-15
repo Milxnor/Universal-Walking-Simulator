@@ -25,4 +25,6 @@ Test your code.
 
 # CREDITS
 
+If you are to use this base for your own project, please credit me and link the repository.
+
 Some of this code is from or inspired by <a href="https://github.com/kem0x/raider3.5">Raider by kem0x</a>.
