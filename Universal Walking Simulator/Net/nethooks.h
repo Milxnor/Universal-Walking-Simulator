@@ -6,6 +6,8 @@
 #include <Net/funcs.h>
 #include <Gameplay/helper.h>
 
+static bool bTraveled = false;
+
 inline void ServerAcknowledgePossessionHook(UObject* Object, UFunction* Function, void* Parameters)
 {
     struct SAP_Params
@@ -56,6 +58,15 @@ uint64_t GetNetModeDetour(UObject* World)
     return ENetMode::NM_ListenServer;
 }
 
+bool LP_SpawnPlayActorDetour(UObject* Player, const FString& URL, FString& OutError, UObject* World)
+{
+    if (!bTraveled)
+    {
+        return LP_SpawnPlayActor(Player, URL, OutError, World);
+    }
+    return true;
+}
+
 char KickPlayerDetour(__int64 a1, __int64 a2, __int64 a3)
 {
     //MessageBoxA(0, "Handled Player Kick", 0, 0);
@@ -73,17 +84,17 @@ char __fastcall ValidationFailureDetour(__int64 a1, __int64 a2)
 static void (*SendChallenge)(UObject* a1, UObject* a2); // World, NetConnection
 static __int64(__fastcall* Idkf)(__int64 a1, __int64 a2, int a3); // tbh we can just paste pseudo code
 
-UObject* MyPawn = nullptr;
+bool bMyPawn = false; // UObject*
 
 UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole RemoteRole, FURL& URL, void* UniqueId, FString& Error, uint8_t NetPlayerIndex)
 {
     std::cout << _("SpawnPlayActor called!\n");
-    auto PlayerController = SpawnPlayActor(Helper::GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex);
+    auto PlayerController = SpawnPlayActor(Helper::GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex); // crashes 0x356 here sometimes when rejoining
     *NewPlayer->Member<UObject*>(_("PlayerController")) = PlayerController;
 
     auto PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
 
-    static auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBarsAthena"));
+    static auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBars"));
     *PlayerController->Member<UObject*>(_("QuickBars")) = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator());
 
     // InitInventory(PlayerController);
@@ -91,28 +102,10 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     static auto PawnClass = FindObject(_("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
     auto Pawn = Easy::SpawnActor(PawnClass, Helper::GetPlayerStart(), {});
 
-    if (!MyPawn)
-        MyPawn = Pawn;
+    // if (!MyPawn)
+      //  MyPawn = Pawn;
 
-    static auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_055_Athena_Commando_M_SkiDude_CAN.HID_055_Athena_Commando_M_SkiDude_CAN"));
-    if (HeroType)
-        *PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
-    else
-        std::cout << _("Could not find HeroType!\n");
-
-    static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-    static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
-
-    if (headPart && bodyPart)
-    {
-        Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
-        Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
-        PlayerState->ProcessEvent(PlayerState->Function(_("OnRep_CharacterParts")), nullptr);
-    }
-    else
-        std::cout << _("Could not find CharacterPart!\n");
-
-    std::cout << "Pawn: " << Pawn << '\n';
+    // std::cout << "Pawn: " << Pawn << '\n';
 
     auto PossessFn = PlayerController->Function(_("Possess"));
     if (PossessFn)
@@ -159,6 +152,60 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (OnRep_bHasStartedPlaying)
         PlayerState->ProcessEvent(OnRep_bHasStartedPlaying, nullptr);
 
+    static auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_029_Athena_Commando_F_Halloween.HID_029_Athena_Commando_F_Halloween"));
+    /* static const auto FortRegisteredPlayerInfo = (*World->Member<UObject*>(_("OwningGameInstance")))->Member<TArray<UObject*>>(_("RegisteredPlayers"))->At(0);
+
+    if (FortRegisteredPlayerInfo)
+    {
+        auto Hero = *FortRegisteredPlayerInfo->Member<UObject*>(_("AthenaMenuHeroDef"));
+
+        if (Hero)
+        {
+            // std::cout << "HERO FROM LOBBY: " << Hero->GetFullName() << '\n';
+
+            static const auto GetHeroTypefn = Hero->Function(_("GetHeroTypeBP"));
+
+            if (GetHeroTypefn)
+            {
+                struct { UObject* heroType; } params;
+                Hero->ProcessEvent(GetHeroTypefn, &params);
+
+                if (params.heroType)
+                {
+                    std::cout << "HeroTYPE NAME: " << params.heroType->GetFullName() << '\n';
+                    HeroType = params.heroType;
+                }
+            }
+        }
+        else
+            std::cout << "no hero!\n";
+    }
+    else
+        std::cout << "No Rwegistefrpl!\n"; */
+    if (HeroType)
+    {
+        *PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
+        static auto OnRepHeroType = PlayerState->Function(_("OnRep_HeroType"));
+        PlayerState->ProcessEvent(OnRepHeroType);
+        std::cout << _("Set HeroType!\n");
+    }
+    else
+        std::cout << _("Could not find HeroType!\n");
+
+    static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
+    static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+
+    if (headPart && bodyPart)
+    {
+        Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
+        Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
+        static const auto OnRep_CharacterParts = PlayerState->Function(_("OnRep_CharacterParts"));
+        PlayerState->ProcessEvent(OnRep_CharacterParts, nullptr);
+        std::cout << "Applied Parts!\n";
+    }
+    else
+        std::cout << _("Could not find CharacterPart!\n");
+
     *PlayerState->Member<uint8_t>(_("TeamIndex")) = 11;
     *PlayerState->Member<unsigned char>(_("SquadId")) = 1;
 
@@ -191,40 +238,45 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     {
         if (Engine_Version == 421)
         {
-            /* uint8_t */ char IsLittleEndian = 0;
-            unsigned int RemoteNetworkVersion = 0;
-            auto v38 = (__int64*)Bunch[1];
-            FString EncryptionToken; // This should be a short* but ye
-
-            if ((unsigned __int64)(*v38 + 1) > v38[1])
-                (*(void(__fastcall**)(__int64*, char*, __int64))(*Bunch + 72))(Bunch, &IsLittleEndian, 1);
-            else
-                IsLittleEndian = *(char*)(*v38)++;
-            auto v39 = Bunch[1];
-            if ((unsigned __int64)(*(__int64*)v39 + 4) > *(__int64*)(v39 + 8))
             {
-                (*(void(__fastcall**)(__int64*, unsigned int*, __int64))(*Bunch + 72))(Bunch, &RemoteNetworkVersion, 4);
-                if ((*((char*)Bunch + 41) & 0x10) != 0)
-                    Idkf(__int64(Bunch), __int64(&RemoteNetworkVersion), 4);
+                /* uint8_t */ char IsLittleEndian = 0;
+                unsigned int RemoteNetworkVersion = 0;
+                auto v38 = (__int64*)Bunch[1];
+                FString EncryptionToken; // This should be a short* but ye
+
+                if ((unsigned __int64)(*v38 + 1) > v38[1])
+                    (*(void(__fastcall**)(__int64*, char*, __int64))(*Bunch + 72))(Bunch, &IsLittleEndian, 1);
+                else
+                    IsLittleEndian = *(char*)(*v38)++;
+                auto v39 = Bunch[1];
+                if ((unsigned __int64)(*(__int64*)v39 + 4) > *(__int64*)(v39 + 8))
+                {
+                    (*(void(__fastcall**)(__int64*, unsigned int*, __int64))(*Bunch + 72))(Bunch, &RemoteNetworkVersion, 4);
+                    if ((*((char*)Bunch + 41) & 0x10) != 0)
+                        Idkf(__int64(Bunch), __int64(&RemoteNetworkVersion), 4);
+                }
+                else
+                {
+                    RemoteNetworkVersion = **(int32_t**)v39;
+                    *(__int64*)v39 += 4;
+                }
+
+                ReceiveFString(Bunch, EncryptionToken);
+                // if (*((char*)Bunch + 40) < 0)
+                    // do stuff
+
+                std::cout << "EncryptionToken: " << __int64(EncryptionToken.Data.GetData()) << '\n';
+
+                if (EncryptionToken.Data.GetData())
+                    std::cout << "EncryptionToken Str: " << EncryptionToken.ToString() << '\n';
+
+                std::cout << "Sending challenge!\n";
+                SendChallenge(World, Connection);
+                std::cout << "Sent challenge!\n";
+                // World_NotifyControlMessage(World, Connection, MessageType, (void*)Bunch);
+                // std::cout << "IDK: " << *((char*)Bunch + 40) << '\n';
+                return;
             }
-            else
-            {
-                RemoteNetworkVersion = **(int32_t**)v39;
-                *(__int64*)v39 += 4;
-            }
-
-            ReceiveFString(Bunch, EncryptionToken);
-            std::cout << "EncryptionToken: " << __int64(EncryptionToken.Data.GetData()) << '\n';
-
-            if (EncryptionToken.Data.GetData())
-                std::cout << "EncryptionToken Str: " << EncryptionToken.ToString() << '\n';
-
-            std::cout << "Sending challenge!\n";
-            SendChallenge(World, Connection); // This is actually UWorld
-            std::cout << "Sent challenge!\n";
-            // World_NotifyControlMessage(World, Connection, MessageType, (void*)Bunch); // DON'T REMOVE THIS
-            // std::cout << "IDK: " << *((char*)Bunch + 40) << '\n';
-            return;
         }
         break;
     }
@@ -399,6 +451,9 @@ void InitializeNetHooks()
     MH_CreateHook((PVOID)KickPlayerAddr, KickPlayerDetour, (void**)&KickPlayer);
     MH_EnableHook((PVOID)KickPlayerAddr);
 
+    MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
+    MH_EnableHook((PVOID)LP_SpawnPlayActorAddr);
+
     // if (NetDebug)
     {
         MH_CreateHook((PVOID)NetDebugAddr, NetDebugDetour, (void**)&NetDebug);
@@ -409,19 +464,5 @@ void InitializeNetHooks()
     {
         MH_CreateHook((PVOID)HasClientLoadedCurrentWorldAddr, HasClientLoadedCurrentWorldDetour, (void**)&HasClientLoadedCurrentWorld);
         MH_EnableHook((PVOID)HasClientLoadedCurrentWorldAddr);
-    }
-
-    if (FnVerDouble >= 9)
-    {
-        auto a = MH_CreateHook((PVOID)NoReserveAddr, NoReserveDetour, (void**)&NoReserve);
-        auto b = MH_EnableHook((PVOID)NoReserveAddr);
-        std::cout << "CreateHook: " << MH_StatusToString(a) << '\n';
-        std::cout << "EnableHook: " << MH_StatusToString(b) << '\n';
-
-        a = MH_CreateHook((PVOID)ValidationFailureAddr, ValidationFailureDetour, (void**)&ValidationFailure);
-        b = MH_EnableHook((PVOID)ValidationFailureAddr);
-
-        std::cout << "CreateHook 1: " << MH_StatusToString(a) << '\n';
-        std::cout << "EnableHook 1: " << MH_StatusToString(b) << '\n';
     }
 }

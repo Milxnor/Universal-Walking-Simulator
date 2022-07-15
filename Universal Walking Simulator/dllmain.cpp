@@ -49,7 +49,7 @@ void InitializePatterns()
     WelcomePlayerAddr = FindPattern(Patterns::WelcomePlayer);
 
     if (!WelcomePlayerAddr) // s6
-        WelcomePlayerAddr = FindPattern(_(""));
+        WelcomePlayerAddr = FindPattern(_("48 8B C4 55 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 20 48 8B F1 48 89 78 F0 48 8B CA 4C 89 70 E8 48 8B FA"));
 
     CheckPattern(_("WelcomePlayer"), WelcomePlayerAddr, &WelcomePlayer);
 
@@ -141,9 +141,9 @@ DWORD WINAPI Input(LPVOID)
 
         else if (GetAsyncKeyState(VK_F7) & 1)
         {
-            if (MyPawn)
+            // if (MyPawn)
             {
-                Helper::TeleportTo(MyPawn, Helper::GetPlayerStart());
+                // Helper::TeleportTo(MyPawn, Helper::GetPlayerStart());
             }
         }
 
@@ -193,9 +193,13 @@ DWORD WINAPI Main(LPVOID)
 
     CreateThread(0, 0, Input, 0, 0, 0);
 
-    std::cout << _("Press play button to host!\n");
+    if (Engine_Version < 422)
+        std::cout << _("Press play button to host!\n");
+    else
+        std::cout << _("Press F5 to host!\n");
 
     std::cout << dye::aqua(_("[Base Address] ")) << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
+    std::cout << dye::green(_("[ServerReplicateActors] ")) << std::format("0x{:x}\n", ServerReplicateActorsOffset);
 
     return 0;
 }

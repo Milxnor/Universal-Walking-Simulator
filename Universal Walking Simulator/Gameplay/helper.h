@@ -16,13 +16,29 @@ namespace Helper
 
 	static void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart)
 	{
-		struct {
-			TEnumAsByte<EFortCustomPartType> Part;
-			UObject* ChosenCharacterPart;
-		} params{Part, ChosenCharacterPart};
+		/* if (std::stod(FN_Version) >= 6) // TODO: make sure this is actually when they change it.
+		{
+			auto PlayerState = *Pawn->Member<UObject*>(_("PlayerState"));
+			auto CustomCharacterParts = PlayerState->Member<__int64>(_("CharacterParts")); // FCustomCharacterParts
+			struct ahh
+			{
+				char WasReplicatedFlags; // 0x00(0x01)
+				char UnknownData_1[0x7]; // 0x01(0x07)
+				UObject* Parts[0x06];
+			};
+			UObject** Parts = ((ahh*)CustomCharacterParts)->Parts;
+			Parts[Part.Get()] = ChosenCharacterPart;
+		}
+		else */
+		{
+			struct {
+				TEnumAsByte<EFortCustomPartType> Part;
+				UObject* ChosenCharacterPart;
+			} params{ Part, ChosenCharacterPart };
 
-		static auto chooseFn = Pawn->Function(_("ServerChoosePart"));
-		Pawn->ProcessEvent(chooseFn, &params);
+			static auto chooseFn = Pawn->Function(_("ServerChoosePart"));
+			Pawn->ProcessEvent(chooseFn, &params);
+		}
 	}
 
 	FVector GetActorLocation(UObject* Actor)

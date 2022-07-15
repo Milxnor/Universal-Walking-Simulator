@@ -17,7 +17,7 @@
 
 // TODO: Switch to phmap
 
-bool bStarted = false;
+static bool bStarted = false;
 
 inline void initStuff()
 {
@@ -54,16 +54,7 @@ inline void initStuff()
 			{
 				authGameMode->ProcessEvent(authGameMode->Function(_("StartPlay")), nullptr); 
 
-				/* *gameState->Member<char>(_("bReplicatedHasBegunPlay")) = true;
-				gameState->ProcessEvent(gameState->Function(_("OnRep_ReplicatedHasBegunPlay")), nullptr);
-
-				static auto StartMatchFn = authGameMode->Function(_("StartMatch"));
-
-				if (StartMatchFn)
-				{
-					authGameMode->ProcessEvent(StartMatchFn, nullptr);
-					std::cout << _("Started Match!\n");
-				} */
+				// TODO: Call StartMatch and Set Playlist
 
 			}
 			else
@@ -73,7 +64,17 @@ inline void initStuff()
 		}
 
 		Listen(7777);
+
+		InitializeNetHooks();
+
+		std::cout << _("Initialized NetHooks!\n");
 	}
+}
+
+void ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Function, void* Parameters)
+{
+	auto PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
+	auto Pawn = *PlayerController->Member<UObject*>(_("Pawn"));
 }
 
 void ReadyToStartMatchHook(UObject* Object, UFunction* Function, void* Parameters)
@@ -94,6 +95,7 @@ void LoadInMatch()
 		Map.Set(_(L"Athena_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C"));
 		PlayerController->ProcessEvent(SwitchLevelFn, &Map);
 		// Map.Free();
+		bTraveled = true;
 	}
 	else
 	{
@@ -115,6 +117,7 @@ void FinishInitializeHooks()
 	if (Engine_Version < 422)
 		AddHook(_("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 	AddHook(_("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
+	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerLoadingScreenDropped"), ServerLoadingScreenDroppedHook);
 
 	for (auto& Func : FunctionsToHook)
 	{

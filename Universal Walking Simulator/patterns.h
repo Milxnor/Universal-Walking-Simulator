@@ -1,7 +1,7 @@
 #pragma once
 
-// #define T_F // S3-S4
-#define S_F // S5-S6
+#define T_F // S3-S4
+// #define S_F // S5-S6
 // #define S_T // S7+
 
 namespace Patterns
@@ -42,6 +42,12 @@ namespace Patterns
 
     constexpr const char* CollectGarbage = "E8 ? ? ? ? EB 26 40 38 3D ? ? ? ?";
     constexpr const char* NetDebug = "40 55 56 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 01 48 8B F1 FF 90 ? ? ? ? 4C 8B F0 48 85 C0 0F";
+
+    // paddin
+    constexpr const char* HasClientLoadedCurrentWorld = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F9 48 85 DB 74 23 E8 ? ? ? ? 48 8B 53 10 4C 8D 40 30 48 63 40 38 3B 42 38 7F 0D 48 8B C8 48 8B 42 30 4C 39 04 C8 74 17 48 8B 1D ? ? ? ? 48 85 DB";
+    constexpr const char* ClientTravel = "48 83 EC 48 45 84 C9 74 0D 41 83 F8 02 75 07 66 FF 81 ? ? ? ? 48 8B 44 24 ? 0F 10 00";
+    constexpr const char* CreateNetDriver = "48 89 5C 24 08 57 48 83 EC ? 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0";
+
 #endif
     constexpr const char* Idkf = "49 63 C0 48 FF C8 48 85 C0 7E 37 4C 8B CA 4C 8D 04 10 49 F7 D9";
     constexpr const char* SendChallenge = "48 89 5C 24 ? 55 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B DA 48 85 D2 0F 84 ? ? ? ? 83 BA ? ? ? ? ? 0F 86 ? ? ? ? 48 83 7A ? ? 0F 84 ? ? ? ? 48 8D 4D 78 48 89 BC 24 ? ? ? ? FF 15 ? ? ? ? 44 8B 45 78 48 8D 15 ? ? ? ? 48 8D 4C 24 ? E8 ? ? ? ? 48 8D 44 24 ? 48 8D BB ? ? ? ? 48 3B F8 74 25 48 8B 0F 48 85 C9 74 05 E8 ? ? ? ? 48 8B 44 24 ? 48 89 07 8B 44 24 38 89 47 08 8B 44 24 3C 89 47 0C EB 0F 48 8B 4C 24 ? 48 85 C9 74 05 E8 ? ? ? ? B2 05 48 8B CB E8 ? ? ? ? 48 8B 83 ? ? ? ? 48 8B 10 48 85 D2 0F 84 ? ? ? ? F6 42 30 02 0F 85 ? ? ? ? 45 33 C0 48 8D 4C 24 ? E8 ? ? ? ?";

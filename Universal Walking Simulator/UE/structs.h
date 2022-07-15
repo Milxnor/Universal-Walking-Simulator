@@ -810,11 +810,6 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		bOldObjects = true;
 	}
 
-	if (Engine_Version == 421)
-		ServerReplicateActorsOffset = 0x54;
-	else if (Engine_Version >= 422)
-		ServerReplicateActorsOffset = 0x56;
-
 	if (Engine_Version >= 421 && Engine_Version <= 424)
 	{
 		ToStringAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 30 83 79 04 00 48 8B DA 48 8B F9"));
@@ -828,6 +823,11 @@ bool Setup(/* void* ProcessEventHookAddr */)
 	}
 
 	auto FnVerDouble = std::stod(FN_Version);
+
+	if (Engine_Version == 421 && FnVerDouble >= 5 && FnVerDouble < 6)
+		ServerReplicateActorsOffset = 0x54;
+	else if (Engine_Version == 421 || Engine_Version >= 422)
+		ServerReplicateActorsOffset = 0x56;
 
 	if (FnVerDouble >= 5)
 	{
