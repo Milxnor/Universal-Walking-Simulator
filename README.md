@@ -1,11 +1,12 @@
 # "Universal" Walking Simulator
-## Firstly, this isn't universal (I can not be asked to change project name), there are many bugs on each season. I hope to add more versions in the future. <br>This support S3.5-S7.40
+## Firstly, this isn't universal, there are many bugs on each season. I hope to add more versions in the future. <br>This support S3.5-S7.40
 
 # PLANS
 
-To add an auto pattern finder, this is in development, it's easy to make, it's just time consuming.
+I want to add an auto pattern finder, this is in development, it's easy to make, it's just time consuming.
 Possibly add abilities, this will require a bit more patterns unfortunately.
-
+I need to do some more testing to add inventory.
+Building is easy, but requires inventory.
 
 # CURRENT ISSUES
 
@@ -19,7 +20,7 @@ The head does not rotate up and down, making the mesh look very weird at certain
 
 # CONTRIBUTING
 
-Use ->Function if you are calling a function instead of using FindObject.
+In order to find a UFunction, please use Object->Function instead of FindObject("Function ..").
 Test your code.
 
 # CREDITS
