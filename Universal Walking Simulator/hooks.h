@@ -92,7 +92,7 @@ void LoadInMatch()
 	{
 		static auto SwitchLevelFn = PlayerController->Function(_("SwitchLevel"));
 		FString Map;
-		Map.Set(_(L"Athena_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C"));
+		Map.Set(GetMapName());
 		PlayerController->ProcessEvent(SwitchLevelFn, &Map);
 		// Map.Free();
 		bTraveled = true;
@@ -108,7 +108,7 @@ inline void PlayButtonHook(UObject* Object, UFunction* Function, void* Parameter
 	LoadInMatch();
 }
 
-void FinishInitializeHooks()
+void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
 		AddHook(_("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
@@ -151,4 +151,27 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 	}
 
 	return ProcessEventO(Object, Function, Parameters);
+}
+
+__int64 __fastcall FixCrashDetour(int32_t* PossiblyNull, __int64 a2, int* a3)
+{
+	if (!PossiblyNull)
+	{
+		std::cout << "Prevented Crash!\n";
+		return 0;
+	}
+
+	return FixCrash(PossiblyNull, a2, a3);
+}
+
+void InitializeHooks()
+{
+	MH_CreateHook((PVOID)ProcessEventAddr, ProcessEventDetour, (void**)&ProcessEventO);
+	MH_EnableHook((PVOID)ProcessEventAddr);
+
+	if (Engine_Version >= 423)
+	{
+		MH_CreateHook((PVOID)FixCrashAddr, FixCrashDetour, (void**)&FixCrash);
+		MH_EnableHook((PVOID)FixCrashAddr);
+	}
 }

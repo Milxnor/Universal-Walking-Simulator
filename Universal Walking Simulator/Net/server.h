@@ -82,7 +82,7 @@ void Listen(int Port = 7777)
     if (ReplicationDriver)
         ServerReplicateActors = decltype(ServerReplicateActors)(ReplicationDriver->VFTable[ServerReplicateActorsOffset]);
     else
-        std::cout << _("No ReplicationDriver!\n");
+        std::cout << dye::red(_("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
 
     /* auto ClassRepNodePolicies = GetClassRepNodePolicies(BeaconHost->NetDriver->ReplicationDriver);
 

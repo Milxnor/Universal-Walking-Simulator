@@ -25,6 +25,8 @@ uint64_t ValidationFailureAddr = 0;
 uint64_t ClientTravelAddr = 0;
 uint64_t CreateNetDriverAddr = 0;
 uint64_t HasClientLoadedCurrentWorldAddr = 0;
+uint64_t FixCrashAddr = 0;
+uint64_t malformedAddr = 0;
 
 static __int64 (*GetNetMode)(__int64* a1);
 bool (*LP_SpawnPlayActor)(UObject* Player, const FString& URL, FString& OutError, UObject* World); // LocalPlayer
@@ -61,6 +63,18 @@ static UObject* (*CreateNetDriver)(UObject* Engine, UObject* InWorld, FName NetD
 
 static bool(__fastcall* HasClientLoadedCurrentWorld)(UObject* pc);
 
+static __int64(__fastcall* FixCrash)(int32_t* PossiblyNull, __int64 a2, int* a3);
+
+static char(__fastcall* malformed)(__int64 a1, __int64 a2);
+
 static std::unordered_map<UFunction*, std::function<void(UObject*, UFunction*, void*)>> FunctionsToHook;
 
 #define AddHook(str, func) FunctionsToHook.insert({FindObject<UFunction>(str), func});
+
+const wchar_t* GetMapName()
+{
+	if (Engine_Version >= 424)
+		return L"Apollo_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+	else if (Engine_Version < 424)
+		return L"Athena_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+}

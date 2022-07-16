@@ -43,6 +43,14 @@ void TickFlushDetour(UObject* _netDriver, float DeltaSeconds)
             {
                 ServerReplicateActors(ReplicationDriver);
             }
+            else
+            {
+                if (Engine_Version == 425)
+                {
+                    ReplicationDriver = *(UObject**)(NetDriver + 0x6E0);
+                    ServerReplicateActors(ReplicationDriver);
+                }
+            }
         }
         // else
             // std::cout << "internalack is true!\n";
@@ -69,7 +77,7 @@ bool LP_SpawnPlayActorDetour(UObject* Player, const FString& URL, FString& OutEr
 
 char KickPlayerDetour(__int64 a1, __int64 a2, __int64 a3)
 {
-    //MessageBoxA(0, "Handled Player Kick", 0, 0);
+    std::cout << _("Player Kick! Returning 0..\n");
     return 0;
 }
 
@@ -90,12 +98,24 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 {
     std::cout << _("SpawnPlayActor called!\n");
     auto PlayerController = SpawnPlayActor(Helper::GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex); // crashes 0x356 here sometimes when rejoining
+    if (!PlayerController)
+        return nullptr;
     *NewPlayer->Member<UObject*>(_("PlayerController")) = PlayerController;
+
+    std::cout << "PC Name: " << PlayerController->GetFullName() << '\n';
 
     UObject* PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
 
-    static auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBars"));
-    *PlayerController->Member<UObject*>(_("QuickBars")) = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator());
+    static const auto FnVerDouble = std::stod(FN_Version);
+
+    if (FnVerDouble < 7.4)
+    {
+        static const auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBars"));
+        *PlayerController->Member<UObject*>(_("QuickBars")) = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator());
+    }
+
+    /* static auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBars"));
+    *PlayerController->Member<UObject*>(_("QuickBars")) = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator()); */
 
     // InitInventory(PlayerController);
 
@@ -105,21 +125,26 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     // if (!MyPawn)
       //  MyPawn = Pawn;
 
-    // std::cout << "Pawn: " << Pawn << '\n';
+    std::cout << "Pawn: " << Pawn << '\n';
 
-    auto PossessFn = PlayerController->Function(_("Possess"));
-    if (PossessFn)
+    if (Pawn)
     {
-        struct {
-            UObject* pawn;
-        } params{ Pawn }; // idk man
-        std::cout << "Possessing!\n";
-        // std::cout << "Possess Fn: " << PossessFn->GetFullName() << '\n';
-        PlayerController->ProcessEvent(PossessFn, &params);
-        std::cout << "Possessed!\n";
+        auto PossessFn = PlayerController->Function(_("Possess"));
+        if (PossessFn)
+        {
+            struct {
+                UObject* InPawn;
+            } params{ Pawn }; // idk man
+            std::cout << "Possessing!\n";
+            std::cout << "Possess Fn: " << PossessFn->GetFullName() << '\n';
+            PlayerController->ProcessEvent(PossessFn, &params);
+            std::cout << "Possessed!\n";
+        }
+        else
+            std::cout << _("Could not find Possess!\n");
     }
     else
-        std::cout << _("Could not find Possess!\n");
+        std::cout << _("No Pawn!\n");
 
     static auto SetReplicateMovementFn = Pawn->Function(_("SetReplicateMovement"));
     bool tru = true;
@@ -138,19 +163,9 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     *PlayerController->Member<bool>(_("bHasServerFinishedLoading")) = true;
     *PlayerController->Member<bool>(_("bHasClientFinishedLoading")) = true;
 
-    static auto OnRep_bHasServerFinishedLoading = PlayerController->Function(_("OnRep_bHasServerFinishedLoading"));
-
-    if (OnRep_bHasServerFinishedLoading)
-        PlayerController->ProcessEvent(OnRep_bHasServerFinishedLoading, nullptr);
-
     *PlayerState->Member<char>(_("bHasStartedPlaying")) = true;
     *PlayerState->Member<char>(_("bHasFinishedLoading")) = true;
     *PlayerState->Member<char>(_("bIsReadyToContinue")) = true;
-
-    static auto OnRep_bHasStartedPlaying = PlayerState->Function(_("OnRep_bHasStartedPlaying"));
-     
-    if (OnRep_bHasStartedPlaying)
-        PlayerState->ProcessEvent(OnRep_bHasStartedPlaying, nullptr);
 
     static const auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
 
@@ -178,9 +193,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     if (headPart && bodyPart)
     {
-        Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
-        Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
-        PlayerState->ProcessEvent(PlayerState->Function(_("OnRep_CharacterParts")), nullptr);
+        if (FnVerDouble < 10.40)
+        {
+            Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
+            Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
+            PlayerState->ProcessEvent(PlayerState->Function(_("OnRep_CharacterParts")), nullptr);
+        }
     }
 
     *PlayerState->Member<uint8_t>(_("TeamIndex")) = 11;
@@ -203,6 +221,26 @@ void* NetDebugDetour(UObject* idk)
     return nullptr;
 }
 
+char __fastcall malformedDetour(__int64 a1, __int64 a2)
+{
+    /* 9.41:
+    
+    v20 = *(_QWORD *)(a1 + 48);
+    *(double *)(a1 + 0x430) = v19;
+    if ( v20 )
+      (*(void (__fastcall **)(__int64))(*(_QWORD *)v20 + 0xC90i64))(v20);// crashes
+
+    */
+
+    auto old = *(__int64*)(a1 + 48);
+    std::cout << "Old: " << old << '\n';
+    *(__int64*)(a1 + 48) = 0;
+    std::cout << "Old2: " << old << '\n';
+    auto ret = malformed(a1, a2);
+    *(__int64*)(a1 + 48) = old;
+    return ret;
+}
+
 void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8_t MessageType, __int64* Bunch)
 {
     printf("Recieved control message %i\n", MessageType);
@@ -213,7 +251,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     {
     case 0:
     {
-        if (Engine_Version == 421)
+        if (Engine_Version == 421) // not the best way to fix it...
         {
             {
                 /* uint8_t */ char IsLittleEndian = 0;
@@ -266,18 +304,24 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 
         FString OnlinePlatformName;
 
-        static double CurrentFortniteVersion = 3.5;
+        static double CurrentFortniteVersion = std::stod(FN_Version);
 
-        if (7 <= CurrentFortniteVersion)
+        if (CurrentFortniteVersion >= 7 && Engine_Version < 425)
         {
             ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 400)); // clientresponse
             ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 424)); // requesturl
         }
-        else
+        else if (CurrentFortniteVersion < 7)
         {
             ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 51));
             ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 54));
         }
+        else if (Engine_Version >= 425)
+        {
+            ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 416));
+            ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 440));
+        }
+
 
         ReceiveUniqueIdRepl(Bunch, Connection->Member<__int64>(_("PlayerID")));
         std::cout << "Got PlayerID!\n";
@@ -298,38 +342,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     }
     case 9: // NMT_Join
     {
-        if (Engine_Version >= 422)
-        {
-            auto RequestURL = (FString*)(__int64(Connection) + 424);
-            std::cout << "RequestURL: " << RequestURL << '\n';
-            std::cout << "Data: " << __int64(RequestURL->Data.GetData()) << '\n';
-
-            if (RequestURL->Data.GetData())
-            {
-                std::cout << RequestURL->ToString() << '\n'; // Debugging purposes
-            }
-
-            std::cout << "yee\n";
-
-            std::cout << "dang\n";
-            /* FString AAHAHAHAHAHA;
-            std::string KILLME = lastURL;
-            std::wstring AHAHAHA = std::wstring(KILLME.begin(), KILLME.end());
-            std::wcout << L"AHAHAHA: " << AHAHAHA << '\n';
-            AAHAHAHAHAHA.Set(AHAHAHA.c_str()); */
-            /* auto idk = (int32_t*)(Connection + 432);
-
-            std::cout << "idk: " << idk << '\n';
-
-            if (idk)
-                std::cout << "Idk deferefnece: " << *idk << '\n'; */
-
-            // (*(FString*)(__int64(Connection) + 424)).Set(L"/Game/Maps/Frontend?Name=Ender0001?AuthTicket=lawinstokenlol?ASID={B06CA25A-48B1-3570-FA91-0F9FFB17984D}?Platform=WIN?AnalyticsPlat=Windows?bIsFirstServerJoin=1");
-            
-            // if (FnVerDouble >= 8)
-                // *idk = 1;
-        }
-        else if (Engine_Version == 421)
+        if (Engine_Version == 421)
         {
             auto ConnectionPC = Connection->Member<UObject*>(_("PlayerController"));
             if (!*ConnectionPC)
@@ -419,8 +432,11 @@ void InitializeNetHooks()
     MH_CreateHook((PVOID)World_NotifyControlMessageAddr, World_NotifyControlMessageDetour, (void**)&World_NotifyControlMessage);
     MH_EnableHook((PVOID)World_NotifyControlMessageAddr);
 
-    MH_CreateHook((PVOID)GetNetModeAddr, GetNetModeDetour, (void**)&GetNetMode);
-    MH_EnableHook((PVOID)GetNetModeAddr);
+    if (Engine_Version < 425)
+    {
+        MH_CreateHook((PVOID)GetNetModeAddr, GetNetModeDetour, (void**)&GetNetMode);
+        MH_EnableHook((PVOID)GetNetModeAddr);
+    }
 
     MH_CreateHook((PVOID)TickFlushAddr, TickFlushDetour, (void**)&TickFlush);
     MH_EnableHook((PVOID)TickFlushAddr);
@@ -437,9 +453,12 @@ void InitializeNetHooks()
         MH_EnableHook((PVOID)NetDebugAddr);
     }
 
-    if (FnVerDouble >= 8)
+    if (Engine_Version == 423)
     {
-        MH_CreateHook((PVOID)HasClientLoadedCurrentWorldAddr, HasClientLoadedCurrentWorldDetour, (void**)&HasClientLoadedCurrentWorld);
+        /* MH_CreateHook((PVOID)HasClientLoadedCurrentWorldAddr, HasClientLoadedCurrentWorldDetour, (void**)&HasClientLoadedCurrentWorld);
         MH_EnableHook((PVOID)HasClientLoadedCurrentWorldAddr);
+
+        MH_CreateHook((PVOID)malformedAddr, malformedDetour, (void**)&malformed);
+        MH_EnableHook((PVOID)malformedAddr); */
     }
 }

@@ -13,14 +13,18 @@ void InitializePatterns()
     static const auto FnVerDouble = std::stod(FN_Version);
 
     static auto ReallocAddr = FindPattern(Patterns::Realloc);
-    CheckPattern(_("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
+    FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddr); // we don't need this I think
+    // CheckPattern(_("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
 
-    GetNetModeAddr = FindPattern(Patterns::GetNetMode);
+    if (Engine_Version < 425)
+    {
+        GetNetModeAddr = FindPattern(Patterns::GetNetMode);
 
-    if (!GetNetModeAddr)
-        GetNetModeAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 49 8B C8 48 C1 E9 20 85 C9 0F 94 C2 41 81 F8 ? ? ? ?"));
+        if (!GetNetModeAddr)
+            GetNetModeAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 49 8B C8 48 C1 E9 20 85 C9 0F 94 C2 41 81 F8 ? ? ? ?"));
 
-    CheckPattern(_("GetNetMode"), GetNetModeAddr, &GetNetMode);
+        CheckPattern(_("GetNetMode"), GetNetModeAddr, &GetNetMode);
+    }
 
     LP_SpawnPlayActorAddr = FindPattern(Patterns::LocalPlayerSpawnPlayActor);
     CheckPattern(_("LocalPlayer::SpawnPlayActor"), LP_SpawnPlayActorAddr, &LP_SpawnPlayActor);
@@ -66,7 +70,13 @@ void InitializePatterns()
     NetDebugAddr = FindPattern(Patterns::NetDebug);
     CheckPattern(_("NetDebug"), NetDebugAddr, &NetDebug);
 
-    if ((FnVerDouble >= 5 && FnVerDouble < 7) || FnVerDouble >= 8)
+    if (Engine_Version >= 423)
+    {
+        FixCrashAddr = FindPattern(Patterns::FixCrash);
+        CheckPattern(_("FixCrash"), FixCrashAddr, &FixCrash);
+    }
+
+    if ((FnVerDouble >= 5 && FnVerDouble < 7) || Engine_Version == 423)
     {
         if (FnVerDouble >= 5 && FnVerDouble < 7)
         {
@@ -87,10 +97,13 @@ void InitializePatterns()
         CreateNetDriverAddr = FindPattern(Patterns::CreateNetDriver);
         CheckPattern(_("CreateNetDriver"), CreateNetDriverAddr, &CreateNetDriver);
 
-        if (FnVerDouble >= 8)
+        if (Engine_Version == 423)
         {
             HasClientLoadedCurrentWorldAddr = FindPattern(Patterns::HasClientLoadedCurrentWorld);
             CheckPattern(_("HasClientLoadedCurrentWorld"), HasClientLoadedCurrentWorldAddr, &HasClientLoadedCurrentWorld);
+
+            malformedAddr = FindPattern(Patterns::malformed);
+            CheckPattern(_("malformed"), malformedAddr, &malformed);
         }
 
         /* if(false) // FnVerDouble >= 8)
@@ -186,10 +199,9 @@ DWORD WINAPI Main(LPVOID)
     std::cout << _("Initialized Patterns!\n");
 
     InitializeNetUHooks();
-    FinishInitializeHooks();
+    FinishInitializeUHooks();
 
-    MH_CreateHook((PVOID)ProcessEventAddr,  ProcessEventDetour, (void**)&ProcessEventO);
-    MH_EnableHook((PVOID)ProcessEventAddr);
+    InitializeHooks();
 
     CreateThread(0, 0, Input, 0, 0, 0);
 
