@@ -75,7 +75,31 @@ void Listen(int Port = 7777)
     UObject* ReplicationDriver = nullptr;
 
     if (NetDriver)
+    {
+        if (Engine_Version >= 425)
+        {
+            static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
+
+            struct {
+                UObject* ObjectClass;
+                UObject* Outer;
+                UObject* ReturnValue;
+            } params{};
+
+            params.ObjectClass = ReplicationDriverClass;
+            params.Outer = NetDriver;
+
+            static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+            static auto fn = GSC->Function(_("SpawnObject"));
+            // static auto fn = FindObject(_("Function /Script/Engine.GameplayStatics.SpawnObject"));
+            std::cout << "Creating graph\n";
+            GSC->ProcessEvent(fn, &params);
+            std::cout << "new rep graph: " << params.ReturnValue << '\n';
+            SetReplicationDriver(NetDriver, params.ReturnValue);
+        }
+
         ReplicationDriver = *NetDriver->Member<UObject*>(_("ReplicationDriver"));
+    }
     else
         std::cout << _("No NetDriver!\n");
 
@@ -84,32 +108,14 @@ void Listen(int Port = 7777)
     else
         std::cout << dye::red(_("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
 
-    /* auto ClassRepNodePolicies = GetClassRepNodePolicies(BeaconHost->NetDriver->ReplicationDriver);
-
-    for (auto&& Pair : ClassRepNodePolicies)
-    {
-        auto key = Pair.Key().ResolveObjectPtr();
-        auto& value = Pair.Value();
-
-        LOG_INFO("ClassRepNodePolicies: {} - {}", key->GetName(), ClassRepNodeMappingToString(value));
-
-        if (key == AFortInventory::StaticClass())
-        {
-            value = EClassRepNodeMapping::RelevantAllConnections;
-            LOG_INFO("Found ClassRepNodePolicy for AFortInventory! {}", (int)value);
-        }
-
-        if (key == AFortQuickBars::StaticClass())
-        {
-            value = EClassRepNodeMapping::RelevantAllConnections;
-            LOG_INFO("Found ClassRepNodePolicy for AFortQuickBars! {}", (int)value);
-        }
-    } */
-
     *World->Member<UObject*>(_("NetDriver")) = NetDriver;
     auto LevelCollections = World->Member<TArray<FLevelCollection>>(_("LevelCollections"));
-    LevelCollections->At(0).NetDriver = NetDriver;
-    LevelCollections->At(1).NetDriver = NetDriver;
+
+    if (LevelCollections)
+    {
+        LevelCollections->At(0).NetDriver = NetDriver;
+        LevelCollections->At(1).NetDriver = NetDriver;
+    }
 
     // GetWorld()->AuthorityGameMode->GameSession->MaxPlayers = 100;
     bListening = true;

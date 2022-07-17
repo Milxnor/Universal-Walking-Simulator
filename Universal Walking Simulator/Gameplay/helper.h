@@ -2,16 +2,53 @@
 
 #include <UE/structs.h>
 
+UObject* GetWorldW(bool bReset = false)
+{
+	auto GameViewport = *GetEngine()->Member<UObject*>(_("GameViewport"));
+
+	if (GameViewport)
+		return *GameViewport->Member<UObject*>(_("World")); // we could also find the world by name but that depends on the map
+
+	return nullptr;
+}
+
+namespace Easy
+{
+	UObject* SpawnObject(UObject* ObjectClass, UObject* Outer)
+	{
+		if (!ObjectClass || !Outer)
+			return nullptr;
+
+		struct {
+			UObject* ObjectClass;
+			UObject* Outer;
+			UObject* ReturnValue;
+		} params{};
+
+		params.ObjectClass = ObjectClass;
+		params.Outer = Outer;
+
+		static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+		static auto fn = GSC->Function(_("SpawnObject"));
+
+		GSC->ProcessEvent(fn, &params);
+
+		return params.ReturnValue;
+	}
+
+	UObject* SpawnActor(UObject* Class, const FVector& Location = FVector(), const FRotator& Rotation = FRotator())
+	{
+		auto Loc = Location;
+		auto Rot = Rotation;
+		return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, FActorSpawnParameters());
+	}
+}
+
 namespace Helper
 {
 	UObject* GetWorld()
 	{
-		auto GameViewport = *GetEngine()->Member<UObject*>(_("GameViewport"));
-
-		if (GameViewport)
-			return *GameViewport->Member<UObject*>(_("World")); // we could also find the world by name but that depends on the map
-
-		return nullptr;
+		return GetWorldW();
 	}
 
 	static void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart)
@@ -128,14 +165,156 @@ namespace Helper
 
 		return SpawnTransform.Translation;
 	}
-}
 
-namespace Easy
-{
-	UObject* SpawnActor(UObject* Class, const FVector& Location = FVector(), const FRotator& Rotation = FRotator())
+	namespace Console
 	{
-		auto Loc = Location;
-		auto Rot = Rotation;
-		return SpawnActorO(Helper::GetWorld(), Class, &Loc, &Rot, FActorSpawnParameters());
+		static UObject** ViewportConsole = nullptr;
+
+		DWORD WINAPI Setup(LPVOID)
+		{
+			static auto Engine = FindObject(_("FortEngine_"));
+
+			while (!Engine)
+			{
+				Engine = FindObject(_("FortEngine_"));
+				Sleep(1000 / 30);
+			}
+
+			static auto ConsoleClass = FindObject(_("Class /Script/Engine.Console"));
+			static auto GameViewport = Engine->Member<UObject*>(_("GameViewport"));
+
+			while (!*GameViewport)
+			{
+				GameViewport = Engine->Member<UObject*>(_("GameViewport"));
+				Sleep(1000 / 30);
+			}
+
+			ViewportConsole = (*GameViewport)->Member<UObject*>(_("ViewportConsole"));
+
+			auto ConsoleObject = Easy::SpawnObject(ConsoleClass, *GameViewport);
+
+			if (ConsoleObject)
+				*ViewportConsole = ConsoleObject;
+			else
+				std::cout << _("[WARNING] SpawnObject failed to create console!\n");
+
+			return 0;
+		}
+
+		void ExecuteConsoleCommand(FString& Command)
+		{
+			struct {
+				class UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData)
+				struct FString                                     Command;                                                  // (Parm, ZeroConstructor)
+				class APlayerController* SpecificPlayer;                                           // (Parm, ZeroConstructor, IsPlainOldData)
+			} params{Helper::GetWorld(), Command, nullptr};
+
+			static auto KSLClass = FindObject(_("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+
+			if (KSLClass)
+			{
+				// static auto ExecuteConsoleCommandFn = KSLClass->Function(_("ExecuteConsoleCommand"));
+				static auto ExecuteConsoleCommandFn = FindObject(_("Function /Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand"));
+
+				if (ExecuteConsoleCommandFn)
+					KSLClass->ProcessEvent(ExecuteConsoleCommandFn, &params);
+				else
+					std::cout << _("No ExecuteConsoleCommand!\n");
+			}
+			else
+				std::cout << _("No KismetSyustemLibrary!\n");
+		}
+	}
+
+	void SetOwner(UObject* Actor, UObject* Owner)
+	{
+		*Actor->Member<UObject*>(_("Owner")) = Owner; // TODO: Call SetOwner
+		static auto OnRepOwner = Actor->Function(_("OnRep_Owner"));
+		if (OnRepOwner)
+			Actor->ProcessEvent(OnRepOwner);
+	}
+
+	void InitPawn(UObject* PC, FVector Location = Helper::GetPlayerStart())
+	{
+		static const auto FnVerDouble = std::stod(FN_Version);
+
+		UObject* PlayerState = *PC->Member<UObject*>(_("PlayerState"));
+
+		static auto PawnClass = FindObject(_("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
+		auto Pawn = Easy::SpawnActor(PawnClass, Location, {});
+
+		static auto SetReplicateMovementFn = Pawn->Function(_("SetReplicateMovement"));
+		struct {
+			bool b;
+		} bruh{true};
+		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh);
+		auto Offset = GetOffset(Pawn, _("bReplicateMovement"));
+
+		// stupidBitField[0] = 1;
+		static auto Rep_ReplicateMovement = Pawn->Function(_("OnRep_ReplicateMovement"));
+		Pawn->ProcessEvent(Rep_ReplicateMovement);
+
+		static auto Rep_ReplicatedMovement = Pawn->Function(_("OnRep_ReplicatedMovement"));
+		Pawn->ProcessEvent(Rep_ReplicatedMovement);
+
+		static auto Rep_ReplicatedBasedMovement = Pawn->Function(_("OnRep_ReplicatedBasedMovement"));
+		Pawn->ProcessEvent(Rep_ReplicateMovement);
+
+		if (Pawn)
+		{
+			auto PossessFn = PC->Function(_("Possess"));
+			if (PossessFn)
+			{
+				struct {
+					UObject* InPawn;
+				} params{ Pawn }; // idk man
+				PC->ProcessEvent(PossessFn, &params);
+			}
+			else
+				std::cout << _("Could not find Possess!\n");
+		}
+		else
+			std::cout << _("No Pawn!\n");
+
+		/* *Pawn->Member<char>(_("bCanBeDamaged")) = false;
+		*Pawn->Member<char>(_("bAlwaysRelevant")) = true;
+		*Pawn->Member<char>(_("bReplicates")) = true;
+		*Pawn->Member<char>(_("bOnlyRelevantToOwner")) = false; */
+		Helper::SetOwner(Pawn, PC);
+
+		*PC->Member<char>(_("bReadyToStartMatch")) = true;
+		*PC->Member<char>(_("bClientPawnIsLoaded")) = true;
+		*PC->Member<char>(_("bHasInitiallySpawned")) = true;
+
+		*PC->Member<bool>(_("bHasServerFinishedLoading")) = true;
+		*PC->Member<bool>(_("bHasClientFinishedLoading")) = true;
+
+		*PlayerState->Member<char>(_("bHasStartedPlaying")) = true;
+		*PlayerState->Member<char>(_("bHasFinishedLoading")) = true;
+		*PlayerState->Member<char>(_("bIsReadyToContinue")) = true;
+
+		// *Pawn->Member<float>(_("NetUpdateFrequency")) = 200;
+
+		static const auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
+
+		*PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
+		static auto OnRepHeroType = PlayerState->Function(_("OnRep_HeroType"));
+		PlayerState->ProcessEvent(OnRepHeroType);
+
+		static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
+		static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+
+		if (headPart && bodyPart)
+		{
+			Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
+			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
+			static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(_("OnRep_CharacterData")) : PlayerState->Function(_("OnRep_CharacterParts")); //Make sure its s10 and up
+
+			if (OnRep_Parts)
+				PlayerState->ProcessEvent(OnRep_Parts, nullptr);
+		}
+
+		*PlayerState->Member<uint8_t>(_("TeamIndex")) = 11;
+		*PlayerState->Member<unsigned char>(_("SquadId")) = 1;
 	}
 }

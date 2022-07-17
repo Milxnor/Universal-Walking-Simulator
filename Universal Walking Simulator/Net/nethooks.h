@@ -5,10 +5,11 @@
 // #include "hooks.h"
 #include <Net/funcs.h>
 #include <Gameplay/helper.h>
+#include <Gameplay/inventory.h>
 
 static bool bTraveled = false;
 
-inline void ServerAcknowledgePossessionHook(UObject* Object, UFunction* Function, void* Parameters)
+inline bool ServerAcknowledgePossessionHook(UObject* Object, UFunction* Function, void* Parameters) // This fixes movement on S5+, Cat led me to the right direction, then I figured out it's something with ClientRestart and did some common sense and found this.
 {
     struct SAP_Params
     {
@@ -22,6 +23,8 @@ inline void ServerAcknowledgePossessionHook(UObject* Object, UFunction* Function
         *Object->Member<UObject*>(_("AcknowledgedPawn")) = Pawn;
         std::cout << "Set Pawn!\n";
     }
+
+    return false;
 }
 
 void InitializeNetUHooks()
@@ -42,14 +45,6 @@ void TickFlushDetour(UObject* _netDriver, float DeltaSeconds)
             if (ReplicationDriver)
             {
                 ServerReplicateActors(ReplicationDriver);
-            }
-            else
-            {
-                if (Engine_Version == 425)
-                {
-                    ReplicationDriver = *(UObject**)(NetDriver + 0x6E0);
-                    ServerReplicateActors(ReplicationDriver);
-                }
             }
         }
         // else
@@ -81,12 +76,12 @@ char KickPlayerDetour(__int64 a1, __int64 a2, __int64 a3)
     return 0;
 }
 
-char(__fastcall* ValidationFailure)(__int64 a1, __int64 a2);
+char(__fastcall* ValidationFailure)(__int64* a1, __int64 a2);
 
-char __fastcall ValidationFailureDetour(__int64 a1, __int64 a2)
+char __fastcall ValidationFailureDetour(__int64* a1, __int64 a2)
 {
     std::cout << "Validation!\n";
-    return 1;
+    return 0;
 }
 
 static void (*SendChallenge)(UObject* a1, UObject* a2); // World, NetConnection
@@ -97,14 +92,18 @@ bool bMyPawn = false; // UObject*
 UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole RemoteRole, FURL& URL, void* UniqueId, FString& Error, uint8_t NetPlayerIndex)
 {
     std::cout << _("SpawnPlayActor called!\n");
+    // static UObject* CameraManagerClass = FindObject(_("BlueprintGeneratedClass /Game/Blueprints/Camera/Original/MainPlayerCamera.MainPlayerCamera_C"));
+
     auto PlayerController = SpawnPlayActor(Helper::GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex); // crashes 0x356 here sometimes when rejoining
+
+    // *PlayerController->Member<UObject*>(_("PlayerCameraManagerClass")) = CameraManagerClass;
+
     if (!PlayerController)
         return nullptr;
+
     *NewPlayer->Member<UObject*>(_("PlayerController")) = PlayerController;
 
     std::cout << "PC Name: " << PlayerController->GetFullName() << '\n';
-
-    UObject* PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
 
     static const auto FnVerDouble = std::stod(FN_Version);
 
@@ -114,97 +113,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         *PlayerController->Member<UObject*>(_("QuickBars")) = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator());
     }
 
-    /* static auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBars"));
-    *PlayerController->Member<UObject*>(_("QuickBars")) = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator()); */
-
-    // InitInventory(PlayerController);
-
-    static auto PawnClass = FindObject(_("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
-    auto Pawn = Easy::SpawnActor(PawnClass, Helper::GetPlayerStart(), {});
-
-    // if (!MyPawn)
-      //  MyPawn = Pawn;
-
-    std::cout << "Pawn: " << Pawn << '\n';
-
-    if (Pawn)
-    {
-        auto PossessFn = PlayerController->Function(_("Possess"));
-        if (PossessFn)
-        {
-            struct {
-                UObject* InPawn;
-            } params{ Pawn }; // idk man
-            std::cout << "Possessing!\n";
-            std::cout << "Possess Fn: " << PossessFn->GetFullName() << '\n';
-            PlayerController->ProcessEvent(PossessFn, &params);
-            std::cout << "Possessed!\n";
-        }
-        else
-            std::cout << _("Could not find Possess!\n");
-    }
-    else
-        std::cout << _("No Pawn!\n");
-
-    static auto SetReplicateMovementFn = Pawn->Function(_("SetReplicateMovement"));
-    bool tru = true;
-    Pawn->ProcessEvent(SetReplicateMovementFn, &tru);
-    *Pawn->Member<bool>(_("bReplicateMovement")) = true;
-    static auto Rep_ReplicateMovement = Pawn->Function(_("OnRep_ReplicateMovement"));
-    Pawn->ProcessEvent(Rep_ReplicateMovement);
-
-    *Pawn->Member<bool>(_("bCanBeDamaged")) = false;
-    *Pawn->Member<bool>(_("bAlwaysRelevant")) = true;
-
-    *PlayerController->Member<char>(_("bReadyToStartMatch")) = true;
-    *PlayerController->Member<char>(_("bClientPawnIsLoaded")) = true;
-    *PlayerController->Member<char>(_("bHasInitiallySpawned")) = true;
-
-    *PlayerController->Member<bool>(_("bHasServerFinishedLoading")) = true;
-    *PlayerController->Member<bool>(_("bHasClientFinishedLoading")) = true;
-
-    *PlayerState->Member<char>(_("bHasStartedPlaying")) = true;
-    *PlayerState->Member<char>(_("bHasFinishedLoading")) = true;
-    *PlayerState->Member<char>(_("bIsReadyToContinue")) = true;
-
-    static const auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
-
-    /* static const auto FortRegisteredPlayerInfo = (*World->Member<UObject*>(_("OwningGameInstance")))->Member<TArray<UObject*>>(_("RegisteredPlayers"))->At(0);
-    if (FortRegisteredPlayerInfo)
-    {
-        auto Hero = *FortRegisteredPlayerInfo->Member<UObject*>(_("AthenaMenuHeroDef"));
-        if (Hero)
-        {
-            *PlayerController->Member<UObject*>(_("StrongMyHero")) = Hero;
-            std::cout << "Set Hero!\n";
-        }
-        else
-            std::cout << "no hero!\n";
-    }
-    else
-        std::cout << "No Rwegistefrpl!\n"; */
-
-    *PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
-    static auto OnRepHeroType = PlayerState->Function(_("OnRep_HeroType"));
-    PlayerState->ProcessEvent(OnRepHeroType);
-
-    static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-    static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
-
-    if (headPart && bodyPart)
-    {
-        if (FnVerDouble < 10.40)
-        {
-            Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
-            Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
-            PlayerState->ProcessEvent(PlayerState->Function(_("OnRep_CharacterParts")), nullptr);
-        }
-    }
-
-    *PlayerState->Member<uint8_t>(_("TeamIndex")) = 11;
-    *PlayerState->Member<unsigned char>(_("SquadId")) = 1;
+    Helper::InitPawn(PlayerController);
 
     std::cout << _("Spawned Player!\n");
+
+    static auto Wep = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
+    // Inventory::AddItemToSlot(PlayerController, Wep, 1, EFortQuickBars::Primary);
 
     return PlayerController;
 }
@@ -295,8 +209,11 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
         }
         break;
     }
-    case 4: // NMT_Netspeed
-        *Connection->Member<int>(_("CurrentNetSpeed")) = 30000; // sometimes 60000
+    case 4: // NMT_Netspeed // Do we even have to reiplment this?
+        if (Engine_Version >= 423)
+            *Connection->Member<int>(_("CurrentNetSpeed")) = 60000; // sometimes 60000
+        else
+            *Connection->Member<int>(_("CurrentNetSpeed")) = 30000; // sometimes 60000
         return;
     case 5: // NMT_Login
     {
@@ -411,13 +328,13 @@ void Beacon_NotifyControlMessageDetour(UObject* Beacon, UObject* Connection, uin
     return World_NotifyControlMessageDetour(Helper::GetWorld(), Connection, MessageType, Bunch);
 }
 
-char(__fastcall* NoReserve)(__int64* a1, __int64 a2, char a3, __int64* a4);
-
 char __fastcall NoReserveDetour(__int64* a1, __int64 a2, char a3, __int64* a4)
 {
     std::cout << _("No Reserve!\n");
     return 0;
 }
+
+__int64 CollectGarbageDetour(__int64) { return 0; }
 
 void InitializeNetHooks()
 {
@@ -437,6 +354,12 @@ void InitializeNetHooks()
         MH_CreateHook((PVOID)GetNetModeAddr, GetNetModeDetour, (void**)&GetNetMode);
         MH_EnableHook((PVOID)GetNetModeAddr);
     }
+    
+    if (Engine_Version > 423)
+    {
+        MH_CreateHook((PVOID)ValidationFailureAddr, ValidationFailureDetour, (void**)&ValidationFailure);
+        MH_EnableHook((PVOID)ValidationFailureAddr);
+    }
 
     MH_CreateHook((PVOID)TickFlushAddr, TickFlushDetour, (void**)&TickFlush);
     MH_EnableHook((PVOID)TickFlushAddr);
@@ -451,6 +374,12 @@ void InitializeNetHooks()
     {
         MH_CreateHook((PVOID)NetDebugAddr, NetDebugDetour, (void**)&NetDebug);
         MH_EnableHook((PVOID)NetDebugAddr);
+
+        if (CollectGarbageAddr)
+        {
+            MH_CreateHook((PVOID)CollectGarbageAddr, CollectGarbageDetour, (void**)&CollectGarbage);
+            MH_EnableHook((PVOID)CollectGarbageAddr);
+        }
     }
 
     if (Engine_Version == 423)

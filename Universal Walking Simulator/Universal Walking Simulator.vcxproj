@@ -45,9 +45,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>uNIVESl</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>uNIVESl</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -92,11 +94,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\vendor\ImGui\imgui.cpp" />
+    <ClCompile Include="..\vendor\ImGui\imgui_demo.cpp" />
+    <ClCompile Include="..\vendor\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_dx10.cpp" />
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_dx12.cpp" />
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_dx9.cpp" />
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\vendor\ImGui\imgui_tables.cpp" />
+    <ClCompile Include="..\vendor\ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="..\vendor\Kiero\kiero.cpp" />
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Gameplay\helper.h" />
     <ClInclude Include="Gameplay\inventory.h" />
+    <ClInclude Include="gui.h" />
     <ClInclude Include="patterns.h" />
     <ClInclude Include="Net\funcs.h" />
     <ClInclude Include="hooks.h" />

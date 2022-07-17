@@ -6,6 +6,7 @@
 #include <MinHook/MinHook.h>
 
 #include "patterns.h"
+#include "gui.h"
 #include <hooks.h>
 
 void InitializePatterns()
@@ -13,8 +14,8 @@ void InitializePatterns()
     static const auto FnVerDouble = std::stod(FN_Version);
 
     static auto ReallocAddr = FindPattern(Patterns::Realloc);
-    FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddr); // we don't need this I think
-    // CheckPattern(_("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
+    // FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddr); // we don't need this I think
+    CheckPattern(_("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
 
     if (Engine_Version < 425)
     {
@@ -70,6 +71,12 @@ void InitializePatterns()
     NetDebugAddr = FindPattern(Patterns::NetDebug);
     CheckPattern(_("NetDebug"), NetDebugAddr, &NetDebug);
 
+    if (Engine_Version == 420)
+    {
+        CollectGarbageAddr = FindPattern(Patterns::CollectGarbage);
+        CheckPattern(_("CollectGarbage"), CollectGarbageAddr, &CollectGarbage);
+    }
+
     if (Engine_Version >= 423)
     {
         FixCrashAddr = FindPattern(Patterns::FixCrash);
@@ -111,6 +118,15 @@ void InitializePatterns()
             ClientTravelAddr = FindPattern(Patterns::ClientTravel);
             CheckPattern(_("ClientTravel"), ClientTravelAddr, &ClientTravel);
         } */
+    }
+
+    if (Engine_Version >= 424)
+    {
+        SetReplicationDriverAddr = FindPattern(Patterns::SetReplicationDriver);
+        CheckPattern(_("SetReplicationDriver"), SetReplicationDriverAddr, &SetReplicationDriver);
+
+        ValidationFailureAddr = FindPattern(Patterns::ValidationFailure);
+        CheckPattern(_("ValidationFailure"), ValidationFailureAddr, &ValidationFailure);
     }
 
     // if (!CreateNetDriver) // This means we are not using beacons
@@ -204,6 +220,8 @@ DWORD WINAPI Main(LPVOID)
     InitializeHooks();
 
     CreateThread(0, 0, Input, 0, 0, 0);
+    CreateThread(0, 0, GuiHook, 0, 0, 0);
+    CreateThread(0, 0, Helper::Console::Setup , 0, 0, 0);
 
     if (Engine_Version < 422)
         std::cout << _("Press play button to host!\n");

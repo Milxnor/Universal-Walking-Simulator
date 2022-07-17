@@ -21,12 +21,14 @@ uint64_t IdkfAddr = 0;
 uint64_t SendChallengeAddr = 0;
 uint64_t SetWorldAddr = 0;
 uint64_t NoReserveAddr = 0;
-uint64_t ValidationFailureAddr = 0;
 uint64_t ClientTravelAddr = 0;
 uint64_t CreateNetDriverAddr = 0;
 uint64_t HasClientLoadedCurrentWorldAddr = 0;
 uint64_t FixCrashAddr = 0;
 uint64_t malformedAddr = 0;
+uint64_t SetReplicationDriverAddr = 0;
+uint64_t ValidationFailureAddr = 0;
+uint64_t CollectGarbageAddr = 0;
 
 static __int64 (*GetNetMode)(__int64* a1);
 bool (*LP_SpawnPlayActor)(UObject* Player, const FString& URL, FString& OutError, UObject* World); // LocalPlayer
@@ -46,6 +48,7 @@ static void (*ReceiveFString)(void* Bunch, FString& Str);
 static void (*ReceiveUniqueIdRepl)(void* Bunch, void* Str);
 
 static char (*KickPlayer)(UObject* a1, UObject*, void* /* FText */a3);
+//static char (*ValidationFailure)(__int64 a1, __int64 a2);
 
 static void (*WelcomePlayer)(UObject* World, UObject* Connection);
 static void (*World_NotifyControlMessage)(UObject* World, UObject* Connection, uint8_t MessageType, void* Bunch);
@@ -57,7 +60,7 @@ inline void (*PauseBeaconRequests)(UObject* Beacon, bool bPause);
 
 static void* (*NetDebug)(UObject* a);
 
-static __int64 (*__fastcall ClientTravel)(UObject* Controller, const FString& URL, ETravelType TravelType, bool bSeamless, FGuid MapPackageGuid);
+static __int64 (__fastcall* ClientTravel)(UObject* Controller, const FString& URL, ETravelType TravelType, bool bSeamless, FGuid MapPackageGuid);
 
 static UObject* (*CreateNetDriver)(UObject* Engine, UObject* InWorld, FName NetDriverDefinition);
 
@@ -65,9 +68,13 @@ static bool(__fastcall* HasClientLoadedCurrentWorld)(UObject* pc);
 
 static __int64(__fastcall* FixCrash)(int32_t* PossiblyNull, __int64 a2, int* a3);
 
+static void(__fastcall* SetReplicationDriver)(UObject* a1, UObject* NewRepDriver);
+
 static char(__fastcall* malformed)(__int64 a1, __int64 a2);
 
-static std::unordered_map<UFunction*, std::function<void(UObject*, UFunction*, void*)>> FunctionsToHook;
+char(__fastcall* NoReserve)(__int64* a1, __int64 a2, char a3, __int64* a4);
+
+static std::unordered_map<UFunction*, std::function<bool(UObject*, UFunction*, void*)>> FunctionsToHook;
 
 #define AddHook(str, func) FunctionsToHook.insert({FindObject<UFunction>(str), func});
 

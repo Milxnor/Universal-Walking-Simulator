@@ -30,7 +30,7 @@ static struct FFixedUObjectArray* OldObjects;
 namespace FMemory
 {
 	void (*Free)(void* Original);
-	void (*Realloc)(void* Original, SIZE_T Count, uint32_t Alignment /* = DEFAULT_ALIGNMENT */);
+	void* (*Realloc)(void* Original, SIZE_T Count, uint32_t Alignment /* = DEFAULT_ALIGNMENT */);
 }
 
 struct Timer
@@ -86,7 +86,7 @@ public:
 		return ArrayMax - ArrayNum;
 	}
 
-	INL void Reserve(int Number)
+	void Reserve(int Number, int Size = sizeof(ElementType))
 	{
 		if (!FMemory::Realloc)
 		{
@@ -95,14 +95,39 @@ public:
 		}
 
 		if (Number > ArrayMax)
-			Data = Slack() >= ArrayNum ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + ArrayNum) * sizeof(ElementType), 0); // thanks fischsalat for this line of code.
+		{
+			Data = (ElementType*)realloc(Data, Size * (ArrayNum + 1));
+			// Data = Slack() >= ArrayNum ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + ArrayNum) * Size, 0); // thanks fischsalat for this line of code.
+		}
 	}
 
-	INL void Add(const ElementType& New)
+	int Add(const ElementType& New, int Size = sizeof(ElementType))
 	{
-		Reserve(1);
-		Data[ArrayNum] = New;
-		++ArrayNum;
+		std::cout << "Data: " << Data << '\n';
+		std::cout << "ArrayNum: " << ArrayNum << '\n';
+		std::cout << "ArrayMax: " << ArrayMax << '\n';
+		Reserve(1, Size);
+		if (Data)
+		{
+			Data[ArrayNum] = New;
+			++ArrayNum;
+			return ArrayNum; // - 1;
+		}
+		std::cout << "Data: " << Data << '\n';
+
+		/*
+		
+		if (Data)
+		{
+			Data = (ElementType*)realloc(Data, sizeof(ElementType) * (ArrayNum + 1));
+			Data[ArrayNum] = New;
+			++ArrayNum;
+			return ArrayNum - 1;
+		}
+
+		*/
+
+		return -1;
 	};
 
 	INL void RemoveSingle(const ElementType& Index) // TODO
@@ -220,7 +245,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	}
 
 	template <typename MemberType>
-	INL MemberType* Member(const std::string& MemberName);
+	INL MemberType* Member(const std::string& MemberName, bool bIsStruct = false);
 
 	bool IsA(UObject* cmp) const;
 
@@ -501,7 +526,7 @@ auto GetMembersFProperty(UObject* Object, bool bOnlyMembers = false, bool bOnlyF
 			auto Property = CurrentClass->ChildProperties;
 			auto Child = CurrentClass->Children;
 
-			if ((!bOnlyFunctions && bOnlyMembers) || (!bOnlyFunctions && !bOnlyMembers))
+			if ((!bOnlyFunctions && bOnlyMembers) || (!bOnlyFunctions && !bOnlyMembers)) // Only members
 			{
 				if (Property)
 				{
@@ -521,7 +546,7 @@ auto GetMembersFProperty(UObject* Object, bool bOnlyMembers = false, bool bOnlyF
 				}
 			}
 
-			if ((!bOnlyMembers && bOnlyFunctions) || (!bOnlyMembers && !bOnlyFunctions))
+			if ((!bOnlyMembers && bOnlyFunctions) || (!bOnlyMembers && !bOnlyFunctions)) // Only functions
 			{
 				if (Child)
 				{
@@ -636,14 +661,6 @@ static int GetOffset(UObject* Object, const std::string& MemberName)
 	}
 
 	return 0;
-}
-
-template <typename MemberType>
-INL MemberType* UObject::Member(const std::string& MemberName)
-{
-	// MemberName.erase(0, MemberName.find_last_of(".", MemberName.length() - 1) + 1); // This would be getting the short name of the member if you did like ObjectProperty /Script/stuff
-
-	return (MemberType*)(__int64(this) + GetOffset(this, MemberName));
 }
 
 template <typename ClassType>
@@ -945,5 +962,119 @@ struct FLevelCollection
 	UObject* NetDriver;                                                // 0x0010(0x0008) (ZeroConstructor, IsPlainOldData)
 	UObject* DemoNetDriver;                                            // 0x0018(0x0008) (ZeroConstructor, IsPlainOldData)
 	UObject* PersistentLevel;                                          // 0x0020(0x0008) (ZeroConstructor, IsPlainOldData)
-	unsigned char                                      UnknownData01[0x50];                                      // 0x0028(0x0050) UNKNOWN PROPERTY: SetProperty Engine.LevelCollection.Levels
+	unsigned char                                      UnknownData01[0x50];  // TSet<ULevel*> Levels;
+};
+
+template <typename ClassType, typename FieldType, typename Prop>
+int FindOffsetStructAh(const std::string& ClassName, const std::string& MemberName, int offset = 0)
+{
+	auto Class = FindObject<ClassType>(ClassName, true);
+
+	if (Class)
+	{
+		if (FieldType* Next = Class->ChildProperties->Next)
+		{
+			auto PropName = Class->ChildProperties->GetName();
+
+			while (Next)
+			{
+				if (PropName == MemberName)
+				{
+					if (!offset)
+						return ((Prop*)Next)->Offset_Internal;
+					else
+						return *(int*)(__int64(Next) + offset);
+				}
+				else
+				{
+					Next = Next->Next;
+
+					if (Next)
+						PropName = Next->GetName();
+				}
+			}
+		}
+	}
+}
+
+int FindOffsetStruct(const std::string& ClassName, const std::string& MemberName)
+{
+	if (Engine_Version <= 420)
+		return FindOffsetStructAh<UClass_FT, UField, UProperty_UE>(ClassName, MemberName);
+
+	else if (Engine_Version == 421) // && Engine_Version <= 424)
+		return FindOffsetStructAh<UClass_FTO, UField, UProperty_FTO>(ClassName, MemberName);
+
+	else if (Engine_Version >= 422 && Engine_Version <= 424)
+		return FindOffsetStructAh<UClass_FTT, UField, UProperty_FTO>(ClassName, MemberName);
+
+	else if (Engine_Version >= 425 && Engine_Version < 500)
+		return FindOffsetStructAh<UClass_CT, FField, FProperty>(ClassName, MemberName);
+
+	else if (std::stod(FN_Version) >= 19)
+		return FindOffsetStructAh<UClass_CT, FField, FProperty>(ClassName, MemberName, 0x44);
+
+	return 0;
+}
+
+template <typename MemberType>
+INL MemberType* UObject::Member(const std::string& MemberName, bool bIsStruct)
+{
+	// MemberName.erase(0, MemberName.find_last_of(".", MemberName.length() - 1) + 1); // This would be getting the short name of the member if you did like ObjectProperty /Script/stuff
+
+	if (!bIsStruct)
+		return (MemberType*)(__int64(this) + GetOffset(this, MemberName));
+	else
+		return (MemberType*)(__int64(this) + FindOffsetStruct(this->GetFullName(), MemberName));
+}
+
+struct FFastArraySerializerItem
+{
+	int                                                ReplicationID;                                            // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+	int                                                ReplicationKey;                                           // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+	int                                                MostRecentArrayReplicationKey;                            // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+};
+
+struct FFastArraySerializer
+{
+	// TMap<int32_t, int32_t> ItemMap;
+	char ItemMap[0x50];
+	int32_t IDCounter;
+	int32_t ArrayReplicationKey;
+
+	// TMap<int32_t, FFastArraySerializerGuidReferences> GuidReferencesMap; // List of items that need to be re-serialized when the referenced objects are mapped
+	char GuidReferencesMap[0x50];
+
+	int32_t CachedNumItems;
+	int32_t CachedNumItemsToConsiderForWriting;
+
+	void MarkItemDirty(FFastArraySerializerItem& Item)
+	{
+		if (Item.ReplicationID == -1)
+		{
+			Item.ReplicationID = ++IDCounter;
+			if (IDCounter == -1)
+				IDCounter++;
+		}
+
+		Item.ReplicationKey++;
+		MarkArrayDirty();
+	}
+
+	void MarkArrayDirty()
+	{
+		// ItemMap.Reset();		// This allows to clients to add predictive elements to arrays without affecting replication.
+		IncrementArrayReplicationKey();
+
+		// Invalidate the cached item counts so that they're recomputed during the next write
+		CachedNumItems = -1;
+		CachedNumItemsToConsiderForWriting = -1;
+	}
+
+	void IncrementArrayReplicationKey()
+	{
+		ArrayReplicationKey++;
+		if (ArrayReplicationKey == -1)
+			ArrayReplicationKey++;
+	}
 };

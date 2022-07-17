@@ -13,9 +13,7 @@
 
 #define LOGGING
 
-// INSPIRED BY KEMOS UFUNCTION HOOKING
-
-// TODO: Switch to phmap
+// HEAVILY INSPIRED BY KEMOS UFUNCTION HOOKING
 
 static bool bStarted = false;
 
@@ -24,16 +22,28 @@ inline void initStuff()
 	if (!bStarted && bTraveled)
 	{
 		bStarted = true;
+
+		CreateThread(0, 0, Helper::Console::Setup, 0, 0, 0);
+
 		auto world = Helper::GetWorld();
 		auto gameState = *world->Member<UObject*>(_("GameState"));
 
 		if (gameState)
 		{
-			*gameState->Member<char>(_("bGameModeWillSkipAircraft")) = true;
-			*gameState->Member<float>(_("AircraftStartTime")) = 99999.0f;
-			*gameState->Member<float>(_("WarmupCountdownEndTime")) = 99999.0f;
+			auto AuthGameMode = *world->Member<UObject*>(_("AuthorityGameMode"));
 
-			*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Warmup;
+			if (std::stod(FN_Version) >= 8 && AuthGameMode)
+			{
+				static auto PlayerControllerClass = FindObject(_("BlueprintGeneratedClass /Game/Athena/Athena_PlayerController.Athena_PlayerController_C"));
+				std::cout << _("PlayerControllerClass: ") << PlayerControllerClass << '\n';
+				*AuthGameMode->Member<UObject*>(_("PlayerControllerClass")) = PlayerControllerClass;
+			}
+
+			// *gameState->Member<char>(_("bGameModeWillSkipAircraft")) = false;
+			// *gameState->Member<float>(_("AircraftStartTime")) = 99999.0f;
+			// *gameState->Member<float>(_("WarmupCountdownEndTime")) = 99999.0f;
+
+			*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Setup;
 
 			struct {
 				EAthenaGamePhase OldPhase;
@@ -42,20 +52,58 @@ inline void initStuff()
 			static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
 
 			if (fnGamephase)
-			{
-				std::cout << _("Changing Phase!\n");
 				gameState->ProcessEvent(fnGamephase, &params2);
-				std::cout << _("Changed Phase!\n");
-			}
 
-			auto authGameMode = *world->Member<UObject*>(_("AuthorityGameMode"));
-
-			if (authGameMode)
+			if (AuthGameMode)
 			{
-				authGameMode->ProcessEvent(authGameMode->Function(_("StartPlay")), nullptr); 
+				AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartPlay")), nullptr);
 
-				// TODO: Call StartMatch and Set Playlist
+				AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartMatch")), nullptr);
 
+				// Is this correct?
+				
+				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
+				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
+
+				static auto OnRepPlaylist = FindObject(_("Function /Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo"));
+
+				static auto BasePlaylistOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("BasePlaylist"));
+
+				if (std::stod(FN_Version) > 6.00)
+				{
+					OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistInfo"));
+
+					static auto BasePlaylistOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("BasePlaylist"));
+					static auto PlaylistInfo = gameState->Member<FFastArraySerializer>(_("CurrentPlaylistInfo"));
+
+					if (BasePlaylistOffset && OnRepPlaylist && Playlist)
+					{
+						auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(_("CurrentPlaylistInfo"))->Member<UObject*>(_("BasePlaylist"), true);
+
+						if (BasePlaylist)
+						{
+							*BasePlaylist = Playlist;
+							// PlaylistInfo->MarkArrayDirty();
+							std::cout << _("Set playlist to: ") << Playlist->GetFullName() << '\n';
+						}
+						else
+							std::cout << _("Base Playlist is null!\n");
+					}
+					else
+					{
+						std::cout << _("Missing something related to the Playlist!\n");
+						std::cout << _("BasePlaylist Offset: ") << BasePlaylistOffset << '\n';
+						std::cout << _("OnRepPlaylist: ") << OnRepPlaylist << '\n';
+						std::cout << _("Playlist: ") << Playlist << '\n';
+					}
+				}
+				else
+				{
+					OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistData"));
+					*gameState->Member<UObject*>(_("CurrentPlaylistData")) = Playlist;
+				}
+
+				gameState->ProcessEvent(OnRepPlaylist);
 			}
 			else
 			{
@@ -71,15 +119,49 @@ inline void initStuff()
 	}
 }
 
-void ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Function, void* Parameters)
+bool ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
 	auto PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
 	auto Pawn = *PlayerController->Member<UObject*>(_("Pawn"));
+
+	return false;
 }
 
-void ReadyToStartMatchHook(UObject* Object, UFunction* Function, void* Parameters)
+bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
-	return initStuff();
+	struct Param{
+		FRotator                                    ClientRotation;
+	};
+
+	auto Params = (Param*)Parameters;
+
+	if (PlayerController && Params) // PlayerController->IsInAircraft()
+	{
+		static auto world = Helper::GetWorld();
+		static auto GameState = *world->Member<UObject*>(_("GameState"));
+
+		if (GameState)
+		{
+			auto Aircraft = GameState->Member<TArray<UObject*>>(_("Aircrafts"))->At(0);
+
+			if (Aircraft)
+			{
+				auto ExitLocation = Helper::GetActorLocation(Aircraft);
+
+				Helper::InitPawn(PlayerController, ExitLocation);
+
+				// ClientSetRotation
+			}
+		}
+	}
+
+	return false;
+}
+
+bool ReadyToStartMatchHook(UObject* Object, UFunction* Function, void* Parameters)
+{
+	initStuff();
+	return false;
 }
 
 void LoadInMatch()
@@ -103,9 +185,15 @@ void LoadInMatch()
 	}
 }
 
-inline void PlayButtonHook(UObject* Object, UFunction* Function, void* Parameters)
+inline bool PlayButtonHook(UObject* Object, UFunction* Function, void* Parameters)
 {
 	LoadInMatch();
+	return false;
+}
+
+inline bool AircraftExitedDropZoneHook(UObject* GameMode, UFunction* Function, void* Parameters)
+{
+	return true;
 }
 
 void FinishInitializeUHooks()
@@ -113,12 +201,15 @@ void FinishInitializeUHooks()
 	if (Engine_Version < 422)
 		AddHook(_("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 	AddHook(_("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
+	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook);
+	// AddHook(_("Function /Script/Engine.PlayerController.ServerShortTimeout"), ServerShortTimeoutHook);
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerLoadingScreenDropped"), ServerLoadingScreenDroppedHook);
 
 	for (auto& Func : FunctionsToHook)
 	{
 		if (!Func.first)
-			std::cout << _("Detected invalid UFunction!\n");
+			std::cout << _("Detected null UFunction!\n");
 	}
 
 	std::cout << std::format("Hooked {} UFunctions!\n", std::to_string(FunctionsToHook.size()));
@@ -128,12 +219,6 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 {
 	if (Object && Function)
 	{
-		for (auto& Func : FunctionsToHook)
-		{
-			if (Function == Func.first)
-				Func.second(Object, Function, Parameters);
-		}
-
 #ifdef LOGGING
 		if (bStarted && bListening)
 		{
@@ -141,13 +226,24 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			// if (Function->FunctionFlags & 0x00200000 || Function->FunctionFlags & 0x01000000) // && FunctionName.find("Ack") == -1 && FunctionName.find("AdjustPos") == -1))
 			if (FunctionName.starts_with(_("Server")) || FunctionName.starts_with(_("Client") || FunctionName.starts_with(_("OnRep_"))))
 			{
-				if (FunctionName.find("ServerUpdateCamera") == -1) // && FunctionName.find("ServerMove") == -1)
+				if (!FunctionName.contains("ServerUpdateCamera") && FunctionName.find("ServerMove") == -1)
 				{
 					std::cout << "RPC Called: " << FunctionName << '\n';
 				}
 			}
 		}
 #endif
+
+		for (auto& Func : FunctionsToHook)
+		{
+			if (Function == Func.first)
+			{
+				if (Func.second(Object, Function, Parameters)) // If the fuynction returned true, then cancel execution.
+				{
+					return 0;
+				}
+			}
+		}
 	}
 
 	return ProcessEventO(Object, Function, Parameters);

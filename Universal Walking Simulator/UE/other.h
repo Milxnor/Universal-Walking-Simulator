@@ -444,6 +444,11 @@ struct FGuid
 	unsigned int B;
 	unsigned int C;
 	unsigned int D;
+
+	bool operator==(const FGuid& other)
+	{
+		return A == other.A && B == other.B && C == other.C && D == other.D;
+	}
 };
 
 enum ETravelType
@@ -452,4 +457,12 @@ enum ETravelType
 	TRAVEL_Partial,
 	TRAVEL_Relative,
 	TRAVEL_MAX
+};
+
+enum class EFortQuickBars : uint8_t // This isn't always correct due to them adding Creative Quickbars but for our usage it's fine.
+{
+	Primary = 0,
+	Secondary = 1,
+	Max_None = 2,
+	EFortQuickBars_MAX = 3
 };

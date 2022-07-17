@@ -18,10 +18,49 @@
     <Filter Include="Header Files\Gameplay">
       <UniqueIdentifier>{6f098cf9-096e-4af3-918b-1cf6b8992238}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Vendor">
+      <UniqueIdentifier>{22422ef1-32f2-4b9e-a1b7-f1d3064e1349}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Vendor\ImGUI">
+      <UniqueIdentifier>{f7bb66c3-c92f-485f-b853-ff35c1ca77fb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui_demo.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui_draw.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_dx9.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_dx10.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_dx11.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_dx12.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui_impl_win32.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui_tables.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\ImGui\imgui_widgets.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\Kiero\kiero.cpp">
+      <Filter>Vendor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -53,6 +92,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="patterns.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
