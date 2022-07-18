@@ -8,6 +8,7 @@
 #include <Gameplay/helper.h>
 #include <Net/funcs.h>
 #include <Net/nethooks.h>
+#include <Gameplay/abilities.h>
 
 #include <mutex>
 
@@ -39,11 +40,11 @@ inline void initStuff()
 				*AuthGameMode->Member<UObject*>(_("PlayerControllerClass")) = PlayerControllerClass;
 			}
 
-			// *gameState->Member<char>(_("bGameModeWillSkipAircraft")) = false;
-			// *gameState->Member<float>(_("AircraftStartTime")) = 99999.0f;
-			// *gameState->Member<float>(_("WarmupCountdownEndTime")) = 99999.0f;
+			*gameState->Member<char>(_("bGameModeWillSkipAircraft")) = false;
+			*gameState->Member<float>(_("AircraftStartTime")) = 99999.0f;
+			*gameState->Member<float>(_("WarmupCountdownEndTime")) = 99999.0f;
 
-			*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Setup;
+			/* *gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Setup;
 
 			struct {
 				EAthenaGamePhase OldPhase;
@@ -52,7 +53,7 @@ inline void initStuff()
 			static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
 
 			if (fnGamephase)
-				gameState->ProcessEvent(fnGamephase, &params2);
+				gameState->ProcessEvent(fnGamephase, &params2); */
 
 			if (AuthGameMode)
 			{
@@ -123,6 +124,36 @@ bool ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Functi
 {
 	auto PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
 	auto Pawn = *PlayerController->Member<UObject*>(_("Pawn"));
+
+	if (Pawn)
+	{
+		auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
+
+		if (AbilitySystemComponent)
+		{
+			std::cout << _("Granting abilities!\n");
+			static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
+			static auto ReloadAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Reload");
+			static auto JumpAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Jump");
+			static auto InteractUseAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C");
+			static auto InteractSearchAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.GA_DefaultPlayer_InteractSearch_C");
+
+			if (SprintAbility)
+				GrantGameplayAbility(Pawn, SprintAbility);
+			if (ReloadAbility)
+				GrantGameplayAbility(Pawn, ReloadAbility);
+			if (JumpAbility)
+				GrantGameplayAbility(Pawn, JumpAbility);
+			if (InteractUseAbility)
+				GrantGameplayAbility(Pawn, InteractUseAbility);
+			if (InteractSearchAbility)
+				GrantGameplayAbility(Pawn, InteractSearchAbility);
+		}
+		else
+			std::cout << _("Unable to find AbilitySystemComponent!\n");
+	}
+	else
+		std::cout << _("Unable to find Pawn on ServerLoadingScreenDropped!\n");
 
 	return false;
 }
@@ -202,7 +233,7 @@ void FinishInitializeUHooks()
 		AddHook(_("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 	AddHook(_("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
-	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook);
+	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
 	// AddHook(_("Function /Script/Engine.PlayerController.ServerShortTimeout"), ServerShortTimeoutHook);
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerLoadingScreenDropped"), ServerLoadingScreenDroppedHook);
 
@@ -260,6 +291,31 @@ __int64 __fastcall FixCrashDetour(int32_t* PossiblyNull, __int64 a2, int* a3)
 	return FixCrash(PossiblyNull, a2, a3);
 }
 
+void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
+{
+	if (pc)
+	{
+		static auto fn = FindObject(_("Function /Script/Engine.Controller.GetViewTarget"));
+		UObject* TheViewTarget = nullptr;
+		pc->ProcessEvent(fn, &TheViewTarget);
+
+		if (TheViewTarget)
+		{
+			if (a2)
+				*a2 = Helper::GetActorLocation(TheViewTarget);
+			if (a3)
+				*a3 = Helper::GetActorRotation(TheViewTarget);
+			// std::cout << _("Did the ViewPoint!\n");
+
+			return;
+		}
+		else
+			std::cout << _("unable to get viewpoint!\n");
+	}
+
+	return GetPlayerViewPoint(pc, a2, a3);
+}
+
 void InitializeHooks()
 {
 	MH_CreateHook((PVOID)ProcessEventAddr, ProcessEventDetour, (void**)&ProcessEventO);
@@ -270,4 +326,12 @@ void InitializeHooks()
 		MH_CreateHook((PVOID)FixCrashAddr, FixCrashDetour, (void**)&FixCrash);
 		MH_EnableHook((PVOID)FixCrashAddr);
 	}
+
+	if (GetPlayerViewpointAddr) //Engine_Version == 423)
+	{
+		MH_CreateHook((PVOID)GetPlayerViewpointAddr, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
+		MH_EnableHook((PVOID)GetPlayerViewpointAddr);
+	}
+	else
+		std::cout << _("[WARNING] Could not fix flashing!\n");
 }

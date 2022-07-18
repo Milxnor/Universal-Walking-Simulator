@@ -88,14 +88,17 @@
     <ClInclude Include="Gameplay\helper.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
-    <ClInclude Include="Gameplay\inventory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="patterns.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="gui.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Gameplay\abilities.h">
+      <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="Gameplay\inventory.h">
+      <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

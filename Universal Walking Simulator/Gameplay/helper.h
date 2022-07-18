@@ -94,6 +94,22 @@ namespace Helper
 		return FVector();
 	}
 
+	FRotator GetActorRotation(UObject* Actor)
+	{
+		static auto K2_GetActorRotationFN = Actor->Function(_("K2_GetActorRotation"));
+
+		if (K2_GetActorRotationFN)
+		{
+			FRotator loc;
+			Actor->ProcessEvent(K2_GetActorRotationFN, &loc);
+			return loc;
+		}
+		else
+			K2_GetActorRotationFN = Actor->Function(_("K2_GetActorRotation"));
+
+		return FRotator();
+	}
+
 	static TArray<UObject*> GetAllActorsOfClass(UObject* Class)
 	{
 		static auto GSCClass = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
@@ -234,7 +250,7 @@ namespace Helper
 			Actor->ProcessEvent(OnRepOwner);
 	}
 
-	void InitPawn(UObject* PC, FVector Location = Helper::GetPlayerStart())
+	UObject* InitPawn(UObject* PC, FVector Location = Helper::GetPlayerStart())
 	{
 		static const auto FnVerDouble = std::stod(FN_Version);
 
@@ -295,6 +311,21 @@ namespace Helper
 
 		// *Pawn->Member<float>(_("NetUpdateFrequency")) = 200;
 
+		static auto setMaxHealthFn = Pawn->Function(_("SetMaxHealth"));
+		struct { float NewHealthVal; }healthParams{ 100 };
+
+		if (setMaxHealthFn)
+			Pawn->ProcessEvent(setMaxHealthFn, &healthParams);
+		else
+			std::cout << _("Unable to find setMaxHealthFn!\n");
+
+		static auto setMaxShieldFn = Pawn->Function(_("SetMaxShield"));
+		struct { float NewValue; }shieldParams{ 100 };
+
+		if (setMaxShieldFn)
+			Pawn->ProcessEvent(setMaxShieldFn, &healthParams);
+		else
+			std::cout << _("Unable to find setMaxShieldFn!\n");
 		static const auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
 
 		*PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
@@ -314,7 +345,57 @@ namespace Helper
 				PlayerState->ProcessEvent(OnRep_Parts, nullptr);
 		}
 
-		*PlayerState->Member<uint8_t>(_("TeamIndex")) = 11;
-		*PlayerState->Member<unsigned char>(_("SquadId")) = 1;
+		if (Engine_Version < 423)
+		{
+			*PlayerState->Member<uint8_t>(_("TeamIndex")) = 11;
+			*PlayerState->Member<unsigned char>(_("SquadId")) = 1;
+		}
+
+		return Pawn;
+	}
+
+	namespace Abilities
+	{
+		void ClientActivateAbilityFailed(UObject* Component, FGameplayAbilitySpecHandle AbilityToActivate, int16_t PredictionKey)
+		{
+			struct
+			{
+				FGameplayAbilitySpecHandle                  AbilityToActivate;                                        // (Parm)
+				int16_t                                            PredictionKey;                                            // (Parm, ZeroConstructor, IsPlainOldData)
+			} UAbilitySystemComponent_ClientActivateAbilityFailed_Params{AbilityToActivate, PredictionKey};
+
+			if (Component)
+			{
+				static auto fn = Component->Function(_("ClientActivateAbilityFailed"));
+
+				if (fn)
+					Component->ProcessEvent(fn, &UAbilitySystemComponent_ClientActivateAbilityFailed_Params);
+				else
+					std::cout << _("Could not find ClientActivateAbilityFailed!\n");
+			}
+			else
+				std::cout << _("Invalid component!\n");
+		}
+		
+		FGameplayAbilitySpecHandle GrantAbility(UObject* ASC, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec inSpec) // 
+		{
+			auto ActivatableAbilities = *ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"));
+
+			FGameplayAbilitySpec& OwnedSpec = ActivatableAbilities.Items[ActivatableAbilities.Items.Add(inSpec)];
+
+			// if (OwnedSpec.Ability && (*OwnedSpec.Ability->Member<EGameplayAbilityInstancingPolicy>(_("InstancingPolicy")) == EGameplayAbilityInstancingPolicy::InstancedPerActor))
+			{
+				// std::cout << _("Instancing Policy is InstancedPerActor!\n");
+				// CreateNewInstanceOfAbility(OwnedSpec, Spec.Ability);
+			}
+
+			std::cout << _("Calling OnGiveAbility!\n");
+			// (*(void(__fastcall**)(__int64, __int64))(*(__int64*)ASC + 1920))(__int64(ASC), __int64(&OwnedSpec));
+			std::cout << _("Called OnGiveAbility!\n");
+			// ^ OnGiveAbility(OwnedSpec);
+			MarkAbilitySpecDirtyNew(ASC, OwnedSpec, true);
+			std::cout << _("Called MarkAbilitySpecDirty!\n");
+			return OwnedSpec.Handle;
+		}
 	}
 }

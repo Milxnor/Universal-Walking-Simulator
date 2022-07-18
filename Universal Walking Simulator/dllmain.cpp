@@ -8,6 +8,7 @@
 #include "patterns.h"
 #include "gui.h"
 #include <hooks.h>
+#include <Gameplay/abilities.h>
 
 void InitializePatterns()
 {
@@ -77,11 +78,34 @@ void InitializePatterns()
         CheckPattern(_("CollectGarbage"), CollectGarbageAddr, &CollectGarbage);
     }
 
+    if (Engine_Version != 421) // todo get the patterns
+    {
+        GiveAbilityAddr = FindPattern(Patterns::GiveAbility);
+
+        if (!GiveAbilityAddr)
+            GiveAbilityAddr = FindPattern(_("48 89 5C 24 10 48 89 6C 24 18 48 89 7C 24 20 41 56 48 83 EC ? 83 B9 60 05"));
+
+        CheckPattern(_("GiveAbility"), GiveAbilityAddr, &GiveAbility);
+
+        InternalTryActivateAbilityAddr = FindPattern(Patterns::InternalTryActivateAbility);
+        CheckPattern(_("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbility);
+
+        MarkAbilitySpecDirtyAddr = FindPattern(Patterns::MarkAbilitySpecDirty);
+        CheckPattern(_("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyNew);
+    }
+
     if (Engine_Version >= 423)
     {
         FixCrashAddr = FindPattern(Patterns::FixCrash);
         CheckPattern(_("FixCrash"), FixCrashAddr, &FixCrash);
     }
+
+    GetPlayerViewpointAddr = FindPattern(Patterns::GetPlayerViewpoint);
+
+    if (!GetPlayerViewpointAddr)
+        GetPlayerViewpointAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 38 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB"));
+
+    CheckPattern(_("GetPlayerViewPoint"), GetPlayerViewpointAddr, &GetPlayerViewPoint);
 
     if ((FnVerDouble >= 5 && FnVerDouble < 7) || Engine_Version == 423)
     {
@@ -215,6 +239,8 @@ DWORD WINAPI Main(LPVOID)
     std::cout << _("Initialized Patterns!\n");
 
     InitializeNetUHooks();
+    if (GiveAbilityAddr)
+        InitializeAbilityHooks();
     FinishInitializeUHooks();
 
     InitializeHooks();

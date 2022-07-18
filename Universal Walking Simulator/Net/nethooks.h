@@ -40,7 +40,7 @@ void TickFlushDetour(UObject* _netDriver, float DeltaSeconds)
 
     if (ClientConnections.Num() > 0)
     {
-        if (!*ClientConnections[0]->Member<char>(_("InternalAck")))
+        // if (!*ClientConnections[0]->Member<char>(_("InternalAck")))
         {
             if (ReplicationDriver)
             {
@@ -113,12 +113,14 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         *PlayerController->Member<UObject*>(_("QuickBars")) = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator());
     }
 
-    Helper::InitPawn(PlayerController);
+    auto Pawn = Helper::InitPawn(PlayerController);
 
     std::cout << _("Spawned Player!\n");
 
     static auto Wep = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
     // Inventory::AddItemToSlot(PlayerController, Wep, 1, EFortQuickBars::Primary);
+    auto Guid = FGuid(0, 10, 20, 40);
+    // Inventory::EquipWeaponDefinition(Pawn, Wep, Guid);
 
     return PlayerController;
 }
@@ -209,7 +211,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
         }
         break;
     }
-    case 4: // NMT_Netspeed // Do we even have to reiplment this?
+    case 4: // NMT_Netspeed // Do we even have to rei,plment this?
         if (Engine_Version >= 423)
             *Connection->Member<int>(_("CurrentNetSpeed")) = 60000; // sometimes 60000
         else

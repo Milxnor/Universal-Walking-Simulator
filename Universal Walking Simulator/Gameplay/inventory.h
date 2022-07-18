@@ -13,7 +13,7 @@ struct FFortItemEntry : FFastArraySerializerItem // My implementation // ALWAYS 
 
 	static int GetStructSize()
 	{
-		return 0xC0;
+		return 0xD0;
 	}
 };
 
@@ -55,6 +55,71 @@ namespace Inventory
 		return nullptr;
 	}
 
+	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, FGuid& Guid, int Ammo = 0)
+	{
+		// auto weaponClass = Definition->GetWeaponActorClass();
+		// if (weaponClass)
+		{
+			// auto Weapon = (AFortWeapon*)SpawnActorTrans(weaponClass, {}, Pawn);
+			static auto equipFn = Pawn->Function(_("EquipWeaponDefinition"));
+			struct {
+				UObject* Def;
+				FGuid Guid;
+				UObject* Wep;
+			} params{Definition, Guid};
+			Pawn->ProcessEvent(equipFn, &params);
+			auto Weapon = params.Wep;
+			if (Weapon)
+			{
+				*Weapon->Member<UObject*>(_("WeaponData")) = Definition;
+				*Weapon->Member<FGuid>(_("ItemEntryGuid")) = Guid;
+
+				// if (bEquipWithMaxAmmo)
+				{
+					static auto getBulletsFn = Weapon->Function(_("GetBulletsPerClip"));
+					if (getBulletsFn)
+					{
+						int BulletsPerClip;
+						Weapon->ProcessEvent(getBulletsFn, &BulletsPerClip);
+						*Weapon->Member<int>(_("AmmoCount")) = BulletsPerClip;
+					}
+					else
+						std::cout << _("No GetBulletsPerClip!\n");
+				}
+
+				// Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
+
+				Helper::SetOwner(Weapon, Pawn);
+				Weapon->ProcessEvent(_("OnRep_ReplicatedWeaponData"));
+				Weapon->ProcessEvent(_("OnRep_AmmoCount"));
+
+				struct { UObject* P; } givenParams{ Pawn };
+
+				static auto givenFn = Weapon->Function(_("ClientGivenTo"));
+				if (givenFn)
+					givenFn->ProcessEvent(givenFn, &givenParams);
+				else
+					std::cout << _("No ClientGivenTo!\n");
+
+				struct { UObject* Weapon; } internalEquipParams{ Weapon };
+
+				static auto internalEquipFn = Pawn->Function(_("ClientInternalEquipWeapon"));
+				if (internalEquipFn)
+					Pawn->ProcessEvent(internalEquipFn, &internalEquipParams);
+				else
+					std::cout << _("No ClientInternalEquipWeapon!\n");
+
+				// Pawn->OnRep_CurrentWeapon(); // i dont think this is needed but alr
+			}
+			else
+				std::cout << _("No weapon!\n");
+
+			return Weapon;
+		}
+
+		return nullptr;
+	}
+
 	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false)
 	{
 		auto QuickBars = GetQuickBars(Controller);
@@ -62,12 +127,17 @@ namespace Inventory
 		auto WorldInventory = *Controller->Member<UObject*>(_("WorldInventory"));
 		auto Inventory = WorldInventory->Member<void>(_("Inventory"));
 
-		// static auto WorldHandleInvUpdate = WorldInventory->Function(_("HandleInventoryLocalUpdate"));
-		// WorldInventory->ProcessEvent(WorldHandleInvUpdate, nullptr);
+		static auto WorldHandleInvUpdate = WorldInventory->Function(_("HandleInventoryLocalUpdate"));
 
-		static auto PCHandleInvUpdate = Controller->Function(_("HandleWorldInventoryLocalUpdate"));
-		if (PCHandleInvUpdate)
-			Controller->ProcessEvent(PCHandleInvUpdate);
+		if (WorldHandleInvUpdate)
+		{
+			WorldInventory->ProcessEvent(WorldHandleInvUpdate, nullptr);
+
+			static auto PCHandleInvUpdate = Controller->Function(_("HandleWorldInventoryLocalUpdate"));
+
+			if (PCHandleInvUpdate)
+				Controller->ProcessEvent(PCHandleInvUpdate);	
+		}
 
 		// static auto OnRep_QuickBar = Controller->Function(_("OnRep_QuickBar"));
 		// Controller->ProcessEvent(OnRep_QuickBar, nullptr);
@@ -80,6 +150,9 @@ namespace Inventory
 			static auto OnRep_SecondaryQuickBar = QuickBars->Function(_("OnRep_SecondaryQuickBar"));
 			QuickBars->ProcessEvent(OnRep_SecondaryQuickBar);
 		}
+
+		if (bRemovedItem)
+			((FFastArraySerializer*)Inventory)->MarkArrayDirty();
 
 		if (Idx != -1)
 			((FFastArraySerializer*)Inventory)->MarkItemDirty(GetReplicatedEntries(Controller)->At(Idx));
