@@ -1,5 +1,7 @@
 # "Universal" Walking Simulator
-## Firstly, this isn't universal, there are many bugs on each season. I hope to add more versions in the future. <br>This support S3.5-S7.40
+## Firstly, this isn't universal, there are many bugs on each season. I hope to add more versions in the future. <br>This supports S3.5-S9.
+
+<a href="https://discord.com/invite/42pXp7Wqtf">Discord Server</a>.
 
 # PLANS
 
@@ -10,13 +12,8 @@ Building is easy, but requires inventory.<br>
 
 # CURRENT ISSUES
 
-S8+ I am unable to call ProcessEvent for some reason.<br>
 Not using beacons causes no ReplicationDriver.<br>
 S5-S6 fix is very scuffed (I just reimplemented NotifyControlMessage).<br>
-
-S5+ movement is broken by default, because ServerAcknowledgePossession is stripped for some reason.<br>
-My fix was to set the AcknowledgedPawn. But there are more issues, ClientVeryShortAdjustment gets repeatedly called whenever a client goes out of sync.<br>
-The head does not rotate up and down, making the mesh look very weird at certain points.<br>
 
 Code is everywhere.<br>
 Console Colors are a 50/50.<br>
