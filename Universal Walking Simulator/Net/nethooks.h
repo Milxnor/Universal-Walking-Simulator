@@ -109,7 +109,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     if (FnVerDouble < 7.4)
     {
-        static const auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBars"));
+        static const auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBars", true));
         auto QuickBars = PlayerController->Member<UObject*>(_("QuickBars"));
         if (QuickBars)
         {
@@ -172,7 +172,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     {
     case 0:
     {
-        if (Engine_Version == 421) // not the best way to fix it...
+        if (false) //Engine_Version == 421) // not the best way to fix it...
         {
             {
                 /* uint8_t */ char IsLittleEndian = 0;
@@ -266,7 +266,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     }
     case 9: // NMT_Join
     {
-        if (Engine_Version == 421)
+        if (false)//  if (Engine_Version == 421)
         {
             auto ConnectionPC = Connection->Member<UObject*>(_("PlayerController"));
             if (!*ConnectionPC)

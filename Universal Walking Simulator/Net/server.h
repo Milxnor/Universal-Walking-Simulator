@@ -7,7 +7,7 @@ static bool bListening = false;
 
 void Listen(int Port = 7777)
 {
-    bool bUseBeacons = true; // CreateNetDriver ? false : true;
+    bool bUseBeacons = (Engine_Version >= 425 || Engine_Version == 421) ? false : true; // CreateNetDriver ? false : true;
     static const auto World = Helper::GetWorld();
 
     UObject* NetDriver = nullptr;
@@ -63,8 +63,6 @@ void Listen(int Port = 7777)
         NetDriver = CreateNetDriver(GetEngine(), World, FName(282));
         std::cout << _("Created NetDriver!\n");
         InitListen(NetDriver, Helper::GetWorld(), InURL, true, Error);
-
-        // SetReplicationDriver
     }
 
     if (SetWorld && NetDriver)
@@ -80,7 +78,7 @@ void Listen(int Port = 7777)
 
     if (NetDriver)
     {
-        if (!bUseBeacons)// (Engine_Version >= 425)
+        if (!bUseBeacons)
         {
             static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
 
