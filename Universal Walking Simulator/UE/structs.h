@@ -278,10 +278,10 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 		{
 			if (Engine_Version < 421)
 				Index = 101;
-			else if (Engine_Version > 420 && Engine_Version < 423)
+			else if (Engine_Version > 420 && FnVerDouble < 7.40)
 				Index = 102;
-			else if (Engine_Version == 423)
-				Index = 103;
+			else if (FnVerDouble >= 7.40)
+				Index = 103; // VERIFIED FOR 7.40T
 			else
 				std::cout << _("Unable to determine CreateDefaultObject Index!\n");
 		}

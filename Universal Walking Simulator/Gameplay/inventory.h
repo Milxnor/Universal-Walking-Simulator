@@ -1,7 +1,5 @@
 #include <UE/structs.h>
 
-// HAHAHAHGHAHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
-
 struct FFortItemEntry : FFastArraySerializerItem // My implementation // ALWAYS BE A POINTER 
 {
 	FGuid GetGuid()
@@ -11,12 +9,17 @@ struct FFortItemEntry : FFastArraySerializerItem // My implementation // ALWAYS 
 		return *(FGuid*)(__int64(this) + ItemGuidOffset);
 	}
 
+	int* GetCount()
+	{
+		static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
+		return (int*)(__int64(this) + CountOffset);
+	}
+
 	static int GetStructSize()
 	{
 		return 0xD0;
 	}
 };
-
 
 namespace Inventory
 {
@@ -32,7 +35,8 @@ namespace Inventory
 		return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
 	}
 
-	TArray<FFortItemEntry>* GetReplicatedEntries(UObject* Controller)
+	template <typename EntryStruct>
+	TArray<EntryStruct>* GetReplicatedEntries(UObject* Controller)
 	{
 		static auto ReplicatedEntriesOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ReplicatedEntries"));
 
@@ -40,89 +44,13 @@ namespace Inventory
 		auto Inventory = WorldInventory->Member<void>(_("Inventory"));
 		// ReplicatedEntriesOffset = 0xB0;
 
-		return (TArray<FFortItemEntry>*)(__int64(Inventory) + ReplicatedEntriesOffset);
+		return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 	}
 
-	UObject* GetQuickBars(UObject* Controller)
-	{
-		static auto FnVerDouble = std::stod(FN_Version);
-
-		if (FnVerDouble <= 7.30) // No client Quickbars
-		{
-			return *Controller->Member<UObject*>(_("QuickBars"));
-		}
-
-		return nullptr;
-	}
-
-	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, FGuid& Guid, int Ammo = 0)
-	{
-		// auto weaponClass = Definition->GetWeaponActorClass();
-		// if (weaponClass)
-		{
-			// auto Weapon = (AFortWeapon*)SpawnActorTrans(weaponClass, {}, Pawn);
-			static auto equipFn = Pawn->Function(_("EquipWeaponDefinition"));
-			struct {
-				UObject* Def;
-				FGuid Guid;
-				UObject* Wep;
-			} params{Definition, Guid};
-			Pawn->ProcessEvent(equipFn, &params);
-			auto Weapon = params.Wep;
-			if (Weapon)
-			{
-				*Weapon->Member<UObject*>(_("WeaponData")) = Definition;
-				*Weapon->Member<FGuid>(_("ItemEntryGuid")) = Guid;
-
-				// if (bEquipWithMaxAmmo)
-				{
-					static auto getBulletsFn = Weapon->Function(_("GetBulletsPerClip"));
-					if (getBulletsFn)
-					{
-						int BulletsPerClip;
-						Weapon->ProcessEvent(getBulletsFn, &BulletsPerClip);
-						*Weapon->Member<int>(_("AmmoCount")) = BulletsPerClip;
-					}
-					else
-						std::cout << _("No GetBulletsPerClip!\n");
-				}
-
-				// Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
-
-				Helper::SetOwner(Weapon, Pawn);
-				Weapon->ProcessEvent(_("OnRep_ReplicatedWeaponData"));
-				Weapon->ProcessEvent(_("OnRep_AmmoCount"));
-
-				struct { UObject* P; } givenParams{ Pawn };
-
-				static auto givenFn = Weapon->Function(_("ClientGivenTo"));
-				if (givenFn)
-					givenFn->ProcessEvent(givenFn, &givenParams);
-				else
-					std::cout << _("No ClientGivenTo!\n");
-
-				struct { UObject* Weapon; } internalEquipParams{ Weapon };
-
-				static auto internalEquipFn = Pawn->Function(_("ClientInternalEquipWeapon"));
-				if (internalEquipFn)
-					Pawn->ProcessEvent(internalEquipFn, &internalEquipParams);
-				else
-					std::cout << _("No ClientInternalEquipWeapon!\n");
-
-				// Pawn->OnRep_CurrentWeapon(); // i dont think this is needed but alr
-			}
-			else
-				std::cout << _("No weapon!\n");
-
-			return Weapon;
-		}
-
-		return nullptr;
-	}
-
+	template<typename ItemEntryStruct = FFortItemEntry>
 	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false)
 	{
-		auto QuickBars = GetQuickBars(Controller);
+		auto QuickBars = *Controller->Member<UObject*>(_("QuickBars"));
 
 		auto WorldInventory = *Controller->Member<UObject*>(_("WorldInventory"));
 		auto Inventory = WorldInventory->Member<void>(_("Inventory"));
@@ -131,12 +59,12 @@ namespace Inventory
 
 		if (WorldHandleInvUpdate)
 		{
-			WorldInventory->ProcessEvent(WorldHandleInvUpdate, nullptr);
+			// WorldInventory->ProcessEvent(WorldHandleInvUpdate, nullptr);
 
 			static auto PCHandleInvUpdate = Controller->Function(_("HandleWorldInventoryLocalUpdate"));
 
-			if (PCHandleInvUpdate)
-				Controller->ProcessEvent(PCHandleInvUpdate);	
+			// if (PCHandleInvUpdate)
+				// Controller->ProcessEvent(PCHandleInvUpdate);
 		}
 
 		// static auto OnRep_QuickBar = Controller->Function(_("OnRep_QuickBar"));
@@ -155,89 +83,130 @@ namespace Inventory
 			((FFastArraySerializer*)Inventory)->MarkArrayDirty();
 
 		if (Idx != -1)
-			((FFastArraySerializer*)Inventory)->MarkItemDirty(GetReplicatedEntries(Controller)->At(Idx));
+			((FFastArraySerializer*)Inventory)->MarkItemDirty(GetReplicatedEntries<ItemEntryStruct>(Controller)->At(Idx));
 	}
 
-	static FFortItemEntry* AddItemToSlot(UObject* Controller, UObject* Definition, int Slot, EFortQuickBars QuickBarsType = EFortQuickBars::Primary, int Count = 1)
+	UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count = 1)
 	{
-		// Create an ItemInstance
-
-		auto QuickBars = GetQuickBars(Controller);
-		
-		if (!QuickBars || !Definition)
-			return nullptr;
-
 		struct {
-			int                                                Count;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
-			int                                                Level;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
-			UObject* ReturnValue;
-		} CTIIParams{Count, 1};
+			int count;
+			int level;
+			UObject* instance;
+		} Params{ Count, 1 };
 
 		static auto CTIIFn = Definition->Function(_("CreateTemporaryItemInstanceBP"));
-		Definition->ProcessEvent(CTIIFn, &CTIIParams);
 
-		auto ItemInstance = CTIIParams.ReturnValue; // UFortItem
+		Definition->ProcessEvent(CTIIFn, &Params);
 
-		if (ItemInstance)
+		UObject* itemInstance = Params.instance;
+
+		if (itemInstance)
 		{
-			struct { UObject* InController; } SOCFTIParams{Controller};
-			static auto SOCFTIFn = ItemInstance->Function(_("SetOwningControllerForTemporaryItem"));
-			ItemInstance->ProcessEvent(SOCFTIFn, &SOCFTIParams);
+			static UObject* SOCFTIFn = itemInstance->Function(_("SetOwningControllerForTemporaryItem"));
 
-			TArray<UObject*>* ItemInstances = GetItemInstances(Controller);
+			itemInstance->ProcessEvent(SOCFTIFn, &Controller);
 
-			TArray<FFortItemEntry>* ReplicatedEntries = GetReplicatedEntries(Controller);
+			*itemInstance->Member<FFortItemEntry>(_("ItemEntry"))->GetCount() = Count;
 
-			FFortItemEntry* Entry = ItemInstance->Member<FFortItemEntry>(_("ItemEntry"));
-
-			std::cout << _("Found ItemEntry!\n");
-
-			int Idx = -1;
-
-			if (ReplicatedEntries && Entry)
-			{
-				Idx = ReplicatedEntries->Add(*Entry, FFortItemEntry::GetStructSize());
-				std::cout << _("Added to ReplicatedEntries!\n");
-
-				if (ItemInstances && Idx != -1)
-					ItemInstances->Add(ItemInstance, FFortItemEntry::GetStructSize());
-				else
-					std::cout << _("Unable to find ItemInstances!\n");
-			}
-			else
-				std::cout << _("Unable to find ReplicatedEntries!\n");
-			
-			static UObject* GetItemGuid = FindObject(_("Function /Script/FortniteGame.FortItem.GetItemGuid"));
-			FGuid Guid;
-
-			ItemInstance->ProcessEvent(GetItemGuid, &Guid);
-
-			// auto& Guid = Entry->GetGuid();
-
-			struct {
-				FGuid                                       Item;                                                     // (Parm, ZeroConstructor, IsPlainOldData)
-				EFortQuickBars                                     InQuickBar;                                               // (Parm, ZeroConstructor, IsPlainOldData)
-				int                                                Slot;
-			} SAIIParams{Guid, QuickBarsType, Slot};
-
-			std::cout << "GUID A: " << Guid.A << '\n';
-			std::cout << "GUID B: " << Guid.B << '\n';
-			std::cout << "GUID C: " << Guid.C << '\n';
-			std::cout << "GUID D: " << Guid.D << '\n';
-
-			static auto SAIIFn = QuickBars->Function(_("ServerAddItemInternal"));
-			QuickBars->ProcessEvent(SAIIFn, &SAIIParams);
-
-			Update(Controller, Idx);
-
-			return Entry;
+			return itemInstance;
 		}
 
 		return nullptr;
 	}
 
-	void RemoveItemFromSlot(UObject* PlayerController)
+	template <typename ItemEntryStruct> // TODO: Do concepts and make sure its a FFortItemEntry
+	int AddToReplicatedEntries(UObject* Controller, UObject* FortItem)
 	{
+		if (!Controller || !FortItem)
+			return -1;
 
+		auto ItemEntry = FortItem->Member<ItemEntryStruct>(_("ItemEntry"));
+
+		if (ItemEntry)
+			return GetReplicatedEntries<ItemEntryStruct>(Controller)->Add(*ItemEntry);
+
+		return -1;
 	}
+
+	static int AddItem(UObject* Controller, UObject* FortItem, EFortQuickBars Bars, int Slot)
+	{
+		static const auto FlooredVer = std::floor(std::stod(FN_Version));
+
+		auto Inventory = *Controller->Member<UObject*>(_("WorldInventory"));
+
+		int Index = -1;
+
+		if (FlooredVer == 3)
+		{
+			struct ItemEntrySize : FFortItemEntry
+			{
+				unsigned char Unk00[0xC0];
+			};
+			Index = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+			Update<ItemEntrySize>(Controller, Index);
+		}
+		else if (FlooredVer == 4 || FlooredVer == 5 || FlooredVer == 6)
+		{
+			struct ItemEntrySize : FFortItemEntry
+			{
+				unsigned char Unk00[0xD0];
+			};
+			Index = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+			Update<ItemEntrySize>(Controller, Index);
+		}
+		else if (FlooredVer == 7  || FlooredVer == 9)
+		{
+			struct ItemEntrySize : FFortItemEntry
+			{
+				unsigned char Unk00[0x120];
+			};
+			Index = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+			Update<ItemEntrySize>(Controller, Index);
+		}
+
+		GetItemInstances(Controller)->Add(FortItem);
+
+		static const auto FnVerDouble = std::stod(FN_Version);
+
+		if (7.4 > FnVerDouble)
+		{
+			auto QuickBars = Controller->Member<UObject*>(_("QuickBars"));
+
+			if (QuickBars && *QuickBars)
+			{
+				static UObject* GetItemGuidFn = FindObject(_("Function /Script/FortniteGame.FortItem.GetItemGuid"));
+				FGuid Guid;
+
+				FortItem->ProcessEvent(GetItemGuidFn, &Guid);
+
+				struct
+				{
+					FGuid Item;
+					EFortQuickBars Quickbar;
+					int Slot;
+				} SAIIParams{ Guid, Bars, Slot };
+
+				static auto SAIIFn = (*QuickBars)->Function(_("ServerAddItemInternal"));
+
+				// if (SAIIFn)
+					// (*QuickBars)->ProcessEvent(SAIIFn, &SAIIParams);
+			}
+		}
+
+		return Index;
+	}
+
+	static void CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1)
+	{
+		if (Controller)
+		{
+			auto Instance = CreateItemInstance(Controller, Definition, Count);
+
+			if (Instance)
+				AddItem(Controller, Instance, Bars, Slot);
+			else
+				std::cout << _("Failed to create ItemInstance!\n");
+		}
+	}
+
 }

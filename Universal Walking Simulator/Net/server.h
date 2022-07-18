@@ -63,20 +63,24 @@ void Listen(int Port = 7777)
         NetDriver = CreateNetDriver(GetEngine(), World, FName(282));
         std::cout << _("Created NetDriver!\n");
         InitListen(NetDriver, Helper::GetWorld(), InURL, true, Error);
+
+        // SetReplicationDriver
     }
 
-    if (SetWorld)
+    if (SetWorld && NetDriver)
     {
         std::cout << _("Setting!\n");
         SetWorld(NetDriver, World);
         std::cout << _("Set!\n");
+
+        *NetDriver->Member<int>(_("MaxClientRate")) = *NetDriver->Member<int>(_("MaxInternetClientRate"));
     }
 
     UObject* ReplicationDriver = nullptr;
 
     if (NetDriver)
     {
-        if (Engine_Version >= 425)
+        if (!bUseBeacons)// (Engine_Version >= 425)
         {
             static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
 
@@ -84,10 +88,7 @@ void Listen(int Port = 7777)
                 UObject* ObjectClass;
                 UObject* Outer;
                 UObject* ReturnValue;
-            } params{};
-
-            params.ObjectClass = ReplicationDriverClass;
-            params.Outer = NetDriver;
+            } params{ ReplicationDriverClass , NetDriver};
 
             static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
             static auto fn = GSC->Function(_("SpawnObject"));

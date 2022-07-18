@@ -74,7 +74,7 @@ void InitializePatterns()
 
     if (Engine_Version == 420)
     {
-        CollectGarbageAddr = FindPattern(Patterns::CollectGarbage);
+        CollectGarbageAddr = FindPattern(Patterns::CollectGarbage, true, 1);
         CheckPattern(_("CollectGarbage"), CollectGarbageAddr, &CollectGarbage);
     }
 

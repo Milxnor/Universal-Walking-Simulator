@@ -377,11 +377,11 @@ namespace Helper
 				std::cout << _("Invalid component!\n");
 		}
 		
-		FGameplayAbilitySpecHandle GrantAbility(UObject* ASC, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec inSpec) // 
+		FGameplayAbilitySpecHandle GrantAbility(UObject* ASC, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec& inSpec) // 
 		{
 			auto ActivatableAbilities = *ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"));
 
-			FGameplayAbilitySpec& OwnedSpec = ActivatableAbilities.Items[ActivatableAbilities.Items.Add(inSpec)];
+			FGameplayAbilitySpec* OwnedSpec = &ActivatableAbilities.Items[ActivatableAbilities.Items.Add(inSpec)];
 
 			// if (OwnedSpec.Ability && (*OwnedSpec.Ability->Member<EGameplayAbilityInstancingPolicy>(_("InstancingPolicy")) == EGameplayAbilityInstancingPolicy::InstancedPerActor))
 			{
@@ -389,13 +389,19 @@ namespace Helper
 				// CreateNewInstanceOfAbility(OwnedSpec, Spec.Ability);
 			}
 
+			/* if (*(char*)(*(__int64*)(OwnedSpec + 16) + 207) == 1)
+			{
+				std::cout << _("Calling CreateNewInstanceOfAbility!\n");
+				(*(void(__fastcall**)(UObject*, __int64, FGameplayAbilitySpec))(*(__int64*)ASC + 1944))(ASC, __int64(OwnedSpec), (&inSpec)[2]);
+				std::cout << _("Called CreateNewInstanceOfAbility!\n");
+			} */
+
 			std::cout << _("Calling OnGiveAbility!\n");
-			// (*(void(__fastcall**)(__int64, __int64))(*(__int64*)ASC + 1920))(__int64(ASC), __int64(&OwnedSpec));
+			(*(void(__fastcall**)(UObject*, FGameplayAbilitySpec*))(*(__int64*)ASC + 1920))(ASC, OwnedSpec); // OnGiveAbility
 			std::cout << _("Called OnGiveAbility!\n");
-			// ^ OnGiveAbility(OwnedSpec);
-			MarkAbilitySpecDirtyNew(ASC, OwnedSpec, true);
+			MarkAbilitySpecDirtyNew(ASC, *OwnedSpec, true);
 			std::cout << _("Called MarkAbilitySpecDirty!\n");
-			return OwnedSpec.Handle;
+			return OwnedSpec->Handle;
 		}
 	}
 }
