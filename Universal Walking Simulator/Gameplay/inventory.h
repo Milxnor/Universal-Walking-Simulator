@@ -1,6 +1,6 @@
 #include <UE/structs.h>
 
-struct FFortItemEntry : FFastArraySerializerItem // My implementation // ALWAYS BE A POINTER 
+struct FFortItemEntry // My implementation // ALWAYS BE A POINTER 
 {
 	FGuid GetGuid()
 	{
@@ -79,11 +79,11 @@ namespace Inventory
 			QuickBars->ProcessEvent(OnRep_SecondaryQuickBar);
 		}
 
-		if (bRemovedItem)
+		if (bRemovedItem || Idx != -1)
 			((FFastArraySerializer*)Inventory)->MarkArrayDirty();
 
-		if (Idx != -1)
-			((FFastArraySerializer*)Inventory)->MarkItemDirty(GetReplicatedEntries<ItemEntryStruct>(Controller)->At(Idx));
+		// if (Idx != -1)
+			// ((FFastArraySerializer*)Inventory)->MarkItemDirty((FFastArraySerializerItem)GetReplicatedEntries<ItemEntryStruct>(Controller)->At(Idx));
 	}
 
 	UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count = 1)
@@ -188,8 +188,8 @@ namespace Inventory
 
 				static auto SAIIFn = (*QuickBars)->Function(_("ServerAddItemInternal"));
 
-				// if (SAIIFn)
-					// (*QuickBars)->ProcessEvent(SAIIFn, &SAIIParams);
+				if (SAIIFn)
+					(*QuickBars)->ProcessEvent(SAIIFn, &SAIIParams);
 			}
 		}
 

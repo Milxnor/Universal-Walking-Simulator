@@ -123,7 +123,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     std::cout << _("Spawned Player!\n");
 
     static auto Def = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
-    Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 1);
+    // Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 1);
     // auto Guid = FGuid(0, 10, 20, 40);
     // Inventory::EquipWeaponDefinition(Pawn, Wep, Guid);
 
@@ -172,7 +172,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     {
     case 0:
     {
-        if (false) //Engine_Version == 421) // not the best way to fix it...
+        if (Engine_Version == 421) // not the best way to fix it...
         {
             {
                 /* uint8_t */ char IsLittleEndian = 0;
@@ -266,7 +266,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     }
     case 9: // NMT_Join
     {
-        if (false)//  if (Engine_Version == 421)
+        if (Engine_Version == 421)
         {
             auto ConnectionPC = Connection->Member<UObject*>(_("PlayerController"));
             if (!*ConnectionPC)

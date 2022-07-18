@@ -78,7 +78,7 @@ void InitializePatterns()
         CheckPattern(_("CollectGarbage"), CollectGarbageAddr, &CollectGarbage);
     }
 
-    if (Engine_Version != 421) // todo get the patterns
+    /* if (Engine_Version != 421) // todo get the patterns
     {
         GiveAbilityAddr = FindPattern(Patterns::GiveAbility);
 
@@ -92,7 +92,7 @@ void InitializePatterns()
 
         MarkAbilitySpecDirtyAddr = FindPattern(Patterns::MarkAbilitySpecDirty);
         CheckPattern(_("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyNew);
-    }
+    } */
 
     if (Engine_Version >= 423)
     {
@@ -144,11 +144,13 @@ void InitializePatterns()
         } */
     }
 
-    if (Engine_Version >= 424)
+    if (Engine_Version >= 424 || Engine_Version == 421)
     {
         SetReplicationDriverAddr = FindPattern(Patterns::SetReplicationDriver);
         CheckPattern(_("SetReplicationDriver"), SetReplicationDriverAddr, &SetReplicationDriver);
-
+    }
+    if (Engine_Version >= 424)
+    {
         ValidationFailureAddr = FindPattern(Patterns::ValidationFailure);
         CheckPattern(_("ValidationFailure"), ValidationFailureAddr, &ValidationFailure);
     }

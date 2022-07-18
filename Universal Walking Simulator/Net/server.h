@@ -70,31 +70,36 @@ void Listen(int Port = 7777)
         std::cout << _("Setting!\n");
         SetWorld(NetDriver, World);
         std::cout << _("Set!\n");
-
-        *NetDriver->Member<int>(_("MaxClientRate")) = *NetDriver->Member<int>(_("MaxInternetClientRate"));
     }
 
+    *NetDriver->Member<int>(_("MaxClientRate")) = *NetDriver->Member<int>(_("MaxInternetClientRate"));
     UObject* ReplicationDriver = nullptr;
 
     if (NetDriver)
     {
         if (!bUseBeacons)
+        // if (Engine_Version >= 425)
         {
-            static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
+            if (SetReplicationDriver)
+            {
+                static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
 
-            struct {
-                UObject* ObjectClass;
-                UObject* Outer;
-                UObject* ReturnValue;
-            } params{ ReplicationDriverClass , NetDriver};
+                struct {
+                    UObject* ObjectClass;
+                    UObject* Outer;
+                    UObject* ReturnValue;
+                } params{ ReplicationDriverClass , NetDriver };
 
-            static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
-            static auto fn = GSC->Function(_("SpawnObject"));
-            // static auto fn = FindObject(_("Function /Script/Engine.GameplayStatics.SpawnObject"));
-            std::cout << "Creating graph\n";
-            GSC->ProcessEvent(fn, &params);
-            std::cout << "new rep graph: " << params.ReturnValue << '\n';
-            SetReplicationDriver(NetDriver, params.ReturnValue);
+                static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+                static auto fn = GSC->Function(_("SpawnObject"));
+                // static auto fn = FindObject(_("Function /Script/Engine.GameplayStatics.SpawnObject"));
+                std::cout << "Creating graph\n";
+                GSC->ProcessEvent(fn, &params);
+                std::cout << "new rep graph: " << params.ReturnValue << '\n';
+                SetReplicationDriver(NetDriver, params.ReturnValue);
+            }
+            else
+                std::cout << _("No SetReplicationDriver!\n");
         }
 
         ReplicationDriver = *NetDriver->Member<UObject*>(_("ReplicationDriver"));

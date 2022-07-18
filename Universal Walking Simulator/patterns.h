@@ -1,8 +1,8 @@
 #pragma once
 
 // #define T_F // S3-S4
-#define S_F // S5-S6
-// #define S_T // S7+
+// #define S_F // S5-S6
+#define S_T // S7+
 // #define F_FF // UE4.25
 
 // 3.5 Patterns are from raider, some patterns are not mine.
@@ -61,7 +61,7 @@ namespace Patterns
     constexpr const char* CreateNetDriver = "48 89 5C 24 ? 57 48 83 EC 30 48 8B 81 ? ? ? ? 49 8B D8 4C 63 81 ? ? ? ? 4C 8B D2 48 8B F9 4E 8D 0C C0 49 3B C1 74 1B";
     constexpr const char* SetWorld = "48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0";
     constexpr const char* InitListen = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";// updated
-    constexpr const char* WelcomePlayer = "48 8B C4 55 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 89 70 20 48 8B F1";// updated
+    constexpr const char* WelcomePlayer = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 59 30 48 8B F1 48 8B CA 48 8B FA E8 ? ? ? ? 48 8B CB E8 ? ? ? ? 48 8D 54 24 ? 48 8D 8D ? ? ? ? 4C 8B";// updated
     constexpr const char* World_NotifyControlMessage = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B D9 89 7C 24 54";// updatedHM
     constexpr const char* SpawnPlayActor = "48 8B C4 4C 89 48 20 44 89 40 18 48 89 50 10 48 89 48 08 55 56";// updated -> ps: è un pò cambiata come parametri ma è questa
     constexpr const char* ReceiveUniqueIdRepl = "48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9 0F 84 ? ? ? ? F6 41 2B 02";// updated
