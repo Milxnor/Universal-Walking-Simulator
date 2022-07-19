@@ -1,25 +1,22 @@
 #include <UE/structs.h>
+#include <Gameplay/helper.h>
 
-struct FFortItemEntry // My implementation // ALWAYS BE A POINTER 
+static int GetEntrySize()
 {
-	FGuid GetGuid()
-	{
-		static auto ItemGuidOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemGuid"));
-		// ItemGuidOffset = 0x0050;
-		return *(FGuid*)(__int64(this) + ItemGuidOffset);
-	}
+	static auto FortItemEntryClass = FindObject(_("ScriptStruct /Script/FortniteGame.FortItemEntry"));
 
-	int* GetCount()
-	{
-		static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
-		return (int*)(__int64(this) + CountOffset);
-	}
+	if (Engine_Version <= 420)
+		return ((UClass_FT*)FortItemEntryClass)->PropertiesSize;
 
-	static int GetStructSize()
-	{
-		return 0x120;
-	}
-};
+	else if (Engine_Version == 421) // && Engine_Version <= 424)
+		return ((UClass_FTO*)FortItemEntryClass)->PropertiesSize;
+
+	else if (Engine_Version >= 422 && Engine_Version <= 424)
+		return ((UClass_FTT*)FortItemEntryClass)->PropertiesSize;
+
+	else if (Engine_Version >= 425)
+		return ((UClass_CT*)FortItemEntryClass)->PropertiesSize;
+}
 
 namespace Inventory
 {
@@ -153,8 +150,7 @@ namespace Inventory
 		}
 	}
 
-	template <typename EntryStruct>
-	TArray<EntryStruct>* GetReplicatedEntries(UObject* Controller)
+	TArray<__int64>* GetReplicatedEntries(UObject* Controller)
 	{
 		static __int64 ReplicatedEntriesOffset = *(uint32_t*)(__int64(FindObject(_("ArrayProperty /Script/FortniteGame.FortItemList.ReplicatedEntries"))) + 0x44);// FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ReplicatedEntries"));
 
@@ -163,22 +159,19 @@ namespace Inventory
 
 		std::cout << _("ReplicatedEntries Offset: ") << ReplicatedEntriesOffset << '\n';
 
-		return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
+		return (TArray<__int64>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 
 		// return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 	}
 
-	template<typename ItemEntryStruct> // = FFortItemEntry>
 	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false)
 	{
-		// auto QuickBars = *Controller->Member<UObject*>(_("QuickBars"));
+		static const auto FnVerDouble = std::stod(FN_Version);
 
 		auto WorldInventory = *Controller->Member<UObject*>(_("WorldInventory"));
 		auto Inventory = GetInventory(Controller);
 
 		static auto WorldHandleInvUpdate = WorldInventory->Function(_("HandleInventoryLocalUpdate"));
-
-		// *Inventorya->Member<bool>(_("bRequiresLocalUpdate")) = true;
 
 		if (WorldHandleInvUpdate)
 		{
@@ -190,22 +183,30 @@ namespace Inventory
 				Controller->ProcessEvent(PCHandleInvUpdate);
 		}
 
-		static auto ClientForceUpdateQuickbar = FindObject(_("Function /Script/FortniteGame.FortPlayerController.ClientForceUpdateQuickbar"));
-		auto PrimaryQuickbar = EFortQuickBars::Primary;
-		Controller->ProcessEvent(ClientForceUpdateQuickbar, &PrimaryQuickbar);
+		if (FnVerDouble < 7.4)
+		{
+			const auto QuickBars = *Controller->Member<UObject*>(_("QuickBars"));
+
+			if (QuickBars)
+			{
+				static auto OnRep_PrimaryQuickBar = QuickBars->Function(_("OnRep_PrimaryQuickBar"));
+				QuickBars->ProcessEvent(OnRep_PrimaryQuickBar);
+
+				static auto OnRep_SecondaryQuickBar = QuickBars->Function(_("OnRep_SecondaryQuickBar"));
+				QuickBars->ProcessEvent(OnRep_SecondaryQuickBar);
+			} 
+		}
+		else
+		{
+			static auto ClientForceUpdateQuickbar = FindObject(_("Function /Script/FortniteGame.FortPlayerController.ClientForceUpdateQuickbar"));
+			auto PrimaryQuickbar = EFortQuickBars::Primary;
+			Controller->ProcessEvent(ClientForceUpdateQuickbar, &PrimaryQuickbar);
+			auto SecondaryQuickbar = EFortQuickBars::Secondary;
+			Controller->ProcessEvent(ClientForceUpdateQuickbar, &SecondaryQuickbar);
+		}
 
 		// static auto OnRep_QuickBar = Controller->Function(_("OnRep_QuickBar"));
 		// Controller->ProcessEvent(OnRep_QuickBar, nullptr);
-
-		
-		/* if (QuickBars)
-		{
-			static auto OnRep_PrimaryQuickBar = QuickBars->Function(_("OnRep_PrimaryQuickBar"));
-			QuickBars->ProcessEvent(OnRep_PrimaryQuickBar);
-
-			static auto OnRep_SecondaryQuickBar = QuickBars->Function(_("OnRep_SecondaryQuickBar"));
-			QuickBars->ProcessEvent(OnRep_SecondaryQuickBar);
-		} */
 
 		if (bRemovedItem || Idx != -1)
 			((FFastArraySerializer*)Inventory)->MarkArrayDirty();
@@ -249,62 +250,26 @@ namespace Inventory
 		return nullptr;
 	}
 
-	template <typename ItemEntryStruct> // TODO: Do concepts and make sure its a FFortItemEntry
 	int AddToReplicatedEntries(UObject* Controller, UObject* FortItem)
 	{
 		if (!Controller || !FortItem)
 			return -1;
 
-		auto ItemEntry = FortItem->Member<ItemEntryStruct>(_("ItemEntry"));
+		auto ItemEntry = FortItem->Member<__int64>(_("ItemEntry"));
 
-		std::cout << _("ItemEntryStruct Size: ") << sizeof(ItemEntryStruct) << '\n';
+		std::cout << _("ItemEntryStruct Size: ") << sizeof(GetEntrySize()) << '\n';
 
 		if (ItemEntry)
-			return GetReplicatedEntries<ItemEntryStruct>(Controller)->Add(*ItemEntry);
+			return GetReplicatedEntries(Controller)->Add(*ItemEntry, GetEntrySize());
 
 		return -1;
 	}
 
-	static int AddItem(UObject* Controller, UObject* FortItem, EFortQuickBars Bars, int Slot)
+	static void AddItem(UObject* Controller, UObject* FortItem, EFortQuickBars Bars, int Slot)
 	{
 		static const auto FlooredVer = std::floor(std::stod(FN_Version));
 
 		// auto Inventory = GetInventory(Controller);
-
-		int Index = -1;
-
-		struct ItemEntrySize // : FFortItemEntry
-		{
-			unsigned char Unk00[0x120];
-		};
-
-		/* if (FlooredVer == 3)
-		{
-			struct ItemEntrySize : FFortItemEntry
-			{
-				unsigned char Unk00[0xC0];
-			};
-			Index = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-			Update<ItemEntrySize>(Controller, Index);
-		}
-		else if (FlooredVer == 4 || FlooredVer == 5 || FlooredVer == 6)
-		{
-			struct ItemEntrySize : FFortItemEntry
-			{
-				unsigned char Unk00[0xD0];
-			};
-			Index = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-			Update<ItemEntrySize>(Controller, Index);
-		}
-		else if (FlooredVer == 7  || FlooredVer == 9)
-		{
-			struct ItemEntrySize : FFortItemEntry
-			{
-				unsigned char Unk00[0x120];
-			};
-			Index = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-			Update<ItemEntrySize>(Controller, Index);
-		} */
 
 		GetItemInstances(Controller)->Add(FortItem);
 
@@ -335,10 +300,8 @@ namespace Inventory
 			}
 		}
 
-		Index = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-		Inventory::Update<ItemEntrySize>(Controller, Index, true);
-
-		return Index;
+		AddToReplicatedEntries(Controller, FortItem);
+		Inventory::Update(Controller, -1, true);
 	}
 
 	static void CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1)
@@ -362,7 +325,17 @@ inline bool ServerExecuteInventoryItemHook(UObject* Controller, UFunction* Funct
 	return false;
 }
 
+inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	if (Controller && Parameters)
+	{
+	}
+
+	return false;
+}
+
 void InitializeInventoryHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
 }

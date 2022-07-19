@@ -86,7 +86,7 @@ public:
 		return ArrayMax - ArrayNum;
 	}
 
-	void Reserve(int Number)
+	void Reserve(int Number, int Size = sizeof(ElementType))
 	{
 		if (!FMemory::Realloc)
 		{
@@ -97,17 +97,17 @@ public:
 		// if (Number > ArrayMax)
 		{
 			// Data = (ElementType*)realloc(Data, Size * (ArrayNum + 1));
-			Data = Slack() >= Number ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + Number) * sizeof(ElementType), 0);
+			Data = Slack() >= Number ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + Number) * Size, 0);
 			// Data = Slack() >= ArrayNum ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + ArrayNum) * Size, 0); // thanks fischsalat for this line of code.
 		}
 	}
 
-	int Add(const ElementType& New)
+	int Add(const ElementType& New, int Size = sizeof(ElementType))
 	{
 		std::cout << "Data: " << Data << '\n';
 		std::cout << "ArrayNum: " << ArrayNum << '\n';
 		std::cout << "ArrayMax: " << ArrayMax << '\n';
-		Reserve(1);
+		Reserve(1, Size);
 		if (Data)
 		{
 			Data[ArrayNum] = New;
@@ -264,7 +264,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 		return ProcessEventO(this, Function, Params);
 	}
 
-	INL auto ProcessEvent(const std::string& FuncName, void* Params = nullptr)
+	INL void* ProcessEvent(const std::string& FuncName, void* Params = nullptr)
 	{
 		auto fn = this->Function(FuncName); // static?
 		if (!fn)

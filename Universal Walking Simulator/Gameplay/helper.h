@@ -95,6 +95,27 @@ namespace Helper
 		return FVector();
 	}
 
+	UObject* SummonPickup(UObject* Pawn, UObject* Definition, const FVector& Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource)
+	{
+		static UObject* PickupClass = FindObject(_("Class /Script/FortniteGame.FortPickupAthena"));
+
+		auto Pickup = Easy::SpawnActor(PickupClass, Location);
+
+		if (Pickup)
+		{
+			static auto TossPickupFn = Pickup->Function(_("TossPickup"));
+
+			struct {
+				const FVector& FinalLocation;
+				UObject* ItemOwner;
+				int OverrideMaxStackCount;
+				bool bToss;
+				EFortPickupSourceTypeFlag InPickupSourceTypeFlags; // Do these even exist on older versions?
+				EFortPickupSpawnSource InPickupSpawnSource;
+			} TPParams{Location, Pawn, 6, true, PickupSource, SpawnSource};
+		}
+	}
+
 	void DestroyActor(UObject* Actor)
 	{
 		if (!Actor) 
