@@ -66,6 +66,29 @@ enum class ETInteractionType : uint8_t
 	IT_MAX = 6
 };
 
+enum class EFortCustomBodyType : uint8_t
+{
+	Small = 0,
+	Medium = 1,
+	MediumAndSmall = 2,
+	Large = 3,
+	LargeAndSmall = 4,
+	LargeAndMedium = 5,
+	All = 6,
+	Deprecated = 7,
+	EFortCustomBodyType_MAX = 8
+};
+
+// Enum FortniteGame.EFortCustomGender
+enum class EFortCustomGender : uint8_t
+{
+	Invalid = 0,
+	Male = 1,
+	Female = 2,
+	Both = 3,
+	EFortCustomGender_MAX = 4
+};
+
 #pragma once
 enum EPropertyFlags : unsigned __int64
 {

@@ -95,6 +95,19 @@ namespace Helper
 		return FVector();
 	}
 
+	void DestroyActor(UObject* Actor)
+	{
+		if (!Actor) 
+			return;
+
+		static auto fn = Actor->Function(_("K2_DestroyActor"));
+
+		if (fn)
+			Actor->ProcessEvent(fn);
+		else
+			std::cout << _("Failed to find K2_DestroyActor function!\n");
+	}
+
 	FRotator GetActorRotation(UObject* Actor)
 	{
 		static auto K2_GetActorRotationFN = Actor->Function(_("K2_GetActorRotation"));
@@ -130,6 +143,72 @@ namespace Helper
 		ProcessEventO(GSCClass, GetAllActorsOfClass, &Params);
 
 		return Params.ReturnValue;
+	}
+
+	static void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false)
+	{
+		// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
+		struct {
+			UObject* BuildingOwner; // ABuildingActor
+			UObject* SpawningController;
+			bool bUsePlayerBuildAnimations; // I think this is not on some versions
+		} IBAParams{BuildingActor, Controller, bUsePlayerBuildAnimations};
+
+		if (Controller && BuildingActor)
+		{
+			static auto fn = BuildingActor->Function(_("InitializeKismetSpawnedBuildingActor"));
+
+			BuildingActor->ProcessEvent(fn, &IBAParams);
+		}
+	}
+
+	static UObject* SpawnChip(UObject* Controller)
+	{
+		static auto ChipClass = FindObject(_("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip"));
+
+		auto Pawn = Controller->Member<UObject*>(_("Pawn"));
+
+		if (ChipClass && Pawn && *Pawn)
+		{
+			auto PlayerState = (*Pawn)->Member<UObject*>(_("PlayerState"));
+
+			if (PlayerState && *PlayerState)
+			{
+				std::cout << _("Spawning Chip!\n");
+
+				auto Chip = Easy::SpawnActor(ChipClass, Helper::GetActorLocation(*Pawn), Helper::GetActorRotation(*Pawn));
+
+				std::cout << _("Initializing Chip!\n");
+
+				Helper::InitializeBuildingActor(Controller, Chip);
+
+				std::cout << _("Initialized Chip!\n");
+
+				*Chip->Member<UObject*>(_("OwnerPlayerController")) = Controller;
+				*Chip->Member<UObject*>(_("OwnerPlayerState")) = *PlayerState;
+				*Chip->Member<unsigned char>(_("SquadId")) = *(*PlayerState)->Member<unsigned char>(_("SquadId"));
+				*Chip->Member<__int64>(_("OwnerPlayerId")) = *(*PlayerState)->Member<__int64>(_("UniqueId"));
+
+				struct FRebootCardReplicatedState {
+					float                                              ChipExpirationServerStartTime;                            // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData)
+					unsigned char                                      UnknownData00[0x4];                                       // 0x0004(0x0004) MISSED OFFSET
+					UObject* PlayerState;                                              // 0x0008(0x0008) (ZeroConstructor, IsPlainOldData)
+				};
+
+				auto CardReplicatedState = FRebootCardReplicatedState{};
+
+				CardReplicatedState.PlayerState = *PlayerState;
+
+				*Chip->Member<FRebootCardReplicatedState>(_("RebootCardReplicatedState")) = CardReplicatedState;
+				Chip->ProcessEvent(_("OnRep_RebootCardReplicatedState"));
+
+				return Chip;
+			}
+		}
+		else
+			std::cout << _("Unable to find ChipClass!\n");
+
+		return nullptr;
 	}
 
 	bool TeleportTo(UObject* Actor, FVector Location, FRotator Rot = FRotator())
@@ -368,8 +447,33 @@ namespace Helper
 
 		if (Engine_Version < 423)
 		{
-			*PlayerState->Member<uint8_t>(_("TeamIndex")) = 11;
-			*PlayerState->Member<unsigned char>(_("SquadId")) = 1;
+			static auto OnRepSquadIdFn = PlayerState->Function(_("OnRep_SquadId"));
+			static auto OnRepPlayerFn = PlayerState->Function(_("OnRep_PlayerTeam"));
+
+			static uint8_t TeamIndex = 3;
+			static int SquadId = 1;
+			static std::vector<UObject*> Members;
+
+			*PlayerState->Member<uint8_t>(_("TeamIndex")) = TeamIndex;
+			auto PlayerTeam = *PlayerState->Member<UObject*>(_("PlayerTeam")); // AFortTeamInfo
+			*PlayerTeam->Member<uint8_t>(_("Team")) = TeamIndex;
+			*PlayerState->Member<unsigned char>(_("SquadId")) = SquadId;
+			SquadId++;
+
+			for (auto& _Member : Members)
+			{
+				PlayerTeam->Member<TArray<UObject*>>(_("TeamMembers"))->Add(_Member); // AController
+			}
+
+			if (OnRepSquadIdFn)
+				PlayerState->ProcessEvent(OnRepSquadIdFn);
+			else
+				std::cout << _("Unable to find OnRepSquadIdFn!\n");
+
+			if (OnRepPlayerFn)
+				PlayerState->ProcessEvent(OnRepPlayerFn);
+			else
+				std::cout << _("Unable to find OnRepPlayerFn!\n");
 		}
 
 		return Pawn;

@@ -7,7 +7,7 @@ static bool bListening = false;
 
 void Listen(int Port = 7777)
 {
-    bool bUseBeacons = (Engine_Version >= 425 || Engine_Version == 421) ? false : true; // CreateNetDriver ? false : true;
+    bool bUseBeacons = true; // (Engine_Version >= 425 || Engine_Version == 421) ? false : true; // CreateNetDriver ? false : true;
     static const auto World = Helper::GetWorld();
 
     UObject* NetDriver = nullptr;

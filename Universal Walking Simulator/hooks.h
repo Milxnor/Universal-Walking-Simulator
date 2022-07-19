@@ -44,7 +44,7 @@ inline void initStuff()
 			*gameState->Member<float>(_("AircraftStartTime")) = 99999.0f;
 			*gameState->Member<float>(_("WarmupCountdownEndTime")) = 99999.0f;
 
-			/* *gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Setup;
+			*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Warmup;
 
 			struct {
 				EAthenaGamePhase OldPhase;
@@ -53,7 +53,7 @@ inline void initStuff()
 			static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
 
 			if (fnGamephase)
-				gameState->ProcessEvent(fnGamephase, &params2); */
+				gameState->ProcessEvent(fnGamephase, &params2);
 
 			if (AuthGameMode)
 			{
@@ -64,7 +64,8 @@ inline void initStuff()
 				// Is this correct?
 				
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
-				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
+				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
+				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
 
 				static auto OnRepPlaylist = FindObject(_("Function /Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo"));
 
@@ -204,6 +205,59 @@ inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Functio
 	return false;
 }
 
+inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	auto CurrentPawn = *Controller->Member<UObject*>(_("Pawn"));
+
+	struct SPEIParams  { UObject* EmoteAsset; }; // UFortMontageItemDefinitionBase
+	auto EmoteParams = (SPEIParams*)Parameters;
+
+	auto EmoteAsset = EmoteParams->EmoteAsset;
+
+	if (Controller /* && !Controller->IsInAircraft() */ && CurrentPawn && EmoteAsset)
+	{
+		struct {
+			TEnumAsByte<EFortCustomBodyType> BodyType;
+			TEnumAsByte<EFortCustomGender> Gender;
+			UObject* AnimMontage; // UAnimMontage
+		} GAHRParams{EFortCustomBodyType::All, EFortCustomGender::Both}; // (CurrentPawn->CharacterBodyType, CurrentPawn->CharacterGender)
+		static auto fn = EmoteAsset->Function(_("GetAnimationHardReference"));
+
+		if (fn)
+		{
+			EmoteAsset->ProcessEvent(fn, &GAHRParams);
+			auto Montage = GAHRParams.AnimMontage;
+			if (Montage)
+			{
+				auto StartSection = FName();
+
+				struct {
+					UObject* AnimMontage;
+					float InPlayRate;
+					FName& StartSectionName;
+				} PLAMParams{ Montage, 1.0f, StartSection };
+
+				static auto PLAMFn = CurrentPawn->Function(_("PlayLocalAnimMontage"));
+				CurrentPawn->ProcessEvent(PLAMFn, &PLAMParams);
+
+				struct {
+					UObject* AnimMontage;
+					float InPlayRate;
+					FName& StartSectionName;
+				} PAMParams{Montage, 1.0f, StartSection};
+				
+				static auto PAMFn = CurrentPawn->Function(_("PlayAnimMontage"));
+				CurrentPawn->ProcessEvent(PAMFn, &PAMParams);
+				// CurrentPawn->PlayAnimMontage(Montage, 1.0f, FName(0));
+				CurrentPawn->ProcessEvent(_("OnRep_CharPartAnimMontageInfo"));
+				CurrentPawn->ProcessEvent(_("OnRep_ReplicatedAnimMontage"));
+			}
+		}
+	}
+
+	return false;
+}
+
 inline bool ServerAttemptInteractHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
 	if (Engine_Version >= 423) // They use FortControllerComponent_Interaction and we have not implemented yet.
@@ -220,7 +274,7 @@ inline bool ServerAttemptInteractHook(UObject* Controller, UFunction* Function, 
 
 	auto Params = (SAIParams*)Parameters;
 
-	if (Params && Controller)
+	if (Params && Controller && false)
 	{
 		auto ReceivingActor = Params->ReceivingActor;
 		if (ReceivingActor)
@@ -244,6 +298,110 @@ inline bool PlayButtonHook(UObject* Object, UFunction* Function, void* Parameter
 	return false;
 }
 
+inline bool ServerSuicideHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	if (Controller)
+	{
+		struct {
+			FVector LaunchVelocity;
+			bool bXYOverride;
+			bool bZOverride;
+			bool bIgnoreFallDamage;
+			bool bPlayFeedbackEvent;
+		} LCJParams{{ 90000, 90000, 90000 }, false, false, true, true};
+
+		auto Pawn = Controller->Member<UObject*>(_("Pawn"));
+
+		if (Pawn && *Pawn)
+		{
+			Helper::SpawnChip(Controller);
+			std::cout << _("Spawned Chip!\n");
+			/* static auto fn = (*Pawn)->Function(_("LaunchCharacterJump"));
+
+			if (fn)
+				(*Pawn)->ProcessEvent(fn, &LCJParams);
+			else
+				std::cout << _("No LaunchCharacterJump!\n"); */
+		}
+		else
+			std::cout << _("No Pawn!\n");
+	}
+
+	return false;
+}
+
+inline bool IsResurrectionChipAvailableHook(UObject* PlayerState, UFunction* Function, void* Parameters)
+{
+	struct IRCAParams { bool ret; };
+
+	auto Params = (IRCAParams*)Parameters;
+
+	if (Params)
+	{
+		Params->ret = true;
+	}
+
+	return true;
+}
+
+inline bool ServerClientPawnLoadedHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	struct SCPLParams { bool bIsPawnLoaded; };
+	auto Params = (SCPLParams*)Parameters;
+
+	if (Parameters && Controller)
+	{
+		std::cout << _("bIsPawnLoaded: ") << Params->bIsPawnLoaded << '\n';
+
+		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+
+		if (Pawn)
+		{
+			auto bLoadingScreenDropped = *Controller->Member<bool>(_("bLoadingScreenDropped"));
+			if (bLoadingScreenDropped)
+			{
+				auto Chip = Helper::SpawnChip(Controller);
+				// 0x0018
+				struct FFortResurrectionData
+				{
+					bool                                               bResurrectionChipAvailable;                               // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData)
+					unsigned char                                      UnknownData00[0x3];                                       // 0x0001(0x0003) MISSED OFFSET
+					float                                              ResurrectionExpirationTime;                               // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData)
+					float                                              ResurrectionExpirationLength;                             // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData)
+					struct FVector                                     WorldLocation;                                            // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
+				};
+
+				auto PlayerState = *Pawn->Member<UObject*>(_("PlayerState"));
+				auto FortResurrectionData = PlayerState->Member<FFortResurrectionData>(_("ResurrectionChipAvailable"));
+				
+				if (FortResurrectionData)
+				{
+					std::cout << _("FortResurrectionData valid!\n");
+					std::cout << _("FortResurrectionData Location X: ") << FortResurrectionData->WorldLocation.X << '\n';
+				}
+				else
+					std::cout << _("No FortResurrectionData!\n");
+
+				auto ResurrectionData = FFortResurrectionData{};
+				ResurrectionData.bResurrectionChipAvailable = true;
+				ResurrectionData.ResurrectionExpirationLength = 99999.f;
+				ResurrectionData.ResurrectionExpirationTime = 99999.f;
+				ResurrectionData.WorldLocation = Helper::GetActorLocation(Chip);
+
+				if (FortResurrectionData)
+					*FortResurrectionData = ResurrectionData;
+				std::cout << _("Spawned Chip!\n");
+			}
+			else
+				std::cout << _("Loading screen is not dropped!\n");
+		}
+		else
+			std::cout << _("Pawn is not valid!\n");
+	}
+
+	return false;
+}
+
 inline bool AircraftExitedDropZoneHook(UObject* GameMode, UFunction* Function, void* Parameters)
 {
 	return true;
@@ -253,10 +411,14 @@ void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
 		AddHook(_("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
+
 	AddHook(_("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
-	
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
+	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
+	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
+
 	if (Engine_Version < 423)
 	{ // ??? Idk why we need the brackets
 		AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInteract"), ServerAttemptInteractHook);
@@ -264,7 +426,7 @@ void FinishInitializeUHooks()
 	else
 		AddHook(_("Function /Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract"), ServerAttemptInteractHook);
 
-	// AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ServerAttemptExitVehicle"), ServerAttemptExitVehicleHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ServerAttemptExitVehicle"), ServerAttemptExitVehicleHook);
 
 	for (auto& Func : FunctionsToHook)
 	{

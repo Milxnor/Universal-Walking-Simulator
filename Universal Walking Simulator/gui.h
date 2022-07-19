@@ -202,14 +202,17 @@ HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_
 		switch (Tab) // now that we know what tab we can now display what that tab has
 		{
 		case 1:
-			if (ImGui::Button(_("Start Aircraft")))
+			if (Engine_Version < 423) // I do not know how to start the bus on S8+
 			{
-				FString StartAircraftCmd;
-				StartAircraftCmd.Set(L"startaircraft");
+				if (ImGui::Button(_("Start Aircraft")))
+				{
+					FString StartAircraftCmd;
+					StartAircraftCmd.Set(L"startaircraft");
 
-				Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+					Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 
-				std::cout << _("Started aircraft!\n");
+					std::cout << _("Started aircraft!\n");
+				}
 			}
 			break;
 		}

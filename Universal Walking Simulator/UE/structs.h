@@ -86,7 +86,7 @@ public:
 		return ArrayMax - ArrayNum;
 	}
 
-	void Reserve(int Number, int Size = sizeof(ElementType))
+	void Reserve(int Number)
 	{
 		if (!FMemory::Realloc)
 		{
@@ -94,26 +94,27 @@ public:
 			return;
 		}
 
-		if (Number > ArrayMax)
+		// if (Number > ArrayMax)
 		{
-			Data = (ElementType*)realloc(Data, Size * (ArrayNum + 1));
+			// Data = (ElementType*)realloc(Data, Size * (ArrayNum + 1));
+			Data = Slack() >= Number ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + Number) * sizeof(ElementType), 0);
 			// Data = Slack() >= ArrayNum ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + ArrayNum) * Size, 0); // thanks fischsalat for this line of code.
 		}
 	}
 
-	int Add(const ElementType& New, int Size = sizeof(ElementType))
+	int Add(const ElementType& New)
 	{
 		std::cout << "Data: " << Data << '\n';
 		std::cout << "ArrayNum: " << ArrayNum << '\n';
 		std::cout << "ArrayMax: " << ArrayMax << '\n';
-		Reserve(1, Size);
+		Reserve(1);
 		if (Data)
 		{
 			Data[ArrayNum] = New;
 			++ArrayNum;
 			return ArrayNum; // - 1;
 		}
-		std::cout << "Data: " << Data << '\n';
+		std::cout << "Invalid Data: " << Data << '\n';
 
 		/*
 		
@@ -1029,6 +1030,8 @@ int FindOffsetStructAh(const std::string& ClassName, const std::string& MemberNa
 			}
 		}
 	}
+
+	return 0;
 }
 
 int FindOffsetStruct(const std::string& ClassName, const std::string& MemberName)

@@ -159,10 +159,15 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     }
     else
         std::cout << _("Unable to grant abilities due to no GiveAbility!\n");
+
     std::cout << _("Spawned Player!\n");
 
-    static auto Def = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
-    // Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 1);
+    static auto Def = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+
+    if (Def)
+        Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
+    else
+        std::cout << _("No ItemDef!\n");
     // auto Guid = FGuid(0, 10, 20, 40);
     // Inventory::EquipWeaponDefinition(Pawn, Wep, Guid);
 

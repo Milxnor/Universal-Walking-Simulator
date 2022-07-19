@@ -221,7 +221,7 @@ struct FGameplayAbilitySpec : public FFastArraySerializerItem
 struct FGameplayAbilitySpecContainer : public FFastArraySerializer
 {
     TArray<FGameplayAbilitySpec>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
-    UObject* Owner; // ASC*
+    UObject* Owner; // ASC* // 0x0118
 };
 
 enum class EGameplayAbilityInstancingPolicy : uint8_t
