@@ -266,7 +266,13 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 
 	INL auto ProcessEvent(const std::string& FuncName, void* Params = nullptr)
 	{
-		return ProcessEvent((UObject*)this->Function(FuncName), Params);
+		auto fn = this->Function(FuncName); // static?
+		if (!fn)
+		{
+			std::cout << _("[ERROR] Unable to find ") << FuncName << '\n';
+			return nullptr;
+		}
+		return ProcessEvent((UObject*)fn, Params);
 	}
 
 	UObject* CreateDefaultObject()

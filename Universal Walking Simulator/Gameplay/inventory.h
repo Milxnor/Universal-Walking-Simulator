@@ -48,6 +48,7 @@ namespace Inventory
 	{
 		// auto weaponClass = Definition->GetWeaponActorClass();
 		// if (weaponClass)
+		if (Pawn)
 		{
 			// auto Weapon = (AFortWeapon*)SpawnActorTrans(weaponClass, {}, Pawn);
 			static auto equipFn = Pawn->Function(_("EquipWeaponDefinition"));
@@ -78,9 +79,12 @@ namespace Inventory
 
 				// Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
 
+				std::cout << _("Setting owner!\n");
 				Helper::SetOwner(Weapon, Pawn);
+				std::cout << _("Setted owner!\n");
+				
 				Weapon->ProcessEvent(_("OnRep_ReplicatedWeaponData"));
-				Weapon->ProcessEvent(_("OnRep_AmmoCount"));
+				// Weapon->ProcessEvent(_("OnRep_AmmoCount"));
 
 				struct { UObject* P; } givenParams{ Pawn };
 
@@ -360,5 +364,5 @@ inline bool ServerExecuteInventoryItemHook(UObject* Controller, UFunction* Funct
 
 void InitializeInventoryHooks()
 {
-	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
 }
