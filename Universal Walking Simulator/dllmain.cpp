@@ -276,7 +276,7 @@ DWORD WINAPI Main(LPVOID)
     std::cout << dye::aqua(_("[Base Address] ")) << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
     std::cout << dye::green(_("[ServerReplicateActors] ")) << std::format("0x{:x}\n", ServerReplicateActorsOffset);
     
-    std::cout << dye::blue(_("[DEBUG] ")) << std::format("Offset of GameplayEffectHandle: 0x{:x}.\n", offsetOf(&FGameplayAbilitySpec::GameplayEffectHandle));
+    std::cout << dye::blue(_("[DEBUG] ")) << std::format("Size of Entry: 0x{:x}.\n", GetEntrySize());
 
     return 0;
 }

@@ -3,7 +3,7 @@
 
 static int GetEntrySize()
 {
-	static auto FortItemEntryClass = FindObject(_("ScriptStruct /Script/FortniteGame.FortItemEntry"));
+	static auto FortItemEntryClass = FindObject(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), true);
 
 	if (Engine_Version <= 420)
 		return ((UClass_FT*)FortItemEntryClass)->PropertiesSize;
