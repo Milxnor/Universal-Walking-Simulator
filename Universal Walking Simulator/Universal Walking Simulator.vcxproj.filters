@@ -103,5 +103,8 @@
     <ClInclude Include="Gameplay\events.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
+    <ClInclude Include="build.h">
+      <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

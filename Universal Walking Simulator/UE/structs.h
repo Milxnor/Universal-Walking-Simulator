@@ -69,7 +69,7 @@ public:
 		if (FMemory::Free)
 			FMemory::Free(Data);
 
-		Data = nullptr; // incase someone for some reason tries to access it.
+		Data = nullptr;
 
 		ArrayNum = 0;
 		ArrayMax = 0;
@@ -104,9 +104,6 @@ public:
 
 	int Add(const ElementType& New, int Size = sizeof(ElementType))
 	{
-		std::cout << "Data: " << Data << '\n';
-		std::cout << "ArrayNum: " << ArrayNum << '\n';
-		std::cout << "ArrayMax: " << ArrayMax << '\n';
 		Reserve(1, Size);
 		if (Data)
 		{
@@ -114,7 +111,7 @@ public:
 			++ArrayNum;
 			return ArrayNum; // - 1;
 		}
-		std::cout << "Invalid Data: " << Data << '\n';
+		std::cout << _("Invalid Data when adding!\n");
 
 		/*
 		
@@ -1013,7 +1010,7 @@ int FindOffsetStructAh(const std::string& ClassName, const std::string& MemberNa
 
 	if (Class)
 	{
-		if (FieldType* Next = Class->ChildProperties->Next)
+		if (FieldType* Next = Class->ChildProperties)
 		{
 			auto PropName = Class->ChildProperties->GetName();
 
@@ -1031,7 +1028,9 @@ int FindOffsetStructAh(const std::string& ClassName, const std::string& MemberNa
 					Next = Next->Next;
 
 					if (Next)
+					{
 						PropName = Next->GetName();
+					}
 				}
 			}
 		}

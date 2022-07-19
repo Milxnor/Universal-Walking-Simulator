@@ -30,7 +30,7 @@ namespace Inventory
 
 	TArray<UObject*>* GetItemInstances(UObject* Controller)
 	{
-		static __int64 ItemInstancesOffset = *(uint32_t*)(__int64(FindObject("ArrayProperty /Script/FortniteGame.FortItemList.ItemInstances")) + 0x44); // FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ItemInstances"));
+		static __int64 ItemInstancesOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ItemInstances"));
 
 		auto Inventory = GetInventory(Controller);
 
@@ -81,7 +81,7 @@ namespace Inventory
 				std::cout << _("Setted owner!\n");
 				
 				Weapon->ProcessEvent(_("OnRep_ReplicatedWeaponData"));
-				// Weapon->ProcessEvent(_("OnRep_AmmoCount"));
+				// Weapon->ProcessEvent(_("OnRep_AmmoCount")); // crashes :( (I think it's because if we call it on a pickaxe??)
 
 				struct { UObject* P; } givenParams{ Pawn };
 
@@ -152,7 +152,7 @@ namespace Inventory
 
 	TArray<__int64>* GetReplicatedEntries(UObject* Controller)
 	{
-		static __int64 ReplicatedEntriesOffset = *(uint32_t*)(__int64(FindObject(_("ArrayProperty /Script/FortniteGame.FortItemList.ReplicatedEntries"))) + 0x44);// FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ReplicatedEntries"));
+		static __int64 ReplicatedEntriesOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ReplicatedEntries"));
 
 		auto Inventory = GetInventory(Controller);
 		// ReplicatedEntriesOffset = 0xB0;
@@ -177,10 +177,13 @@ namespace Inventory
 		{
 			WorldInventory->ProcessEvent(WorldHandleInvUpdate);
 
-			static auto PCHandleInvUpdate = Controller->Function(_("HandleWorldInventoryLocalUpdate"));
+			if (std::floor(FnVerDouble) < 10) // idk crashes
+			{
+				static auto PCHandleInvUpdate = Controller->Function(_("HandleWorldInventoryLocalUpdate"));
 
-			if (PCHandleInvUpdate)
-				Controller->ProcessEvent(PCHandleInvUpdate);
+				if (PCHandleInvUpdate)
+					Controller->ProcessEvent(PCHandleInvUpdate);
+			}
 		}
 
 		if (FnVerDouble < 7.4)
@@ -237,7 +240,7 @@ namespace Inventory
 
 			// *itemInstance->Member<FFortItemEntry>(_("ItemEntry"))->GetCount() = Count;
 
-			auto OwnerInventory = itemInstance->Member<UObject*>(_("OwnerInventory"));
+			auto OwnerInventory = itemInstance->Member<UObject*>(_("OwnerInventory")); // We should probably set this?
 
 			if (OwnerInventory && *OwnerInventory)
 				std::cout << _("OwnerInventory Name: ") << (*OwnerInventory)->GetFullName() << '\n';
@@ -257,7 +260,7 @@ namespace Inventory
 
 		auto ItemEntry = FortItem->Member<__int64>(_("ItemEntry"));
 
-		std::cout << _("ItemEntryStruct Size: ") << sizeof(GetEntrySize()) << '\n';
+		// std::cout << _("ItemEntryStruct Size: ") << GetEntrySize() << '\n';
 
 		if (ItemEntry)
 			return GetReplicatedEntries(Controller)->Add(*ItemEntry, GetEntrySize());
@@ -317,6 +320,44 @@ namespace Inventory
 		}
 	}
 
+	void GiveAllAmmo(UObject* Controller)
+	{
+		static auto AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
+		static auto AthenaAmmoDataShells = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
+		static auto AthenaAmmoDataBulletsMedium = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
+		static auto AthenaAmmoDataBulletsLight = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
+		static auto AthenaAmmoDataBulletsHeavy = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+
+		CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 999);
+		CreateAndAddItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, 999);
+		CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 999);
+		CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 999);
+		CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 999);
+	}
+
+	void GiveMats(UObject* Controller)
+	{
+		static auto WoodItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+		static auto StoneItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+		static auto MetalItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+		CreateAndAddItem(Controller, WoodItemData, EFortQuickBars::Secondary, 0, 999);
+		CreateAndAddItem(Controller, StoneItemData, EFortQuickBars::Secondary, 0, 999);
+		CreateAndAddItem(Controller, MetalItemData, EFortQuickBars::Secondary, 0, 999);
+	}
+
+	void GiveBuildings(UObject* Controller)
+	{
+		static auto BuildingItemData_Wall = FindObject(_("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Wall.BuildingItemData_Wall"));
+		static auto BuildingItemData_Floor = FindObject(_("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Floor.BuildingItemData_Floor"));
+		static auto BuildingItemData_Stair_W = FindObject(_("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
+		static auto BuildingItemData_RoofS = FindObject(_("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
+
+		CreateAndAddItem(Controller, BuildingItemData_Wall, EFortQuickBars::Secondary, 0, 1);
+		CreateAndAddItem(Controller, BuildingItemData_Floor, EFortQuickBars::Secondary, 1, 1);
+		CreateAndAddItem(Controller, BuildingItemData_Stair_W, EFortQuickBars::Secondary, 2, 1);
+		CreateAndAddItem(Controller, BuildingItemData_RoofS, EFortQuickBars::Secondary, 3, 1);
+	}
 }
 
 inline bool ServerExecuteInventoryItemHook(UObject* Controller, UFunction* Function, void* Parameters)

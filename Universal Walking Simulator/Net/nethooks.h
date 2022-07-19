@@ -104,8 +104,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     *NewPlayer->Member<UObject*>(_("PlayerController")) = PlayerController;
 
-    std::cout << "PC Name: " << PlayerController->GetFullName() << '\n';
-
     static const auto FnVerDouble = std::stod(FN_Version);
 
     if (FnVerDouble < 7.4)
@@ -163,11 +161,16 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     std::cout << _("Spawned Player!\n");
 
     static auto Def = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+    static auto BluePump = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03"));
 
-    if (Def)
-        Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
-    else
-        std::cout << _("No ItemDef!\n");
+    /* Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
+    Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 1, 1);
+    Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 2, 1);
+
+    Inventory::GiveAllAmmo(PlayerController);
+    Inventory::GiveBuildings(PlayerController);
+    Inventory::GiveMats(PlayerController); */
+
     // auto Guid = FGuid(0, 10, 20, 40);
     // Inventory::EquipWeaponDefinition(Pawn, Wep, Guid);
 

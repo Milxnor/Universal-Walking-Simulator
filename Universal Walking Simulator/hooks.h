@@ -450,7 +450,7 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			// if (Function->FunctionFlags & 0x00200000 || Function->FunctionFlags & 0x01000000) // && FunctionName.find("Ack") == -1 && FunctionName.find("AdjustPos") == -1))
 			if (FunctionName.starts_with(_("Server")) || FunctionName.starts_with(_("Client") || FunctionName.starts_with(_("OnRep_"))))
 			{
-				if (!FunctionName.contains("ServerUpdateCamera") && FunctionName.find("ServerMove") == -1)
+				if (!FunctionName.contains("ServerUpdateCamera") && FunctionName.find("ServerMove") == -1 && !FunctionName.contains(_("ServerUpdateLevelVisibility")))
 				{
 					std::cout << "RPC Called: " << FunctionName << '\n';
 				}

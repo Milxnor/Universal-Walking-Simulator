@@ -88,7 +88,12 @@ void InitializePatterns()
         GiveAbilityAddr = FindPattern(Patterns::GiveAbility);
 
         if (!GiveAbilityAddr)
+        {
             GiveAbilityAddr = FindPattern(_("48 89 5C 24 10 48 89 6C 24 18 48 89 7C 24 20 41 56 48 83 EC ? 83 B9 60 05"));
+
+            if (!GiveAbilityAddr)
+                GiveAbilityAddr = FindPattern(_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 51 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01"));
+        }
 
         CheckPattern(_("GiveAbility"), GiveAbilityAddr, &GiveAbility);
 
@@ -215,7 +220,7 @@ DWORD WINAPI Input(LPVOID)
             }
         }
 
-        else if (GetAsyncKeyState(VK_F8) & 1)
+        else if (GetAsyncKeyState(VK_F9) & 1)
         {
             InitializeNetHooks();
 
@@ -277,6 +282,8 @@ DWORD WINAPI Main(LPVOID)
     std::cout << dye::green(_("[ServerReplicateActors] ")) << std::format("0x{:x}\n", ServerReplicateActorsOffset);
     
     std::cout << dye::blue(_("[DEBUG] ")) << std::format("Size of Entry: 0x{:x}.\n", GetEntrySize());
+    std::cout << dye::blue(_("[DEBUG] ")) << std::format("ReplicatedEntries Offset: 0x{:x}.\n", FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ReplicatedEntries")));
+    std::cout << dye::blue(_("[DEBUG] ")) << std::format("ItemInstances Offset: 0x{:x}.\n", FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ItemInstances")));
 
     return 0;
 }
