@@ -285,6 +285,8 @@ DWORD WINAPI Main(LPVOID)
     std::cout << dye::blue(_("[DEBUG] ")) << std::format("ReplicatedEntries Offset: 0x{:x}.\n", FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ReplicatedEntries")));
     std::cout << dye::blue(_("[DEBUG] ")) << std::format("ItemInstances Offset: 0x{:x}.\n", FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ItemInstances")));
 
+    TestAbilitySizeDifference();
+
     return 0;
 }
 

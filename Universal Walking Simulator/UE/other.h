@@ -522,3 +522,13 @@ enum class EFortPickupSpawnSource : uint8_t
 	AmmoBox = 4,
 	EFortPickupSpawnSource_MAX = 5
 };
+
+enum class EFastArraySerializerDeltaFlags : uint8_t
+{
+	None,								//! No flags.
+	HasBeenSerialized = 1 << 0,			//! Set when serialization at least once (i.e., this struct has been written or read).
+	HasDeltaBeenRequested = 1 << 1,		//! Set if users requested Delta Serialization for this struct.
+	IsUsingDeltaSerialization = 1 << 2,	//! This will remain unset until we've serialized at least once.
+										//! At that point, this will be set if delta serialization was requested and
+										//! we support it.
+};

@@ -5,6 +5,8 @@
 #define S_T // S7+
 // #define F_FF // UE4.25
 
+// #define BEFORE_SEASONEIGHT
+
 // 3.5 Patterns are from raider, some patterns are not mine.
 
 namespace Patterns

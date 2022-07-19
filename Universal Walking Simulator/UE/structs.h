@@ -1080,15 +1080,33 @@ struct FFastArraySerializerItem
 struct FFastArraySerializer
 {
 	// TMap<int32_t, int32_t> ItemMap;
+
+#ifndef BEFORE_SEASONEIGHT
+	
+	char ItemMap[0x50];
+
+	int32_t IDCounter;
+	int32_t ArrayReplicationKey;
+
+	char GuidReferencesMap[0x50];
+	char GuidReferencesMap_StructDelta[0x50];
+
+	int32_t CachedNumItems;
+	int32_t CachedNumItemsToConsiderForWriting;
+	EFastArraySerializerDeltaFlags DeltaFlags;
+
+#else
+
 	char ItemMap[0x50];
 	int32_t IDCounter;
 	int32_t ArrayReplicationKey;
 
-	// TMap<int32_t, FFastArraySerializerGuidReferences> GuidReferencesMap; // List of items that need to be re-serialized when the referenced objects are mapped
 	char GuidReferencesMap[0x50];
 
 	int32_t CachedNumItems;
 	int32_t CachedNumItemsToConsiderForWriting;
+	int32_t whatIsTHiS; // idk where this is supposed to go tbh
+#endif
 
 	void MarkItemDirty(FFastArraySerializerItem& Item)
 	{
@@ -1120,3 +1138,20 @@ struct FFastArraySerializer
 			ArrayReplicationKey++;
 	}
 };
+
+int32_t GetSizeOfStruct(UObject* Struct)
+{
+	if (Engine_Version <= 420)
+		return ((UClass_FT*)Struct)->PropertiesSize;
+
+	else if (Engine_Version == 421)
+		return ((UClass_FTO*)Struct)->PropertiesSize;
+
+	else if (Engine_Version >= 422 && Engine_Version <= 424)
+		return ((UClass_FTT*)Struct)->PropertiesSize;
+
+	else if (Engine_Version >= 425)
+		return ((UClass_CT*)Struct)->PropertiesSize;
+
+	return 0;
+}

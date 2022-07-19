@@ -136,7 +136,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
             static auto InVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.GA_AthenaInVehicle_C"));
 
             if (SprintAbility)
-                GrantGameplayAbility(Pawn, SprintAbility);
+            {
+                if (Engine_Version >= 423)
+                    GrantGameplayAbility(Pawn, SprintAbility, true);
+                else
+                    GrantGameplayAbility(Pawn, SprintAbility);
+            }
             if (ReloadAbility)
                 GrantGameplayAbility(Pawn, ReloadAbility);
             if (JumpAbility)
@@ -163,16 +168,13 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     static auto Def = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
     static auto BluePump = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03"));
 
-    /* Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
+    Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
     Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 1, 1);
     Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 2, 1);
 
     Inventory::GiveAllAmmo(PlayerController);
     Inventory::GiveBuildings(PlayerController);
-    Inventory::GiveMats(PlayerController); */
-
-    // auto Guid = FGuid(0, 10, 20, 40);
-    // Inventory::EquipWeaponDefinition(Pawn, Wep, Guid);
+    Inventory::GiveMats(PlayerController);
 
     return PlayerController;
 }
@@ -434,6 +436,8 @@ void InitializeNetHooks()
             MH_CreateHook((PVOID)CollectGarbageAddr, CollectGarbageDetour, (void**)&CollectGarbage);
             MH_EnableHook((PVOID)CollectGarbageAddr);
         }
+        else
+            std::cout << _("[WARNING] Unable to hook CollectGarbage!\n");
     }
 
     if (Engine_Version == 423)

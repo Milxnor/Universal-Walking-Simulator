@@ -5,17 +5,7 @@ static int GetEntrySize()
 {
 	static auto FortItemEntryClass = FindObject(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), true);
 
-	if (Engine_Version <= 420)
-		return ((UClass_FT*)FortItemEntryClass)->PropertiesSize;
-
-	else if (Engine_Version == 421) // && Engine_Version <= 424)
-		return ((UClass_FTO*)FortItemEntryClass)->PropertiesSize;
-
-	else if (Engine_Version >= 422 && Engine_Version <= 424)
-		return ((UClass_FTT*)FortItemEntryClass)->PropertiesSize;
-
-	else if (Engine_Version >= 425)
-		return ((UClass_CT*)FortItemEntryClass)->PropertiesSize;
+	return GetSizeOfStruct(FortItemEntryClass);
 }
 
 namespace Inventory
@@ -148,9 +138,12 @@ namespace Inventory
 					return EquipWeaponDefinition(Pawn, Def, Guid);
 			}
 		}
+
+		return nullptr;
 	}
 
-	TArray<__int64>* GetReplicatedEntries(UObject* Controller)
+	template <typename EntryStruct>
+	TArray<EntryStruct>* GetReplicatedEntries(UObject* Controller)
 	{
 		static __int64 ReplicatedEntriesOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ReplicatedEntries"));
 
@@ -159,7 +152,7 @@ namespace Inventory
 
 		std::cout << _("ReplicatedEntries Offset: ") << ReplicatedEntriesOffset << '\n';
 
-		return (TArray<__int64>*)(__int64(Inventory) + ReplicatedEntriesOffset);
+		return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 
 		// return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 	}
@@ -220,6 +213,9 @@ namespace Inventory
 
 	UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count = 1)
 	{
+		if (!Definition || !Controller)
+			return nullptr;
+
 		struct {
 			int count;
 			int level;
@@ -253,17 +249,18 @@ namespace Inventory
 		return nullptr;
 	}
 
+	template <typename EntryStruct>
 	int AddToReplicatedEntries(UObject* Controller, UObject* FortItem)
 	{
 		if (!Controller || !FortItem)
 			return -1;
 
-		auto ItemEntry = FortItem->Member<__int64>(_("ItemEntry"));
+		auto ItemEntry = FortItem->Member<EntryStruct>(_("ItemEntry"));
 
 		// std::cout << _("ItemEntryStruct Size: ") << GetEntrySize() << '\n';
 
 		if (ItemEntry)
-			return GetReplicatedEntries(Controller)->Add(*ItemEntry, GetEntrySize());
+			return GetReplicatedEntries<EntryStruct>(Controller)->Add(*ItemEntry, GetEntrySize());
 
 		return -1;
 	}
@@ -303,7 +300,21 @@ namespace Inventory
 			}
 		}
 
-		AddToReplicatedEntries(Controller, FortItem);
+		if (FlooredVer == 3)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+		}
+		else if (FlooredVer > 4 && FlooredVer <= 6)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
+			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+		}
+		else if (FlooredVer > 7) // not right idc
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x120]; };
+			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+		}
 		Inventory::Update(Controller, -1, true);
 	}
 
@@ -322,12 +333,31 @@ namespace Inventory
 
 	void GiveAllAmmo(UObject* Controller)
 	{
-		static auto AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
-		static auto AthenaAmmoDataShells = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
-		static auto AthenaAmmoDataBulletsMedium = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
-		static auto AthenaAmmoDataBulletsLight = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
-		static auto AthenaAmmoDataBulletsHeavy = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+		static UObject* AthenaAmmoDataRockets;
+		static UObject* AthenaAmmoDataShells;
+		static UObject* AthenaAmmoDataBulletsMedium;
+		static UObject* AthenaAmmoDataBulletsLight;
+		static UObject* AthenaAmmoDataBulletsHeavy;
 
+		// omfg
+
+		if (Engine_Version < 423)
+		{
+			AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
+			AthenaAmmoDataShells = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
+			AthenaAmmoDataBulletsMedium = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
+			AthenaAmmoDataBulletsLight = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
+			AthenaAmmoDataBulletsHeavy = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+		}
+		else
+		{
+			AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
+			AthenaAmmoDataShells = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
+			AthenaAmmoDataBulletsMedium = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
+			AthenaAmmoDataBulletsLight = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
+			AthenaAmmoDataBulletsHeavy = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+		}
+					
 		CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 999);
 		CreateAndAddItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, 999);
 		CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 999);
@@ -366,10 +396,23 @@ inline bool ServerExecuteInventoryItemHook(UObject* Controller, UFunction* Funct
 	return false;
 }
 
+inline bool ServerExecuteInventoryWeaponHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	auto Weapon = (UObject**)Parameters;
+
+	if (Weapon && *Weapon)
+		Inventory::EquipInventoryItem(Controller, *(*Weapon)->Member<FGuid>(_("ItemEntryGuid"))); // "hacky"
+	else
+		std::cout << _("No weapon?\n");
+
+	return false;
+}
+
 inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
 	if (Controller && Parameters)
 	{
+
 	}
 
 	return false;
@@ -378,5 +421,6 @@ inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Funct
 void InitializeInventoryHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryItemHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
 }
