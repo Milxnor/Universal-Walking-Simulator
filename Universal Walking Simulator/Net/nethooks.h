@@ -6,6 +6,7 @@
 #include <Net/funcs.h>
 #include <Gameplay/helper.h>
 #include <Gameplay/inventory.h>
+#include <Gameplay/abilities.h>
 
 static bool bTraveled = false;
 
@@ -120,6 +121,44 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     auto Pawn = Helper::InitPawn(PlayerController);
 
+    if (GiveAbility)
+    {
+        auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
+
+        if (AbilitySystemComponent)
+        {
+            std::cout << _("Granting abilities!\n");
+            static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
+            static auto ReloadAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Reload");
+            static auto JumpAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Jump");
+            static auto InteractUseAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C");
+            static auto InteractSearchAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.GA_DefaultPlayer_InteractSearch_C");
+            static auto EnterVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.GA_AthenaEnterVehicle_C"));
+            static auto ExitVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.GA_AthenaExitVehicle_C"));
+            static auto InVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.GA_AthenaInVehicle_C"));
+
+            if (SprintAbility)
+                GrantGameplayAbility(Pawn, SprintAbility);
+            if (ReloadAbility)
+                GrantGameplayAbility(Pawn, ReloadAbility);
+            if (JumpAbility)
+                GrantGameplayAbility(Pawn, JumpAbility);
+            if (InteractUseAbility)
+                GrantGameplayAbility(Pawn, InteractUseAbility);
+            if (InteractSearchAbility)
+                GrantGameplayAbility(Pawn, InteractSearchAbility);
+            if (EnterVehicleAbility)
+                GrantGameplayAbility(Pawn, EnterVehicleAbility);
+            if (ExitVehicleAbility)
+                GrantGameplayAbility(Pawn, ExitVehicleAbility);
+            if (InVehicleAbility)
+                GrantGameplayAbility(Pawn, InVehicleAbility);
+        }
+        else
+            std::cout << _("Unable to find AbilitySystemComponent!\n");
+    }
+    else
+        std::cout << _("Unable to grant abilities due to no GiveAbility!\n");
     std::cout << _("Spawned Player!\n");
 
     static auto Def = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));

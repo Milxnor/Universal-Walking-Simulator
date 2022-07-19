@@ -30,7 +30,7 @@ static inline void TryActivateAbility(UObject* AbilitySystemComponent, FGameplay
 
     if (!Spec)
     {
-        //printf("InternalServerTryActiveAbility. Rejecting ClientActivation of ability with invalid SpecHandle!\n");
+        std::cout << _("TryActivateAbility failed because it was not able to find the Spec!\n");
         Helper::Abilities::ClientActivateAbilityFailed(AbilitySystemComponent, AbilityToActivate, PredictionKey->Current);
         return;
     }
@@ -40,7 +40,7 @@ static inline void TryActivateAbility(UObject* AbilitySystemComponent, FGameplay
 
     if (!InternalTryActivateAbility(AbilitySystemComponent, AbilityToActivate, *PredictionKey, &InstancedAbility, nullptr, TriggerEventData))
     {
-        //printf("InternalServerTryActiveAbility. Rejecting ClientActivation of %s. InternalTryActivateAbility failed\n", Spec->Ability->GetName().c_str());
+        std::cout << _("TryActivateAbility failed because it was not able to activate the ability !\n");
         Helper::Abilities::ClientActivateAbilityFailed(AbilitySystemComponent, AbilityToActivate, PredictionKey->Current);
         Spec->InputPressed = false;
         return;
@@ -67,11 +67,6 @@ static inline void GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAb
 
     UObject* DefaultObject = GameplayAbilityClass->CreateDefaultObject();// Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
 
-    std::cout << "DefaultObject: " << DefaultObject << '\n';
-
-    if (DefaultObject)
-        std::cout << "DefaultObject Name: " << DefaultObject->GetFullName() << '\n';
-
     auto GenerateNewSpec = [&]() -> FGameplayAbilitySpec
     {
         FGameplayAbilitySpecHandle Handle{ rand() };
@@ -82,8 +77,6 @@ static inline void GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAb
     };
 
     auto Spec = GenerateNewSpec();
-
-    std::cout << _("Handle: ") << Spec.Handle.Handle << '\n';
 
     for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
     {
@@ -99,7 +92,7 @@ static inline void GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAb
     //AbilitySystemComponent->GiveAbility(
     // FGameplayAbilitySpec(StartupAbility, 
     //                      GetAbilityLevel(StartupAbility.GetDefaultObject()->AbilityID), static_cast<int32>(StartupAbility.GetDefaultObject()->AbilityInputID)
-    // , this));
+    // , this)); */
 }
 
 inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
@@ -110,7 +103,7 @@ inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunct
         FPredictionKey                              PredictionKey;                                            // (Parm)
     };
 
-    std::cout << _("ServerTryActivateAbility!\n");
+    // std::cout << _("ServerTryActivateAbility!\n");
 
     auto Params = (UAbilitySystemComponent_ServerTryActivateAbility_Params*)Parameters;
 
@@ -125,7 +118,7 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
         FServerAbilityRPCBatch                      BatchInfo;                                                // (Parm)
     };
 
-    std::cout << _("ServerAbilityRPCBatch!\n");
+    // std::cout << _("ServerAbilityRPCBatch!\n");
 
     auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
 
@@ -143,7 +136,7 @@ inline bool ServerTryActivateAbilityWithEventDataHook(UObject* AbilitySystemComp
         FGameplayEventData                          TriggerEventData;                                         // (Parm)
     };
 
-    std::cout << _("ServerTryActivateAbilityWithEventData!\n");
+    // std::cout << _("ServerTryActivateAbilityWithEventData!\n");
 
     auto Params = (UAbilitySystemComponent_ServerTryActivateAbilityWithEventData_Params*)Parameters;
 

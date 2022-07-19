@@ -78,7 +78,7 @@ void InitializePatterns()
         CheckPattern(_("CollectGarbage"), CollectGarbageAddr, &CollectGarbage);
     }
 
-    /* if (Engine_Version != 421) // todo get the patterns
+    // if (Engine_Version != 421)
     {
         GiveAbilityAddr = FindPattern(Patterns::GiveAbility);
 
@@ -92,7 +92,7 @@ void InitializePatterns()
 
         MarkAbilitySpecDirtyAddr = FindPattern(Patterns::MarkAbilitySpecDirty);
         CheckPattern(_("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyNew);
-    } */
+    }
 
     if (Engine_Version >= 423)
     {
@@ -107,7 +107,7 @@ void InitializePatterns()
 
     CheckPattern(_("GetPlayerViewPoint"), GetPlayerViewpointAddr, &GetPlayerViewPoint);
 
-    if ((FnVerDouble >= 5 && FnVerDouble < 7) || Engine_Version == 423)
+    if (Engine_Version >= 421 && Engine_Version <= 423)
     {
         if (FnVerDouble >= 5 && FnVerDouble < 7)
         {
@@ -122,11 +122,19 @@ void InitializePatterns()
             CheckPattern(_("SendChallenge"), SendChallengeAddr, &SendChallenge);
         }
 
-        SetWorldAddr = FindPattern(Patterns::SetWorld);
+        /* SetWorldAddr = FindPattern(Patterns::SetWorld);
+
+        if (!SetWorldAddr)
+            SetWorldAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
+
         CheckPattern(_("SetWorld"), SetWorldAddr, &SetWorld);
 
         CreateNetDriverAddr = FindPattern(Patterns::CreateNetDriver);
-        CheckPattern(_("CreateNetDriver"), CreateNetDriverAddr, &CreateNetDriver);
+
+        if (!CreateNetDriverAddr)
+            CreateNetDriverAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 30 48 8B 81 ? ? ? ? 49 8B D8 4C 63 81 ? ? ? ?"));
+
+        CheckPattern(_("CreateNetDriver"), CreateNetDriverAddr, &CreateNetDriver); */
 
         if (Engine_Version == 423)
         {
@@ -144,7 +152,7 @@ void InitializePatterns()
         } */
     }
 
-    if (Engine_Version >= 424 || Engine_Version == 421)
+    if (Engine_Version >= 424 || Engine_Version == 421 || Engine_Version == 422)
     {
         SetReplicationDriverAddr = FindPattern(Patterns::SetReplicationDriver);
         CheckPattern(_("SetReplicationDriver"), SetReplicationDriverAddr, &SetReplicationDriver);
@@ -241,8 +249,10 @@ DWORD WINAPI Main(LPVOID)
     std::cout << _("Initialized Patterns!\n");
 
     InitializeNetUHooks();
+
     if (GiveAbilityAddr)
         InitializeAbilityHooks();
+
     FinishInitializeUHooks();
 
     InitializeHooks();
@@ -258,6 +268,8 @@ DWORD WINAPI Main(LPVOID)
 
     std::cout << dye::aqua(_("[Base Address] ")) << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
     std::cout << dye::green(_("[ServerReplicateActors] ")) << std::format("0x{:x}\n", ServerReplicateActorsOffset);
+    
+    std::cout << dye::blue(_("[DEBUG] ")) << std::format("Offset of GameplayEffectHandle: 0x{:x}.\n", offsetOf(&FGameplayAbilitySpec::GameplayEffectHandle));
 
     return 0;
 }

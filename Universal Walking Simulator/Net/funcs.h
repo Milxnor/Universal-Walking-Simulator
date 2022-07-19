@@ -119,14 +119,22 @@ struct FServerAbilityRPCBatch
     bool                                               Started;                                                  // 0x0042(0x0001) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
     unsigned char                                      UnknownData01[0x5];                                       // 0x0043(0x0005) MISSED OFFSET
 
+    static std::string GetStruct()
+    {
+        // static auto stRuct = FindObject(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
+        return _("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch");// stRuct;
+    }
+
     FGameplayAbilitySpecHandle GetSpecHandle() // TODO: Get by Offset
     {
-
+        static auto Offset = FindOffsetStruct(GetStruct(), _("AbilitySpecHandle"));
+        return *(FGameplayAbilitySpecHandle*)(__int64(this) + Offset);
     }
 
     FPredictionKey GetPredictionKey()
     {
-
+        static auto Offset = FindOffsetStruct(GetStruct(), _("PredictionKey"));
+        return *(FPredictionKey*)(__int64(this) + Offset);
     }
 };
 
@@ -200,6 +208,12 @@ struct FGameplayAbilitySpec : public FFastArraySerializerItem
     unsigned char                                      UnknownData00[0x6];                                       // 0x002A(0x0006) MISSED OFFSET
     FGameplayAbilityActivationInfo              ActivationInfo;                                           // 0x0030(0x0020) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
     TArray<UObject*>                    NonReplicatedInstances; // UGameplayAbility*
+    TArray<UObject*>                    ReplicatedInstances;   
+    /*
+    
+                                THIS DOESNT EXIST ON OLDER VERSIONS      ^^^
+    
+    */                             
     FActiveGameplayEffectHandle                 GameplayEffectHandle; // UGameplayAbility*
     unsigned char                                      UnknownData01[0x50];                                      // 0x0078(0x0050) MISSED OFFSET
 };
@@ -226,3 +240,8 @@ static void (*MarkAbilitySpecDirtyOld)(UObject* comp, FGameplayAbilitySpec& Spec
 uint64_t GiveAbilityAddr = 0;
 uint64_t InternalTryActivateAbilityAddr = 0;
 uint64_t MarkAbilitySpecDirtyAddr = 0;
+
+template<typename T, typename U> constexpr size_t offsetOf(U T::* member)
+{
+    return (char*)&((T*)nullptr->*member) - (char*)nullptr;
+}

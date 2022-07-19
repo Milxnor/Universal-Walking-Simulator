@@ -1,6 +1,7 @@
 #pragma once
 
 #include <UE/structs.h>
+#include <Net/funcs.h>
 
 UObject* GetWorldW(bool bReset = false)
 {
@@ -248,6 +249,26 @@ namespace Helper
 		static auto OnRepOwner = Actor->Function(_("OnRep_Owner"));
 		if (OnRepOwner)
 			Actor->ProcessEvent(OnRepOwner);
+	}
+
+	static UObject* GetVehicle(UObject* Pawn)
+	{
+		static auto fn = Pawn->Function(_("GetVehicle"));
+
+		UObject* Vehicle;
+		Pawn->ProcessEvent(fn, &Vehicle);
+
+		return Vehicle;
+	}
+
+	void SetLocalRole(UObject* Actor, ENetRole LocalRole)
+	{
+		*Actor->Member<ENetRole>(_("Role")) = LocalRole;
+	}
+
+	void SetRemoteRole(UObject* Actor, ENetRole RemoteRole)
+	{
+
 	}
 
 	UObject* InitPawn(UObject* PC, FVector Location = Helper::GetPlayerStart())

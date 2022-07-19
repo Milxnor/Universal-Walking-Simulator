@@ -125,36 +125,6 @@ bool ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Functi
 	auto PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
 	auto Pawn = *PlayerController->Member<UObject*>(_("Pawn"));
 
-	if (Pawn)
-	{
-		auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
-
-		if (AbilitySystemComponent)
-		{
-			std::cout << _("Granting abilities!\n");
-			static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
-			static auto ReloadAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Reload");
-			static auto JumpAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Jump");
-			static auto InteractUseAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C");
-			static auto InteractSearchAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.GA_DefaultPlayer_InteractSearch_C");
-
-			if (SprintAbility)
-				GrantGameplayAbility(Pawn, SprintAbility);
-			if (ReloadAbility)
-				GrantGameplayAbility(Pawn, ReloadAbility);
-			if (JumpAbility)
-				GrantGameplayAbility(Pawn, JumpAbility);
-			if (InteractUseAbility)
-				GrantGameplayAbility(Pawn, InteractUseAbility);
-			if (InteractSearchAbility)
-				GrantGameplayAbility(Pawn, InteractSearchAbility);
-		}
-		else
-			std::cout << _("Unable to find AbilitySystemComponent!\n");
-	}
-	else
-		std::cout << _("Unable to find Pawn on ServerLoadingScreenDropped!\n");
-
 	return false;
 }
 
@@ -216,6 +186,58 @@ void LoadInMatch()
 	}
 }
 
+inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	auto Pawn = Controller->Member<UObject*>(_("Pawn"));
+
+	if (Pawn && *Pawn)
+	{
+		UObject* Vehicle = Helper::GetVehicle(*Pawn);
+
+		if (Vehicle)
+		{
+			Helper::SetLocalRole(*Pawn, ENetRole::ROLE_Authority);
+			Helper::SetLocalRole(Vehicle, ENetRole::ROLE_Authority);
+		}
+	}
+
+	return false;
+}
+
+inline bool ServerAttemptInteractHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	if (Engine_Version >= 423) // They use FortControllerComponent_Interaction and we have not implemented yet.
+		return false; // TODO: Check the owener to see if its a controller
+
+	ProcessEventO(Controller, Function, Parameters);
+
+	struct SAIParams {
+		UObject* ReceivingActor;                                           // (Parm, ZeroConstructor, IsPlainOldData)
+		UObject* InteractComponent;                                        // (Parm, ZeroConstructor, InstancedReference, IsPlainOldData)
+		TEnumAsByte<ETInteractionType>                     InteractType;                                             // (Parm, ZeroConstructor, IsPlainOldData)
+		UObject* OptionalObjectData;                                       // (Parm, ZeroConstructor, IsPlainOldData)
+	};
+
+	auto Params = (SAIParams*)Parameters;
+
+	if (Params && Controller)
+	{
+		auto ReceivingActor = Params->ReceivingActor;
+		if (ReceivingActor)
+		{
+			auto ReceivingActorName = ReceivingActor->GetName(); // There has to be a better way, right?
+
+			if (ReceivingActorName.contains(_("Vehicle")))
+			{
+				Helper::SetLocalRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);
+				Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
+			}
+		}
+	}
+
+	return true;
+}
+
 inline bool PlayButtonHook(UObject* Object, UFunction* Function, void* Parameters)
 {
 	LoadInMatch();
@@ -234,7 +256,15 @@ void FinishInitializeUHooks()
 	AddHook(_("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
-	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerLoadingScreenDropped"), ServerLoadingScreenDroppedHook);
+	
+	if (Engine_Version < 423)
+	{ // ??? Idk why we need the brackets
+		AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInteract"), ServerAttemptInteractHook);
+	}
+	else
+		AddHook(_("Function /Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract"), ServerAttemptInteractHook);
+
+	// AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ServerAttemptExitVehicle"), ServerAttemptExitVehicleHook);
 
 	for (auto& Func : FunctionsToHook)
 	{
