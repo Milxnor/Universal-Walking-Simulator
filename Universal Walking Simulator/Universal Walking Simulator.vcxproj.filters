@@ -100,5 +100,8 @@
     <ClInclude Include="Gameplay\inventory.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
+    <ClInclude Include="Gameplay\events.h">
+      <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

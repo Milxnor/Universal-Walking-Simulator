@@ -9,6 +9,7 @@
 #include <Net/funcs.h>
 #include <Net/nethooks.h>
 #include <Gameplay/abilities.h>
+#include <Gameplay/events.h>
 
 #include <mutex>
 
@@ -118,6 +119,7 @@ inline void initStuff()
 		InitializeNetHooks();
 
 		std::cout << _("Initialized NetHooks!\n");
+		Events::LoadEvents();
 	}
 }
 

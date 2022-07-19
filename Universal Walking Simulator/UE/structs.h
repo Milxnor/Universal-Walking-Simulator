@@ -21,7 +21,7 @@ using namespace std::chrono;
 static inline void (*ToStringO)(struct FName*, class FString&);
 static inline void* (*ProcessEventO)(void*, void*, void*);
 
-std::string FN_Version;
+std::string FN_Version = "0.0";
 int Engine_Version;
 
 static struct FChunkedFixedUObjectArray* ObjObjects;

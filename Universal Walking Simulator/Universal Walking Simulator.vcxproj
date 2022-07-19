@@ -111,6 +111,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Gameplay\abilities.h" />
+    <ClInclude Include="Gameplay\events.h" />
     <ClInclude Include="Gameplay\helper.h" />
     <ClInclude Include="Gameplay\inventory.h" />
     <ClInclude Include="gui.h" />

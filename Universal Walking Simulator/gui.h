@@ -17,6 +17,7 @@
 #include <filesystem>
 
 #include "Gameplay/helper.h"
+#include "Gameplay/events.h"
 #include <iostream>
 
 static bool bHeadVisible = true;
@@ -212,6 +213,11 @@ HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_
 					Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 
 					std::cout << _("Started aircraft!\n");
+				}
+			}
+			if (Events::HasEvent()) {
+				if (ImGui::Button(_("Start Event"))) {
+					Events::StartEvent();
 				}
 			}
 			break;
