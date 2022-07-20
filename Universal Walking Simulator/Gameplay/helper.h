@@ -282,6 +282,18 @@ namespace Helper
 
 		return SpawnTransform.Translation;
 	}
+	void LaunchPlayer(UObject* Pawn, FVector LaunchVelocity, bool bXYOverride, bool bZOverride, bool bIgnoreFallDamage, bool bPlayFeedbackEvent)
+	{
+		struct {
+			FVector LaunchVelocity;
+			bool bXYOverride;
+			bool bZOverride;
+			bool bIgnoreFallDamage;
+			bool bPlayFeedbackEvent;
+		} LCJParans {LaunchVelocity, bXYOverride, bZOverride, bIgnoreFallDamage, bPlayFeedbackEvent };
+		auto LaunchPlayerFn = Pawn->Function("LaunchCharacterJump");
+		Pawn->ProcessEvent(LaunchPlayerFn, &LCJParans);
+	}
 
 	namespace Console
 	{

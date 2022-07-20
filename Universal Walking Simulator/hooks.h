@@ -192,6 +192,84 @@ void LoadInMatch()
 		std::cout << dye::red(_("[ERROR] ")) << _("Unable to find PlayerController!\n");
 	}
 }
+// HEAVILY INSPIRED BY RAIDER 
+inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	struct SCParams { FString* Msg; };
+	auto MsgParams = (SCParams*)Parameters;
+
+	if (Controller && MsgParams)
+	{
+		auto Message = MsgParams->Msg->ToString() + ' ';
+		std::vector<std::string> Args;
+		while (Message.find(" ") != -1)
+		{
+			Args.push_back(Message.substr(0, Message.find(' ')));
+			Message.erase(0, Message.find(' ') + 1);
+		}
+		auto ArgsNum = Args.size() - 1;
+
+		if (ArgsNum >= 0)
+		{
+			auto& Command = Args[0];
+			std::transform(Command.begin(), Command.end(), Command.begin(), ::tolower);
+
+			if (Command == "giveitem" && ArgsNum >= 1)
+			{
+				auto& weaponName = Args[1];
+				int slot = 1;
+				int count = 1;
+				try
+				{
+					if (ArgsNum >= 2)
+						slot = std::stoi(Args[2]);
+
+					if (ArgsNum >= 3)
+						count = std::stoi(Args[3]);
+				}
+				catch (...)
+				{
+				}
+				auto WID = FindObject("FortWeaponRangedItemDefinition " + weaponName + '.' + weaponName);
+				if (WID)
+				{
+					Inventory::CreateAndAddItem(Controller, WID, EFortQuickBars::Primary, slot, count);
+					std::cout << "Gave weapon!\n";
+				}
+			}
+			// Should work i think
+			else if (Command == "launchplayer" && ArgsNum >= 0)
+			{
+				auto Pawn = Controller->Member<UObject>("Pawn");
+				FVector LaunchVelocity{ 0, 0, 5000 };
+				bool bXYOveride = false;
+				bool bZOverride = false;
+				bool bIgnoreFallDamage = true;
+				bool bPlayFeedbackEvent = false;
+				
+				Helper::LaunchPlayer(Pawn, LaunchVelocity, bXYOveride = false, bZOverride = false, bIgnoreFallDamage = true, bPlayFeedbackEvent = false);
+			}
+			else if (Command == "revive")
+			{
+				auto Pawn = Controller->Member<UObject>("Pawn");
+				bool bIsDBNO = Pawn->Member<UObject>("bIsDBNO");
+				bool bIsDBNO = false;
+				auto OnRep_DBNOFn = Pawn->Function("OnRep_IsDBNO");
+				Pawn->ProcessEvent(OnRep_DBNOFn);
+				float NewHealth = 100.0f;
+				struct 
+				{
+					float NewHealth;
+				} SHParams{ NewHealth };
+				auto SHFn = Pawn->Function("SetHealth");
+				Pawn->ProcessEvent(SHFn, &SHParams);
+			}
+		}
+	}
+	return true;
+}
+
+
 
 inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
@@ -446,6 +524,7 @@ void FinishInitializeUHooks()
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 
