@@ -34,6 +34,8 @@ inline void initStuff()
 		{
 			auto AuthGameMode = *world->Member<UObject*>(_("AuthorityGameMode"));
 
+			*(*AuthGameMode->Member<UObject*>(_("GameSession")))->Member<int>(_("MaxPlayers")) = 100;
+
 			if (std::stod(FN_Version) >= 8 && AuthGameMode)
 			{
 				static auto PlayerControllerClass = FindObject(_("BlueprintGeneratedClass /Game/Athena/Athena_PlayerController.Athena_PlayerController_C"));
@@ -345,6 +347,20 @@ inline bool ServerSuicideHook(UObject* Controller, UFunction* Function, void* Pa
 			// Helper::SpawnChip(Controller);
 			*(*Pawn)->Member<bool>(_("bIsDBNO")) = false;
 			(*Pawn)->ProcessEvent(_("OnRep_IsDBNO"));
+
+			struct { UObject* EventInstigator; } COPRParams{ Controller };
+			static auto COPRFn = FindObject(_("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnRevived"));
+
+			Controller->ProcessEvent(COPRFn, &COPRParams);
+
+			static auto setHealthFn = (*Pawn)->Function(_("SetHealth"));
+			struct { float NewHealthVal; }healthParams{ 30 };
+
+			if (setHealthFn)
+				(*Pawn)->ProcessEvent(setHealthFn, &healthParams);
+			else
+				std::cout << _("Unable to find setHealthFn!\n");
+
 			// std::cout << _("Spawned Chip!\n");
 			/* static auto fn = (*Pawn)->Function(_("LaunchCharacterJump"));
 

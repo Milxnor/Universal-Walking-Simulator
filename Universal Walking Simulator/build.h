@@ -9,9 +9,21 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 {
 	if (Controller && Parameters)
 	{
-		if (Engine_Version >= 423 && false)
+		if (Engine_Version >= 423)
 		{
-			struct SCBAParams { __int64 CreateBuildingData; };
+			struct FCreateBuildingActorData
+			{
+				uint32_t                                           BuildingClassHandle;                                      // 0x0000(0x0004) (ZeroConstructor, Transient, IsPlainOldData)
+				struct FVector				                       BuildLoc;                                                 // 0x0004(0x000C) (Transient)
+				struct FRotator                                    BuildRot;                                                 // 0x0010(0x000C) (ZeroConstructor, Transient, IsPlainOldData)
+				bool                                               bMirrored;                                                // 0x001C(0x0001) (ZeroConstructor, Transient, IsPlainOldData)
+				unsigned char                                      UnknownData00[0x3];                                       // 0x001D(0x0003) MISSED OFFSET
+				float                                              SyncKey;                                                  // 0x0020(0x0004) (ZeroConstructor, Transient, IsPlainOldData)
+				unsigned char                                      UnknownData01[0x4];                                       // 0x0024(0x0004) MISSED OFFSET
+				// struct FBuildingClassData                          BuildingClassData;                                        // 0x0028(0x0010) (Transient)
+				char pad[0x10];
+			};
+			struct SCBAParams { FCreateBuildingActorData CreateBuildingData; };
 			auto Params = (SCBAParams*)Parameters;
 			{
 				auto CreateBuildingData = Params->CreateBuildingData;
@@ -36,18 +48,21 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 					{
 						// auto BuildingClass = Controller->Member<UObject*>(_("CurrentBuildableClass"));
 						auto BuildingClass = (*RemoteClientInfo)->Member<UObject*>(_("RemoteBuildableClass"));
-						auto BuildLoc = Get<FVector>(BuildLocOffset, Params->CreateBuildingData);
-						auto BuildRot = Get<FRotator>(BuildRotOffset, Params->CreateBuildingData);
-						auto bMirrored = Get<bool>(bMirroredOffset, Params->CreateBuildingData);
+						// std::cout << _("BuildLocation Offset: ") << BuildLocOffset << '\n';
+						auto BuildLoc = Params->CreateBuildingData.BuildLoc; // (FVector*)(__int64(Params->CreateBuildingData) + BuildLocOffset)// Get<FVector>(BuildLocOffset, Params->CreateBuildingData);
+						auto BuildRot = Params->CreateBuildingData.BuildRot; // Get<FRotator>(BuildRotOffset, Params->CreateBuildingData);
+						// auto bMirrored = Get<bool>(bMirroredOffset, Params->CreateBuildingData);
 
+						/*
 						std::cout << _("BuildingClassOffset: ") << BuildingClassOffset << '\n';
 						std::cout << _("BuildingClassData: ") << BuildingClassDataOffset << '\n';
 						std::cout << _("BuildingClass: ") << BuildingClass << '\n';
+						*/
 
 						if (BuildingClass && *BuildingClass)
 						{
-							std::cout << _("Goofy class: ") << (*BuildingClass)->GetFullName();
-							auto BuildingActor = Easy::SpawnActor(*BuildingClass, *BuildLoc, *BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
+							// std::cout << _("Goofy class: ") << (*BuildingClass)->GetFullName();
+							auto BuildingActor = Easy::SpawnActor(*BuildingClass, BuildLoc, BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
 
 							if (BuildingActor)
 							{
@@ -66,8 +81,15 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 		}
 		else
 		{
+			struct FBuildingClassData {
+				UObject* BuildingClass;
+				int                                                PreviousBuildingLevel;                                    // 0x0008(0x0004) (ZeroConstructor, Transient, IsPlainOldData)
+				int                                                UpgradeLevel;
+				// sometimes theres somethinhg here
+			};
+
 			struct SCBAParams {
-				void* BuildingClassData; // FBuildingClassData&
+				const FBuildingClassData& BuildingClassData; // FBuildingClassData&
 				const FVector& BuildLoc;
 				const FRotator& BuildRot;
 				bool bMirrored;
@@ -88,12 +110,13 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				// auto BuildingClass = Controller->Member<UObject*>(_("CurrentBuildableClass"));
 				// auto BuildingClass = (*RemoteClientInfo)->Member<UObject*>(_("RemoteBuildableClass"));
 
-				auto BuildingClass = (UObject**)Params->BuildingClassData;
+				auto BuildingClass = Params->BuildingClassData.BuildingClass;
 
-				if (BuildingClass && *BuildingClass)
+				if (BuildingClass) // && *BuildingClass)
 				{
-					std::cout << _("Goofy class: ") << (*BuildingClass)->GetFullName();
-					auto BuildingActor = Easy::SpawnActor(*BuildingClass, Params->BuildLoc, Params->BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
+					std::cout << _("Printing name...");
+					// std::cout << _("Goofy class: ") << BuildingClass->GetFullName();
+					auto BuildingActor = Easy::SpawnActor(BuildingClass, Params->BuildLoc, Params->BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
 
 					if (BuildingActor)
 					{
@@ -109,6 +132,27 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 	}
 
 	return false;
+}
+
+inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	/* auto Params = (AFortPlayerController_ServerBeginEditingBuildingActor_Params*)Parameters;
+	auto Controller = (AFortPlayerControllerAthena*)Object;
+	bool bFound = false;
+	auto EditToolEntry = Inventory::FindItemInInventory<UFortEditToolItemDefinition>(Controller, bFound);
+
+	if (Controller && Pawn && Params->BuildingActorToEdit && bFound)
+	{
+		// auto EditTool = (AFortWeap_EditingTool*)Inventory::EquipWeaponDefinition(Pawn, (UFortWeaponItemDefinition*)EditToolEntry.ItemDefinition, EditToolEntry.ItemGuid);
+
+		if (EditTool)
+		{
+			EditTool->EditActor = Params->BuildingActorToEdit;
+			EditTool->OnRep_EditActor();
+			Params->BuildingActorToEdit->EditingPlayer = (AFortPlayerStateZone*)Pawn->PlayerState;
+			Params->BuildingActorToEdit->OnRep_EditingPlayer();
+		}
+	} */
 }
 
 void InitializeBuildHooks()

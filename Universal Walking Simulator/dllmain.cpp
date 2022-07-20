@@ -287,6 +287,18 @@ DWORD WINAPI Main(LPVOID)
     std::cout << dye::blue(_("[DEBUG] ")) << std::format("ReplicatedEntries Offset: 0x{:x}.\n", FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ReplicatedEntries")));
     std::cout << dye::blue(_("[DEBUG] ")) << std::format("ItemInstances Offset: 0x{:x}.\n", FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ItemInstances")));
 
+#ifdef BEFORE_SEASONEIGHT
+    if (Engine_Version >= 423)
+    {
+        std::cout << "\n\n\n\n" << dye::red(_("PLEASE UNDEFINE BEFORE_SEASONEIGHT!\n\n\n\n\n"));
+    }
+#else
+    if (Engine_Version < 423)
+    {
+        std::cout << "\n\n\n\n" << dye::red(_("PLEASE DEFINE BEFORE_SEASONEIGHT!\n\n\n\n\n"));
+    }
+#endif
+
     TestAbilitySizeDifference();
 
     return 0;

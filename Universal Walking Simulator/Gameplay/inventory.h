@@ -33,7 +33,7 @@ namespace Inventory
 
 	inline void EquipWeapon(UObject* Pawn, UObject* FortWeapon, FGuid& Guid, int Ammo = 0)
 	{
-		if (FortWeapon)
+		if (FortWeapon && Pawn)
 		{
 			// *FortWeapon->Member<UObject*>(_("WeaponData")) = Definition;
 			*FortWeapon->Member<FGuid>(_("ItemEntryGuid")) = Guid;
@@ -72,11 +72,14 @@ namespace Inventory
 
 			struct { UObject* Weapon; } internalEquipParams{ FortWeapon };
 
-			static auto internalEquipFn = Pawn->Function(_("ClientInternalEquipWeapon"));
-			if (internalEquipFn)
-				Pawn->ProcessEvent(internalEquipFn, &internalEquipParams);
-			else
-				std::cout << _("No ClientInternalEquipWeapon!\n");
+			if (std::stod(FN_Version) >= 7.40)
+			{
+				static auto internalEquipFn = Pawn->Function(_("ClientInternalEquipWeapon"));
+				if (internalEquipFn)
+					Pawn->ProcessEvent(internalEquipFn, &internalEquipParams);
+				else
+					std::cout << _("No ClientInternalEquipWeapon!\n");
+			}
 
 			// Pawn->OnRep_CurrentWeapon(); // i dont think this is needed but alr
 		}
@@ -272,7 +275,7 @@ namespace Inventory
 		// std::cout << _("ItemEntryStruct Size: ") << GetEntrySize() << '\n';
 
 		if (ItemEntry)
-			return GetReplicatedEntries<EntryStruct>(Controller)->Add(*ItemEntry, GetEntrySize());
+			return GetReplicatedEntries<EntryStruct>(Controller)->Add(*ItemEntry); // GetEntrySize());
 
 		return -1;
 	}
@@ -317,18 +320,19 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
 			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (FlooredVer > 4 && FlooredVer <= 6)
+		else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (FlooredVer >= 7) // not right idc
+		else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
 		else
 			std::cout << _("Could not get ItemEntrySize Struct! Please make a new one for this version using: ") << GetEntrySize() << '\n';
+
 		Inventory::Update(Controller, -1, true);
 	}
 
@@ -347,38 +351,38 @@ namespace Inventory
 
 	void GiveAllAmmo(UObject* Controller)
 	{
-		static UObject* AthenaAmmoDataRockets;
-		static UObject* AthenaAmmoDataShells;
-		static UObject* AthenaAmmoDataBulletsMedium;
-		static UObject* AthenaAmmoDataBulletsLight;
-		static UObject* AthenaAmmoDataBulletsHeavy;
-
 		// omfg
 
 		static const auto FnVerDouble = std::stod(FN_Version);
 
-		if (FnVerDouble < 7.40)
+		if (Engine_Version < 422)
 		{
-			AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
-			AthenaAmmoDataShells = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
-			AthenaAmmoDataBulletsMedium = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
-			AthenaAmmoDataBulletsLight = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
-			AthenaAmmoDataBulletsHeavy = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+			static UObject* AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
+			static UObject* AthenaAmmoDataShells = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
+			static UObject* AthenaAmmoDataBulletsMedium = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
+			static UObject* AthenaAmmoDataBulletsLight = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
+			static UObject* AthenaAmmoDataBulletsHeavy = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+
+			CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 999);
 		}
 		else
 		{
-			AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
-			AthenaAmmoDataShells = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
-			AthenaAmmoDataBulletsMedium = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
-			AthenaAmmoDataBulletsLight = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
-			AthenaAmmoDataBulletsHeavy = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+			static UObject* AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
+			static UObject* AthenaAmmoDataShells = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
+			static UObject* AthenaAmmoDataBulletsMedium = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
+			static UObject* AthenaAmmoDataBulletsLight = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
+			static UObject* AthenaAmmoDataBulletsHeavy = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+
+			CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 999);
 		}
-					
-		CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 999);
-		CreateAndAddItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, 999);
-		CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 999);
-		CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 999);
-		CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 999);
 	}
 
 	void GiveMats(UObject* Controller)
@@ -403,6 +407,14 @@ namespace Inventory
 		CreateAndAddItem(Controller, BuildingItemData_Floor, EFortQuickBars::Secondary, 1, 1);
 		CreateAndAddItem(Controller, BuildingItemData_Stair_W, EFortQuickBars::Secondary, 2, 1);
 		CreateAndAddItem(Controller, BuildingItemData_RoofS, EFortQuickBars::Secondary, 3, 1);
+	}
+
+	void GiveStartingItems(UObject* Controller)
+	{
+		static auto EditTool = FindObject(_("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
+
+		CreateAndAddItem(Controller, EditTool, EFortQuickBars::Primary, 0, 1);
+		GiveBuildings(Controller);
 	}
 }
 

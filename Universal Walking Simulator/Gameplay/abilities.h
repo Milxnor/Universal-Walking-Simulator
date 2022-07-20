@@ -122,26 +122,17 @@ inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunct
 
 inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
 {
-    if (Engine_Version >= 423)
-    {
-        struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
-            FServerAbilityRPCBatchHigher                      BatchInfo;                                                // (Parm)
-        };
+    struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
+#ifdef BEFORE_SEASONEIGHT
+        FServerAbilityRPCBatch                      BatchInfo;                                                // (Parm)
+#else
+        FServerAbilityRPCBatchHigher                      BatchInfo;                                                // (Parm)
+#endif
+    };
 
-        auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
+    auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
 
-        TryActivateAbility(AbilitySystemComponent, Params->BatchInfo.AbilitySpecHandle, Params->BatchInfo.InputPressed, &Params->BatchInfo.PredictionKey, nullptr);
-    }
-    else
-    {
-        struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
-            FServerAbilityRPCBatch                      BatchInfo;                                                // (Parm)
-        };
-
-        auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
-
-        TryActivateAbility(AbilitySystemComponent, Params->BatchInfo.AbilitySpecHandle, Params->BatchInfo.InputPressed, &Params->BatchInfo.PredictionKey, nullptr);
-    }
+    TryActivateAbility(AbilitySystemComponent, Params->BatchInfo.AbilitySpecHandle, Params->BatchInfo.InputPressed, &Params->BatchInfo.PredictionKey, nullptr);
 
     return false;
 }
