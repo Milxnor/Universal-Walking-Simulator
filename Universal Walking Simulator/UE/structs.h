@@ -89,17 +89,16 @@ public:
 
 	void Reserve(int Number, int Size = sizeof(ElementType))
 	{
-		if (!FMemory::Realloc)
+		/* if (!FMemory::Realloc)
 		{
 			MessageBoxA(0, _("How are you expecting to reserve with no Realloc?"), _("Universal Walking Simulator"), MB_ICONERROR);
 			return;
-		}
+		} */
 
 		// if (Number > ArrayMax)
 		{
 			// Data = (ElementType*)realloc(Data, Size * (ArrayNum + 1));
 			Data = Slack() >= Number ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + Number) * Size, 0);
-			// Data = Slack() >= ArrayNum ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + ArrayNum) * Size, 0); // thanks fischsalat for this line of code.
 		}
 	}
 
@@ -366,6 +365,8 @@ struct FChunkedFixedUObjectArray // https://github.com/EpicGames/UnrealEngine/bl
 template <typename ReturnType = UObject>
 static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, bool bIsName = false)
 {
+	// TODO: Use Static findobject, cut the first space.
+
 	if (bIsName) bIsEqual = true;
 
 	for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
@@ -649,6 +650,8 @@ UFunction* FindFunction(const std::string& Name, UObject* Object) // might as we
 		if (Member->GetName() == Name) // dont use IsA cuz slower
 			return (UFunction*)Member;
 	}
+	
+	return nullptr;
 }
 
 template <typename ClassType, typename PropertyType>

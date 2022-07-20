@@ -179,7 +179,8 @@ namespace Helper
 		{
 			static auto fn = BuildingActor->Function(_("InitializeKismetSpawnedBuildingActor"));
 
-			BuildingActor->ProcessEvent(fn, &IBAParams);
+			if (fn)
+				BuildingActor->ProcessEvent(fn, &IBAParams);
 		}
 	}
 
@@ -262,7 +263,7 @@ namespace Helper
 
 		// auto GamePhase = static_cast<AAthena_GameState_C*>(GetWorld()->GameState)->GamePhase;
 
-		if (ActorsNum != 0 && false) // && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
+		if (ActorsNum != 0 && Engine_Version < 423) // && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
 		{
 			auto ActorToUseNum = RandomIntInRange(0, ActorsNum);
 			auto ActorToUse = (OutActors)[ActorToUseNum];
@@ -333,9 +334,9 @@ namespace Helper
 		void ExecuteConsoleCommand(FString& Command)
 		{
 			struct {
-				class UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData)
-				struct FString                                     Command;                                                  // (Parm, ZeroConstructor)
-				class APlayerController* SpecificPlayer;                                           // (Parm, ZeroConstructor, IsPlainOldData)
+				UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData)
+				FString                                     Command;                                                  // (Parm, ZeroConstructor)
+				UObject* SpecificPlayer;                                           // (Parm, ZeroConstructor, IsPlainOldData)
 			} params{Helper::GetWorld(), Command, nullptr};
 
 			static auto KSLClass = FindObject(_("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
@@ -456,7 +457,7 @@ namespace Helper
 		struct { float NewValue; }shieldParams{ 100 };
 
 		if (setMaxShieldFn)
-			Pawn->ProcessEvent(setMaxShieldFn, &healthParams);
+			Pawn->ProcessEvent(setMaxShieldFn, &shieldParams);
 		else
 			std::cout << _("Unable to find setMaxShieldFn!\n");
 

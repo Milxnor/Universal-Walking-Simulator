@@ -176,7 +176,7 @@ HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_
 		ImGui::SetNextWindowBgAlpha(0.8f);
 		ImGui::SetNextWindowSize(ImVec2(560, 345));
 
-		ImGui::Begin(_("UWS"), 0, ImGuiWindowFlags_NoCollapse);
+		ImGui::Begin(_("Project Reboot"), 0, ImGuiWindowFlags_NoCollapse);
 
 		// initialize variables used by the user using the gui
 
@@ -192,6 +192,11 @@ HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_
 			if (ImGui::BeginTabItem(_("Game")))
 			{
 				Tab = 1;
+				ImGui::EndTabItem();
+			}
+			if (ImGui::BeginTabItem(_("Mode")))
+			{
+				Tab = 2;
 				ImGui::EndTabItem();
 			}
 
@@ -220,6 +225,42 @@ HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_
 					Events::StartEvent();
 				}
 			}
+
+			break;
+
+		case 2:
+			if (ImGui::Button(_("Change Phase to Aircraft"))) // TODO: Improve phase stuff
+			{
+				auto world = Helper::GetWorld();
+				auto gameState = *world->Member<UObject*>(_("GameState"));
+
+				*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Aircraft;
+
+				struct {
+					EAthenaGamePhase OldPhase;
+				} params2{ EAthenaGamePhase::None };
+
+				static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
+
+				std::cout << _("Changed Phase to Aircraft.");
+			}
+
+			if (ImGui::Button(_("Change Phase to SafeZones"))) // TODO: Improve phase stuff
+			{
+				auto world = Helper::GetWorld();
+				auto gameState = *world->Member<UObject*>(_("GameState"));
+
+				*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::SafeZones;
+
+				struct {
+					EAthenaGamePhase OldPhase;
+				} params2{ EAthenaGamePhase::None };
+
+				static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
+
+				std::cout << _("Changed Phase to SafeZones.");
+			}
+
 			break;
 		}
 

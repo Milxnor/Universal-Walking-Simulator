@@ -175,13 +175,20 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     static auto Def = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
     static auto BluePump = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03"));
+    static auto Minis = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
+    static auto SlurpJuice = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff"));
+    static auto BlueAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
 
     Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
-    Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 1, 1);
+    Inventory::CreateAndAddItem(PlayerController, BlueAR, EFortQuickBars::Primary, 1, 1);
     Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 2, 1);
+    Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 3, 1);
+    Inventory::CreateAndAddItem(PlayerController, Minis, EFortQuickBars::Primary, 4, 1);
+    Inventory::CreateAndAddItem(PlayerController, SlurpJuice, EFortQuickBars::Primary, 5, 1);
 
     Inventory::GiveAllAmmo(PlayerController);
-    Inventory::GiveBuildings(PlayerController);
+    // Inventory::GiveBuildings(PlayerController);
+    Inventory::GiveStartingItems(PlayerController); // Gives the needed items
     Inventory::GiveMats(PlayerController);
 
     return PlayerController;
