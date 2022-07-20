@@ -1,11 +1,11 @@
 #pragma once
 
-// #define T_F // S3-S4
+#define T_F // S3-S4
 // #define S_F // S5-S6
-#define S_T // S7+
+// #define S_T // S7+
 // #define F_FF // UE4.25
 
-// #define BEFORE_SEASONEIGHT
+#define BEFORE_SEASONEIGHT
 
 // 3.5 Patterns are from raider, some patterns are not mine.
 
@@ -41,7 +41,7 @@ namespace Patterns
 
     constexpr const char* CollectGarbage = "40 53 48 83 EC 40 48 8B D9 FF 15 ? ? ? ? 84 C0 75 76 33 D2 33 C9 E8 ? ? ? ? 84 C0 74 69 33 C0 88 44 24 58 48 8D 44 24 ?";
     constexpr const char* NetDebug = "40 55 56 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 01 48 8B F1 FF 90 ? ? ? ? 4C 8B F0 48 85 C0 0F";
-    constexpr const char* GetPlayerViewPoint = "48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 50 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 D0 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB ? ? ? ? ? 75 41";
+    constexpr const char* GetPlayerViewpoint = "48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 50 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 D0 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB ? ? ? ? ? 75 41";
 
     // paddin
     constexpr const char* HasClientLoadedCurrentWorld = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F9 48 85 DB 74 23 E8 ? ? ? ? 48 8B 53 10 4C 8D 40 30 48 63 40 38 3B 42 38 7F 0D 48 8B C8 48 8B 42 30 4C 39 04 C8 74 17 48 8B 1D ? ? ? ? 48 85 DB";

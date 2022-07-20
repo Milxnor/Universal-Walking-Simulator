@@ -513,6 +513,13 @@ enum class EFortPickupSourceTypeFlag : uint8_t
 	EFortPickupSourceTypeFlag_MAX = 7
 };
 
+enum class EFriendlyFireType : uint8_t
+{
+	Off = 0,
+	On = 1,
+	EFriendlyFireType_MAX = 2
+};
+
 enum class EFortPickupSpawnSource : uint8_t
 {
 	Unset = 0,
@@ -531,4 +538,11 @@ enum class EFastArraySerializerDeltaFlags : uint8_t
 	IsUsingDeltaSerialization = 1 << 2,	//! This will remain unset until we've serialized at least once.
 										//! At that point, this will be set if delta serialization was requested and
 										//! we support it.
+};
+
+enum class EGameplayAbilityReplicationPolicy : uint8_t
+{
+	ReplicateNo = 0,
+	ReplicateYes = 1,
+	EGameplayAbilityReplicationPolicy_MAX = 2
 };

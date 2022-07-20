@@ -58,16 +58,16 @@ int GenerateNewHandle()
     return GHandle++;
 }
 
-static inline void GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass, bool bAddSpecManually = false)
+static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass, bool bAddSpecManually = false)
 {
     auto AbilitySystemComponent = *TargetPawn->Member<UObject*>(_("AbilitySystemComponent"));
 
     if (!AbilitySystemComponent)
-        return;
+        return nullptr;
 
     auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"));
 
-    UObject* DefaultObject = GameplayAbilityClass->CreateDefaultObject();// Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
+    UObject* DefaultObject = GameplayAbilityClass->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
 
     auto GenerateNewSpec = [&]() -> FGameplayAbilitySpec
     {
@@ -85,14 +85,17 @@ static inline void GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAb
         auto& CurrentSpec = ActivatableAbilities.Items[i];
 
         if (CurrentSpec.Ability == Spec.Ability)
-            return;
+            return nullptr;
     }
     
     if (bAddSpecManually)
         ActivatableAbilities.Items.Add(Spec);
 
     // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232
+    
     GiveAbility(AbilitySystemComponent, &Spec.Handle, Spec);
+
+    return Spec.Ability;
     // Helper::Abilities::GrantAbility(AbilitySystemComponent, &Spec.Handle, Spec);
     //AbilitySystemComponent->GiveAbility(
     // FGameplayAbilitySpec(StartupAbility, 

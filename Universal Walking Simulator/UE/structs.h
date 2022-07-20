@@ -13,6 +13,7 @@
 #include "other.h"
 #include "xorstr.hpp" 
 #include <regex>
+#include "patterns.h" // we need this for the #ifndef BEFORE_SEASONEIGHT
 
 using namespace std::chrono;
 
@@ -1105,7 +1106,6 @@ struct FFastArraySerializer
 
 	int32_t CachedNumItems;
 	int32_t CachedNumItemsToConsiderForWriting;
-	int32_t whatIsTHiS; // idk where this is supposed to go tbh
 #endif
 
 	void MarkItemDirty(FFastArraySerializerItem& Item)
@@ -1154,4 +1154,10 @@ int32_t GetSizeOfStruct(UObject* Struct)
 		return ((UClass_CT*)Struct)->PropertiesSize;
 
 	return 0;
+}
+
+template <typename T>
+T* Get(int offset, uintptr_t addr)
+{
+	return (T*)(__int64(addr) + offset);
 }

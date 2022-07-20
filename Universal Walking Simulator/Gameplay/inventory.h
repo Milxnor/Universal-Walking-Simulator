@@ -31,6 +31,59 @@ namespace Inventory
 		return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
 	}
 
+	inline void EquipWeapon(UObject* Pawn, UObject* FortWeapon, FGuid& Guid, int Ammo = 0)
+	{
+		if (FortWeapon)
+		{
+			// *FortWeapon->Member<UObject*>(_("WeaponData")) = Definition;
+			*FortWeapon->Member<FGuid>(_("ItemEntryGuid")) = Guid;
+
+			// if (bEquipWithMaxAmmo)
+			{
+				static auto getBulletsFn = FortWeapon->Function(_("GetBulletsPerClip"));
+				if (getBulletsFn)
+				{
+					int BulletsPerClip;
+					FortWeapon->ProcessEvent(getBulletsFn, &BulletsPerClip);
+					*FortWeapon->Member<int>(_("AmmoCount")) = BulletsPerClip;
+				}
+				else
+					std::cout << _("No GetBulletsPerClip!\n");
+			}
+
+			// Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
+
+			std::cout << _("Setting owner!\n");
+			Helper::SetOwner(FortWeapon, Pawn);
+			std::cout << _("Setted owner!\n");
+
+			FortWeapon->ProcessEvent(_("OnRep_ReplicatedWeaponData"));
+
+			// the functgion below starts taking a param
+			// Weapon->ProcessEvent(_("OnRep_AmmoCount")); // crashes :( (I think it's because if we call it on a pickaxe??)
+
+			struct { UObject* P; } givenParams{ Pawn };
+
+			static auto givenFn = FortWeapon->Function(_("ClientGivenTo"));
+			if (givenFn)
+				givenFn->ProcessEvent(givenFn, &givenParams);
+			else
+				std::cout << _("No ClientGivenTo!\n");
+
+			struct { UObject* Weapon; } internalEquipParams{ FortWeapon };
+
+			static auto internalEquipFn = Pawn->Function(_("ClientInternalEquipWeapon"));
+			if (internalEquipFn)
+				Pawn->ProcessEvent(internalEquipFn, &internalEquipParams);
+			else
+				std::cout << _("No ClientInternalEquipWeapon!\n");
+
+			// Pawn->OnRep_CurrentWeapon(); // i dont think this is needed but alr
+		}
+		else
+			std::cout << _("No weapon!\n");
+	}
+
 	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, FGuid& Guid, int Ammo = 0)
 	{
 		// auto weaponClass = Definition->GetWeaponActorClass();
@@ -46,53 +99,12 @@ namespace Inventory
 			} params{ Definition, Guid };
 			Pawn->ProcessEvent(equipFn, &params);
 			auto Weapon = params.Wep;
+
 			if (Weapon)
 			{
 				*Weapon->Member<UObject*>(_("WeaponData")) = Definition;
-				*Weapon->Member<FGuid>(_("ItemEntryGuid")) = Guid;
-
-				// if (bEquipWithMaxAmmo)
-				{
-					static auto getBulletsFn = Weapon->Function(_("GetBulletsPerClip"));
-					if (getBulletsFn)
-					{
-						int BulletsPerClip;
-						Weapon->ProcessEvent(getBulletsFn, &BulletsPerClip);
-						*Weapon->Member<int>(_("AmmoCount")) = BulletsPerClip;
-					}
-					else
-						std::cout << _("No GetBulletsPerClip!\n");
-				}
-
-				// Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
-
-				std::cout << _("Setting owner!\n");
-				Helper::SetOwner(Weapon, Pawn);
-				std::cout << _("Setted owner!\n");
-				
-				Weapon->ProcessEvent(_("OnRep_ReplicatedWeaponData"));
-				// Weapon->ProcessEvent(_("OnRep_AmmoCount")); // crashes :( (I think it's because if we call it on a pickaxe??)
-
-				struct { UObject* P; } givenParams{ Pawn };
-
-				static auto givenFn = Weapon->Function(_("ClientGivenTo"));
-				if (givenFn)
-					givenFn->ProcessEvent(givenFn, &givenParams);
-				else
-					std::cout << _("No ClientGivenTo!\n");
-
-				struct { UObject* Weapon; } internalEquipParams{ Weapon };
-
-				static auto internalEquipFn = Pawn->Function(_("ClientInternalEquipWeapon"));
-				if (internalEquipFn)
-					Pawn->ProcessEvent(internalEquipFn, &internalEquipParams);
-				else
-					std::cout << _("No ClientInternalEquipWeapon!\n");
-
-				// Pawn->OnRep_CurrentWeapon(); // i dont think this is needed but alr
+				EquipWeapon(Pawn, Weapon, Guid, Ammo);
 			}
-			else
-				std::cout << _("No weapon!\n");
 
 			return Weapon;
 		}
@@ -310,11 +322,13 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (FlooredVer > 7) // not right idc
+		else if (FlooredVer >= 7) // not right idc
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
+		else
+			std::cout << _("Could not get ItemEntrySize Struct! Please make a new one for this version using: ") << GetEntrySize() << '\n';
 		Inventory::Update(Controller, -1, true);
 	}
 
@@ -341,7 +355,9 @@ namespace Inventory
 
 		// omfg
 
-		if (Engine_Version < 423)
+		static const auto FnVerDouble = std::stod(FN_Version);
+
+		if (FnVerDouble < 7.40)
 		{
 			AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
 			AthenaAmmoDataShells = FindObject(_("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
@@ -401,7 +417,22 @@ inline bool ServerExecuteInventoryWeaponHook(UObject* Controller, UFunction* Fun
 	auto Weapon = (UObject**)Parameters;
 
 	if (Weapon && *Weapon)
-		Inventory::EquipInventoryItem(Controller, *(*Weapon)->Member<FGuid>(_("ItemEntryGuid"))); // "hacky"
+	{
+		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+		auto Guid = *(*Weapon)->Member<FGuid>(_("ItemEntryGuid"));
+		auto Def = *(*Weapon)->Member<UObject*>(_("WeaponData"));
+
+		int Ammo = 0; // TODO: implmeent
+
+		// Inventory::EquipInventoryItem(Controller, Guid); // "hacky" // this doesjnt work maybe
+		
+		if (Def)
+			Inventory::EquipWeaponDefinition(Pawn, Def, Guid, Ammo); // scuffed
+		else
+			std::cout << _("No Def!\n");
+
+		// Inventory::EquipWeapon, *Weapon, Guid);
+	}
 	else
 		std::cout << _("No weapon?\n");
 
@@ -421,6 +452,6 @@ inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Funct
 void InitializeInventoryHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryItemHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
 }

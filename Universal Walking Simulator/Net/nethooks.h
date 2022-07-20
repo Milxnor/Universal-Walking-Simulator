@@ -134,16 +134,17 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
             static auto EnterVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.GA_AthenaEnterVehicle_C"));
             static auto ExitVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.GA_AthenaExitVehicle_C"));
             static auto InVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.GA_AthenaInVehicle_C"));
+            static auto RangedAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C"));
 
             if (SprintAbility)
-            {
-                if (Engine_Version >= 423)
-                    GrantGameplayAbility(Pawn, SprintAbility, true);
-                else
-                    GrantGameplayAbility(Pawn, SprintAbility);
-            }
+                GrantGameplayAbility(Pawn, SprintAbility); //, true);
             if (ReloadAbility)
-                GrantGameplayAbility(Pawn, ReloadAbility);
+            {
+                auto Ability = GrantGameplayAbility(Pawn, ReloadAbility);
+
+                if (Ability)
+                    *Ability->Member<TEnumAsByte<EGameplayAbilityReplicationPolicy>>(_("ReplicationPolicy")) = EGameplayAbilityReplicationPolicy::ReplicateYes;
+            }
             if (JumpAbility)
                 GrantGameplayAbility(Pawn, JumpAbility);
             if (InteractUseAbility)
@@ -156,6 +157,13 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 GrantGameplayAbility(Pawn, ExitVehicleAbility);
             if (InVehicleAbility)
                 GrantGameplayAbility(Pawn, InVehicleAbility);
+            if (RangedAbility)
+            {
+                auto Ability = GrantGameplayAbility(Pawn, RangedAbility);
+
+                if (Ability)
+                    *Ability->Member<TEnumAsByte<EGameplayAbilityReplicationPolicy>>(_("ReplicationPolicy")) = EGameplayAbilityReplicationPolicy::ReplicateYes;
+            }
         }
         else
             std::cout << _("Unable to find AbilitySystemComponent!\n");

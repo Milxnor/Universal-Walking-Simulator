@@ -45,6 +45,8 @@ inline void initStuff()
 			*gameState->Member<float>(_("AircraftStartTime")) = 99999.0f;
 			*gameState->Member<float>(_("WarmupCountdownEndTime")) = 99999.0f;
 
+			*gameState->Member<EFriendlyFireType>(_("FriendlyFireType")) = EFriendlyFireType::On;
+
 			*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Warmup;
 
 			struct {
@@ -62,11 +64,13 @@ inline void initStuff()
 
 				AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartMatch")), nullptr);
 
+				*AuthGameMode->Member<bool>(_("bAlwaysDBNO")) = true;
+
 				// Is this correct?
 				
-				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
+				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
-				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
+				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
 
 				static auto OnRepPlaylist = FindObject(_("Function /Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo"));
 
@@ -316,8 +320,32 @@ inline bool ServerSuicideHook(UObject* Controller, UFunction* Function, void* Pa
 
 		if (Pawn && *Pawn)
 		{
-			Helper::SpawnChip(Controller);
-			std::cout << _("Spawned Chip!\n");
+			auto ParachuteAttachment = (*Pawn)->Member<UObject*>(_("ParachuteAttachment"));
+
+			if (ParachuteAttachment && *ParachuteAttachment)
+			{
+				*(*ParachuteAttachment)->Member<bool>(_("bParachuteVisible")) = false;
+				*(*ParachuteAttachment)->Member<UObject*>(_("PlayerPawn")) = nullptr;
+				(*ParachuteAttachment)->ProcessEvent(_("OnRep_PlayerPawn"));
+				Helper::DestroyActor(*ParachuteAttachment);
+				std::cout << _("Destroyed ParachuteAttachment!\n");
+			}
+
+			/* UObject* GliderAnimInstance = nullptr;
+
+			if (GliderAnimInstance)
+			{
+				auto OwnerGlider = GliderAnimInstance->Member<UObject*>(_("OwnerGlider"));
+
+				if (OwnerGlider && *OwnerGlider)
+				{
+
+				}
+			} */
+			// Helper::SpawnChip(Controller);
+			*(*Pawn)->Member<bool>(_("bIsDBNO")) = false;
+			(*Pawn)->ProcessEvent(_("OnRep_IsDBNO"));
+			// std::cout << _("Spawned Chip!\n");
 			/* static auto fn = (*Pawn)->Function(_("LaunchCharacterJump"));
 
 			if (fn)

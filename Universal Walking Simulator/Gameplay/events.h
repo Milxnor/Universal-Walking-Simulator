@@ -7,9 +7,9 @@ namespace Events {
 	}
 
 	void LoadEvents() {
-		std::cout << _("Loading Event!\n");
 		float Version = std::stof(FN_Version);
 		if (HasEvent()) {
+			std::cout << _("Loading Event!\n");
 			if (Version == 10.40f) {
 				UObject* NN = FindObject("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2");
 				UObject* Func = NN->Function("LoadNightNightLevel");

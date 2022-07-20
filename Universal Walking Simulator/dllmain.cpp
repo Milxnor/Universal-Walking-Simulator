@@ -9,6 +9,7 @@
 #include "gui.h"
 #include <hooks.h>
 #include <Gameplay/abilities.h>
+#include "build.h"
 
 void InitializePatterns()
 {
@@ -264,6 +265,7 @@ DWORD WINAPI Main(LPVOID)
         InitializeAbilityHooks();
 
     InitializeInventoryHooks();
+    InitializeBuildHooks();
 
     FinishInitializeUHooks();
 

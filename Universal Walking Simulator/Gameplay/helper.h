@@ -262,7 +262,7 @@ namespace Helper
 
 		// auto GamePhase = static_cast<AAthena_GameState_C*>(GetWorld()->GameState)->GamePhase;
 
-		if (ActorsNum != 0) // && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
+		if (ActorsNum != 0 && false) // && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
 		{
 			auto ActorToUseNum = RandomIntInRange(0, ActorsNum);
 			auto ActorToUse = (OutActors)[ActorToUseNum];
@@ -447,6 +447,7 @@ namespace Helper
 			Pawn->ProcessEvent(setMaxShieldFn, &healthParams);
 		else
 			std::cout << _("Unable to find setMaxShieldFn!\n");
+
 		static const auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
 
 		*PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
@@ -472,6 +473,12 @@ namespace Helper
 			static auto OnRepPlayerFn = PlayerState->Function(_("OnRep_PlayerTeam"));
 
 			static uint8_t TeamIndex = 3;
+			static const int SquadId = 1;
+
+			*PlayerState->Member<unsigned char>(_("SquadId")) = SquadId;
+			*PlayerState->Member<uint8_t>(_("TeamIndex")) = TeamIndex;
+
+			/*static uint8_t TeamIndex = 3;
 			static int SquadId = 1;
 			static std::vector<UObject*> Members;
 
@@ -484,7 +491,7 @@ namespace Helper
 			for (auto& _Member : Members)
 			{
 				PlayerTeam->Member<TArray<UObject*>>(_("TeamMembers"))->Add(_Member); // AController
-			}
+			} */
 
 			if (OnRepSquadIdFn)
 				PlayerState->ProcessEvent(OnRepSquadIdFn);
@@ -495,6 +502,8 @@ namespace Helper
 				PlayerState->ProcessEvent(OnRepPlayerFn);
 			else
 				std::cout << _("Unable to find OnRepPlayerFn!\n");
+
+			TeamIndex++;
 		}
 
 		return Pawn;
