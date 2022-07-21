@@ -260,7 +260,17 @@ HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_
 
 				std::cout << _("Changed Phase to SafeZones.");
 			} */
+			/*if (ImGui::Button(_("Spawn Plane at spawn"))) // Crashes
+			{
+				
+				auto plane = FindObject(_("Class /Script/FortniteGame.FortAthenaFerretVehicle"));
+				
+				Easy::SpawnActor(plane, FVector{ 0, 0, 3000 });
 
+				
+
+				std::cout << _("Spawn Plane at spawn");
+			}*/
 			break;
 		}
 

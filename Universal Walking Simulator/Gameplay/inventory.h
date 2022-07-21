@@ -512,3 +512,31 @@ void InitializeInventoryHooks()
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
 }
+namespace Player
+{
+	void RespawnPlayer(UObject* PlayerController, FVector Spawn = { 500, 500, 4000 })
+	{
+		auto baseplaylist = FindObject(_("ObjectProperty /Script/FortniteGame.PlaylistPropertyArray.BasePlaylist"));
+		bool bRespawning;
+		auto Pawn = PlayerController->Member<UObject>("Pawn");
+		if (PlayerController->Member<UObject>("Pawn"))
+		{
+			auto Pawn = PlayerController->Member<UObject>("Pawn");
+			Pawn->Function("K2_DestroyActor");
+
+		}
+		Helper::InitPawn(PlayerController, false, Spawn);
+		//PlayerController->Function("RespawnPlayerAfterDeath");
+		static UObject* PickaxeDefinition = FindObject(_("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
+
+		auto PickaxeInstance = Inventory::FindItemInInventory(PlayerController, PickaxeDefinition);
+		auto Pickaxe = Inventory::EquipWeaponDefinition(Pawn, PickaxeDefinition, Inventory::GetItemGuid(PickaxeInstance));
+
+		/*auto PickaxeDefinition = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+
+
+		auto PickaxeInstance = Inventory::CreateItemInstance(PlayerController, PickaxeDefinition);
+		auto PickaxeGuid = Inventory::GetItemGuid(PickaxeInstance);
+		Inventory::EquipInventoryItem(PlayerController, PickaxeGuid);*/
+	}
+}

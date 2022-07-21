@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <functional>
 
+
 uint64_t GetNetModeAddr = 0;
 uint64_t LP_SpawnPlayActorAddr = 0;
 uint64_t TickFlushAddr = 0;
@@ -329,3 +330,4 @@ template<typename T, typename U> constexpr size_t offsetOf(U T::* member)
 {
     return (char*)&((T*)nullptr->*member) - (char*)nullptr;
 }
+

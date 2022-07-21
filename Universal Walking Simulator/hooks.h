@@ -69,11 +69,18 @@ inline void initStuff()
 				// *AuthGameMode->Member<bool>(_("bAlwaysDBNO")) = true;
 
 				// Is this correct?
+				/*class UClass* VehicleClass = (UClass*)(FindObject(_("Class /Script/FortniteGame.FortAthenaFerretVehicle")));//(UClass*(FindObject(_("Class /Script/FortniteGame.FortAthenaFerretVehicle.FortAthenaFerretVehicle"))));
+				struct 
+				{
+					class UClass* VehicleClass;
+				} SSVParams{ VehicleClass };
 				
-				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
+				auto SSVFn = *AuthGameMode->Member<bool>(_("ShouldSpawnVehicle")) = true;*/
+				
+				//static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
-
+				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
 				static auto OnRepPlaylist = FindObject(_("Function /Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo"));
 
 				static auto BasePlaylistOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("BasePlaylist"));
@@ -277,6 +284,12 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 			}
 		}
 	}
+	return true;
+}
+inline bool ClientOnPawnDiedHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	Player::RespawnPlayer(Controller, FVector{ 0,0, 7000 });
+	
 	return true;
 }
 
@@ -614,6 +627,8 @@ void FinishInitializeUHooks()
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
+
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 
 	if (Engine_Version < 423)
