@@ -123,7 +123,7 @@ namespace Helper
 					static auto TossPickupFn = Pickup->Function(_("TossPickup"));
 
 					struct {
-						const FVector& FinalLocation;
+						FVector FinalLocation;
 						UObject* ItemOwner;
 						int OverrideMaxStackCount;
 						bool bToss;
@@ -419,7 +419,7 @@ namespace Helper
 
 	}
 
-	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart())
+	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart(), bool bResetTeams = false)
 	{
 		static const auto FnVerDouble = std::stod(FN_Version);
 
@@ -428,12 +428,14 @@ namespace Helper
 		static auto PawnClass = FindObject(_("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
 		auto Pawn = Easy::SpawnActor(PawnClass, Location, {});
 
+		if (!Pawn)
+			return nullptr;
+
 		static auto SetReplicateMovementFn = Pawn->Function(_("SetReplicateMovement"));
 		struct {
 			bool b;
 		} bruh{true};
 		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh);
-		auto Offset = GetOffset(Pawn, _("bReplicateMovement"));
 
 		// stupidBitField[0] = 1;
 		static auto Rep_ReplicateMovement = Pawn->Function(_("OnRep_ReplicateMovement"));

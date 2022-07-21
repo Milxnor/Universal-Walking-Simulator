@@ -461,7 +461,7 @@ inline bool ServerAttemptInteractHook(UObject* Controller, UFunction* Function, 
 						static auto BlueAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
 						
 						if (BlueAR)
-							Helper::SummonPickup(Pawn, BlueAR, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Chest, 1, false);
+							Helper::SummonPickup(Pawn, BlueAR, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Chest, 1);
 					}
 					else if (ReceivingActorName.contains(_("Ammo")))
 					{
@@ -469,14 +469,14 @@ inline bool ServerAttemptInteractHook(UObject* Controller, UFunction* Function, 
 						{
 							static UObject* AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
 							if (AthenaAmmoDataRockets)
-								Helper::SummonPickup(Pawn, AthenaAmmoDataRockets, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::AmmoBox, 1, true);
+								Helper::SummonPickup(Pawn, AthenaAmmoDataRockets, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::AmmoBox, 1);
 						}
 						else
 						{
 							static UObject* AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
 							
 							if (AthenaAmmoDataRockets)
-								Helper::SummonPickup(Pawn, AthenaAmmoDataRockets, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::AmmoBox, 1, true);
+								Helper::SummonPickup(Pawn, AthenaAmmoDataRockets, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::AmmoBox, 1);
 						}
 					}
 				}
@@ -540,7 +540,7 @@ inline bool ServerSuicideHook(UObject* Controller, UFunction* Function, void* Pa
 			else
 				std::cout << _("No ParachuteAttachment!\n");
 
-			static auto FortGliderInstance = FindObject(_("Class /Script/FortniteGame.FortPlayerParachute"));
+			static auto FortGliderInstance = FindObject(_("BlueprintGeneratedClass /Game/Athena/Cosmetics/Blueprints/Gliders/B_BaseGlider.B_BaseGlider_C"));
 			auto Gliders = Helper::GetAllActorsOfClass(FortGliderInstance);
 			
 			std::cout << _("Glider Num: ") << Gliders.Num() << '\n';

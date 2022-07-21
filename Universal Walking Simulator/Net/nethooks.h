@@ -117,7 +117,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         }
     }
 
-    auto Pawn = Helper::InitPawn(PlayerController, true);
+    auto Pawn = Helper::InitPawn(PlayerController, true, Helper::GetPlayerStart(), true);
 
     if (GiveAbility)
     {

@@ -128,10 +128,19 @@ public:
 		return -1;
 	};
 
-	INL void RemoveSingle(const ElementType& Index) // TODO
+	inline bool RemoveAt(const int Index) // NOT MINE
 	{
+		if (Index < ArrayNum)
+		{
+			if (Index != ArrayNum - 1)
+				Data[Index] = Data[ArrayNum - 1];
 
-	}
+			--ArrayNum;
+
+			return true;
+		}
+		return false;
+	};
 
 	INL auto GetData() const { return Data; }
 };

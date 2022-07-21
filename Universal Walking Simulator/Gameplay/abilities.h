@@ -89,9 +89,10 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
     }
 
     ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkArrayDirty();
-    // ASC->Member< FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkItemDirty(*Spec);
+    ASC->Member< FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkItemDirty(*Spec);
     
-    // MarkAbilitySpecDirtyNew(ASC, *Spec, true);
+    MarkAbilitySpecDirtyNew(ASC, *Spec, true);
+    MarkAbilitySpecDirtyNew(ASC, *Spec, false);
 }
 
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5

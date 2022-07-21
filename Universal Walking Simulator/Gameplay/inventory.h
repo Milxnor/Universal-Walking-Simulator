@@ -224,11 +224,14 @@ namespace Inventory
 		}
 		else
 		{
-			static auto ClientForceUpdateQuickbar = FindObject(_("Function /Script/FortniteGame.FortPlayerController.ClientForceUpdateQuickbar"));
+			static auto ClientForceUpdateQuickbar = Controller->Function(_("ClientForceUpdateQuickbar"));
 			auto PrimaryQuickbar = EFortQuickBars::Primary;
 			Controller->ProcessEvent(ClientForceUpdateQuickbar, &PrimaryQuickbar);
 			auto SecondaryQuickbar = EFortQuickBars::Secondary;
 			Controller->ProcessEvent(ClientForceUpdateQuickbar, &SecondaryQuickbar);
+
+			static auto UpdateQuickBars = Controller->Function(_("UpdateQuickBars"));
+			Controller->ProcessEvent(UpdateQuickBars);
 		}
 
 		// static auto OnRep_QuickBar = Controller->Function(_("OnRep_QuickBar"));
@@ -293,6 +296,32 @@ namespace Inventory
 			return GetReplicatedEntries<EntryStruct>(Controller)->Add(*ItemEntry); // GetEntrySize());
 
 		return -1;
+	}
+
+	template <typename EntryStruct>
+	bool RemoveGuidFromReplicatedEntries(UObject* Controller, const FGuid& Guid)
+	{
+		auto ReplicatedEntries = GetReplicatedEntries<EntryStruct>(Controller);
+
+		bool bSuccessful = false;
+
+		for (int x = 0; x < ReplicatedEntries->Num(); x++)
+		{
+			static auto GuidOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemGuid"));
+			auto& ItemEntry = ReplicatedEntries->At(x);
+
+			if (*(FGuid*)(__int64(&ItemEntry) + GuidOffset) == Guid)
+			{
+				ReplicatedEntries->RemoveAt(x);
+				bSuccessful = true;
+				// break;
+			}
+		}
+
+		if (!bSuccessful)
+			std::cout << _("Failed to find ItemGuid in Inventory!\n");
+
+		return bSuccessful;
 	}
 
 	static void AddItem(UObject* Controller, UObject* FortItem, EFortQuickBars Bars, int Slot)
@@ -384,9 +413,49 @@ namespace Inventory
 		return nullptr;
 	}
 
-	void OnPickup()
+	UObject* RemoveItem(UObject* Controller, const FGuid& Guid, int Count = 1)
 	{
+		auto ItemInstances = GetItemInstances(Controller);
+		UObject* ItemDefinition = nullptr;
+		for (int j = 0; j < ItemInstances->Num(); j++)
+		{
+			auto ItemInstance = ItemInstances->At(j);
 
+			if (!ItemInstance)
+				continue;
+
+			auto CurrentGuid = GetItemGuid(ItemInstance);
+
+			if (CurrentGuid == Guid)
+			{
+				ItemInstances->RemoveAt(j);
+				if (!ItemDefinition)
+					ItemDefinition = GetItemDefinition(ItemInstance);
+				// break;
+			}
+		}
+
+		static const auto FlooredVer = std::floor(std::stod(FN_Version));
+
+		if (FlooredVer == 3)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
+			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x120]; };
+			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+
+		Update(Controller, -1, true);
+
+		return ItemDefinition;
 	}
 
 	UObject* DecreaseItemCount()
@@ -500,7 +569,59 @@ inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Funct
 {
 	if (Controller && Parameters)
 	{
+		struct AFortPlayerController_ServerAttemptInventoryDrop_Params
+		{
+			FGuid                                       ItemGuid;                                                 // (Parm, ZeroConstructor, IsPlainOldData)
+			int                                                Count;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
+		};
 
+		auto Params = (AFortPlayerController_ServerAttemptInventoryDrop_Params*)Parameters;
+
+		auto Definition = Inventory::RemoveItem(Controller, Params->ItemGuid, Params->Count);
+		auto Pawn = Controller->Member<UObject*>(_("Pawn"));
+
+		if (Pawn && *Pawn)
+			Helper::SummonPickup(*Pawn, Definition, Helper::GetActorLocation(*Pawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count);
+	}
+
+	return false;
+}
+
+inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Parameters)
+{
+	if (Pawn && Parameters)
+	{
+		struct AFortPlayerPawn_ServerHandlePickup_Params
+		{
+			UObject* Pickup;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+			float                                              InFlyTime;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+			FVector                                     InStartDirection;                                         // (ConstParm, Parm, ZeroConstructor, IsPlainOldData)
+			bool                                               bPlayPickupSound;                                         // (Parm, ZeroConstructor, IsPlainOldData)
+		};
+
+		auto Params = (AFortPlayerPawn_ServerHandlePickup_Params*)Parameters;
+
+		if (Params->Pickup)
+		{
+			bool* bPickedUp = Params->Pickup->Member<bool>(_("bPickedUp"));
+
+			if (bPickedUp && !*bPickedUp)
+			{
+				auto PrimaryPickupItemEntry = *Params->Pickup->Member<__int64>(_("PrimaryPickupItemEntry"));
+				static auto ItemDefinitionOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
+				static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
+
+				auto Definition = (UObject**)(__int64(&PrimaryPickupItemEntry) + ItemDefinitionOffset);
+				auto Count = *(int*)(__int64(&PrimaryPickupItemEntry) + CountOffset);
+
+				if (Definition)
+					Inventory::CreateAndAddItem(*Pawn->Member<UObject*>(_("Controller")), *Definition, EFortQuickBars::Primary, Count);
+				Helper::DestroyActor(Params->Pickup);
+				*bPickedUp = true;
+				static auto bPickedUpFn = Params->Pickup->Function(_("OnRep_bPickedUp"));
+				Params->Pickup->ProcessEvent(bPickedUpFn);
+			}
+		}
 	}
 
 	return false;
@@ -511,14 +632,15 @@ void InitializeInventoryHooks()
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
+	// AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"), ServerHandlePickupHook);
 }
+
 namespace Player
 {
 	void RespawnPlayer(UObject* PlayerController)
 	{
 		auto Pawn = *PlayerController->Member<UObject*>("Pawn");
 		auto PawnLocation = Helper::GetActorLocation(Pawn);
-		auto SpawnLocation = FVector(PawnLocation.X, PawnLocation.Y, PawnLocation.Z + 10000);
 
 		if (Pawn)
 		{
@@ -532,7 +654,12 @@ namespace Player
 			Pawn->ProcessEvent(setHealthFn, &healthParams);
 		auto PickaxeDefinition = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
-		PlayerController->ProcessEvent(_("RespawnPlayer"));
-		Helper::InitPawn(PlayerController, false, SpawnLocation);
+		// TODO: StructProperty /Script/FortniteGame.FortPlaylistAthena.RespawnHeight
+		struct { float HeightAboveGround; }TeleportToSkyDiveParams{10000};
+
+		auto NewPawn = Helper::InitPawn(PlayerController, false, PawnLocation);
+		static auto TeleportToSkyDiveFn = NewPawn->Function(_("TeleportToSkyDive"));
+		NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
+		// PlayerController->ProcessEvent(_("RespawnPlayer"));
 	}
 }

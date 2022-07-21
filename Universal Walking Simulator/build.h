@@ -88,9 +88,9 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 			};
 
 			struct SCBAParams {
-				const FBuildingClassData& BuildingClassData; // FBuildingClassData&
-				const FVector& BuildLoc;
-				const FRotator& BuildRot;
+				FBuildingClassData BuildingClassData; // FBuildingClassData&
+				FVector BuildLoc;
+				FRotator BuildRot;
 				bool bMirrored;
 				float SyncKey; // does this exist below 7.4
 			};
@@ -104,7 +104,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 			// auto RemoteClientInfo = Controller->Member<UObject*>(_("BroadcastRemoteClientInfo"));
 
 			// if (RemoteClientInfo && *RemoteClientInfo)
-			if (false)
+			// if (false)
 			{
 				// auto BuildingClass = *Controller->Member<UObject*>(_("CurrentBuildableClass"));
 				// auto BuildingClass = (*RemoteClientInfo)->Member<UObject*>(_("RemoteBuildableClass"));
@@ -113,7 +113,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 				if (BuildingClass) // && *BuildingClass)
 				{
-					std::cout << _("Printing name...");
+					// std::cout << _("Printing name...");
 					// std::cout << _("Goofy class: ") << BuildingClass->GetFullName();
 					auto BuildingActor = Easy::SpawnActor(BuildingClass, Params->BuildLoc, Params->BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
 
@@ -299,7 +299,7 @@ void InitializeBuildHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
 
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
+	/* AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), ServerEditBuildingActorHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), ServerEndEditingBuildingActorHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), ServerEndEditingBuildingActorHook); */
 }
