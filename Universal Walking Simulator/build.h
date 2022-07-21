@@ -151,6 +151,11 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 
 		if (EditTool)
 		{
+			auto PlayerState = *Controller->Member<UObject*>(_("PlayerState"));
+			*BuildingToEdit->Member<UObject*>(_("EditingPlayer")) = PlayerState;
+			static auto OnRep_EditingPlayer = BuildingToEdit->Function(_("OnRep_EditingPlayer"));
+			BuildingToEdit->ProcessEvent(OnRep_EditingPlayer);
+
 			*EditTool->Member<UObject*>(_("EditActor")) = BuildingToEdit;
 			static auto OnRep_EditActor = EditTool->Function(_("OnRep_EditActor"));
 			EditTool->ProcessEvent(OnRep_EditActor);
@@ -158,6 +163,8 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 			// Params->BuildingActorToEdit->OnRep_EditingPlayer();
 		}
 	}
+
+	return false;
 }
 
 inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
@@ -256,15 +263,31 @@ inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Fu
 	{
 		// TODO: Check if the controller is in aircraft, if they edit on spawn island, it will make them end on the battle bus, which will not go well.
 
-		auto EditTool = *(*Controller->Member<UObject*>(_("Pawn")))->Member<UObject*>(_("CurrentWeapon"));
+		auto Pawn = Controller->Member<UObject*>(_("Pawn"));
 
-		if (EditTool)
+		if (Pawn && *Pawn)
 		{
-			*EditTool->Member<bool>(_("bEditConfirmed")) = true; // Assuming it's not a bitfield
-			*EditTool->Member<UObject*>(_("EditActor")) = nullptr;
-			static auto OnRep_EditActorFn = EditTool->Function(_("OnRep_EditActor")); // We make it static so then it doesn't have to be found again.
+			auto EditTool = (*Pawn)->Member<UObject*>(_("CurrentWeapon"));
 
-			EditTool->ProcessEvent(OnRep_EditActorFn);
+			if (EditTool && *EditTool && Parameters)
+			{
+				struct Parms {
+					UObject* BuildingActorToStopEditing;
+				};
+				
+				auto Params = (Parms*)Parameters;
+
+				*Params->BuildingActorToStopEditing->Member<UObject*>(_("EditingPlayer")) = nullptr;
+				static auto OnRep_EditingPlayer = Params->BuildingActorToStopEditing->Function(_("OnRep_EditingPlayer"));
+				Params->BuildingActorToStopEditing->ProcessEvent(OnRep_EditingPlayer);
+
+				*(*EditTool)->Member<bool>(_("bEditConfirmed")) = true; // Assuming it's not a bitfield
+				*(*EditTool)->Member<UObject*>(_("EditActor")) = nullptr;
+				static auto OnRep_EditActorFn = (*EditTool)->Function(_("OnRep_EditActor")); // We make it static so then it doesn't have to be found again.
+
+				if (OnRep_EditActorFn)
+					(*EditTool)->ProcessEvent(OnRep_EditActorFn);
+			}
 		}
 	}
 
@@ -275,8 +298,7 @@ void InitializeBuildHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
 
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
+	/* AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), ServerEditBuildingActorHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), ServerEndEditingBuildingActorHook);
-
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), ServerEndEditingBuildingActorHook); */
 }

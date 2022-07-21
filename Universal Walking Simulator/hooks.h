@@ -66,7 +66,7 @@ inline void initStuff()
 
 				AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartMatch")), nullptr);
 
-				*AuthGameMode->Member<bool>(_("bAlwaysDBNO")) = true;
+				// *AuthGameMode->Member<bool>(_("bAlwaysDBNO")) = true;
 
 				// Is this correct?
 				
@@ -83,15 +83,20 @@ inline void initStuff()
 					OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistInfo"));
 
 					static auto BasePlaylistOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("BasePlaylist"));
+					static auto PlaylistReplicationKeyOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("PlaylistReplicationKey"));
+
 					static auto PlaylistInfo = gameState->Member<FFastArraySerializer>(_("CurrentPlaylistInfo"));
 
 					if (BasePlaylistOffset && OnRepPlaylist && Playlist)
 					{
 						auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(_("CurrentPlaylistInfo"))->Member<UObject*>(_("BasePlaylist"), true);
+						auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
 
 						if (BasePlaylist)
 						{
 							*BasePlaylist = Playlist;
+							(*PlaylistReplicationKey)++;
+							((FFastArraySerializer*)PlaylistInfo)->MarkArrayDirty();
 							// PlaylistInfo->MarkArrayDirty();
 							std::cout << _("Set playlist to: ") << Playlist->GetFullName() << '\n';
 						}
@@ -547,9 +552,11 @@ inline bool ServerClientPawnLoadedHook(UObject* Controller, UFunction* Function,
 		if (Pawn)
 		{
 			auto bLoadingScreenDropped = *Controller->Member<bool>(_("bLoadingScreenDropped"));
-			if (bLoadingScreenDropped)
+			if (bLoadingScreenDropped && !Params->bIsPawnLoaded)
 			{
-				auto Chip = Helper::SpawnChip(Controller);
+
+
+				/* auto Chip = Helper::SpawnChip(Controller);
 				// 0x0018
 				struct FFortResurrectionData
 				{
@@ -579,7 +586,7 @@ inline bool ServerClientPawnLoadedHook(UObject* Controller, UFunction* Function,
 
 				if (FortResurrectionData)
 					*FortResurrectionData = ResurrectionData;
-				std::cout << _("Spawned Chip!\n");
+				std::cout << _("Spawned Chip!\n"); */
 			}
 			else
 				std::cout << _("Loading screen is not dropped!\n");
@@ -606,7 +613,7 @@ void FinishInitializeUHooks()
 	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
-	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 
 	if (Engine_Version < 423)

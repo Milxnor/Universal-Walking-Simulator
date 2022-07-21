@@ -88,10 +88,9 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
         std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed: {}\n", Spec->Ability->GetName(), InternalTryActivateAbilityFailureTags->ToStringSimple(true));
         Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, PredictionKey.Current);
         Spec->InputPressed = false;
-        
-        MarkAbilitySpecDirtyNew(ASC, *Spec, false);
-
     }
+
+    MarkAbilitySpecDirtyNew(ASC, *Spec, false);
 }
 
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
@@ -172,7 +171,7 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
         Helper::Abilities::ServerEndAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, FakeInfo, BatchInfo.PredictionKey);
     } */
 
-    return true;
+    return false;
 }
 
 inline bool ServerTryActivateAbilityWithEventDataHook(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)

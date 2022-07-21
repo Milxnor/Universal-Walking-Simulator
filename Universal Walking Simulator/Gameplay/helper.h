@@ -135,6 +135,8 @@ namespace Helper
 				}
 			}
 		}
+
+		return nullptr;
 	}
 
 	void DestroyActor(UObject* Actor)
@@ -403,6 +405,11 @@ namespace Helper
 	void SetRemoteRole(UObject* Actor, ENetRole RemoteRole)
 	{
 		*Actor->Member<ENetRole>(_("RemoteRole")) = RemoteRole;
+	}
+
+	static void SetActorScale3D(UObject* Actor)
+	{
+
 	}
 
 	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart())

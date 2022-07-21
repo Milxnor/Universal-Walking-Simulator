@@ -384,6 +384,11 @@ namespace Inventory
 		return nullptr;
 	}
 
+	void OnPickup()
+	{
+
+	}
+
 	UObject* DecreaseItemCount()
 	{
 
