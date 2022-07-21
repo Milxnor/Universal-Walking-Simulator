@@ -362,10 +362,31 @@ struct FChunkedFixedUObjectArray // https://github.com/EpicGames/UnrealEngine/bl
 	}
 };
 
+static UObject* (*StaticFindObjectO)(
+	UObject* Class,
+	UObject* InOuter,
+	const TCHAR* Name,
+	bool ExactClass);
+
 template <typename ReturnType = UObject>
-static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, bool bIsName = false)
+static ReturnType* StaticFindObject(const std::string& str)
 {
-	// TODO: Use Static findobject, cut the first space.
+	auto Name = std::wstring(str.begin(), str.end()).c_str();
+	return (ReturnType*)StaticFindObjectO(nullptr, nullptr, Name, false);
+}
+
+template <typename ReturnType = UObject>
+static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, bool bIsName = false, bool bDoNotUseStaticFindObject = false)
+{
+	if (StaticFindObjectO && !bDoNotUseStaticFindObject)
+	{
+		auto Object = StaticFindObject<ReturnType>(str.substr(str.find(" ") + 1));
+		if (Object)
+		{
+			// std::cout << _("Found SFO!\n");
+			return Object;
+		}
+	}
 
 	if (bIsName) bIsEqual = true;
 
@@ -977,7 +998,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 UObject* GetEngine()
 {
-	static auto Engine = FindObject(_("FortEngine_"));
+	static auto Engine = FindObject(_("FortEngine_"), false, false, true);
 	
 	if (!Engine)
 		Engine = FindObject(_("FortEngine_"));
@@ -1081,10 +1102,16 @@ struct FFastArraySerializerItem
 	int                                                MostRecentArrayReplicationKey;                            // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
 };
 
+template <typename KeyType, typename ValueType>
+class TPair
+{
+private:
+	KeyType First;
+	ValueType Second;
+};
+
 struct FFastArraySerializer
 {
-	// TMap<int32_t, int32_t> ItemMap;
-
 #ifndef BEFORE_SEASONEIGHT
 	
 	char ItemMap[0x50];
@@ -1101,6 +1128,7 @@ struct FFastArraySerializer
 
 #else
 
+	// TMap<int32_t, int32_t> ItemMap;
 	char ItemMap[0x50];
 	int32_t IDCounter;
 	int32_t ArrayReplicationKey;
@@ -1122,6 +1150,11 @@ struct FFastArraySerializer
 
 		Item.ReplicationKey++;
 		MarkArrayDirty();
+	}
+
+	void MarkAllItemsDirty() // This is my function, not ue.
+	{
+		
 	}
 
 	void MarkArrayDirty()

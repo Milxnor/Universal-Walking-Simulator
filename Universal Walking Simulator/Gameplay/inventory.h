@@ -514,34 +514,25 @@ void InitializeInventoryHooks()
 }
 namespace Player
 {
-	void RespawnPlayer(UObject* PlayerController, FVector Spawn = { 500, 500, 4000 })
+	void RespawnPlayer(UObject* PlayerController)
 	{
-		auto baseplaylist = FindObject(_("ObjectProperty /Script/FortniteGame.PlaylistPropertyArray.BasePlaylist"));
-		bool bRespawning;
-		auto Pawn = PlayerController->Member<UObject>("Pawn");
-		if (PlayerController->Member<UObject>("Pawn"))
+		auto Pawn = *PlayerController->Member<UObject*>("Pawn");
+		auto PawnLocation = Helper::GetActorLocation(Pawn);
+		auto SpawnLocation = FVector(PawnLocation.X, PawnLocation.Y, PawnLocation.Z + 10000);
+
+		if (Pawn)
 		{
-			auto Pawn = PlayerController->Member<UObject>("Pawn");
-			Pawn->Function("K2_DestroyActor");
-
+			Helper::DestroyActor(Pawn);
 		}
-		Helper::InitPawn(PlayerController, false, Spawn);
-		//PlayerController->Function("RespawnPlayerAfterDeath");
-		static UObject* PickaxeDefinition = FindObject(_("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
-
-		auto PickaxeInstance = Inventory::FindItemInInventory(PlayerController, PickaxeDefinition);
-		auto Pickaxe = Inventory::EquipWeaponDefinition(Pawn, PickaxeDefinition, Inventory::GetItemGuid(PickaxeInstance));
 
 		static auto setHealthFn = Pawn->Function(_("SetHealth"));
 		struct { float NewHealthVal; }healthParams{ 100 };
 
 		if (setHealthFn)
 			Pawn->ProcessEvent(setHealthFn, &healthParams);
-		/*auto PickaxeDefinition = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+		auto PickaxeDefinition = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
-
-		auto PickaxeInstance = Inventory::CreateItemInstance(PlayerController, PickaxeDefinition);
-		auto PickaxeGuid = Inventory::GetItemGuid(PickaxeInstance);
-		Inventory::EquipInventoryItem(PlayerController, PickaxeGuid);*/
+		PlayerController->ProcessEvent(_("RespawnPlayer"));
+		Helper::InitPawn(PlayerController, false, SpawnLocation);
 	}
 }

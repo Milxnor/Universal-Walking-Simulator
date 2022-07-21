@@ -8,8 +8,6 @@ FGameplayAbilitySpec* FindAbilitySpecFromHandle(UObject* ASC, FGameplayAbilitySp
 {
     auto Specs = (*ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))).Items;
 
-    std::cout << _("Spec size: ") << Specs.Num() << '\n';
-
     for (int i = 0; i < Specs.Num(); i++)
     {
         auto& Spec = Specs[i];
@@ -90,7 +88,10 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
         Spec->InputPressed = false;
     }
 
-    MarkAbilitySpecDirtyNew(ASC, *Spec, false);
+    ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkArrayDirty();
+    // ASC->Member< FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkItemDirty(*Spec);
+    
+    // MarkAbilitySpecDirtyNew(ASC, *Spec, true);
 }
 
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
@@ -158,6 +159,8 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
 
     InternalServerTryActivateAbility(AbilitySystemComponent, Params->BatchInfo.AbilitySpecHandle, Params->BatchInfo.InputPressed, Params->BatchInfo.PredictionKey, nullptr);
     // PrintExplicitTags(AbilitySystemComponent);
+
+    // The code below, is already done by fortnite.
 
     /* Helper::Abilities::ServerSetReplicatedTargetData(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.PredictionKey, BatchInfo.TargetData, FGameplayTag(), BatchInfo.PredictionKey);
     // ^ Crashes

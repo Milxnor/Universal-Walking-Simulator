@@ -226,6 +226,24 @@ HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_
 				}
 			}
 
+			if (ImGui::Button(_("Enable Glider Redeploy")))
+			{
+				FString GliderRedeployCmd;
+				GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 1");
+				Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
+
+				std::cout << _("Enabled Glider Redeploy!\n");
+			}
+
+			if (ImGui::Button(_("Disable Glider Redeploy")))
+			{
+				FString GliderRedeployCmd;
+				GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 0");
+				Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
+
+				std::cout << _("Disabled Glider Redeploy!\n");
+			}
+
 			break;
 
 		case 2:

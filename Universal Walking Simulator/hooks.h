@@ -104,7 +104,6 @@ inline void initStuff()
 							*BasePlaylist = Playlist;
 							(*PlaylistReplicationKey)++;
 							((FFastArraySerializer*)PlaylistInfo)->MarkArrayDirty();
-							// PlaylistInfo->MarkArrayDirty();
 							std::cout << _("Set playlist to: ") << Playlist->GetFullName() << '\n';
 						}
 						else
@@ -133,6 +132,14 @@ inline void initStuff()
 
 			*gameState->Member<int>(_("PlayersLeft")) = 0;
 			gameState->ProcessEvent(_("OnRep_PlayersLeft"));
+
+			if (Helper::IsRespawnEnabled())
+			{
+				// Enable glider redeploy
+				FString GliderRedeployCmd;
+				GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 1");
+				Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
+			}
 		}
 
 		Listen(7777);
@@ -257,7 +264,7 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 			// Should work i think
 			else if (Command == "launchplayer" && ArgsNum >= 0)
 			{
-				auto Pawn = Controller->Member<UObject>("Pawn");
+				auto Pawn = *Controller->Member<UObject*>("Pawn");
 				FVector LaunchVelocity{ 0, 0, 5000 };
 				bool bXYOveride = false;
 				bool bZOverride = false;
@@ -288,7 +295,44 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 }
 inline bool ClientOnPawnDiedHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
-	Player::RespawnPlayer(Controller, FVector{ 0,0, 7000 });
+	static bool bRespawning = true;
+	if (bRespawning)
+		Player::RespawnPlayer(Controller);
+	else
+	{
+		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+		auto Chip = Helper::SpawnChip(Controller);
+		// 0x0018
+		struct FFortResurrectionData
+		{
+			bool                                               bResurrectionChipAvailable;                               // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData)
+			unsigned char                                      UnknownData00[0x3];                                       // 0x0001(0x0003) MISSED OFFSET
+			float                                              ResurrectionExpirationTime;                               // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData)
+			float                                              ResurrectionExpirationLength;                             // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData)
+			struct FVector                                     WorldLocation;                                            // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
+		};
+
+		auto PlayerState = *Pawn->Member<UObject*>(_("PlayerState"));
+		auto FortResurrectionData = PlayerState->Member<FFortResurrectionData>(_("ResurrectionChipAvailable"));
+
+		if (FortResurrectionData)
+		{
+			std::cout << _("FortResurrectionData valid!\n");
+			std::cout << _("FortResurrectionData Location X: ") << FortResurrectionData->WorldLocation.X << '\n';
+		}
+		else
+			std::cout << _("No FortResurrectionData!\n");
+
+		auto ResurrectionData = FFortResurrectionData{};
+		ResurrectionData.bResurrectionChipAvailable = true;
+		ResurrectionData.ResurrectionExpirationLength = 99999.f;
+		ResurrectionData.ResurrectionExpirationTime = 99999.f;
+		ResurrectionData.WorldLocation = Helper::GetActorLocation(Chip);
+
+		if (FortResurrectionData)
+			*FortResurrectionData = ResurrectionData;
+		std::cout << _("Spawned Chip!\n");
+	}
 	
 	return true;
 }
@@ -435,16 +479,17 @@ inline bool ServerAttemptInteractHook(UObject* Controller, UFunction* Function, 
 								Helper::SummonPickup(Pawn, AthenaAmmoDataRockets, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::AmmoBox, 1, true);
 						}
 					}
-					else if (ReceivingActorName.contains(_("B_Athena_VendingMachine")))
-					{
-						// *ReceivingActor->Member<int>(_("CostAmount"))
-						// MaterialType
-						auto Super = (UClass_FTT*)ReceivingActor;
-						for (auto Super = (UClass_FTT*)ReceivingActor; Super; Super = (UClass_FTT*)Super->SuperStruct)
-						{
-							std::cout << _("SueprStruct: ") << Super->GetFullName() << '\n';
-						}
-					}
+				}
+			}
+
+			if (ReceivingActorName.contains(_("B_Athena_VendingMachine")))
+			{
+				// *ReceivingActor->Member<int>(_("CostAmount"))
+				// MaterialType
+				auto Super = (UClass_FTT*)ReceivingActor;
+				for (auto Super = (UClass_FTT*)ReceivingActor; Super; Super = (UClass_FTT*)Super->SuperStruct)
+				{
+					std::cout << _("SuperStruct: ") << Super->GetFullName() << '\n';
 				}
 			}
 
@@ -488,9 +533,29 @@ inline bool ServerSuicideHook(UObject* Controller, UFunction* Function, void* Pa
 				*(*ParachuteAttachment)->Member<bool>(_("bParachuteVisible")) = false;
 				*(*ParachuteAttachment)->Member<UObject*>(_("PlayerPawn")) = nullptr;
 				(*ParachuteAttachment)->ProcessEvent(_("OnRep_PlayerPawn"));
+				(*Pawn)->ProcessEvent(_("OnRep_ParachuteAttachment"));
 				Helper::DestroyActor(*ParachuteAttachment);
 				std::cout << _("Destroyed ParachuteAttachment!\n");
 			}
+			else
+				std::cout << _("No ParachuteAttachment!\n");
+
+			static auto FortGliderInstance = FindObject(_("Class /Script/FortniteGame.FortPlayerParachute"));
+			auto Gliders = Helper::GetAllActorsOfClass(FortGliderInstance);
+			
+			std::cout << _("Glider Num: ") << Gliders.Num() << '\n';
+
+			for (int i = 0; i < Gliders.Num(); i++)
+			{
+				auto Glider = Gliders[i];
+
+				if (!Glider)
+					continue;
+
+				Helper::DestroyActor(Glider);
+			}
+
+			Gliders.Free();
 
 			/* UObject* GliderAnimInstance = nullptr;
 
@@ -567,39 +632,6 @@ inline bool ServerClientPawnLoadedHook(UObject* Controller, UFunction* Function,
 			auto bLoadingScreenDropped = *Controller->Member<bool>(_("bLoadingScreenDropped"));
 			if (bLoadingScreenDropped && !Params->bIsPawnLoaded)
 			{
-
-
-				/* auto Chip = Helper::SpawnChip(Controller);
-				// 0x0018
-				struct FFortResurrectionData
-				{
-					bool                                               bResurrectionChipAvailable;                               // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData)
-					unsigned char                                      UnknownData00[0x3];                                       // 0x0001(0x0003) MISSED OFFSET
-					float                                              ResurrectionExpirationTime;                               // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData)
-					float                                              ResurrectionExpirationLength;                             // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData)
-					struct FVector                                     WorldLocation;                                            // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
-				};
-
-				auto PlayerState = *Pawn->Member<UObject*>(_("PlayerState"));
-				auto FortResurrectionData = PlayerState->Member<FFortResurrectionData>(_("ResurrectionChipAvailable"));
-				
-				if (FortResurrectionData)
-				{
-					std::cout << _("FortResurrectionData valid!\n");
-					std::cout << _("FortResurrectionData Location X: ") << FortResurrectionData->WorldLocation.X << '\n';
-				}
-				else
-					std::cout << _("No FortResurrectionData!\n");
-
-				auto ResurrectionData = FFortResurrectionData{};
-				ResurrectionData.bResurrectionChipAvailable = true;
-				ResurrectionData.ResurrectionExpirationLength = 99999.f;
-				ResurrectionData.ResurrectionExpirationTime = 99999.f;
-				ResurrectionData.WorldLocation = Helper::GetActorLocation(Chip);
-
-				if (FortResurrectionData)
-					*FortResurrectionData = ResurrectionData;
-				std::cout << _("Spawned Chip!\n"); */
 			}
 			else
 				std::cout << _("Loading screen is not dropped!\n");
@@ -658,9 +690,11 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 		{
 			auto FunctionName = Function->GetName();
 			// if (Function->FunctionFlags & 0x00200000 || Function->FunctionFlags & 0x01000000) // && FunctionName.find("Ack") == -1 && FunctionName.find("AdjustPos") == -1))
-			if (FunctionName.starts_with(_("Server")) || FunctionName.starts_with(_("Client") || FunctionName.starts_with(_("OnRep_"))))
+			if (FunctionName.starts_with(_("Server")) || FunctionName.starts_with(_("Client")) || FunctionName.starts_with(_("OnRep_")))
 			{
-				if (!FunctionName.contains("ServerUpdateCamera") && FunctionName.find("ServerMove") == -1 && !FunctionName.contains(_("ServerUpdateLevelVisibility")))
+				if (!FunctionName.contains("ServerUpdateCamera") && !FunctionName.contains("ServerMove")
+					&& !FunctionName.contains(_("ServerUpdateLevelVisibility"))
+					&& !FunctionName.contains(_("AckGoodMove")))
 				{
 					std::cout << "RPC Called: " << FunctionName << '\n';
 				}

@@ -190,6 +190,12 @@ namespace Helper
 		return Params.ReturnValue;
 	}
 
+	static bool IsRespawnEnabled()
+	{
+		static bool Respawning = true;
+		return Respawning;
+	}
+
 	static void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false)
 	{
 		// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);

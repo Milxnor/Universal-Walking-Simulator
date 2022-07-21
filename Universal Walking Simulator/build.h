@@ -9,7 +9,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 {
 	if (Controller && Parameters)
 	{
-		if (Engine_Version >= 423)
+#ifndef BEFORE_SEASONEIGHT
 		{
 			struct FCreateBuildingActorData
 			{
@@ -79,13 +79,12 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				}
 			}
 		}
-		else
+#else
 		{
 			struct FBuildingClassData {
 				UObject* BuildingClass;
 				int                                                PreviousBuildingLevel;                                    // 0x0008(0x0004) (ZeroConstructor, Transient, IsPlainOldData)
 				int                                                UpgradeLevel;
-				// sometimes theres somethinhg here
 			};
 
 			struct SCBAParams {
@@ -93,7 +92,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				const FVector& BuildLoc;
 				const FRotator& BuildRot;
 				bool bMirrored;
-				float SyncKey; // does this exist below 7.2
+				float SyncKey; // does this exist below 7.4
 			};
 
 			auto Params = (SCBAParams*)Parameters;
@@ -107,7 +106,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 			// if (RemoteClientInfo && *RemoteClientInfo)
 			if (false)
 			{
-				// auto BuildingClass = Controller->Member<UObject*>(_("CurrentBuildableClass"));
+				// auto BuildingClass = *Controller->Member<UObject*>(_("CurrentBuildableClass"));
 				// auto BuildingClass = (*RemoteClientInfo)->Member<UObject*>(_("RemoteBuildableClass"));
 
 				auto BuildingClass = Params->BuildingClassData.BuildingClass;
@@ -129,6 +128,8 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 					std::cout << _("No BuildingClass!\n");
 			}
 		}
+
+#endif
 	}
 
 	return false;
@@ -191,7 +192,7 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 
 			if (*BuildingActor->Member<EFortBuildingType>(_("BuildingType")) != EFortBuildingType::Wall)
 			{
-				int Yaw = (int(Rotation.Yaw) + 360) % 360;
+				int Yaw = (int(Rotation.Yaw) + 360) % 360; // credits: PRO100KatYT
 
 				if (Yaw > 80 && Yaw < 100) // 90
 				{
