@@ -532,6 +532,11 @@ namespace Player
 		auto PickaxeInstance = Inventory::FindItemInInventory(PlayerController, PickaxeDefinition);
 		auto Pickaxe = Inventory::EquipWeaponDefinition(Pawn, PickaxeDefinition, Inventory::GetItemGuid(PickaxeInstance));
 
+		static auto setHealthFn = Pawn->Function(_("SetHealth"));
+		struct { float NewHealthVal; }healthParams{ 100 };
+
+		if (setHealthFn)
+			Pawn->ProcessEvent(setHealthFn, &healthParams);
 		/*auto PickaxeDefinition = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
 
