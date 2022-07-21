@@ -136,26 +136,147 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
-	/* auto Params = (AFortPlayerController_ServerBeginEditingBuildingActor_Params*)Parameters;
-	auto Controller = (AFortPlayerControllerAthena*)Object;
-	bool bFound = false;
-	auto EditToolEntry = Inventory::FindItemInInventory<UFortEditToolItemDefinition>(Controller, bFound);
+	struct Parms { UObject* BuildingActor; };
+	static UObject* EditToolDefinition = FindObject(_("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
 
-	if (Controller && Pawn && Params->BuildingActorToEdit && bFound)
+	auto EditToolInstance = Inventory::FindItemInInventory(Controller, EditToolDefinition);
+
+	auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+
+	UObject* BuildingToEdit = ((Parms*)Parameters)->BuildingActor;
+
+	if (Controller && BuildingToEdit && EditToolInstance)
 	{
-		// auto EditTool = (AFortWeap_EditingTool*)Inventory::EquipWeaponDefinition(Pawn, (UFortWeaponItemDefinition*)EditToolEntry.ItemDefinition, EditToolEntry.ItemGuid);
+		auto EditTool = Inventory::EquipWeaponDefinition(Pawn, EditToolDefinition, Inventory::GetItemGuid(EditToolInstance));
 
 		if (EditTool)
 		{
-			EditTool->EditActor = Params->BuildingActorToEdit;
-			EditTool->OnRep_EditActor();
-			Params->BuildingActorToEdit->EditingPlayer = (AFortPlayerStateZone*)Pawn->PlayerState;
-			Params->BuildingActorToEdit->OnRep_EditingPlayer();
+			*EditTool->Member<UObject*>(_("EditActor")) = BuildingToEdit;
+			static auto OnRep_EditActor = EditTool->Function(_("OnRep_EditActor"));
+			EditTool->ProcessEvent(OnRep_EditActor);
+			// Params->BuildingActorToEdit->EditingPlayer = (AFortPlayerStateZone*)Pawn->PlayerState;
+			// Params->BuildingActorToEdit->OnRep_EditingPlayer();
 		}
-	} */
+	}
+}
+
+inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	struct Parms {
+		UObject* BuildingActorToEdit;                                      // (Parm, ZeroConstructor, IsPlainOldData)
+		UObject* NewBuildingClass;                                         // (Parm, ZeroConstructor, IsPlainOldData)
+		int                                                RotationIterations;                                       // (Parm, ZeroConstructor, IsPlainOldData)
+		bool                                               bMirrored;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+	};
+
+	auto Params = (Parms*)Parameters;
+
+	if (Params && Controller)
+	{
+		auto BuildingActor = Params->BuildingActorToEdit;
+		auto NewBuildingClass = Params->NewBuildingClass;
+		auto RotationIterations = Params->RotationIterations;
+
+		if (BuildingActor && NewBuildingClass)
+		{
+			auto Location = Helper::GetActorLocation(BuildingActor);
+			auto Rotation = Helper::GetActorRotation(BuildingActor);
+
+			if (*BuildingActor->Member<EFortBuildingType>(_("BuildingType")) != EFortBuildingType::Wall)
+			{
+				int Yaw = (int(Rotation.Yaw) + 360) % 360;
+
+				if (Yaw > 80 && Yaw < 100) // 90
+				{
+					if (RotationIterations == 1)
+						Location = Location + FVector(-256, 256, 0);
+					else if (RotationIterations == 2)
+						Location = Location + FVector(-512, 0, 0);
+					else if (RotationIterations == 3)
+						Location = Location + FVector(-256, -256, 0);
+				}
+				else if (Yaw > 170 && Yaw < 190) // 180
+				{
+					if (RotationIterations == 1)
+						Location = Location + FVector(-256, -256, 0);
+					else if (RotationIterations == 2)
+						Location = Location + FVector(0, -512, 0);
+					else if (RotationIterations == 3)
+						Location = Location + FVector(256, -256, 0);
+				}
+				else if (Yaw > 260 && Yaw < 280) // 270
+				{
+					if (RotationIterations == 1)
+						Location = Location + FVector(256, -256, 0);
+					else if (RotationIterations == 2)
+						Location = Location + FVector(512, 0, 0);
+					else if (RotationIterations == 3)
+						Location = Location + FVector(256, 256, 0);
+				}
+				else // 0 - 360
+				{
+					if (RotationIterations == 1)
+						Location = Location + FVector(256, 256, 0);
+					else if (RotationIterations == 2)
+						Location = Location + FVector(0, 512, 0);
+					else if (RotationIterations == 3)
+						Location = Location + FVector(-256, 256, 0);
+				}
+			}
+
+			Rotation.Yaw += 90 * RotationIterations;
+
+			auto Team = *Params->BuildingActorToEdit->Member<TEnumAsByte<uint8_t>>(_("Team"));
+
+			Helper::SilentDie(Params->BuildingActorToEdit);
+
+			auto EditedActor = Easy::SpawnActor(Params->NewBuildingClass, Location, Rotation);
+
+			if (EditedActor)
+			{
+				Helper::SetOwner(EditedActor, Controller);
+				
+				static auto SetMirroredFn = EditedActor->Function(_("SetMirrored"));
+
+				struct { bool bMirrored; }mirroredParams{ Params->bMirrored };
+				EditedActor->ProcessEvent(SetMirroredFn, &mirroredParams);
+
+				*EditedActor->Member<TEnumAsByte<uint8_t>>(_("Team")) = Team;
+				Helper::InitializeBuildingActor(Controller, EditedActor);
+			}
+		}
+	}
+
+	return false;
+}
+
+inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	if (Controller && Parameters)
+	{
+		// TODO: Check if the controller is in aircraft, if they edit on spawn island, it will make them end on the battle bus, which will not go well.
+
+		auto EditTool = *(*Controller->Member<UObject*>(_("Pawn")))->Member<UObject*>(_("CurrentWeapon"));
+
+		if (EditTool)
+		{
+			*EditTool->Member<bool>(_("bEditConfirmed")) = true; // Assuming it's not a bitfield
+			*EditTool->Member<UObject*>(_("EditActor")) = nullptr;
+			static auto OnRep_EditActorFn = EditTool->Function(_("OnRep_EditActor")); // We make it static so then it doesn't have to be found again.
+
+			EditTool->ProcessEvent(OnRep_EditActorFn);
+		}
+	}
+
+	return false;
 }
 
 void InitializeBuildHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
+
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), ServerEditBuildingActorHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), ServerEndEditingBuildingActorHook);
+
 }

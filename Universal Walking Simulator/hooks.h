@@ -118,6 +118,9 @@ inline void initStuff()
 			{
 				std::cout << dye::yellow(_("[WARNING] ")) << _("Failed to find AuthorityGameMode!\n");
 			}
+
+			*gameState->Member<int>(_("PlayersLeft")) = 0;
+			gameState->ProcessEvent(_("OnRep_PlayersLeft"));
 		}
 
 		Listen(7777);
@@ -158,7 +161,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 			{
 				auto ExitLocation = Helper::GetActorLocation(Aircraft);
 
-				Helper::InitPawn(PlayerController, ExitLocation);
+				Helper::InitPawn(PlayerController, false, ExitLocation);
 
 				// ClientSetRotation
 			}
@@ -200,7 +203,7 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 	struct SCParams { FString* Msg; };
 	auto MsgParams = (SCParams*)Parameters;
 
-	if (Controller && MsgParams)
+	if (Controller && MsgParams && MsgParams->Msg)
 	{
 		auto Message = MsgParams->Msg->ToString() + ' ';
 		std::vector<std::string> Args;
@@ -253,7 +256,8 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 			}
 			else if (Command == "revive")
 			{
-				auto Pawn = Controller->Member<UObject>("Pawn");
+				Controller->ProcessEvent(_("Suicide"));
+				/* auto Pawn = Controller->Member<UObject>("Pawn");
 				bool bIsDBNO = Pawn->Member<UObject>("bIsDBNO");
 				bool bIsDBNO = false;
 				auto OnRep_DBNOFn = Pawn->Function("OnRep_IsDBNO");
@@ -264,7 +268,7 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 					float NewHealth;
 				} SHParams{ NewHealth };
 				auto SHFn = Pawn->Function("SetHealth");
-				Pawn->ProcessEvent(SHFn, &SHParams);
+				Pawn->ProcessEvent(SHFn, &SHParams); */
 			}
 		}
 	}
@@ -360,18 +364,77 @@ inline bool ServerAttemptInteractHook(UObject* Controller, UFunction* Function, 
 
 	auto Params = (SAIParams*)Parameters;
 
-	if (Params && Controller && false)
+	if (Params && Controller)
 	{
+		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
 		auto ReceivingActor = Params->ReceivingActor;
 		if (ReceivingActor)
 		{
 			auto ReceivingActorName = ReceivingActor->GetName(); // There has to be a better way, right?
 
-			if (ReceivingActorName.contains(_("Vehicle")))
+			std::cout << _("ReceivingActorName: ") << ReceivingActorName << '\n';
+
+			if (ReceivingActorName.contains(_("Tiered")))
+			{
+				struct BitField_Container
+				{
+					unsigned char                                      bAlwaysShowContainer : 1;                                 // 0x0D99(0x0001) (Edit, BlueprintVisible)
+					unsigned char                                      bAlwaysMaintainLoot : 1;                                  // 0x0D99(0x0001) (Edit, DisableEditOnTemplate)
+					unsigned char                                      bDestroyContainerOnSearch : 1;                            // 0x0D99(0x0001) (Edit, BlueprintVisible)
+					unsigned char                                      bAlreadySearched : 1;
+				};
+
+				// TODO: Implement bitfields better
+
+				auto BitField = ReceivingActor->Member<BitField_Container>(_("bAlreadySearched"));
+				BitField->bAlreadySearched = true;
+
+				static auto AlreadySearchedFn = ReceivingActor->Function(_("OnRep_bAlreadySearched"));
+				if (AlreadySearchedFn)
+				{
+					ReceivingActor->ProcessEvent(AlreadySearchedFn);
+
+					if (ReceivingActorName.contains(_("Chest")))
+					{
+						static auto BlueAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
+						
+						if (BlueAR)
+							Helper::SummonPickup(Pawn, BlueAR, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Chest, 1, false);
+					}
+					else if (ReceivingActorName.contains(_("Ammo")))
+					{
+						if (Engine_Version < 423)
+						{
+							static UObject* AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
+							if (AthenaAmmoDataRockets)
+								Helper::SummonPickup(Pawn, AthenaAmmoDataRockets, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::AmmoBox, 1, true);
+						}
+						else
+						{
+							static UObject* AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
+							
+							if (AthenaAmmoDataRockets)
+								Helper::SummonPickup(Pawn, AthenaAmmoDataRockets, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::AmmoBox, 1, true);
+						}
+					}
+					else if (ReceivingActorName.contains(_("B_Athena_VendingMachine")))
+					{
+						// *ReceivingActor->Member<int>(_("CostAmount"))
+						// MaterialType
+						auto Super = (UClass_FTT*)ReceivingActor;
+						for (auto Super = (UClass_FTT*)ReceivingActor; Super; Super = (UClass_FTT*)Super->SuperStruct)
+						{
+							std::cout << _("SueprStruct: ") << Super->GetFullName() << '\n';
+						}
+					}
+				}
+			}
+
+			/* if (ReceivingActorName.contains(_("Vehicle")))
 			{
 				Helper::SetLocalRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);
 				Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
-			}
+			} */
 		}
 	}
 
@@ -438,6 +501,8 @@ inline bool ServerSuicideHook(UObject* Controller, UFunction* Function, void* Pa
 				(*Pawn)->ProcessEvent(setHealthFn, &healthParams);
 			else
 				std::cout << _("Unable to find setHealthFn!\n");
+
+			(*Pawn)->ProcessEvent(_("ForceReviveFromDBNO"));
 
 			// std::cout << _("Spawned Chip!\n");
 			/* static auto fn = (*Pawn)->Function(_("LaunchCharacterJump"));
@@ -540,7 +605,7 @@ void FinishInitializeUHooks()
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
+	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 

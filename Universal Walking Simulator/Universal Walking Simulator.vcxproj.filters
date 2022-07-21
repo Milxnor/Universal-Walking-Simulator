@@ -106,5 +106,8 @@
     <ClInclude Include="UE\structs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="loot.h">
+      <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -31,13 +31,10 @@ namespace Inventory
 		return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
 	}
 
-	inline void EquipWeapon(UObject* Pawn, UObject* FortWeapon, FGuid& Guid, int Ammo = 0)
+	inline void EquipWeapon(UObject* Pawn, UObject* FortWeapon, const FGuid& Guid, int Ammo = 0)
 	{
 		if (FortWeapon && Pawn)
 		{
-			// *FortWeapon->Member<UObject*>(_("WeaponData")) = Definition;
-			*FortWeapon->Member<FGuid>(_("ItemEntryGuid")) = Guid;
-
 			// if (bEquipWithMaxAmmo)
 			{
 				static auto getBulletsFn = FortWeapon->Function(_("GetBulletsPerClip"));
@@ -52,10 +49,6 @@ namespace Inventory
 			}
 
 			// Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
-
-			std::cout << _("Setting owner!\n");
-			Helper::SetOwner(FortWeapon, Pawn);
-			std::cout << _("Setted owner!\n");
 
 			FortWeapon->ProcessEvent(_("OnRep_ReplicatedWeaponData"));
 
@@ -81,35 +74,57 @@ namespace Inventory
 					std::cout << _("No ClientInternalEquipWeapon!\n");
 			}
 
+			std::cout << _("Noob!\n");
+
 			// Pawn->OnRep_CurrentWeapon(); // i dont think this is needed but alr
 		}
 		else
 			std::cout << _("No weapon!\n");
 	}
 
-	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, FGuid& Guid, int Ammo = 0)
+	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, const FGuid& Guid, int Ammo = 0)
 	{
-		// auto weaponClass = Definition->GetWeaponActorClass();
-		// if (weaponClass)
 		if (Pawn)
 		{
-			// auto Weapon = (AFortWeapon*)SpawnActorTrans(weaponClass, {}, Pawn);
-			static auto equipFn = Pawn->Function(_("EquipWeaponDefinition"));
-			struct {
-				UObject* Def;
-				FGuid Guid;
-				UObject* Wep;
-			} params{ Definition, Guid };
-			Pawn->ProcessEvent(equipFn, &params);
-			auto Weapon = params.Wep;
-
-			if (Weapon)
+			static auto fn = Definition->Function(_("GetWeaponActorClass"));
+			if (fn)
 			{
-				*Weapon->Member<UObject*>(_("WeaponData")) = Definition;
-				EquipWeapon(Pawn, Weapon, Guid, Ammo);
-			}
+				/* // UObject* WeaponClass = nullptr;
+				struct { UObject* WeaponClass; }Params{};
+				Definition->ProcessEvent(fn, &Params);
+				auto WeaponClass = Params.WeaponClass;
+				if (WeaponClass)
+				{
+					auto Weapon = Easy::SpawnActor(WeaponClass);
+				}
+				else
+					std::cout << _("Invalid WeaponClass!\n");
 
-			return Weapon;
+				return WeaponClass; */
+
+				static auto equipFn = Pawn->Function(_("EquipWeaponDefinition"));
+				struct {
+					UObject* Def;
+					FGuid Guid;
+					UObject* Wep;
+				} params{ Definition, Guid };
+				Pawn->ProcessEvent(equipFn, &params);
+				auto Weapon = params.Wep;
+
+				if (Weapon)
+				{
+					Helper::SetOwner(Weapon, Pawn);
+					*Weapon->Member<UObject*>(_("WeaponData")) = Definition;
+					EquipWeapon(Pawn, Weapon, Guid, Ammo);
+					return Weapon;
+				}
+				else
+					std::cout << _("Failed to spawn Weapon!\n");
+
+				return Weapon;
+			}
+			else
+				std::cout << _("Failed to find GetWeaponActorClass!\n");
 		}
 
 		return nullptr;
@@ -347,6 +362,31 @@ namespace Inventory
 			else
 				std::cout << _("Failed to create ItemInstance!\n");
 		}
+	}
+
+	// Returns a item instance
+	UObject* FindItemInInventory(UObject* Controller, UObject* Definition) // TODO: Return a vector.
+	{
+		auto ItemInstances = GetItemInstances(Controller);
+		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+
+		for (int i = 0; i < ItemInstances->Num(); i++)
+		{
+			auto CurrentItemInstance = ItemInstances->At(i);
+
+			if (!CurrentItemInstance)
+				continue;
+
+			if (GetItemDefinition(CurrentItemInstance) == Definition)
+				return CurrentItemInstance;
+		}
+
+		return nullptr;
+	}
+
+	UObject* DecreaseItemCount()
+	{
+
 	}
 
 	void GiveAllAmmo(UObject* Controller)

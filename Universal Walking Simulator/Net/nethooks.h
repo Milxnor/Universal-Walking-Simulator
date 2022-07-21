@@ -117,7 +117,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         }
     }
 
-    auto Pawn = Helper::InitPawn(PlayerController);
+    auto Pawn = Helper::InitPawn(PlayerController, true);
 
     if (GiveAbility)
     {
@@ -171,18 +171,30 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     else
         std::cout << _("Unable to grant abilities due to no GiveAbility!\n");
 
-    std::cout << _("Spawned Player!\n");
-
     static auto Def = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-    static auto BluePump = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03"));
     static auto Minis = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
     static auto SlurpJuice = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff"));
     static auto BlueAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
 
     Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
     Inventory::CreateAndAddItem(PlayerController, BlueAR, EFortQuickBars::Primary, 1, 1);
-    Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 2, 1);
-    Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 3, 1);
+
+    if (FnVerDouble < 9.40)
+    {
+        static auto BluePump = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03"));
+
+        Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 2, 1);
+        Inventory::CreateAndAddItem(PlayerController, BluePump, EFortQuickBars::Primary, 3, 1);
+    }
+    else
+    {
+        static auto BurstSMG = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Pistol_BurstFireSMG_Athena_R_Ore_T03.WID_Pistol_BurstFireSMG_Athena_R_Ore_T03"));
+        static auto CombatShotgun = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Combat_Athena_SR_Ore_T03.WID_Shotgun_Combat_Athena_SR_Ore_T03"));
+
+        Inventory::CreateAndAddItem(PlayerController, CombatShotgun, EFortQuickBars::Primary, 2, 1);
+        Inventory::CreateAndAddItem(PlayerController, BurstSMG, EFortQuickBars::Primary, 3, 1);
+    }
+
     Inventory::CreateAndAddItem(PlayerController, Minis, EFortQuickBars::Primary, 4, 1);
     Inventory::CreateAndAddItem(PlayerController, SlurpJuice, EFortQuickBars::Primary, 5, 1);
 
@@ -190,6 +202,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     // Inventory::GiveBuildings(PlayerController);
     Inventory::GiveStartingItems(PlayerController); // Gives the needed items
     Inventory::GiveMats(PlayerController);
+
+    std::cout << _("Spawned Player!\n");
 
     return PlayerController;
 }

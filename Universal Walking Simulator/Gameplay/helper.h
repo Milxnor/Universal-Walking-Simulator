@@ -95,24 +95,45 @@ namespace Helper
 		return FVector();
 	}
 
-	UObject* SummonPickup(UObject* Pawn, UObject* Definition, const FVector& Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource)
+	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true)
 	{
 		static UObject* PickupClass = FindObject(_("Class /Script/FortniteGame.FortPickupAthena"));
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location);
 
-		if (Pickup)
+		if (Pickup && Definition && Pawn)
 		{
-			static auto TossPickupFn = Pickup->Function(_("TossPickup"));
+			Location = Helper::GetActorLocation(Pawn);
+			auto ItemEntry = Pickup->Member<void>(_("PrimaryPickupItemEntry"));
+			static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
+			static auto ItemDefOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
 
-			struct {
-				const FVector& FinalLocation;
-				UObject* ItemOwner;
-				int OverrideMaxStackCount;
-				bool bToss;
-				EFortPickupSourceTypeFlag InPickupSourceTypeFlags; // Do these even exist on older versions?
-				EFortPickupSpawnSource InPickupSpawnSource;
-			} TPParams{Location, Pawn, 6, true, PickupSource, SpawnSource};
+			static auto OnRep_PrimaryPickupItemEntry = Pickup->Function(_("OnRep_PrimaryPickupItemEntry"));
+
+			if (ItemEntry && OnRep_PrimaryPickupItemEntry)
+			{
+				*(int*)(__int64(ItemEntry) + CountOffset) = Count;
+				*(UObject**)(__int64(ItemEntry) + ItemDefOffset) = Definition;
+
+				Pickup->ProcessEvent(OnRep_PrimaryPickupItemEntry);
+
+				if (bTossPickup)
+				{
+					static auto TossPickupFn = Pickup->Function(_("TossPickup"));
+
+					struct {
+						const FVector& FinalLocation;
+						UObject* ItemOwner;
+						int OverrideMaxStackCount;
+						bool bToss;
+						EFortPickupSourceTypeFlag InPickupSourceTypeFlags; // Do these even exist on older versions?
+						EFortPickupSpawnSource InPickupSpawnSource;
+					} TPParams{ Location, Pawn, 6, true, PickupSource, SpawnSource };
+
+					if (TossPickupFn)
+						Pickup->ProcessEvent(TossPickupFn, &TPParams);
+				}
+			}
 		}
 	}
 
@@ -263,7 +284,7 @@ namespace Helper
 
 		// auto GamePhase = static_cast<AAthena_GameState_C*>(GetWorld()->GameState)->GamePhase;
 
-		if (ActorsNum != 0 && Engine_Version < 423) // && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
+		if (WarmupClass && ActorsNum != 0 && Engine_Version < 423) // && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
 		{
 			auto ActorToUseNum = RandomIntInRange(0, ActorsNum);
 			auto ActorToUse = (OutActors)[ActorToUseNum];
@@ -381,10 +402,10 @@ namespace Helper
 
 	void SetRemoteRole(UObject* Actor, ENetRole RemoteRole)
 	{
-
+		*Actor->Member<ENetRole>(_("RemoteRole")) = RemoteRole;
 	}
 
-	UObject* InitPawn(UObject* PC, FVector Location = Helper::GetPlayerStart())
+	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart())
 	{
 		static const auto FnVerDouble = std::stod(FN_Version);
 
@@ -470,7 +491,7 @@ namespace Helper
 		static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
 		static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
 
-		if (headPart && bodyPart)
+		if (headPart && bodyPart && bResetCharacterParts)
 		{
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
@@ -522,54 +543,105 @@ namespace Helper
 		return Pawn;
 	}
 
+	namespace Conversion
+	{
+		UObject* SoftObjectToObject(TSoftObjectPtr SoftObject)
+		{
+			// Function /Script/Engine.KismetSystemLibrary.Conv_SoftObjectReferenceToObject
+
+			static auto KSLClass = FindObject(_("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+
+			static auto fn = KSLClass->Function(_("Conv_SoftObjectReferenceToObject"));
+
+			UObject* Object;
+
+			struct {
+				TSoftObjectPtr SoftObject;
+				UObject* ReturnValue;
+			} params{SoftObject, nullptr};
+
+			if (fn)
+				KSLClass->ProcessEvent(fn, &Object);
+
+			return params.ReturnValue;
+		}
+	}
+
+	void SilentDie(UObject* BuildingActor)
+	{
+		static auto fn = BuildingActor->Function(_("SilentDie"));
+
+		if (fn)
+			BuildingActor->ProcessEvent(fn);
+	}
+
 	namespace Abilities
 	{
-		void ClientActivateAbilityFailed(UObject* Component, FGameplayAbilitySpecHandle AbilityToActivate, int16_t PredictionKey)
+		void ClientActivateAbilityFailed(UObject* ASC, FGameplayAbilitySpecHandle AbilityToActivate, int16_t PredictionKey)
 		{
 			struct
 			{
 				FGameplayAbilitySpecHandle                  AbilityToActivate;                                        // (Parm)
 				int16_t                                            PredictionKey;                                            // (Parm, ZeroConstructor, IsPlainOldData)
-			} UAbilitySystemComponent_ClientActivateAbilityFailed_Params{AbilityToActivate, PredictionKey};
+			} UAbilitySystemComponent_ClientActivateAbilityFailed_Params{ AbilityToActivate, PredictionKey };
 
-			if (Component)
+			if (ASC)
 			{
-				static auto fn = Component->Function(_("ClientActivateAbilityFailed"));
+				static auto fn = ASC->Function(_("ClientActivateAbilityFailed"));
 
 				if (fn)
-					Component->ProcessEvent(fn, &UAbilitySystemComponent_ClientActivateAbilityFailed_Params);
+					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ClientActivateAbilityFailed_Params);
 				else
 					std::cout << _("Could not find ClientActivateAbilityFailed!\n");
 			}
 			else
 				std::cout << _("Invalid component!\n");
 		}
-		
-		FGameplayAbilitySpecHandle GrantAbility(UObject* ASC, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec& inSpec) // 
+
+		void ServerEndAbility(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityToEnd, const FGameplayAbilityActivationInfo& ActivationInfo, const FPredictionKey& PredictionKey)
 		{
-			auto ActivatableAbilities = *ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"));
-
-			FGameplayAbilitySpec* OwnedSpec = &ActivatableAbilities.Items[ActivatableAbilities.Items.Add(inSpec)];
-
-			// if (OwnedSpec.Ability && (*OwnedSpec.Ability->Member<EGameplayAbilityInstancingPolicy>(_("InstancingPolicy")) == EGameplayAbilityInstancingPolicy::InstancedPerActor))
+			struct
 			{
-				// std::cout << _("Instancing Policy is InstancedPerActor!\n");
-				// CreateNewInstanceOfAbility(OwnedSpec, Spec.Ability);
+				const FGameplayAbilitySpecHandle& AbilityToEnd;
+				const FGameplayAbilityActivationInfo& ActivationInfo;
+				const FPredictionKey& PredictionKey;
+			} UAbilitySystemComponent_ServerEndAbility_Params{ AbilityToEnd, ActivationInfo, PredictionKey };
+
+			if (ASC)
+			{
+				static auto fn = ASC->Function(_("ServerEndAbility"));
+
+				if (fn)
+					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ServerEndAbility_Params);
+				else
+					std::cout << _("Could not find ServerEndAbility!\n");
 			}
+			else
+				std::cout << _("Invalid component!\n");
+		}
 
-			/* if (*(char*)(*(__int64*)(OwnedSpec + 16) + 207) == 1)
+		void ServerSetReplicatedTargetData(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityHandle, const FPredictionKey& AbilityOriginalPredictionKey, const FGameplayAbilityTargetDataHandle& ReplicatedTargetDataHandle, const FGameplayTag& ApplicationTag, const FPredictionKey& CurrentPredictionKey)
+		{
+			struct
 			{
-				std::cout << _("Calling CreateNewInstanceOfAbility!\n");
-				(*(void(__fastcall**)(UObject*, __int64, FGameplayAbilitySpec))(*(__int64*)ASC + 1944))(ASC, __int64(OwnedSpec), (&inSpec)[2]);
-				std::cout << _("Called CreateNewInstanceOfAbility!\n");
-			} */
+				const FGameplayAbilitySpecHandle& AbilityHandle;
+				const FPredictionKey& AbilityOriginalPredictionKey;
+				const FGameplayAbilityTargetDataHandle& ReplicatedTargetDataHandle;
+				const FGameplayTag& ApplicationTag;
+				const FPredictionKey& CurrentPredictionKey;
+			} UAbilitySystemComponent_ServerSetReplicatedTargetData_Params{ AbilityHandle, AbilityOriginalPredictionKey, ReplicatedTargetDataHandle, ApplicationTag, CurrentPredictionKey };
 
-			std::cout << _("Calling OnGiveAbility!\n");
-			(*(void(__fastcall**)(UObject*, FGameplayAbilitySpec*))(*(__int64*)ASC + 1920))(ASC, OwnedSpec); // OnGiveAbility
-			std::cout << _("Called OnGiveAbility!\n");
-			MarkAbilitySpecDirtyNew(ASC, *OwnedSpec, true);
-			std::cout << _("Called MarkAbilitySpecDirty!\n");
-			return OwnedSpec->Handle;
+			if (ASC)
+			{
+				static auto fn = ASC->Function(_("ServerSetReplicatedTargetData"));
+
+				if (fn)
+					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ServerSetReplicatedTargetData_Params);
+				else
+					std::cout << _("Could not find ServerEndAbility!\n");
+			}
+			else
+				std::cout << _("Invalid component!\n");
 		}
 	}
 }

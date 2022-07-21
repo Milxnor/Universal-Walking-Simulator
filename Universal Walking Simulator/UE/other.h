@@ -11,6 +11,11 @@ struct FVector
 
 	FVector() : X(0), Y(0), Z(0) {}
 	FVector(float x, float y, float z) : X(x), Y(y), Z(z) {}
+
+	FVector operator+(const FVector& A)
+	{
+		return FVector{ this->X + A.X, this->Y + A.Y, this->Z + A.Z };
+	}
 };
 
 struct FQuat
@@ -545,4 +550,22 @@ enum class EGameplayAbilityReplicationPolicy : uint8_t
 	ReplicateNo = 0,
 	ReplicateYes = 1,
 	EGameplayAbilityReplicationPolicy_MAX = 2
+};
+
+enum class EFortBuildingType : uint8_t
+{
+	Wall = 0,
+	Floor = 1,
+	Corner = 2,
+	Deco = 3,
+	Prop = 4,
+	Stairs = 5,
+	Roof = 6,
+	Pillar = 7,
+	SpawnedItem = 8,
+	Container = 9,
+	Trap = 10,
+	GenericCenterCellActor = 11,
+	None = 12,
+	EFortBuildingType_MAX = 13
 };

@@ -4,11 +4,9 @@
 #include <Gameplay/helper.h>
 #include "Net/funcs.h"
 
-// TODO: Rewrite, for now this is just kem0x's abilities on Raider.
-
-FGameplayAbilitySpec* UAbilitySystemComponent_FindAbilitySpecFromHandle(UObject* AbilitySystemComponent, FGameplayAbilitySpecHandle Handle)
+FGameplayAbilitySpec* FindAbilitySpecFromHandle(UObject* ASC, FGameplayAbilitySpecHandle Handle)
 {
-    auto Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))).Items;
+    auto Specs = (*ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))).Items;
 
     std::cout << _("Spec size: ") << Specs.Num() << '\n';
 
@@ -25,40 +23,78 @@ FGameplayAbilitySpec* UAbilitySystemComponent_FindAbilitySpecFromHandle(UObject*
     return nullptr;
 }
 
-// https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
-static inline void TryActivateAbility(UObject* AbilitySystemComponent, FGameplayAbilitySpecHandle AbilityToActivate, bool InputPressed, FPredictionKey* PredictionKey, __int64* TriggerEventData)
+void ConsumeAllReplicatedData(FGameplayAbilitySpecHandle AbilityHandle, FPredictionKey AbilityOriginalPredictionKey)
 {
-    auto Spec = UAbilitySystemComponent_FindAbilitySpecFromHandle(AbilitySystemComponent, AbilityToActivate);
+    /* TSharedPtr<FAbilityReplicatedDataCache> CachedData = AbilityTargetDataMap.Find(FGameplayAbilitySpecHandleAndPredictionKey(AbilityHandle, AbilityOriginalPredictionKey));
+    if (CachedData.IsValid())
+    {
+        CachedData->Reset();
+    } */
+}
 
+// https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1754
+
+void PrintExplicitTags(UObject* ASC)
+{
+    static auto AHAHA = 264;
+    auto MinimalReplicationGameplayCuesOff = GetOffset(ASC, (_("MinimalReplicationGameplayCues")));
+    auto BlockedAbilityTags = (__int64(ASC) + (MinimalReplicationGameplayCuesOff + 0xD0));
+    auto ExplicitTags = *(FGameplayTagContainer*)(BlockedAbilityTags + AHAHA);
+    std::cout << "\n\nExplicit Tags: " << ExplicitTags.ToStringSimple(true) << "\n\n\n";
+}
+
+void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle Handle, bool InputPressed, const FPredictionKey& PredictionKey, __int64* TriggerEventData)
+{
+    FGameplayAbilitySpec* Spec = FindAbilitySpecFromHandle(ASC, Handle);
     if (!Spec)
     {
-        std::cout << _("TryActivateAbility failed because it was not able to find the Spec!\n");
-        Helper::Abilities::ClientActivateAbilityFailed(AbilitySystemComponent, AbilityToActivate, PredictionKey->Current);
+        // Can potentially happen in race conditions where client tries to activate ability that is removed server side before it is received.
+        std::cout << _("InternalServerTryActivateAbility. Rejecting ClientActivation of ability with invalid SpecHandle!\n");
+        Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, PredictionKey.Current);
         return;
     }
 
-    UObject* InstancedAbility = nullptr; // UGameplayAbility*
+    const UObject* AbilityToActivate = Spec->Ability;
+
+    if (!AbilityToActivate) //!ensure(AbilityToActivate))
+    {
+        std::cout << _("InternalServerTryActiveAbility. Rejecting ClientActivation of unconfigured spec ability!\n");
+        Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, PredictionKey.Current);
+        return;
+    }
+
+    // Consume any pending target info, to clear out cancels from old executions
+    ConsumeAllReplicatedData(Handle, PredictionKey);
+
+    /* FScopedPredictionWindow ScopedPredictionWindow(this, PredictionKey);
+
+    ensure(AbilityActorInfo.IsValid());
+
+    SCOPE_CYCLE_COUNTER(STAT_AbilitySystemComp_ServerTryActivate);
+    SCOPE_CYCLE_UOBJECT(Ability, AbilityToActivate); */
+
+    UObject* InstancedAbility = nullptr;
     Spec->InputPressed = true;
 
-    if (!InternalTryActivateAbility(AbilitySystemComponent, AbilityToActivate, *PredictionKey, &InstancedAbility, nullptr, TriggerEventData))
+    // Attempt to activate the ability (server side) and tell the client if it succeeded or failed.
+
+    if (InternalTryActivateAbility(ASC, Handle, PredictionKey, &InstancedAbility, nullptr, TriggerEventData))
     {
-        std::cout << _("TryActivateAbility failed because it was not able to activate the ability !\n");
-        Helper::Abilities::ClientActivateAbilityFailed(AbilitySystemComponent, AbilityToActivate, PredictionKey->Current);
-        Spec->InputPressed = false;
-        return;
+        // TryActivateAbility handles notifying the client of success
     }
+    else
+    {
+        auto InternalTryActivateAbilityFailureTags = ASC->Member<FGameplayTagContainer>(_("ClientDebugStrings"), sizeof(FGameplayTagContainer));
+        std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed: {}\n", Spec->Ability->GetName(), InternalTryActivateAbilityFailureTags->ToStringSimple(true));
+        Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, PredictionKey.Current);
+        Spec->InputPressed = false;
+        
+        MarkAbilitySpecDirtyNew(ASC, *Spec, false);
 
-   MarkAbilitySpecDirtyNew(AbilitySystemComponent, *Spec, false);
+    }
 }
 
-int GenerateNewHandle()
-{
-    // Must be in C++ to avoid duplicate statics accross execution units
-    static int32_t GHandle = 1;
-    return GHandle++;
-}
-
-static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass, bool bAddSpecManually = false)
+static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
 {
     auto AbilitySystemComponent = *TargetPawn->Member<UObject*>(_("AbilitySystemComponent"));
 
@@ -71,7 +107,8 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     auto GenerateNewSpec = [&]() -> FGameplayAbilitySpec
     {
-        FGameplayAbilitySpecHandle Handle{ rand() };
+        FGameplayAbilitySpecHandle Handle{};
+        Handle.GenerateNewHandle();
 
         FGameplayAbilitySpec Spec{ -1, -1, -1, Handle, DefaultObject, 1, -1, nullptr, 0, false, false, false };
 
@@ -87,20 +124,12 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
         if (CurrentSpec.Ability == Spec.Ability)
             return nullptr;
     }
-    
-    if (bAddSpecManually)
-        ActivatableAbilities.Items.Add(Spec);
 
     // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232
     
     GiveAbility(AbilitySystemComponent, &Spec.Handle, Spec);
 
     return Spec.Ability;
-    // Helper::Abilities::GrantAbility(AbilitySystemComponent, &Spec.Handle, Spec);
-    //AbilitySystemComponent->GiveAbility(
-    // FGameplayAbilitySpec(StartupAbility, 
-    //                      GetAbilityLevel(StartupAbility.GetDefaultObject()->AbilityID), static_cast<int32>(StartupAbility.GetDefaultObject()->AbilityInputID)
-    // , this)); */
 }
 
 inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
@@ -111,11 +140,9 @@ inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunct
         FPredictionKey                              PredictionKey;                                            // (Parm)
     };
 
-    // std::cout << _("ServerTryActivateAbility!\n");
-
     auto Params = (UAbilitySystemComponent_ServerTryActivateAbility_Params*)Parameters;
 
-    TryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, &Params->PredictionKey, nullptr);
+    InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, Params->PredictionKey, nullptr);
 
     return false;
 }
@@ -123,18 +150,29 @@ inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunct
 inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
 {
     struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
-#ifdef BEFORE_SEASONEIGHT
         FServerAbilityRPCBatch                      BatchInfo;                                                // (Parm)
-#else
-        FServerAbilityRPCBatchHigher                      BatchInfo;                                                // (Parm)
-#endif
     };
 
     auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
 
-    TryActivateAbility(AbilitySystemComponent, Params->BatchInfo.AbilitySpecHandle, Params->BatchInfo.InputPressed, &Params->BatchInfo.PredictionKey, nullptr);
+    auto BatchInfo = Params->BatchInfo;
 
-    return false;
+    InternalServerTryActivateAbility(AbilitySystemComponent, Params->BatchInfo.AbilitySpecHandle, Params->BatchInfo.InputPressed, Params->BatchInfo.PredictionKey, nullptr);
+    // PrintExplicitTags(AbilitySystemComponent);
+
+    /* Helper::Abilities::ServerSetReplicatedTargetData(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.PredictionKey, BatchInfo.TargetData, FGameplayTag(), BatchInfo.PredictionKey);
+    // ^ Crashes
+
+    if (BatchInfo.Ended)
+    {
+        // This FakeInfo is probably bogus for the general case but should work for the limited use of batched RPCs
+        FGameplayAbilityActivationInfo FakeInfo;
+        // FakeInfo.ServerSetActivationPredictionKey(BatchInfo.PredictionKey);
+        FakeInfo.PredictionKeyWhenActivated = BatchInfo.PredictionKey;
+        Helper::Abilities::ServerEndAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, FakeInfo, BatchInfo.PredictionKey);
+    } */
+
+    return true;
 }
 
 inline bool ServerTryActivateAbilityWithEventDataHook(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
@@ -150,7 +188,7 @@ inline bool ServerTryActivateAbilityWithEventDataHook(UObject* AbilitySystemComp
 
     auto Params = (UAbilitySystemComponent_ServerTryActivateAbilityWithEventData_Params*)Parameters;
 
-    TryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, &Params->PredictionKey, &Params->TriggerEventData);
+    InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, Params->PredictionKey, &Params->TriggerEventData);
 
     return false;
 }
@@ -177,14 +215,11 @@ void TestAbilitySizeDifference()
     /* auto PredictionKeyDiff = SizeOfPredictionKey >= sizeof(FPredictionKey) ? SizeOfPredictionKey - sizeof(FPredictionKey) : sizeof(FPredictionKey) - SizeOfPredictionKey; */
 
     AHH<FPredictionKey>(_("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
-    AHH<FGameplayEventData>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
-    AHH<FGameplayEventDataHigher>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
     AHH<FGameplayAbilitySpecHandle>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecHandle"));
-    AHH<FServerAbilityRPCBatch>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
-    AHH<FServerAbilityRPCBatchHigher>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
     AHH<FGameplayAbilitySpec>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec"));
     AHH<FGameplayAbilitySpecContainer>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
     AHH<FGameplayAbilityTargetDataHandle>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
-    AHH<FGameplayAbilityTargetDataHandleHigher>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
+    AHH<FServerAbilityRPCBatch>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
+    AHH<FGameplayEventData>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
     AHH<FFastArraySerializer>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
 }

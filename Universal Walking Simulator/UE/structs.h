@@ -250,7 +250,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	}
 
 	template <typename MemberType>
-	INL MemberType* Member(const std::string& MemberName, bool bIsStruct = false);
+	INL MemberType* Member(const std::string& MemberName, int extraOffset = 0);
 
 	bool IsA(UObject* cmp) const;
 
@@ -1064,14 +1064,14 @@ int FindOffsetStruct(const std::string& ClassName, const std::string& MemberName
 }
 
 template <typename MemberType>
-INL MemberType* UObject::Member(const std::string& MemberName, bool bIsStruct)
+INL MemberType* UObject::Member(const std::string& MemberName, int extraOffset)
 {
 	// MemberName.erase(0, MemberName.find_last_of(".", MemberName.length() - 1) + 1); // This would be getting the short name of the member if you did like ObjectProperty /Script/stuff
 
-	if (!bIsStruct)
-		return (MemberType*)(__int64(this) + GetOffset(this, MemberName));
-	else
-		return (MemberType*)(__int64(this) + FindOffsetStruct(this->GetFullName(), MemberName));
+	// if (!bIsStruct)
+	return (MemberType*)(__int64(this) + (GetOffset(this, MemberName) - extraOffset));
+	// else
+		// return (MemberType*)(__int64(this) + FindOffsetStruct(this->GetFullName(), MemberName));
 }
 
 struct FFastArraySerializerItem
@@ -1164,3 +1164,48 @@ T* Get(int offset, uintptr_t addr)
 {
 	return (T*)(__int64(addr) + offset);
 }
+
+// TODO: REMAKME
+
+struct FWeakObjectPtr
+{
+public:
+	inline bool SerialNumbersMatch(FUObjectItem* ObjectItem) const
+	{
+		return ObjectItem->SerialNumber == ObjectSerialNumber;
+	}
+
+	int32_t ObjectIndex;
+	int32_t ObjectSerialNumber;
+};
+
+template<class T, class TWeakObjectPtrBase = FWeakObjectPtr>
+struct TWeakObjectPtr : public TWeakObjectPtrBase
+{
+public:
+};
+
+template<typename TObjectID>
+class TPersistentObjectPtr
+{
+public:
+	FWeakObjectPtr WeakPtr;
+	int32_t TagAtLastTest;
+	TObjectID ObjectID;
+};
+
+struct FSoftObjectPath
+{
+	FName AssetPathName;
+	FString SubPathString;
+};
+
+class FSoftObjectPtr : public TPersistentObjectPtr<FSoftObjectPath>
+{
+
+};
+
+class TSoftObjectPtr : FSoftObjectPtr
+{
+
+};

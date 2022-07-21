@@ -245,7 +245,7 @@ HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_
 				std::cout << _("Changed Phase to Aircraft.");
 			}
 
-			if (ImGui::Button(_("Change Phase to SafeZones"))) // TODO: Improve phase stuff
+			/* if (ImGui::Button(_("Change Phase to SafeZones"))) // Crashes
 			{
 				auto world = Helper::GetWorld();
 				auto gameState = *world->Member<UObject*>(_("GameState"));
@@ -259,7 +259,7 @@ HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_
 				static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
 
 				std::cout << _("Changed Phase to SafeZones.");
-			}
+			} */
 
 			break;
 		}
