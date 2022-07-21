@@ -8,17 +8,16 @@ Currently Supported: S7-S9<br>
 
 # PLANS
 
-Add an auto pattern finder, this is in development and it's easy to make, it's just time consuming.<br>
+Add an auto pattern finder, this was in development and it's easy to make, it's just time consuming.<br>
 Add Chapter 2 Support<br>
 Clean up Project and add comments to the code.<br>
 # CURRENT ISSUES
 
-Not using beacons causes no ReplicationDriver.<br>
 S10 (10.40) has a movement issue + Event crashes<br>
 Battle Bus Crashes on ~S8+<br>
 
 Code is everywhere.<br>
-Console Colors are a 50/50.<br>
+Console Colors are a 30/70.<br>
 
 # CONTRIBUTING
 
@@ -35,3 +34,4 @@ Pull Requests WILL NOT be accepted if they do not follow the provided criteria
 If you are to use this base for your own project, please credit me and link the repository.<br>
 
 Some of this code is from or inspired by <a href="https://github.com/kem0x/raider3.5">Raider by kem0x</a>.
+The flashing fix (hooking GetPlayerViewpoint) was found by  <a href="https://github.com/biggest-d">danii/a>.
