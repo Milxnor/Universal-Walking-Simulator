@@ -110,7 +110,7 @@
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="build.h" />
+    <ClInclude Include="Gameplay\build.h" />
     <ClInclude Include="Gameplay\abilities.h" />
     <ClInclude Include="Gameplay\events.h" />
     <ClInclude Include="Gameplay\helper.h" />

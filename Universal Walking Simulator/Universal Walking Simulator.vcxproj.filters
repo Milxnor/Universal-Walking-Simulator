@@ -100,7 +100,7 @@
     <ClInclude Include="Gameplay\events.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
-    <ClInclude Include="build.h">
+    <ClInclude Include="Gameplay\build.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
     <ClInclude Include="UE\structs.h">

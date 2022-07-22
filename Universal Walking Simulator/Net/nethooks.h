@@ -138,67 +138,73 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         if (AbilitySystemComponent)
         {
             std::cout << _("Granting abilities!\n");
-            static auto AbilitySet = FindObject(_("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
-
-            if (AbilitySet)
+            if (FnVerDouble < 8)
             {
-                auto Abilities = AbilitySet->Member<TArray<UObject*>>(_("GameplayAbilities"));
+                static auto AbilitySet = FindObject(_("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
 
-                if (Abilities)
+                if (AbilitySet)
                 {
-                    for (int i = 0; i < Abilities->Num(); i++)
+                    auto Abilities = AbilitySet->Member<TArray<UObject*>>(_("GameplayAbilities"));
+
+                    if (Abilities)
                     {
-                        auto Ability = Abilities->At(i);
+                        for (int i = 0; i < Abilities->Num(); i++)
+                        {
+                            auto Ability = Abilities->At(i);
 
-                        if (!Ability)
-                            continue;
+                            if (!Ability)
+                                continue;
 
-                        GrantGameplayAbility(Pawn, Ability);
+                            GrantGameplayAbility(Pawn, Ability);
+                        }
                     }
                 }
             }
-
-            // static auto MatsAbility = FindObject(_("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
-            //GrantGameplayAbility(Pawn, MatsAbility);
-
-            /* static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
-            static auto ReloadAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Reload");
-            static auto JumpAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Jump");
-            static auto InteractUseAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C");
-            static auto InteractSearchAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.GA_DefaultPlayer_InteractSearch_C");
-            static auto EnterVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.GA_AthenaEnterVehicle_C"));
-            static auto ExitVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.GA_AthenaExitVehicle_C"));
-            static auto InVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.GA_AthenaInVehicle_C"));
-            static auto RangedAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C"));
-
-            if (SprintAbility)
-                GrantGameplayAbility(Pawn, SprintAbility); //, true);
-            if (ReloadAbility)
+            else
             {
-                auto Ability = GrantGameplayAbility(Pawn, ReloadAbility);
+                // static auto MatsAbility = FindObject(_("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
+//GrantGameplayAbility(Pawn, MatsAbility);
 
-                if (Ability)
-                    *Ability->Member<TEnumAsByte<EGameplayAbilityReplicationPolicy>>(_("ReplicationPolicy")) = EGameplayAbilityReplicationPolicy::ReplicateYes;
+
+                static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
+                static auto ReloadAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Reload");
+                static auto JumpAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Jump");
+                static auto InteractUseAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C");
+                static auto InteractSearchAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.GA_DefaultPlayer_InteractSearch_C");
+                static auto EnterVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.GA_AthenaEnterVehicle_C"));
+                static auto ExitVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.GA_AthenaExitVehicle_C"));
+                static auto InVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.GA_AthenaInVehicle_C"));
+                static auto RangedAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C"));
+
+                if (SprintAbility)
+                    GrantGameplayAbility(Pawn, SprintAbility); //, true);
+                if (ReloadAbility)
+                {
+                    auto Ability = GrantGameplayAbility(Pawn, ReloadAbility);
+
+                    if (Ability)
+                        *Ability->Member<TEnumAsByte<EGameplayAbilityReplicationPolicy>>(_("ReplicationPolicy")) = EGameplayAbilityReplicationPolicy::ReplicateYes;
+                }
+                if (JumpAbility)
+                    GrantGameplayAbility(Pawn, JumpAbility);
+                if (InteractUseAbility)
+                    GrantGameplayAbility(Pawn, InteractUseAbility);
+                if (InteractSearchAbility)
+                    GrantGameplayAbility(Pawn, InteractSearchAbility);
+                if (EnterVehicleAbility)
+                    GrantGameplayAbility(Pawn, EnterVehicleAbility);
+                if (ExitVehicleAbility)
+                    GrantGameplayAbility(Pawn, ExitVehicleAbility);
+                if (InVehicleAbility)
+                    GrantGameplayAbility(Pawn, InVehicleAbility);
+                if (RangedAbility)
+                {
+                    auto Ability = GrantGameplayAbility(Pawn, RangedAbility);
+
+                    if (Ability)
+                        *Ability->Member<TEnumAsByte<EGameplayAbilityReplicationPolicy>>(_("ReplicationPolicy")) = EGameplayAbilityReplicationPolicy::ReplicateYes;
+                }
             }
-            if (JumpAbility)
-                GrantGameplayAbility(Pawn, JumpAbility);
-            if (InteractUseAbility)
-                GrantGameplayAbility(Pawn, InteractUseAbility);
-            if (InteractSearchAbility)
-                GrantGameplayAbility(Pawn, InteractSearchAbility);
-            if (EnterVehicleAbility)
-                GrantGameplayAbility(Pawn, EnterVehicleAbility);
-            if (ExitVehicleAbility)
-                GrantGameplayAbility(Pawn, ExitVehicleAbility);
-            if (InVehicleAbility)
-                GrantGameplayAbility(Pawn, InVehicleAbility);
-            if (RangedAbility)
-            {
-                auto Ability = GrantGameplayAbility(Pawn, RangedAbility);
-
-                if (Ability)
-                    *Ability->Member<TEnumAsByte<EGameplayAbilityReplicationPolicy>>(_("ReplicationPolicy")) = EGameplayAbilityReplicationPolicy::ReplicateYes;
-            } */
         }
         else
             std::cout << _("Unable to find AbilitySystemComponent!\n");

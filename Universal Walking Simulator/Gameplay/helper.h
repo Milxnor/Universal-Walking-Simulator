@@ -139,6 +139,18 @@ namespace Helper
 		return nullptr;
 	}
 
+	UObject* GetOwnerOfComponent(UObject* Component)
+	{
+		static auto fn = Component->Function(_("GetOwner"));
+
+		UObject* Owner = nullptr;
+
+		if (fn)
+			Component->ProcessEvent(fn, &Owner);
+
+		return Owner;
+	}
+
 	void DestroyActor(UObject* Actor)
 	{
 		if (!Actor) 

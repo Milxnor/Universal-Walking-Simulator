@@ -2,6 +2,7 @@
 
 #include <Net/funcs.h>
 #include <Gameplay/helper.h>
+#include <Gameplay/inventory.h>
 
 // Includes building and editing..
 
@@ -160,8 +161,6 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 			*EditTool->Member<UObject*>(_("EditActor")) = BuildingToEdit;
 			static auto OnRep_EditActor = EditTool->Function(_("OnRep_EditActor"));
 			EditTool->ProcessEvent(OnRep_EditActor);
-			// Params->BuildingActorToEdit->EditingPlayer = (AFortPlayerStateZone*)Pawn->PlayerState;
-			// Params->BuildingActorToEdit->OnRep_EditingPlayer();
 		}
 	}
 
@@ -268,9 +267,12 @@ inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Fu
 
 		if (Pawn && *Pawn)
 		{
-			auto EditTool = (*Pawn)->Member<UObject*>(_("CurrentWeapon"));
+			// auto EditTool = (*Pawn)->Member<UObject*>(_("CurrentWeapon"));
+			static UObject* EditToolDefinition = FindObject(_("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
+			auto EditToolInstance = Inventory::FindItemInInventory(Controller, EditToolDefinition);
+			auto EditTool = Inventory::EquipWeaponDefinition(*Pawn, EditToolDefinition, Inventory::GetItemGuid(EditToolInstance));
 
-			if (EditTool && *EditTool && Parameters)
+			if (EditTool && Parameters)
 			{
 				struct Parms {
 					UObject* BuildingActorToStopEditing;
@@ -278,16 +280,19 @@ inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Fu
 				
 				auto Params = (Parms*)Parameters;
 
-				*Params->BuildingActorToStopEditing->Member<UObject*>(_("EditingPlayer")) = nullptr;
-				static auto OnRep_EditingPlayer = Params->BuildingActorToStopEditing->Function(_("OnRep_EditingPlayer"));
-				Params->BuildingActorToStopEditing->ProcessEvent(OnRep_EditingPlayer);
+				if (Params->BuildingActorToStopEditing)
+				{
+					*Params->BuildingActorToStopEditing->Member<UObject*>(_("EditingPlayer")) = nullptr;
+					static auto OnRep_EditingPlayer = Params->BuildingActorToStopEditing->Function(_("OnRep_EditingPlayer"));
+					Params->BuildingActorToStopEditing->ProcessEvent(OnRep_EditingPlayer);
 
-				*(*EditTool)->Member<bool>(_("bEditConfirmed")) = true; // Assuming it's not a bitfield
-				*(*EditTool)->Member<UObject*>(_("EditActor")) = nullptr;
-				static auto OnRep_EditActorFn = (*EditTool)->Function(_("OnRep_EditActor")); // We make it static so then it doesn't have to be found again.
+					*EditTool->Member<bool>(_("bEditConfirmed")) = true;
+					*EditTool->Member<UObject*>(_("EditActor")) = nullptr;
+					static auto OnRep_EditActorFn = EditTool->Function(_("OnRep_EditActor")); // We make it static so then it doesn't have to be found again.
 
-				if (OnRep_EditActorFn)
-					(*EditTool)->ProcessEvent(OnRep_EditActorFn);
+					if (OnRep_EditActorFn)
+						EditTool->ProcessEvent(OnRep_EditActorFn);
+				}
 			}
 		}
 	}
@@ -299,7 +304,7 @@ void InitializeBuildHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
 
-	/* AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), ServerEditBuildingActorHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), ServerEndEditingBuildingActorHook); */
+	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), ServerEndEditingBuildingActorHook);
 }

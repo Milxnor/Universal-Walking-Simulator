@@ -411,10 +411,14 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 	return false;
 }
 
-inline bool ServerAttemptInteractHook(UObject* Controller, UFunction* Function, void* Parameters)
+inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function, void* Parameters)
 {
-	if (Engine_Version >= 423) // They use FortControllerComponent_Interaction and we have not implemented yet.
-		return false; // TODO: Check the owener to see if its a controller
+	UObject* Controller = Controllera;
+
+	if (Engine_Version >= 423)
+	{
+		Controller = Helper::GetOwnerOfComponent(Controllera);
+	}
 
 	ProcessEventO(Controller, Function, Parameters);
 

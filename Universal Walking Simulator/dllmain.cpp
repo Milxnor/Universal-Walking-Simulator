@@ -9,7 +9,7 @@
 #include "gui.h"
 #include <hooks.h>
 #include <Gameplay/abilities.h>
-#include "build.h"
+#include <Gameplay/build.h>
 
 void InitializePatterns()
 {

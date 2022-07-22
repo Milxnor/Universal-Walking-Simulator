@@ -1,3 +1,5 @@
+#pragma once
+
 #include <UE/structs.h>
 #include <Gameplay/helper.h>
 
@@ -230,8 +232,12 @@ namespace Inventory
 			auto SecondaryQuickbar = EFortQuickBars::Secondary;
 			Controller->ProcessEvent(ClientForceUpdateQuickbar, &SecondaryQuickbar);
 
-			static auto UpdateQuickBars = Controller->Function(_("UpdateQuickBars"));
-			Controller->ProcessEvent(UpdateQuickBars);
+			if (FnVerDouble < 8)
+			{
+				static auto UpdateQuickBars = Controller->Function(_("UpdateQuickBars"));
+				if (UpdateQuickBars)
+					Controller->ProcessEvent(UpdateQuickBars);
+			}
 		}
 
 		// static auto OnRep_QuickBar = Controller->Function(_("OnRep_QuickBar"));
@@ -326,6 +332,9 @@ namespace Inventory
 
 	static void AddItem(UObject* Controller, UObject* FortItem, EFortQuickBars Bars, int Slot)
 	{
+		if (!Controller || !FortItem)
+			return;
+
 		static const auto FlooredVer = std::floor(std::stod(FN_Version));
 
 		// auto Inventory = GetInventory(Controller);
