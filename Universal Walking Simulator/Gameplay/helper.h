@@ -102,9 +102,8 @@ namespace Helper
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location);
 
-		if (Pickup && Definition && Pawn)
+		if (Pickup && Definition)
 		{
-			Location = Helper::GetActorLocation(Pawn);
 			auto ItemEntry = Pickup->Member<void>(_("PrimaryPickupItemEntry"));
 			static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
 			static auto ItemDefOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
@@ -279,6 +278,13 @@ namespace Helper
 		return params.Res;
 	}
 
+	EAthenaGamePhase* GetGamePhase()
+	{
+		auto world = Helper::GetWorld();
+		auto gameState = *world->Member<UObject*>(_("GameState"));
+		return gameState->Member<EAthenaGamePhase>(_("GamePhase"));
+	}
+
 	FVector GetPlayerStart()
 	{
 		static auto WarmupClass = FindObject(_("Class /Script/FortniteGame.FortPlayerStartWarmup"));
@@ -291,9 +297,9 @@ namespace Helper
 		SpawnTransform.Rotation = FQuat();
 		SpawnTransform.Translation = FVector{ 1250, 1818, 3284 }; // Next to salty
 
-		// auto GamePhase = static_cast<AAthena_GameState_C*>(GetWorld()->GameState)->GamePhase;
+		auto GamePhase = *GetGamePhase();
 
-		if (WarmupClass && ActorsNum != 0 && Engine_Version < 423) // && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
+		if (WarmupClass && ActorsNum != 0 && Engine_Version < 423 && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
 		{
 			auto ActorToUseNum = RandomIntInRange(0, ActorsNum);
 			auto ActorToUse = (OutActors)[ActorToUseNum];
@@ -332,11 +338,11 @@ namespace Helper
 
 		DWORD WINAPI Setup(LPVOID)
 		{
-			static auto Engine = FindObject(_("FortEngine_"));
+			static auto Engine = FindObjectOld(_("FortEngine_"));
 
 			while (!Engine)
 			{
-				Engine = FindObject(_("FortEngine_"));
+				Engine = FindObjectOld(_("FortEngine_"));
 				Sleep(1000 / 30);
 			}
 

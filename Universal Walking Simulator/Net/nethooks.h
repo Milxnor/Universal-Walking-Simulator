@@ -7,6 +7,7 @@
 #include <Gameplay/helper.h>
 #include <Gameplay/inventory.h>
 #include <Gameplay/abilities.h>
+#include <Gameplay/loot.h>
 
 static bool bTraveled = false;
 
@@ -92,6 +93,14 @@ bool bMyPawn = false; // UObject*
 
 UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole RemoteRole, FURL& URL, void* UniqueId, FString& Error, uint8_t NetPlayerIndex)
 {
+    static bool bSpawnedFloorLoot = false;
+
+    if (!bSpawnedFloorLoot)
+    {
+        // CreateThread(0, 0, Looting::Tables::SpawnFloorLoot, 0, 0, 0);
+        bSpawnedFloorLoot = true;
+    }
+
     std::cout << _("SpawnPlayActor called!\n");
     // static UObject* CameraManagerClass = FindObject(_("BlueprintGeneratedClass /Game/Blueprints/Camera/Original/MainPlayerCamera.MainPlayerCamera_C"));
 
@@ -119,6 +128,9 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     auto Pawn = Helper::InitPawn(PlayerController, true, Helper::GetPlayerStart(), true);
 
+    if (!Pawn)
+        return PlayerController;
+
     if (GiveAbility)
     {
         auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
@@ -126,7 +138,30 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         if (AbilitySystemComponent)
         {
             std::cout << _("Granting abilities!\n");
-            static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
+            static auto AbilitySet = FindObject(_("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
+
+            if (AbilitySet)
+            {
+                auto Abilities = AbilitySet->Member<TArray<UObject*>>(_("GameplayAbilities"));
+
+                if (Abilities)
+                {
+                    for (int i = 0; i < Abilities->Num(); i++)
+                    {
+                        auto Ability = Abilities->At(i);
+
+                        if (!Ability)
+                            continue;
+
+                        GrantGameplayAbility(Pawn, Ability);
+                    }
+                }
+            }
+
+            // static auto MatsAbility = FindObject(_("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
+            //GrantGameplayAbility(Pawn, MatsAbility);
+
+            /* static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
             static auto ReloadAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Reload");
             static auto JumpAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Jump");
             static auto InteractUseAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C");
@@ -163,7 +198,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
                 if (Ability)
                     *Ability->Member<TEnumAsByte<EGameplayAbilityReplicationPolicy>>(_("ReplicationPolicy")) = EGameplayAbilityReplicationPolicy::ReplicateYes;
-            }
+            } */
         }
         else
             std::cout << _("Unable to find AbilitySystemComponent!\n");

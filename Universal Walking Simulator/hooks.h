@@ -77,10 +77,11 @@ inline void initStuff()
 				
 				auto SSVFn = *AuthGameMode->Member<bool>(_("ShouldSpawnVehicle")) = true;*/
 				
-				//static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
+				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
 				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
+				// static auto Playlist = FindObject(_("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
 				static auto OnRepPlaylist = FindObject(_("Function /Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo"));
 
 				static auto BasePlaylistOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("BasePlaylist"));
@@ -458,10 +459,11 @@ inline bool ServerAttemptInteractHook(UObject* Controller, UFunction* Function, 
 
 					if (ReceivingActorName.contains(_("Chest")))
 					{
-						static auto BlueAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
+						/* static auto BlueAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
 						
 						if (BlueAR)
-							Helper::SummonPickup(Pawn, BlueAR, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Chest, 1);
+							Helper::SummonPickup(Pawn, BlueAR, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Chest, 1); */
+						Looting::Tables::HandleSearch(ReceivingActor);
 					}
 					else if (ReceivingActorName.contains(_("Ammo")))
 					{
@@ -746,8 +748,8 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 
 			return;
 		}
-		else
-			std::cout << _("unable to get viewpoint!\n");
+		// else
+			// std::cout << _("unable to get viewpoint!\n"); // This will happen if someone leaves iirc
 	}
 
 	return GetPlayerViewPoint(pc, a2, a3);

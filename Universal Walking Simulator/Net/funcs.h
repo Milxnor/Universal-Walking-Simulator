@@ -195,6 +195,7 @@ struct FGameplayEventData
 struct FGameplayAbilityTargetDataHandle // S8+
 {
     unsigned char                                      UnknownData00[0x28];                                      // 0x0000(0x0028) MISSED OFFSET
+    // unsigned char                                      UnknownData00[0x20];                                      // 0x0000(0x0020) MISSED OFFSET // 8.20..
 };
 
 struct FServerAbilityRPCBatch

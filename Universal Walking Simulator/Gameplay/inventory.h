@@ -180,7 +180,7 @@ namespace Inventory
 		auto Inventory = GetInventory(Controller);
 		// ReplicatedEntriesOffset = 0xB0;
 
-		std::cout << _("ReplicatedEntries Offset: ") << ReplicatedEntriesOffset << '\n';
+		// std::cout << _("ReplicatedEntries Offset: ") << ReplicatedEntriesOffset << '\n';
 
 		return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 
@@ -237,7 +237,7 @@ namespace Inventory
 		// static auto OnRep_QuickBar = Controller->Function(_("OnRep_QuickBar"));
 		// Controller->ProcessEvent(OnRep_QuickBar, nullptr);
 
-		if (bRemovedItem || Idx != -1)
+		if ((bRemovedItem || Idx != -1) && Inventory)
 			((FFastArraySerializer*)Inventory)->MarkArrayDirty();
 
 		// if (Idx != -1)
@@ -271,10 +271,10 @@ namespace Inventory
 
 			auto OwnerInventory = itemInstance->Member<UObject*>(_("OwnerInventory")); // We should probably set this?
 
-			if (OwnerInventory && *OwnerInventory)
+			/* if (OwnerInventory && *OwnerInventory)
 				std::cout << _("OwnerInventory Name: ") << (*OwnerInventory)->GetFullName() << '\n';
 			else
-				std::cout << _("OwnerInventory Invalid: ") << OwnerInventory << '\n';
+				std::cout << _("OwnerInventory Invalid: ") << OwnerInventory << '\n'; */
 
 			return itemInstance;
 		}
@@ -382,7 +382,7 @@ namespace Inventory
 
 	static void CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1)
 	{
-		if (Controller)
+		if (Controller && Definition)
 		{
 			auto Instance = CreateItemInstance(Controller, Definition, Count);
 
@@ -607,15 +607,31 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 			if (bPickedUp && !*bPickedUp)
 			{
-				auto PrimaryPickupItemEntry = *Params->Pickup->Member<__int64>(_("PrimaryPickupItemEntry"));
+				auto PrimaryPickupItemEntry = Params->Pickup->Member<__int64>(_("PrimaryPickupItemEntry"));
 				static auto ItemDefinitionOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
 				static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
+				auto Controller = Pawn->Member<UObject*>(_("Controller"));
 
-				auto Definition = (UObject**)(__int64(&PrimaryPickupItemEntry) + ItemDefinitionOffset);
-				auto Count = *(int*)(__int64(&PrimaryPickupItemEntry) + CountOffset);
+				auto Definition = (UObject**)(__int64(&*PrimaryPickupItemEntry) + ItemDefinitionOffset);
+				auto Count = (int*)(__int64(&*PrimaryPickupItemEntry) + CountOffset);
 
-				if (Definition)
-					Inventory::CreateAndAddItem(*Pawn->Member<UObject*>(_("Controller")), *Definition, EFortQuickBars::Primary, Count);
+				std::cout << "Def: " << Definition << '\n';
+				std::cout << "ItemDefOffset: " << ItemDefinitionOffset << '\n';
+
+				if (Controller && *Controller)
+				{
+					if (Definition && *Definition && Count)
+					{
+						std::cout << _("Def Deref: ") << *Definition << '\n';
+						std::cout << _("Def: ") << (*Definition)->GetFullName() << '\n';
+						Inventory::CreateAndAddItem(*Controller, *Definition, EFortQuickBars::Primary, *Count);
+					}
+					else
+						std::cout << _("Player is trying to pickup an item with a null Definition or null Count!\n");
+				}
+				else
+					std::cout << _("Invalid Controller: ") << Controller << '\n';
+
 				Helper::DestroyActor(Params->Pickup);
 				*bPickedUp = true;
 				static auto bPickedUpFn = Params->Pickup->Function(_("OnRep_bPickedUp"));
@@ -630,9 +646,10 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 void InitializeInventoryHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
+	if (Engine_Version >= 423)
+		AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
-	// AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"), ServerHandlePickupHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"), ServerHandlePickupHook);
 }
 
 namespace Player
@@ -652,14 +669,14 @@ namespace Player
 
 		if (setHealthFn)
 			Pawn->ProcessEvent(setHealthFn, &healthParams);
-		auto PickaxeDefinition = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+		static auto PickaxeDefinition = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
 		// TODO: StructProperty /Script/FortniteGame.FortPlaylistAthena.RespawnHeight
 		struct { float HeightAboveGround; }TeleportToSkyDiveParams{10000};
 
 		auto NewPawn = Helper::InitPawn(PlayerController, false, PawnLocation);
-		static auto TeleportToSkyDiveFn = NewPawn->Function(_("TeleportToSkyDive"));
-		NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
+		// static auto TeleportToSkyDiveFn = NewPawn->Function(_("TeleportToSkyDive"));
+		// NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
 		// PlayerController->ProcessEvent(_("RespawnPlayer"));
 	}
 }

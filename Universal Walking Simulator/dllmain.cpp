@@ -25,7 +25,7 @@ void InitializePatterns()
     {
         if (!StaticFindObjectAddr)
         {
-            StaticFindObjectAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 52 48 8B 05 ? ? ? ? 4C 8D 45 38 48 89 45 38")); // S7
+            StaticFindObjectAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 52 48 8B 05")); // S7
 
             if (!StaticFindObjectAddr)
                 std::cout << _("[WARNING] You will not be able to utilize the fast speeds of StaticFindObject!\n");
@@ -290,6 +290,9 @@ DWORD WINAPI Main(LPVOID)
     CreateThread(0, 0, GuiHook, 0, 0, 0);
     CreateThread(0, 0, Helper::Console::Setup , 0, 0, 0);
 
+    Looting::Tables::Init(nullptr);
+    std::cout << _("Found all loot!\n");
+
     if (Engine_Version < 422)
         std::cout << _("Press play button to host!\n");
     else
@@ -308,7 +311,7 @@ DWORD WINAPI Main(LPVOID)
         std::cout << "\n\n\n\n" << dye::red(_("PLEASE UNDEFINE BEFORE_SEASONEIGHT!\n\n\n\n\n"));
     }
 #else
-    if (Engine_Version < 423)
+    if (Engine_Version < 423 && std::stod(FN_Version) < 8.40)
     {
         std::cout << "\n\n\n\n" << dye::red(_("PLEASE DEFINE BEFORE_SEASONEIGHT!\n\n\n\n\n"));
     }

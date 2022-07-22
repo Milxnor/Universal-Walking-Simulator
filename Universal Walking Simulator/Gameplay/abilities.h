@@ -97,6 +97,9 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
 {
+    if (!GameplayAbilityClass || !TargetPawn)
+        return nullptr;
+
     auto AbilitySystemComponent = *TargetPawn->Member<UObject*>(_("AbilitySystemComponent"));
 
     if (!AbilitySystemComponent)
@@ -206,11 +209,14 @@ void InitializeAbilityHooks()
 template <typename actualClass>
 void AHH(const std::string& ClassName)
 {
-    static auto Class = FindObject(ClassName, true);
-    auto SizeOfClass = GetSizeOfStruct(Class);
-    auto OurSizeOfClass = sizeof(actualClass);
+    static auto Class = FindObjectOld(ClassName, true);
+    if (Class)
+    {
+        auto SizeOfClass = GetSizeOfStruct(Class);
+        auto OurSizeOfClass = sizeof(actualClass);
 
-    std::cout << std::format("{}: {} {}\n", ClassName, OurSizeOfClass, SizeOfClass);
+        std::cout << std::format("{}: {} {}\n", ClassName, OurSizeOfClass, SizeOfClass);
+    }
 }
 
 void TestAbilitySizeDifference()

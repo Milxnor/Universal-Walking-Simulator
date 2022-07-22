@@ -385,18 +385,8 @@ static ReturnType* StaticFindObject(const std::string& str)
 }
 
 template <typename ReturnType = UObject>
-static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, bool bIsName = false, bool bDoNotUseStaticFindObject = false)
+static ReturnType* FindObjectOld(const std::string& str, bool bIsEqual = false, bool bIsName = false)
 {
-	if (StaticFindObjectO && !bDoNotUseStaticFindObject)
-	{
-		auto Object = StaticFindObject<ReturnType>(str.substr(str.find(" ") + 1));
-		if (Object)
-		{
-			// std::cout << _("Found SFO!\n");
-			return Object;
-		}
-	}
-
 	if (bIsName) bIsEqual = true;
 
 	for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
@@ -407,6 +397,7 @@ static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, boo
 
 		auto ObjectName = bIsName ? Object->GetName() : Object->GetFullName();
 
+		// cant we do like if ((bIsEqual) ? ObjectName == str : ObjectName.contains(str))
 		if (bIsEqual)
 		{
 			if (ObjectName == str)
@@ -420,6 +411,26 @@ static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, boo
 	}
 
 	return nullptr;
+}
+
+template <typename ReturnType = UObject>
+static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, bool bIsName = false, bool bDoNotUseStaticFindObject = false, bool bSkipIfSFOFails = true)
+{
+	if (StaticFindObjectO && !bDoNotUseStaticFindObject)
+	{
+		auto Object = StaticFindObject<ReturnType>(str.substr(str.find(" ") + 1));
+		if (Object)
+		{
+			// std::cout << _("Found SFO!\n");
+			return Object;
+		}
+		// std::cout << _("[WARNING] Failed to find object with SFO named: ") << str << " (if you're game doesn't crash soon, it means it's fine)\n";
+
+		if (bSkipIfSFOFails)
+			return nullptr;
+	}
+
+	return FindObjectOld<ReturnType>(str, bIsEqual, bIsName);
 }
 
 // Here comes the version changing and makes me want to die I need to find a better way to do this
@@ -915,7 +926,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ServerReplicateActorsOffset = 0x54;
 	else if (Engine_Version == 421 || (Engine_Version >= 422 && Engine_Version < 425))
 		ServerReplicateActorsOffset = 0x56;
-	if (FnVerDouble == 7.40)
+	if (FnVerDouble == 7.40 || FnVerDouble < 8.40)
 		ServerReplicateActorsOffset = 0x57;
 	else if (Engine_Version >= 425)
 		ServerReplicateActorsOffset = 0x5D;
@@ -1007,10 +1018,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 UObject* GetEngine()
 {
-	static auto Engine = FindObject(_("FortEngine_"), false, false, true);
-	
-	if (!Engine)
-		Engine = FindObject(_("FortEngine_"));
+	static auto Engine = FindObjectOld(_("FortEngine_"));
 
 	return Engine;
 }
