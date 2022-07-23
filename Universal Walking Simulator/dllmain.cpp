@@ -34,7 +34,7 @@ void InitializePatterns()
 
     StaticFindObjectO = decltype(StaticFindObjectO)(StaticFindObjectAddr);
 
-    if (Engine_Version < 425)
+    if (Engine_Version < 424)
     {
         GetNetModeAddr = FindPattern(Patterns::GetNetMode);
 
@@ -121,11 +121,11 @@ void InitializePatterns()
         CheckPattern(_("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyNew);
     }
 
-    if (Engine_Version >= 423)
+    /* if (Engine_Version >= 423)
     {
         FixCrashAddr = FindPattern(Patterns::FixCrash);
         CheckPattern(_("FixCrash"), FixCrashAddr, &FixCrash);
-    }
+    } */
 
     GetPlayerViewpointAddr = FindPattern(Patterns::GetPlayerViewpoint);
 
@@ -165,7 +165,7 @@ void InitializePatterns()
         } */
     }
 
-    if (Engine_Version >= 424 /* || Engine_Version == 421 */ || Engine_Version == 422)
+    if (Engine_Version >= 424) // /* || Engine_Version == 421 */ || Engine_Version == 422)
     {
         SetReplicationDriverAddr = FindPattern(Patterns::SetReplicationDriver);
         CheckPattern(_("SetReplicationDriver"), SetReplicationDriverAddr, &SetReplicationDriver);
@@ -189,9 +189,9 @@ void InitializePatterns()
 
         CheckPattern(_("CreateNetDriver"), CreateNetDriverAddr, &CreateNetDriver);
 
-        CreateNetDriver_LocalAddr = FindPattern(Patterns::CreateNetDriver_Local);
+        /* CreateNetDriver_LocalAddr = FindPattern(Patterns::CreateNetDriver_Local);
 
-        CheckPattern(_("CreateNetDriver_Local"), CreateNetDriver_LocalAddr, &CreateNetDriver_Local);
+        CheckPattern(_("CreateNetDriver_Local"), CreateNetDriver_LocalAddr, &CreateNetDriver_Local); */
     }
 
     // if (!CreateNetDriver) // This means we are not using beacons
@@ -213,8 +213,11 @@ void InitializePatterns()
     // NetDebugAddr = FindPattern(Patterns::NetDebug);
     // CheckPattern(_("NetDebug"), NetDebugAddr, &NetDebug);
 
-    KickPlayerAddr = FindPattern(Patterns::KickPlayer);
-    CheckPattern(_("KickPlayer"), KickPlayerAddr, &KickPlayer);
+    if (Engine_Version != 424)
+    {
+        KickPlayerAddr = FindPattern(Patterns::KickPlayer);
+        CheckPattern(_("KickPlayer"), KickPlayerAddr, &KickPlayer);
+    }
 
     // static const auto FnVerDouble = std::stod(FN_Version);
 }

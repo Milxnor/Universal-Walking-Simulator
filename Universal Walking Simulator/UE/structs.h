@@ -948,6 +948,9 @@ bool Setup(/* void* ProcessEventHookAddr */)
 	{
 		ToStringAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 30 83 79 04 00 48 8B DA 48 8B F9"));
 		ProcessEventAddr = FindPattern(_("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6"));
+	
+		if (!ToStringAddr)
+			ToStringAddr = FindPattern(_("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 30 8B 01 48 8B F1 44 8B 49 04 8B F8 C1 EF 10 48 8B DA 0F B7 C8 89 4D 24 89 7D 20 45 85 C9 75 50 44 38 0D ? ? ? ? 74 09 4C 8D 05 ? ? ? ?")); // s11
 	}
 
 	if (Engine_Version >= 425 && Engine_Version < 500)
@@ -960,10 +963,12 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 	if (Engine_Version == 421 && FnVerDouble >= 5 && FnVerDouble < 6)
 		ServerReplicateActorsOffset = 0x54;
-	else if (Engine_Version == 421 || (Engine_Version >= 422 && Engine_Version < 425))
+	else if (Engine_Version == 421 || (Engine_Version == 422 || Engine_Version == 423))
 		ServerReplicateActorsOffset = 0x56;
 	if (FnVerDouble == 7.40 || FnVerDouble < 8.40)
 		ServerReplicateActorsOffset = 0x57;
+	if (Engine_Version == 424)
+		ServerReplicateActorsOffset = 0x5A;
 	else if (Engine_Version >= 425)
 		ServerReplicateActorsOffset = 0x5D;
 

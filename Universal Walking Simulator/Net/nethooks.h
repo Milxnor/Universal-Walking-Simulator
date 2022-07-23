@@ -36,10 +36,40 @@ void InitializeNetUHooks()
     AddHook(_("Function /Script/Engine.PlayerController.ServerAcknowledgePossession"), ServerAcknowledgePossessionHook);
 }
 
+UObject* OurReplicationDriver = nullptr;
+
+DWORD WINAPI ReplicationThread(LPVOID)
+{
+    while (1)
+    {
+        static auto NetDriver = *Helper::GetWorld()->Member<UObject*>(_("NetDriver"));
+        static auto ReplicationDriver = Engine_Version == 424 ? OurReplicationDriver : *NetDriver->Member<UObject*>(_("ReplicationDriver"));
+        static auto& ClientConnections = *NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+
+        if (ClientConnections.Num() > 0)
+        {
+            // if (!*ClientConnections[0]->Member<char>(_("InternalAck")))
+            {
+                if (ReplicationDriver)
+                {
+                    ServerReplicateActors(ReplicationDriver);
+                }
+                else
+                    std::cout << _("No ReplicationDriver!\n");
+            }
+            // else
+                // std::cout << "internalack is true!\n";
+        }
+        Sleep(1000 / 30);
+    }
+    return 0;
+}
+
 void TickFlushDetour(UObject* _netDriver, float DeltaSeconds)
 {
+    // std::cout << _("TicKFluSh!\n");
     static auto NetDriver = *Helper::GetWorld()->Member<UObject*>(_("NetDriver"));
-    static auto ReplicationDriver = *NetDriver->Member<UObject*>(_("ReplicationDriver"));
+    static auto ReplicationDriver = Engine_Version == 424 ? OurReplicationDriver : *NetDriver->Member<UObject*>(_("ReplicationDriver"));
     static auto& ClientConnections = *NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
 
     if (ClientConnections.Num() > 0)
@@ -50,12 +80,12 @@ void TickFlushDetour(UObject* _netDriver, float DeltaSeconds)
             {
                 ServerReplicateActors(ReplicationDriver);
             }
+            else
+                std::cout << _("No ReplicationDriver!\n");
         }
         // else
             // std::cout << "internalack is true!\n";
     }
-    // else
-        // std::cout << "No connections.";
 
     return TickFlush(_netDriver, DeltaSeconds);
 }
@@ -145,7 +175,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     {
         auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
 
-        if (AbilitySystemComponent)
+        if (AbilitySystemComponent && Engine_Version < 424)
         {
             std::cout << _("Granting abilities!\n");
             if (FnVerDouble < 8)
@@ -222,38 +252,41 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     else
         std::cout << _("Unable to grant abilities due to no GiveAbility!\n");
 
-    static auto Def = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-    static auto Minis = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
-    static auto SlurpJuice = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff"));
-    static auto GoldAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"));
-
-    Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
-    Inventory::CreateAndAddItem(PlayerController, GoldAR, EFortQuickBars::Primary, 1, 1);
-
-    if (FnVerDouble < 9.40)
+    if (Engine_Version < 424)
     {
-        static auto GoldPump = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_SR_Ore_T03.WID_Shotgun_Standard_Athena_SR_Ore_T03"));
-        static auto HeavySniper = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Sniper_Heavy_Athena_SR_Ore_T03.WID_Sniper_Heavy_Athena_SR_Ore_T03"));
+        static auto Def = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+        static auto Minis = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
+        static auto SlurpJuice = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff"));
+        static auto GoldAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"));
 
-        Inventory::CreateAndAddItem(PlayerController, GoldPump, EFortQuickBars::Primary, 2, 1);
-        Inventory::CreateAndAddItem(PlayerController, HeavySniper, EFortQuickBars::Primary, 3, 1);
+        Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
+        Inventory::CreateAndAddItem(PlayerController, GoldAR, EFortQuickBars::Primary, 1, 1);
+
+        if (FnVerDouble < 9.40)
+        {
+            static auto GoldPump = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_SR_Ore_T03.WID_Shotgun_Standard_Athena_SR_Ore_T03"));
+            static auto HeavySniper = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Sniper_Heavy_Athena_SR_Ore_T03.WID_Sniper_Heavy_Athena_SR_Ore_T03"));
+
+            Inventory::CreateAndAddItem(PlayerController, GoldPump, EFortQuickBars::Primary, 2, 1);
+            Inventory::CreateAndAddItem(PlayerController, HeavySniper, EFortQuickBars::Primary, 3, 1);
+        }
+        else
+        {
+            static auto BurstSMG = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Pistol_BurstFireSMG_Athena_R_Ore_T03.WID_Pistol_BurstFireSMG_Athena_R_Ore_T03"));
+            static auto CombatShotgun = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Combat_Athena_SR_Ore_T03.WID_Shotgun_Combat_Athena_SR_Ore_T03"));
+
+            Inventory::CreateAndAddItem(PlayerController, CombatShotgun, EFortQuickBars::Primary, 2, 1);
+            Inventory::CreateAndAddItem(PlayerController, BurstSMG, EFortQuickBars::Primary, 3, 1);
+        }
+
+        Inventory::CreateAndAddItem(PlayerController, Minis, EFortQuickBars::Primary, 4, 1);
+        Inventory::CreateAndAddItem(PlayerController, SlurpJuice, EFortQuickBars::Primary, 5, 1);
+
+        Inventory::GiveAllAmmo(PlayerController);
+        // Inventory::GiveBuildings(PlayerController);
+        Inventory::GiveStartingItems(PlayerController); // Gives the needed items
+        Inventory::GiveMats(PlayerController);
     }
-    else
-    {
-        static auto BurstSMG = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Pistol_BurstFireSMG_Athena_R_Ore_T03.WID_Pistol_BurstFireSMG_Athena_R_Ore_T03"));
-        static auto CombatShotgun = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Combat_Athena_SR_Ore_T03.WID_Shotgun_Combat_Athena_SR_Ore_T03"));
-
-        Inventory::CreateAndAddItem(PlayerController, CombatShotgun, EFortQuickBars::Primary, 2, 1);
-        Inventory::CreateAndAddItem(PlayerController, BurstSMG, EFortQuickBars::Primary, 3, 1);
-    }
-
-    Inventory::CreateAndAddItem(PlayerController, Minis, EFortQuickBars::Primary, 4, 1);
-    Inventory::CreateAndAddItem(PlayerController, SlurpJuice, EFortQuickBars::Primary, 5, 1);
-
-    Inventory::GiveAllAmmo(PlayerController);
-    // Inventory::GiveBuildings(PlayerController);
-    Inventory::GiveStartingItems(PlayerController); // Gives the needed items
-    Inventory::GiveMats(PlayerController);
 
     std::cout << _("Spawned Player!\n");
 
@@ -261,8 +294,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     static auto gameState = *world->Member<UObject*>(_("GameState"));
 
     UObject* PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
-
-    LogWebHook.send_message(std::format("Player Joined (#{}): {} IP: {}", *gameState->Member<int>(_("PlayersLeft")), Helper::GetPlayerName(PlayerState), Helper::GetIP(PlayerState)));
 
     return PlayerController;
 }
@@ -367,7 +398,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 
         static double CurrentFortniteVersion = std::stod(FN_Version);
 
-        if (CurrentFortniteVersion >= 7 && Engine_Version < 425)
+        if (CurrentFortniteVersion >= 7 && Engine_Version < 424)
         {
             ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 400)); // clientresponse
             ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 424)); // requesturl
@@ -377,12 +408,11 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
             ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 51));
             ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 54));
         }
-        else if (Engine_Version >= 425)
+        else if (Engine_Version >= 424)
         {
             ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 416));
             ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 440));
         }
-
 
         ReceiveUniqueIdRepl(Bunch, Connection->Member<__int64>(_("PlayerID")));
         std::cout << "Got PlayerID!\n";
@@ -572,7 +602,7 @@ void InitializeNetHooks()
             std::cout << _("[WARNING] Unable to hook CollectGarbage!\n");
     }
 
-    if (Engine_Version >= 424)
+    if (Engine_Version >= 425)
     {
         MH_CreateHook((PVOID)CreateNetDriver_LocalAddr, CreateNetDriver_LocalDetour, (void**)&CreateNetDriver_Local);
         MH_EnableHook((PVOID)CreateNetDriver_LocalAddr);

@@ -337,6 +337,31 @@ namespace Inventory
 		return -1;
 	}
 
+	template <typename EntryStruct, typename Type>
+	bool ChangeItemInReplicatedEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal)
+	{
+		if (!Controller || !Definition)
+			return false;
+
+		auto ReplicatedEntries = GetReplicatedEntries<EntryStruct>(Controller);
+		bool bSuccessful = false;
+
+		for (int x = 0; x < ReplicatedEntries->Num(); x++)
+		{
+			auto& ItemEntry = ReplicatedEntries->At(x);
+
+			if (FFortItemEntry::GetItemDefinition((__int64*)&ItemEntry) == Definition)
+			{
+				static auto Offset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), Name);
+				*(Type*)(__int64(&ItemEntry) + Offset) = NewVal;
+				bSuccessful = true;
+				// break;
+			}
+		}
+
+		return bSuccessful;
+	}
+
 	template <typename EntryStruct>
 	bool RemoveGuidFromReplicatedEntries(UObject* Controller, const FGuid& Guid)
 	{
@@ -532,7 +557,31 @@ namespace Inventory
 					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
 					
 					std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
-					*CurrentCount += Count;
+					auto NewCount = *CurrentCount + Count;
+					*CurrentCount = NewCount;
+
+					static const auto FlooredVer = std::floor(std::stod(FN_Version));
+
+					if (FlooredVer == 3)
+					{
+						struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+						ChangeItemInReplicatedEntries<ItemEntrySize, int>(Controller, Definition, _("Count"), NewCount);
+					}
+					else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
+					{
+						struct ItemEntrySize { unsigned char Unk00[0xD0]; };
+						ChangeItemInReplicatedEntries<ItemEntrySize, int>(Controller, Definition, _("Count"), NewCount);
+					}
+					else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
+					{
+						struct ItemEntrySize { unsigned char Unk00[0x120]; };
+						ChangeItemInReplicatedEntries<ItemEntrySize, int>(Controller, Definition, _("Count"), NewCount);
+					}
+					else if (std::stod(FN_Version) >= 424)
+					{
+						struct ItemEntrySize { unsigned char Unk00[0x150]; };
+						ChangeItemInReplicatedEntries<ItemEntrySize, int>(Controller, Definition, _("Count"), NewCount);
+					}
 
 					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
 

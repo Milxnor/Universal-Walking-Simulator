@@ -8,7 +8,7 @@ static bool bListening = false;
 
 void Listen(int Port = 7777)
 {
-    bool bUseBeacons = (Engine_Version >= 424) ? false : true; // CreateNetDriver ? false : true;
+    bool bUseBeacons = (Engine_Version >= 425) ? false : true; // CreateNetDriver ? false : true;
     static const auto World = Helper::GetWorld();
 
     UObject* NetDriver = nullptr;
@@ -79,8 +79,8 @@ void Listen(int Port = 7777)
 
     if (NetDriver)
     {
-        if (!bUseBeacons)
-        // if (Engine_Version >= 425)
+        // if (!bUseBeacons)
+        if (Engine_Version >= 424)
         {
             if (SetReplicationDriver)
             {
@@ -99,6 +99,7 @@ void Listen(int Port = 7777)
                 GSC->ProcessEvent(fn, &params);
                 std::cout << "new rep graph: " << params.ReturnValue << '\n';
                 SetReplicationDriver(NetDriver, params.ReturnValue);
+                OurReplicationDriver = params.ReturnValue;
             }
             else
                 std::cout << _("No SetReplicationDriver!\n");
@@ -128,6 +129,7 @@ void Listen(int Port = 7777)
     // std::cout << std::format(_("Listening for connections on port {}!\n", std::to_string(Port)));
     std::cout << _("Listening for connections!\n");
     SendDiscordStart();
+    // CreateThread(0, 0, ReplicationThread, 0, 0, 0);
 }
 
 DWORD WINAPI MapLoadThread(LPVOID)
