@@ -31,7 +31,8 @@ Pull Requests WILL NOT be accepted if they do not follow the provided criteria
 
 # CREDITS
 
-If you are to use this base for your own project, please credit me and link the repository.<br>
+If you are to use this base for your own project, please credit us and link the repository.<br>
 
 Some of this code is from or inspired by <a href="https://github.com/kem0x/raider3.5">Raider by kem0x</a>.
+<br>
 The flashing fix (hooking GetPlayerViewpoint) was found by  <a href="https://github.com/biggest-d">danii/a>.
