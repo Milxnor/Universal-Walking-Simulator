@@ -2,12 +2,13 @@
 
 #include <Net/funcs.h>
 #include <Gameplay/helper.h>
+#include "discord.h"
 
 static bool bListening = false;
 
 void Listen(int Port = 7777)
 {
-    bool bUseBeacons = true; // (Engine_Version >= 425 || Engine_Version == 421) ? false : true; // CreateNetDriver ? false : true;
+    bool bUseBeacons = (Engine_Version >= 424) ? false : true; // CreateNetDriver ? false : true;
     static const auto World = Helper::GetWorld();
 
     UObject* NetDriver = nullptr;
@@ -63,6 +64,7 @@ void Listen(int Port = 7777)
         NetDriver = CreateNetDriver(GetEngine(), World, FName(282));
         std::cout << _("Created NetDriver!\n");
         InitListen(NetDriver, Helper::GetWorld(), InURL, true, Error);
+        std::cout << _("Called InitListen on the NetDriver!\n");
     }
 
     if (SetWorld && NetDriver)
@@ -125,4 +127,14 @@ void Listen(int Port = 7777)
     bListening = true;
     // std::cout << std::format(_("Listening for connections on port {}!\n", std::to_string(Port)));
     std::cout << _("Listening for connections!\n");
+    SendDiscordStart();
+}
+
+DWORD WINAPI MapLoadThread(LPVOID)
+{
+    // Sleep(10 * 1000);
+
+    Listen(7777);
+
+    return 0;
 }

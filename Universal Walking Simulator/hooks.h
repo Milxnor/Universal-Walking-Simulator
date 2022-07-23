@@ -144,6 +144,7 @@ inline void initStuff()
 		}
 
 		Listen(7777);
+		// CreateThread(0, 0, MapLoadThread, 0, 0, 0);
 
 		InitializeNetHooks();
 
@@ -497,6 +498,12 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				{
 					std::cout << _("SuperStruct: ") << Super->GetFullName() << '\n';
 				}
+
+				static auto GetCurrentActiveItem = ReceivingActor->Function(_("GetCurrentActiveItem"));
+				UObject* CurrentMaterial = nullptr;
+				ReceivingActor->ProcessEvent(GetCurrentActiveItem, &CurrentMaterial);
+
+				auto SpawnLocation = *ReceivingActor->Member<FVector>(_("LootSpawnLocation"));
 			}
 
 			/* if (ReceivingActorName.contains(_("Vehicle")))
@@ -738,9 +745,9 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 {
 	if (pc)
 	{
-		static auto fn = FindObject(_("Function /Script/Engine.Controller.GetViewTarget"));
-		UObject* TheViewTarget = nullptr;
-		pc->ProcessEvent(fn, &TheViewTarget);
+		// static auto fn = FindObject(_("Function /Script/Engine.Controller.GetViewTarget"));
+		UObject* TheViewTarget = *pc->Member<UObject*>(_("Pawn"));
+		// pc->ProcessEvent(fn, &TheViewTarget);
 
 		if (TheViewTarget)
 		{

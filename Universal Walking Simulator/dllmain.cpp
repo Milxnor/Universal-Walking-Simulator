@@ -49,7 +49,8 @@ void InitializePatterns()
 
     // CollectGarbage = decltype(CollectGarbage)(FindPattern(Patterns::CollectGarbage));
 
-    InitListen = decltype(InitListen)(FindPattern(Patterns::InitListen));
+    InitListenAddr = FindPattern(Patterns::InitListen);
+    CheckPattern(_("InitListen"), InitListenAddr, &InitListen);
 
     TickFlushAddr = FindPattern(Patterns::TickFlush);
 
@@ -148,20 +149,6 @@ void InitializePatterns()
             CheckPattern(_("SendChallenge"), SendChallengeAddr, &SendChallenge);
         }
 
-        /* SetWorldAddr = FindPattern(Patterns::SetWorld);
-
-        if (!SetWorldAddr)
-            SetWorldAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
-
-        CheckPattern(_("SetWorld"), SetWorldAddr, &SetWorld);
-
-        CreateNetDriverAddr = FindPattern(Patterns::CreateNetDriver);
-
-        if (!CreateNetDriverAddr)
-            CreateNetDriverAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 30 48 8B 81 ? ? ? ? 49 8B D8 4C 63 81 ? ? ? ?"));
-
-        CheckPattern(_("CreateNetDriver"), CreateNetDriverAddr, &CreateNetDriver); */
-
         if (Engine_Version == 423)
         {
             HasClientLoadedCurrentWorldAddr = FindPattern(Patterns::HasClientLoadedCurrentWorld);
@@ -187,6 +174,24 @@ void InitializePatterns()
     {
         ValidationFailureAddr = FindPattern(Patterns::ValidationFailure);
         CheckPattern(_("ValidationFailure"), ValidationFailureAddr, &ValidationFailure);
+
+        SetWorldAddr = FindPattern(Patterns::SetWorld);
+
+        if (!SetWorldAddr)
+            SetWorldAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
+
+        CheckPattern(_("SetWorld"), SetWorldAddr, &SetWorld);
+
+        CreateNetDriverAddr = FindPattern(Patterns::CreateNetDriver);
+
+        if (!CreateNetDriverAddr)
+            CreateNetDriverAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 30 48 8B 81 ? ? ? ? 49 8B D8 4C 63 81 ? ? ? ?"));
+
+        CheckPattern(_("CreateNetDriver"), CreateNetDriverAddr, &CreateNetDriver);
+
+        CreateNetDriver_LocalAddr = FindPattern(Patterns::CreateNetDriver_Local);
+
+        CheckPattern(_("CreateNetDriver_Local"), CreateNetDriver_LocalAddr, &CreateNetDriver_Local);
     }
 
     // if (!CreateNetDriver) // This means we are not using beacons
@@ -287,7 +292,7 @@ DWORD WINAPI Main(LPVOID)
     InitializeHooks();
 
     CreateThread(0, 0, Input, 0, 0, 0);
-    CreateThread(0, 0, GuiHook, 0, 0, 0);
+    CreateThread(0, 0, GuiThread, 0, 0, 0);
     CreateThread(0, 0, Helper::Console::Setup , 0, 0, 0);
 
     Looting::Tables::Init(nullptr);
@@ -335,6 +340,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     case DLL_PROCESS_DETACH:
         std::cout << _("Disabling all Hooks!");
         MH_DisableHook(MH_ALL_HOOKS); // Untested
+        SendDiscordEnd();
         break;
     }
     return TRUE;

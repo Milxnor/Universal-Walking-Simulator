@@ -432,9 +432,51 @@ namespace Helper
 		*Actor->Member<ENetRole>(_("RemoteRole")) = RemoteRole;
 	}
 
-	static void SetActorScale3D(UObject* Actor)
+	static void SetActorScale3D(UObject* Actor, const FVector& Scale)
 	{
+		static auto SetActorScaleFn = Actor->Function(_("SetActorScale3D"));
+		struct { FVector Scale; }params{ Scale };
+		if (SetActorScaleFn)
+			Actor->ProcessEvent(SetActorScaleFn, &params);
+	}
 
+	static std::string GetPlayerName(UObject* PlayerState)
+	{
+		FString Name;
+
+		if (PlayerState)
+		{
+			static auto fn = PlayerState->Function(_("GetPlayerName"));
+
+			if (fn)
+				PlayerState->ProcessEvent(fn, &Name);
+		}
+
+		return Name.Data.GetData() ? Name.ToString() : "";
+	}
+
+	static std::string GetIP(UObject* PlayerState)
+	{
+		FString IP;
+
+		if (PlayerState)
+		{
+			IP = *PlayerState->Member<FString>(_("SavedNetworkAddress"));
+		}
+
+		return IP.Data.GetData() ? IP.ToString() : "";
+	}
+
+	static bool IsStructurallySupported(UObject* BuildingActor)
+	{
+		if (!BuildingActor)
+			return false;
+
+		struct { bool Ret; }params;
+		static auto fn = BuildingActor->Function(_("IsStructurallySupported"));
+		if (fn)
+			BuildingActor->ProcessEvent(fn, &params);
+		return params.Ret;
 	}
 
 	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart(), bool bResetTeams = false)
@@ -659,11 +701,11 @@ namespace Helper
 		{
 			struct
 			{
-				const FGameplayAbilitySpecHandle& AbilityHandle;
-				const FPredictionKey& AbilityOriginalPredictionKey;
-				const FGameplayAbilityTargetDataHandle& ReplicatedTargetDataHandle;
-				const FGameplayTag& ApplicationTag;
-				const FPredictionKey& CurrentPredictionKey;
+				FGameplayAbilitySpecHandle AbilityHandle;
+				FPredictionKey AbilityOriginalPredictionKey;
+				FGameplayAbilityTargetDataHandle ReplicatedTargetDataHandle;
+				FGameplayTag ApplicationTag;
+				FPredictionKey CurrentPredictionKey;
 			} UAbilitySystemComponent_ServerSetReplicatedTargetData_Params{ AbilityHandle, AbilityOriginalPredictionKey, ReplicatedTargetDataHandle, ApplicationTag, CurrentPredictionKey };
 
 			if (ASC)

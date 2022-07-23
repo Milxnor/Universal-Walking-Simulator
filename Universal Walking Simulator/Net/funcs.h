@@ -15,6 +15,7 @@ uint64_t Beacon_NotifyControlMessageAddr = 0;
 uint64_t ReceiveFStringAddr = 0;
 uint64_t ReceiveUniqueIdReplAddr = 0;
 uint64_t WelcomePlayerAddr = 0;
+uint64_t InitListenAddr = 0;
 uint64_t InitHostAddr = 0;
 uint64_t PauseBeaconRequestsAddr = 0;
 uint64_t NetDebugAddr = 0;
@@ -31,6 +32,9 @@ uint64_t SetReplicationDriverAddr = 0;
 uint64_t ValidationFailureAddr = 0;
 uint64_t CollectGarbageAddr = 0;
 uint64_t GetPlayerViewpointAddr = 0;
+uint64_t CreateNetDriver_LocalAddr = 0;
+
+UObject* (__fastcall* CreateNetDriver_Local)(__int64 a1, __int64 a2, __int64 a3);
 
 static __int64 (*GetNetMode)(__int64* a1);
 bool (*LP_SpawnPlayActor)(UObject* Player, const FString& URL, FString& OutError, UObject* World); // LocalPlayer
@@ -332,3 +336,59 @@ template<typename T, typename U> constexpr size_t offsetOf(U T::* member)
     return (char*)&((T*)nullptr->*member) - (char*)nullptr;
 }
 
+/** Struct defining the cached data for a specific gameplay ability. This data is generally synchronized client->server in a network game. */
+struct FAbilityReplicatedDataCache
+{
+    FGameplayAbilityTargetDataHandle TargetData;
+
+    FGameplayTag ApplicationTag;
+
+    bool bTargetConfirmed;
+
+    bool bTargetCancelled;
+
+    unsigned char Pad[48];
+
+    FAbilityReplicatedData GenericEvents[(int)EAbilityGenericReplicatedEvent::MAX];
+
+    FPredictionKey PredictionKey;
+
+    void Reset()
+    {
+        bTargetConfirmed = bTargetCancelled = false;
+        TargetData = FGameplayAbilityTargetDataHandle();
+        ApplicationTag = FGameplayTag();
+        PredictionKey = FPredictionKey();
+        for (int i = 0; i < (int)EAbilityGenericReplicatedEvent::MAX; ++i)
+        {
+            GenericEvents[i].bTriggered = false;
+            GenericEvents[i].VectorPayload = { 0,0,0 };
+        }
+    }
+};
+
+struct FGameplayAbilityReplicatedDataContainer
+{
+    typedef TPair<FGameplayAbilitySpecHandleAndPredictionKey, TSharedRef<FAbilityReplicatedDataCache>> FKeyDataPair;
+
+    TArray<FKeyDataPair> InUseData;
+    TArray<void*> FreeData;
+
+    TSharedRef<FAbilityReplicatedDataCache> FindOrAdd(const FGameplayAbilitySpecHandleAndPredictionKey& Key)
+    {
+        for (int i = 0; i < InUseData.Num(); i++)
+        {
+            if (InUseData[i].Key().AbilityHandle.Handle == Key.AbilityHandle.Handle && InUseData[i].Key().PredictionKeyAtCreation == Key.PredictionKeyAtCreation)
+            {
+                return InUseData[i].Value();
+            }
+        }
+
+        auto SharedPtr = TSharedPtr<FAbilityReplicatedDataCache>(new FAbilityReplicatedDataCache());
+        TSharedRef<FAbilityReplicatedDataCache> SharedRef = SharedPtr.ToSharedRef();
+        FKeyDataPair pair = FKeyDataPair(Key, SharedRef);
+        InUseData.Add(pair);
+
+        return SharedRef;
+    }
+};

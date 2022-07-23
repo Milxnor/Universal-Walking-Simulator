@@ -9,12 +9,15 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Release|x64 = Release|x64
+		VPS|x64 = VPS|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{2B88713C-CD44-4281-8742-D00013DD68B2}.Debug|x64.ActiveCfg = Debug|x64
 		{2B88713C-CD44-4281-8742-D00013DD68B2}.Debug|x64.Build.0 = Debug|x64
 		{2B88713C-CD44-4281-8742-D00013DD68B2}.Release|x64.ActiveCfg = Release|x64
 		{2B88713C-CD44-4281-8742-D00013DD68B2}.Release|x64.Build.0 = Release|x64
+		{2B88713C-CD44-4281-8742-D00013DD68B2}.VPS|x64.ActiveCfg = VPS|x64
+		{2B88713C-CD44-4281-8742-D00013DD68B2}.VPS|x64.Build.0 = VPS|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

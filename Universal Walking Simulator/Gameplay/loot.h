@@ -205,6 +205,90 @@ namespace Looting
 			return 0;
 		}
 
+		inline UObject* GetRandomDefinition(bool* bIsConsum = nullptr) // NOT ammo
+		{
+			auto Random = rand() % 10;
+			auto bIsConsumable = Random == 1 || Random == 2 || Random == 3 || Random == 0;
+
+			if (bIsConsum)
+				*bIsConsum = bIsConsumable;
+
+			return bIsConsumable ? Tables::GetConsumableDef() : Tables::GetWeaponDef();
+		}
+
+		static DWORD WINAPI FillVendingMachines(LPVOID)
+		{
+			// Some vending machines are empty. We have to get all of the vending machines and then set the slot manually?
+
+			static auto BuildingItemCollectorClass = FindObject(_("Class /Script/FortniteGame.BuildingItemCollectorActor"));
+
+			if (BuildingItemCollectorClass)
+			{
+				auto Actors = Helper::GetAllActorsOfClass(BuildingItemCollectorClass);
+
+				std::cout << _("Filling ") << Actors.Num() << _(" vending machines!\n");
+
+				for (int i = 0; i < Actors.Num(); i++)
+				{
+					auto Actor = Actors[i];
+
+					if (Actor)
+					{
+						struct FCollectorUnitInfo
+						{
+							class UFortWorldItemDefinition* InputItem;                                                // 0x0000(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+							char pad[0x0028];
+							UObject* OverrideInputItemTexture;                                 // 0x0028(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+							unsigned char                                      bUseDefinedOutputItem : 1;                                // 0x0030(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
+							unsigned char                                      UnknownData00[0x7];                                       // 0x0031(0x0007) MISSED OFFSET
+							UObject* OutputItem;                                               // 0x0038(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+							TArray<__int64>                      OutputItemEntry;                                          // 0x0040(0x0010) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, Transient)
+							struct FName                                       OverrideOutputItemLootTierGroupName;                      // 0x0050(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+							char pad1[0xA8];
+							UObject* OverrideOutputItemTexture;                                // 0x0100(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+						};
+						TArray<FCollectorUnitInfo>* ItemCollections = Actor->Member<TArray<FCollectorUnitInfo>>(_("ItemCollections")); // CollectorUnitInfo
+
+						if (ItemCollections)
+						{
+							static UObject* CollectorUnitInfoClass = FindObject(_("ScriptStruct /Script/FortniteGame.CollectorUnitInfo"));
+							static std::string CollectorUnitInfoClassName = _("ScriptStruct /Script/FortniteGame.CollectorUnitInfo");
+
+							if (!CollectorUnitInfoClass)
+							{
+								CollectorUnitInfoClassName = _("ScriptStruct /Script/FortniteGame.ColletorUnitInfo"); // die fortnite
+								CollectorUnitInfoClass = FindObject(CollectorUnitInfoClassName); // Wedc what this value is
+							}
+
+							static auto OutputItemOffset = FindOffsetStruct(CollectorUnitInfoClassName, _("OutputItem"));
+
+							std::cout << _("Offset: ") << OutputItemOffset << '\n';
+							// ItemCollections->At(i).OutputItem = LootingTables::GetWeaponDef();
+							// So this is equal to Array[1] + OutputItemOffset, but since the array is __int64, it doesn't calcuate it properly so we have to implement it ourselves
+							std::cout << __int64(&ItemCollections->At(0).OutputItem) << '\n';
+							std::cout << __int64(&*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)) + OutputItemOffset)) << '\n';
+							*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)) + OutputItemOffset) = Looting::Tables::GetWeaponDef();
+							*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 1)) + OutputItemOffset) = Looting::Tables::GetWeaponDef();
+							*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 2)) + OutputItemOffset) = Looting::Tables::GetWeaponDef();
+							/* ItemCollections->At(0).OutputItem = Looting::Tables::GetWeaponDef();
+							ItemCollections->At(1).OutputItem = Looting::Tables::GetWeaponDef();
+							ItemCollections->At(2).OutputItem = Looting::Tables::GetWeaponDef(); */
+						}
+						else
+							std::cout << _("ItemCollections Invalid: ") << ItemCollections << '\n';
+					}
+					else
+						std::cout << _("Invalid Vending Actor! Index: ") << i << '\n';
+				}
+
+				Actors.Free();
+			}
+
+			std::cout << _("Finished filling vending machines!\n");
+
+			return 0;
+		}
+
 		static DWORD WINAPI SpawnFloorLoot(LPVOID)
 		{
 			Init(nullptr);
@@ -218,28 +302,17 @@ namespace Looting
 			{
 				auto Actor = Actors[i];
 
-				// if (Actor->GetName().contains("Tiered_Athena_FloorLoot"))
 				if (Actor)
 				{
-					auto Random = rand() % 10;
-					auto bIsConsumable = Random == 1 || Random == 2 || Random == 3 || Random == 0;
-
-					if (bIsConsumable)
-					{
-						auto Def = Tables::GetConsumableDef();
-						if (Def)
-							Helper::SummonPickup(nullptr, Def, Helper::GetActorLocation(Actor), EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, *Def->Member<int>(_("DropCount")));
-					}
-					else
-					{
-						auto WeaponDef = Tables::GetWeaponDef();
-						if (WeaponDef)
-							Helper::SummonPickup(nullptr, WeaponDef, Helper::GetActorLocation(Actor), EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, *WeaponDef->Member<int>(_("DropCount")));
-					}
+					bool bIsConsumable = false;
+					auto Def = GetRandomDefinition(&bIsConsumable);
+					Helper::SummonPickup(nullptr, Def, Helper::GetActorLocation(Actor), EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, *Def->Member<int>(_("DropCount")));
 				}
 			}
 
 			std::cout << _("Spawned ") << Actors.Num() << _(" floor loot!\n");
+
+			Actors.Free();
 
 			return 0;
 		}

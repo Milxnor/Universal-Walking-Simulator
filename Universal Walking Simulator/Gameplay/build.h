@@ -4,7 +4,40 @@
 #include <Gameplay/helper.h>
 #include <Gameplay/inventory.h>
 
+#include <unordered_map>
+
 // Includes building and editing..
+
+std::vector<UObject*> ExistingBuildings;
+
+bool CanBuild(UObject* BuildingActor)
+{
+	if (!BuildingActor)
+		return false;
+
+	bool bCanBuild = true;
+
+	for (auto Building : ExistingBuildings)
+	{
+		if (!Building)
+			continue;
+
+		if ((Helper::GetActorLocation(Building) == Helper::GetActorLocation(BuildingActor)) &&
+			(*Building->Member<EFortBuildingType>(_("BuildingType")) == *BuildingActor->Member<EFortBuildingType>(_("BuildingType"))))
+		{
+			bCanBuild = false;
+		}
+	}
+
+	if (bCanBuild || ExistingBuildings.size() == 0)
+	{
+		ExistingBuildings.push_back(BuildingActor);
+
+		return true;
+	}
+
+	return false;
+}
 
 inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
@@ -120,7 +153,15 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 					if (BuildingActor)
 					{
-						Helper::InitializeBuildingActor(Controller, BuildingActor, true);
+						if (true) // CanBuild(BuildingActor) && Helper::IsStructurallySupported(BuildingActor))
+						{
+							Helper::InitializeBuildingActor(Controller, BuildingActor, true);
+						}
+						else
+						{
+							Helper::SetActorScale3D(BuildingActor, {});
+							Helper::SilentDie(BuildingActor);
+						}
 					}
 					else
 						std::cout << _("Unable to summon the building!\n");
@@ -241,15 +282,23 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 
 			if (EditedActor)
 			{
-				Helper::SetOwner(EditedActor, Controller);
-				
-				static auto SetMirroredFn = EditedActor->Function(_("SetMirrored"));
+				if (true) // !Helper::IsStructurallySupported(EditedActor))
+				{
+					Helper::SetOwner(EditedActor, Controller);
 
-				struct { bool bMirrored; }mirroredParams{ Params->bMirrored };
-				EditedActor->ProcessEvent(SetMirroredFn, &mirroredParams);
+					static auto SetMirroredFn = EditedActor->Function(_("SetMirrored"));
 
-				*EditedActor->Member<TEnumAsByte<uint8_t>>(_("Team")) = Team;
-				Helper::InitializeBuildingActor(Controller, EditedActor);
+					struct { bool bMirrored; }mirroredParams{ Params->bMirrored };
+					EditedActor->ProcessEvent(SetMirroredFn, &mirroredParams);
+
+					*EditedActor->Member<TEnumAsByte<uint8_t>>(_("Team")) = Team;
+					Helper::InitializeBuildingActor(Controller, EditedActor);
+				}
+				else
+				{
+					Helper::SetActorScale3D(BuildingActor, {});
+					Helper::SilentDie(BuildingActor);
+				}
 			}
 		}
 	}

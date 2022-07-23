@@ -21,13 +21,26 @@ FGameplayAbilitySpec* FindAbilitySpecFromHandle(UObject* ASC, FGameplayAbilitySp
     return nullptr;
 }
 
-void ConsumeAllReplicatedData(FGameplayAbilitySpecHandle AbilityHandle, FPredictionKey AbilityOriginalPredictionKey)
+static FAbilityReplicatedDataCache* FindReplicatedTargetData(UObject* AbilitySystemComponent, FGameplayAbilitySpecHandle Handle, FPredictionKey PredictionKey)
 {
-    /* TSharedPtr<FAbilityReplicatedDataCache> CachedData = AbilityTargetDataMap.Find(FGameplayAbilitySpecHandleAndPredictionKey(AbilityHandle, AbilityOriginalPredictionKey));
-    if (CachedData.IsValid())
+    FAbilityReplicatedDataCache OutData;
+    auto ReplicatedDataContainer = (FGameplayAbilityReplicatedDataContainer*)(__int64(AbilitySystemComponent) + 1312); // Found at uhm serverseetreplicaqteddata
+    
+    if (ReplicatedDataContainer)
+        return ReplicatedDataContainer->FindOrAdd(FGameplayAbilitySpecHandleAndPredictionKey{ Handle, PredictionKey.Current }).Get();
+
+    return nullptr;
+}
+
+void ConsumeAllReplicatedData(UObject* AbilitySystemComponent, FGameplayAbilitySpecHandle AbilityHandle, FPredictionKey AbilityOriginalPredictionKey)
+{
+    // TSharedPtr<FAbilityReplicatedDataCache> CachedData = AbilityTargetDataMap.Find(FGameplayAbilitySpecHandleAndPredictionKey(AbilityHandle, AbilityOriginalPredictionKey));
+    auto CachedData = FindReplicatedTargetData(AbilitySystemComponent, AbilityHandle, AbilityOriginalPredictionKey);
+    // if (CachedData.IsValid())
+    if (CachedData)
     {
         CachedData->Reset();
-    } */
+    }
 }
 
 // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1754
@@ -41,7 +54,7 @@ void PrintExplicitTags(UObject* ASC)
     std::cout << "\n\nExplicit Tags: " << ExplicitTags.ToStringSimple(true) << "\n\n\n";
 }
 
-void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle Handle, bool InputPressed, const FPredictionKey& PredictionKey, __int64* TriggerEventData)
+void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle Handle, bool InputPressed, const FPredictionKey& PredictionKey, __int64* TriggerEventData, bool bConsumeData = false)
 {
     FGameplayAbilitySpec* Spec = FindAbilitySpecFromHandle(ASC, Handle);
     if (!Spec)
@@ -62,14 +75,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
     }
 
     // Consume any pending target info, to clear out cancels from old executions
-    ConsumeAllReplicatedData(Handle, PredictionKey);
-
-    /* FScopedPredictionWindow ScopedPredictionWindow(this, PredictionKey);
-
-    ensure(AbilityActorInfo.IsValid());
-
-    SCOPE_CYCLE_COUNTER(STAT_AbilitySystemComp_ServerTryActivate);
-    SCOPE_CYCLE_UOBJECT(Ability, AbilityToActivate); */
+    // ConsumeAllReplicatedData(ASC, Handle, PredictionKey);
 
     UObject* InstancedAbility = nullptr;
     Spec->InputPressed = true;
@@ -89,10 +95,10 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
     }
 
     ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkArrayDirty();
-    ASC->Member< FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkItemDirty(*Spec);
+    // ASC->Member< FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkItemDirty(*Spec);
     
-    MarkAbilitySpecDirtyNew(ASC, *Spec, true);
-    MarkAbilitySpecDirtyNew(ASC, *Spec, false);
+    // MarkAbilitySpecDirtyNew(ASC, *Spec, true);
+    // MarkAbilitySpecDirtyNew(ASC, *Spec, false);
 }
 
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
@@ -164,10 +170,7 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
     InternalServerTryActivateAbility(AbilitySystemComponent, Params->BatchInfo.AbilitySpecHandle, Params->BatchInfo.InputPressed, Params->BatchInfo.PredictionKey, nullptr);
     // PrintExplicitTags(AbilitySystemComponent);
 
-    // The code below, is already done by fortnite.
-
-    /* Helper::Abilities::ServerSetReplicatedTargetData(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.PredictionKey, BatchInfo.TargetData, FGameplayTag(), BatchInfo.PredictionKey);
-    // ^ Crashes
+    Helper::Abilities::ServerSetReplicatedTargetData(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.PredictionKey, BatchInfo.TargetData, FGameplayTag(), BatchInfo.PredictionKey);
 
     if (BatchInfo.Ended)
     {
@@ -176,7 +179,7 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
         // FakeInfo.ServerSetActivationPredictionKey(BatchInfo.PredictionKey);
         FakeInfo.PredictionKeyWhenActivated = BatchInfo.PredictionKey;
         Helper::Abilities::ServerEndAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, FakeInfo, BatchInfo.PredictionKey);
-    } */
+    }
 
     return false;
 }

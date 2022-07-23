@@ -9,6 +9,8 @@
 #include <Gameplay/abilities.h>
 #include <Gameplay/loot.h>
 
+#include <discord.h>
+
 static bool bTraveled = false;
 
 inline bool ServerAcknowledgePossessionHook(UObject* Object, UFunction* Function, void* Parameters) // This fixes movement on S5+, Cat led me to the right direction, then I figured out it's something with ClientRestart and did some common sense and found this.
@@ -108,7 +110,9 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     // *PlayerController->Member<UObject*>(_("PlayerCameraManagerClass")) = CameraManagerClass;
 
-    if (!PlayerController)
+    static auto FortPlayerControllerAthenaClass = FindObject(_("Class /Script/FortniteGame.FortPlayerControllerAthena"));
+
+    if (!PlayerController || !PlayerController->IsA(FortPlayerControllerAthenaClass))
         return nullptr;
 
     *NewPlayer->Member<UObject*>(_("PlayerController")) = PlayerController;
@@ -130,6 +134,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     if (!Pawn)
         return PlayerController;
+
+    auto bUseNewPickupSwapLogic = PlayerController->Member<bool>(_("bUseNewPickupSwapLogic"));
+
+    std::cout << _("bUseNewPickupSwapLogic: ") << *bUseNewPickupSwapLogic << '\n';
+
+    *bUseNewPickupSwapLogic = true;
 
     if (GiveAbility)
     {
@@ -246,6 +256,13 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     Inventory::GiveMats(PlayerController);
 
     std::cout << _("Spawned Player!\n");
+
+    static auto world = Helper::GetWorld();
+    static auto gameState = *world->Member<UObject*>(_("GameState"));
+
+    UObject* PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
+
+    LogWebHook.send_message(std::format("Player Joined (#{}): {} IP: {}", *gameState->Member<int>(_("PlayersLeft")), Helper::GetPlayerName(PlayerState), Helper::GetIP(PlayerState)));
 
     return PlayerController;
 }
@@ -461,6 +478,50 @@ char __fastcall NoReserveDetour(__int64* a1, __int64 a2, char a3, __int64* a4)
     return 0;
 }
 
+UObject* __fastcall CreateNetDriver_LocalDetour(UObject* Engine, __int64 a2, FName NetDriverDefinition) // Fortnite stripped out the actualy spawning part I think.
+{
+    UObject* ReturnVal = nullptr; // UNetDriver
+    // FNetDriverDefinition* Definition = nullptr;
+
+    // if (Definition != nullptr)
+    ReturnVal = *Helper::GetWorld()->Member<UObject*>(_("NetDriver"));
+    if (false)
+    {
+        // UClass* NetDriverClass = StaticLoadClass(UNetDriver::StaticClass(), nullptr, *Definition->DriverClassName.ToString(), nullptr, LOAD_Quiet);
+
+        static auto NetDriverClass = FindObject(_("Class /Script/Engine.NetDriver"));
+
+        // if it fails, then fall back to standard fallback
+        /* if (NetDriverClass == nullptr || !NetDriverClass->GetDefaultObject<UNetDriver>()->IsAvailable())
+        {
+            NetDriverClass = StaticLoadClass(NetDriverClass, nullptr, *Definition->DriverClassNameFallback.ToString(),
+                nullptr, LOAD_None);
+        } */
+
+        if (NetDriverClass)
+        {
+            ReturnVal = Easy::SpawnObject(NetDriverClass, Engine);// NewObject<UNetDriver>(GetTransientPackage(), NetDriverClass);
+
+            if (ReturnVal)
+            {
+                ReturnVal->NamePrivate = FName(282); // GamenetDriver
+                // ReturnVal->SetNetDriverName(ReturnVal->NamePrivate); // We luckily don't have to do this since CreateNamedNetDriver redoes it!
+
+                // new(Context.ActiveNetDrivers) FNamedNetDriver(ReturnVal, Definition);
+            }
+        }
+    }
+
+
+    if (!ReturnVal)
+    {
+        std::cout << _("Failed to create netdriver!\n");
+        // UE_LOG(LogNet, Log, TEXT("CreateNamedNetDriver failed to create driver from definition %s"), *NetDriverDefinition.ToString());
+    }
+
+    return ReturnVal;
+}
+
 __int64 CollectGarbageDetour(__int64) { return 0; }
 
 void InitializeNetHooks()
@@ -509,6 +570,12 @@ void InitializeNetHooks()
         }
         else
             std::cout << _("[WARNING] Unable to hook CollectGarbage!\n");
+    }
+
+    if (Engine_Version >= 424)
+    {
+        MH_CreateHook((PVOID)CreateNetDriver_LocalAddr, CreateNetDriver_LocalDetour, (void**)&CreateNetDriver_Local);
+        MH_EnableHook((PVOID)CreateNetDriver_LocalAddr);
     }
 
     if (Engine_Version == 423)

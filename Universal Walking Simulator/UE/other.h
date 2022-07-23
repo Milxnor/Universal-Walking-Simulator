@@ -16,6 +16,11 @@ struct FVector
 	{
 		return FVector{ this->X + A.X, this->Y + A.Y, this->Z + A.Z };
 	}
+
+	bool operator==(const FVector& A)
+	{
+		return X == A.X && Y == A.Y && Z == A.Z;
+	}
 };
 
 struct FQuat

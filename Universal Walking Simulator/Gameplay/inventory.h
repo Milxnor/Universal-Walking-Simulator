@@ -10,6 +10,25 @@ static int GetEntrySize()
 	return GetSizeOfStruct(FortItemEntryClass);
 }
 
+namespace FFortItemEntry
+{
+	int* GetCount(__int64* Entry)
+	{
+		static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
+		auto Count = (int*)(__int64(&*Entry) + CountOffset);
+
+		return Count;
+	}
+
+	UObject* GetItemDefinition(__int64* Entry)
+	{
+		static auto ItemDefinitionOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
+		auto Definition = (UObject**)(__int64(&*Entry) + ItemDefinitionOffset);
+
+		return *Definition;
+	}
+}
+
 namespace Inventory
 {
 	__int64* GetInventory(UObject* Controller)
@@ -152,6 +171,20 @@ namespace Inventory
 		return Def;
 	}
 
+	int GetNumQuickbarSlots(UObject* Controller, EFortQuickBars bars)
+	{
+		struct {
+			EFortQuickBars bars;
+			int Ret;
+		}parms{bars};
+		static auto fn = Controller->Function(_("GetNumQuickbarSlots"));
+
+		if (Controller && fn)
+			Controller->ProcessEvent(fn, &parms);
+
+		return parms.Ret;
+	}
+
 	inline UObject* EquipInventoryItem(UObject* Controller, FGuid& Guid)
 	{
 		auto ItemInstances = GetItemInstances(Controller);
@@ -189,7 +222,7 @@ namespace Inventory
 		// return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 	}
 
-	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false)
+	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false, FFastArraySerializerItem* ModifiedItem = nullptr)
 	{
 		static const auto FnVerDouble = std::stod(FN_Version);
 
@@ -247,7 +280,8 @@ namespace Inventory
 			((FFastArraySerializer*)Inventory)->MarkArrayDirty();
 
 		// if (Idx != -1)
-			// ((FFastArraySerializer*)Inventorya)->MarkItemDirty((FFastArraySerializerItem)GetReplicatedEntries<ItemEntryStruct>(Controller)->At(Idx));
+		if (ModifiedItem)
+			((FFastArraySerializer*)Inventory)->MarkItemDirty(ModifiedItem);
 	}
 
 	UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count = 1)
@@ -273,14 +307,13 @@ namespace Inventory
 
 			itemInstance->ProcessEvent(SOCFTIFn, &Controller);
 
-			// *itemInstance->Member<FFortItemEntry>(_("ItemEntry"))->GetCount() = Count;
+			static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
+
+			auto GunCount = (int*)(__int64(&*itemInstance->Member<__int64>(_("ItemEntry"))) + CountOffset);
+			*GunCount = Count;
 
 			auto OwnerInventory = itemInstance->Member<UObject*>(_("OwnerInventory")); // We should probably set this?
-
-			/* if (OwnerInventory && *OwnerInventory)
-				std::cout << _("OwnerInventory Name: ") << (*OwnerInventory)->GetFullName() << '\n';
-			else
-				std::cout << _("OwnerInventory Invalid: ") << OwnerInventory << '\n'; */
+			*OwnerInventory = *Controller->Member<UObject*>(_("WorldInventory"));
 
 			return itemInstance;
 		}
@@ -383,6 +416,11 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
+		else if (std::stod(FN_Version) >= 424)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x150]; };
+			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+		}
 		else
 			std::cout << _("Could not get ItemEntrySize Struct! Please make a new one for this version using: ") << GetEntrySize() << '\n';
 
@@ -461,15 +499,57 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
+		else if (std::stod(FN_Version) >= 424)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x150]; };
+			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
 
 		Update(Controller, -1, true);
 
 		return ItemDefinition;
 	}
 
-	UObject* DecreaseItemCount()
+	bool IncreaseItemCount(UObject* Controller, UObject* Definition, int Count) // stack
 	{
+		// For now, assume it's a consumable or ammo, and it can go higher than what we currently have.
 
+		if (Controller && Definition)
+		{
+			auto ItemInstances = GetItemInstances(Controller);
+			for (int j = 0; j < ItemInstances->Num(); j++)
+			{
+				auto ItemInstance = ItemInstances->At(j);
+
+				if (!ItemInstance)
+					continue;
+
+				auto CurrentDefinition = GetItemDefinition(ItemInstance);
+
+				if (CurrentDefinition == Definition)
+				{
+					auto ItemEntry = ItemInstance->Member<__int64>(_("ItemEntry")); // Keep as pointer!
+					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
+					
+					std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
+					*CurrentCount += Count;
+
+					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
+
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	UObject* DecreaseItemCount(UObject* Controller, UObject* Definition, int Count)
+	{
+		if (Controller && Definition)
+		{
+
+		}
 	}
 
 	void GiveAllAmmo(UObject* Controller)
@@ -616,10 +696,13 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 			if (bPickedUp && !*bPickedUp)
 			{
+
 				auto PrimaryPickupItemEntry = Params->Pickup->Member<__int64>(_("PrimaryPickupItemEntry"));
 				static auto ItemDefinitionOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
 				static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
 				auto Controller = Pawn->Member<UObject*>(_("Controller"));
+
+				// auto SwappinDef = *(*Controller)->Member<UObject*>(_("SwappingItemDefinition")); // This is the same tihng as the pickup
 
 				auto Definition = (UObject**)(__int64(&*PrimaryPickupItemEntry) + ItemDefinitionOffset);
 				auto Count = (int*)(__int64(&*PrimaryPickupItemEntry) + CountOffset);
@@ -633,7 +716,12 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 					{
 						std::cout << _("Def Deref: ") << *Definition << '\n';
 						std::cout << _("Def: ") << (*Definition)->GetFullName() << '\n';
-						Inventory::CreateAndAddItem(*Controller, *Definition, EFortQuickBars::Primary, *Count);
+
+						std::cout << _("Num Primary Slots: ") << Inventory::GetNumQuickbarSlots(*Controller, EFortQuickBars::Primary) << '\n';
+
+						auto bWasAbleToStack = Inventory::IncreaseItemCount(*Controller, *Definition, *Count);
+						if (!bWasAbleToStack)
+							Inventory::CreateAndAddItem(*Controller, *Definition, EFortQuickBars::Primary, *Count); // TODO: Figure out what quickbars are supposed to be used.
 					}
 					else
 						std::cout << _("Player is trying to pickup an item with a null Definition or null Count!\n");
@@ -652,6 +740,71 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 	return false;
 }
 
+inline bool ServerHandlePickupWithSwapHook(UObject* Pawn, UFunction* Function, void* Parameters)
+{
+	struct AFortPlayerPawn_ServerHandlePickupWithSwap_Params
+	{
+		UObject* Pickup;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+		FGuid                                       Swap;                                                     // (Parm, ZeroConstructor, IsPlainOldData)
+		float                                              InFlyTime;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+		FVector                                     InStartDirection;                                         // (ConstParm, Parm, ZeroConstructor, IsPlainOldData)
+		bool                                               bPlayPickupSound;                                         // (Parm, ZeroConstructor, IsPlainOldData)
+	};
+	auto Params = (AFortPlayerPawn_ServerHandlePickupWithSwap_Params*)Parameters;
+
+	if (Params && Pawn && Params->Pickup)
+	{
+		bool* bPickedUp = Params->Pickup->Member<bool>(_("bPickedUp"));
+
+		if (bPickedUp && !*bPickedUp)
+		{
+			auto Controller = Pawn->Member<UObject*>(_("Controller"));
+
+			auto PrimaryPickupItemEntry = Params->Pickup->Member<__int64>(_("PrimaryPickupItemEntry"));
+			static auto ItemDefinitionOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
+			static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
+
+			auto Definition = (UObject**)(__int64(&*PrimaryPickupItemEntry) + ItemDefinitionOffset);
+			auto Count = (int*)(__int64(&*PrimaryPickupItemEntry) + CountOffset);
+
+			struct
+			{
+				FGuid                                       ItemGuid;                                                 // (Parm, ZeroConstructor, IsPlainOldData)
+				int                                                Count;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
+			} dropParams{ Params->Swap, 1 }; // (*Pawn->Member<UObject*>(_("CurrentWeapon"))};
+
+			ServerAttemptInventoryDropHook(*Controller, nullptr, &dropParams);
+
+			struct
+			{
+				UObject* Pickup;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+				float                                              InFlyTime;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+				FVector                                     InStartDirection;                                         // (ConstParm, Parm, ZeroConstructor, IsPlainOldData)
+				bool                                               bPlayPickupSound;                                         // (Parm, ZeroConstructor, IsPlainOldData)
+			} pickupParams{Params->Pickup, Params->InFlyTime, Params->InStartDirection, Params->bPlayPickupSound};
+
+			ServerHandlePickupHook(Pawn, nullptr, &pickupParams);
+		}
+	}
+
+	return false;
+}
+
+inline bool ServerSetShouldSwapPickupHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	struct parms { bool ba; };
+
+	auto Params = (parms*)Parameters;
+
+	if (Controller && Params)
+	{
+		bool bShouldSwap = Params->ba;
+		std::cout << _("Should Swap: ") << bShouldSwap << '\n';
+	}
+
+	return false;
+}
+
 void InitializeInventoryHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
@@ -659,6 +812,11 @@ void InitializeInventoryHooks()
 		AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"), ServerHandlePickupHook);
+	if (std::stod(FN_Version) >= 7.40)
+	{
+		AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupWithSwap"), ServerHandlePickupWithSwapHook);
+		AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerSetShouldSwapPickup"), ServerSetShouldSwapPickupHook)
+	}
 }
 
 namespace Player

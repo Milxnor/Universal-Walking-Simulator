@@ -128,6 +128,42 @@ public:
 		return -1;
 	};
 
+
+	void RemoveAtSwapImpl(int Index, int Count = 1, bool bAllowShrinking = true)
+	{
+		if (Count)
+		{
+			// CheckInvariants();
+			// checkSlow((Count >= 0) & (Index >= 0) & (Index + Count <= ArrayNum));
+
+			// DestructItems(GetData() + Index, Count);
+
+			// Replace the elements in the hole created by the removal with elements from the end of the array, so the range of indices used by the array is contiguous.
+			const int NumElementsInHole = Count;
+			const int NumElementsAfterHole = ArrayNum - (Index + Count);
+			const int NumElementsToMoveIntoHole = min(NumElementsInHole, NumElementsAfterHole);
+			if (NumElementsToMoveIntoHole)
+			{
+				memcpy(// FMemory::Memcpy(
+					(uint8_t*)Data + (Index) * sizeof(ElementType),
+					(uint8_t*)Data + (ArrayNum - NumElementsToMoveIntoHole) * sizeof(ElementType),
+					NumElementsToMoveIntoHole * sizeof(ElementType)
+				);
+			}
+			ArrayNum -= Count;
+
+			if (bAllowShrinking)
+			{
+				// ResizeShrink();
+			}
+		}
+	}
+
+	inline void RemoveAtSwap(int Index)
+	{
+		RemoveAtSwapImpl(Index, 1, true);
+	}
+
 	inline bool RemoveAt(const int Index) // NOT MINE
 	{
 		if (Index < ArrayNum)
@@ -1119,14 +1155,6 @@ struct FFastArraySerializerItem
 	int                                                MostRecentArrayReplicationKey;                            // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
 };
 
-template <typename KeyType, typename ValueType>
-class TPair
-{
-private:
-	KeyType First;
-	ValueType Second;
-};
-
 struct FFastArraySerializer
 {
 #ifndef BEFORE_SEASONEIGHT
@@ -1156,16 +1184,16 @@ struct FFastArraySerializer
 	int32_t CachedNumItemsToConsiderForWriting;
 #endif
 
-	void MarkItemDirty(FFastArraySerializerItem& Item)
+	void MarkItemDirty(FFastArraySerializerItem* Item)
 	{
-		if (Item.ReplicationID == -1)
+		if (Item->ReplicationID == -1)
 		{
-			Item.ReplicationID = ++IDCounter;
+			Item->ReplicationID = ++IDCounter;
 			if (IDCounter == -1)
 				IDCounter++;
 		}
 
-		Item.ReplicationKey++;
+		Item->ReplicationKey++;
 		MarkArrayDirty();
 	}
 
@@ -1258,4 +1286,136 @@ class FSoftObjectPtr : public TPersistentObjectPtr<FSoftObjectPath>
 class TSoftObjectPtr : FSoftObjectPtr
 {
 
+};
+
+namespace EAbilityGenericReplicatedEvent
+{
+	enum Type
+	{
+		/** A generic confirmation to commit the ability */
+		GenericConfirm = 0,
+		/** A generic cancellation event. Not necessarily a canellation of the ability or targeting. Could be used to cancel out of a channelling portion of ability. */
+		GenericCancel,
+		/** Additional input presses of the ability (Press X to activate ability, press X again while it is active to do other things within the GameplayAbility's logic) */
+		InputPressed,
+		/** Input release event of the ability */
+		InputReleased,
+		/** A generic event from the client */
+		GenericSignalFromClient,
+		/** A generic event from the server */
+		GenericSignalFromServer,
+		/** Custom events for game use */
+		GameCustom1,
+		GameCustom2,
+		GameCustom3,
+		GameCustom4,
+		GameCustom5,
+		GameCustom6,
+		MAX
+	};
+}
+
+template <class ObjectType>
+class TSharedRef
+{
+public:
+	ObjectType* Object;
+
+	int SharedReferenceCount;
+	int WeakReferenceCount;
+
+	inline ObjectType* Get()
+	{
+		return Object;
+	}
+	inline ObjectType* Get() const
+	{
+		return Object;
+	}
+	inline ObjectType& operator*()
+	{
+		return *Object;
+	}
+	inline const ObjectType& operator*() const
+	{
+		return *Object;
+	}
+	inline ObjectType* operator->()
+	{
+		return Object;
+	}
+};
+
+template <class ObjectType>
+class TSharedPtr
+{
+public:
+	ObjectType* Object;
+
+	int SharedReferenceCount;
+	int WeakReferenceCount;
+
+	inline ObjectType* Get()
+	{
+		return Object;
+	}
+	inline ObjectType* Get() const
+	{
+		return Object;
+	}
+	inline ObjectType& operator*()
+	{
+		return *Object;
+	}
+	inline const ObjectType& operator*() const
+	{
+		return *Object;
+	}
+	inline ObjectType* operator->()
+	{
+		return Object;
+	}
+
+	inline TSharedRef<ObjectType> ToSharedRef()
+	{
+		return TSharedRef<ObjectType>(Object);
+	}
+};
+
+template <typename KeyType, typename ValueType>
+class TPair
+{
+public:
+	KeyType First;
+	ValueType Second;
+
+	TPair(KeyType Key, ValueType Value)
+		: First(Key)
+		, Second(Value)
+	{
+	}
+
+	inline KeyType& Key()
+	{
+		return First;
+	}
+	inline const KeyType& Key() const
+	{
+		return First;
+	}
+	inline ValueType& Value()
+	{
+		return Second;
+	}
+	inline const ValueType& Value() const
+	{
+		return Second;
+	}
+};
+
+struct FAbilityReplicatedData
+{
+	bool bTriggered;
+	FVector VectorPayload;
+	unsigned char Pad[24];
 };
