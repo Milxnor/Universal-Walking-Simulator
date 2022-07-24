@@ -3,7 +3,7 @@
 namespace Events {
 	bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 10.40f || Version == 9.40f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
+		return (Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
@@ -21,6 +21,11 @@ namespace Events {
 				UObject* Func = CD->Function("LoadCattusLevel");
 				bool Condition = true;
 				CD->ProcessEvent(Func, &Condition);
+			}
+			if (Version == 6.21f) {
+				UObject* BF = FindObject("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4");
+				UObject* Func = BF->Function("LoadButterflySublevel");
+				BF->ProcessEvent(Func);
 			}
 		}
 	}
@@ -47,18 +52,30 @@ namespace Events {
 				UObject* Func = CD->Function("startevent");
 				CD->ProcessEvent(Func);
 			}
+			else if (Version == 8.51f) {
+				UObject* SS = FindObject(".PersistentLevel.SnowSequence_2.AnimationPlayer");
+				UObject* Func = SS->Function("Play");
+				SS->ProcessEvent(Func);
+				//(TODO) Find a way to auto destroy death barrier and load the Map for all players when the screen goes white (Map Name: Next2)
+			}
 			else if (Version == 7.30f) {
-				UObject* CD = FindObject(".Athena_POI_CommunityPark_003_M.PersistentLevel.FestivusSequence_01_2.AnimationPlayer2");
-				UObject* Func = CD->Function("Play");
-				CD->ProcessEvent(Func);
+				UObject* FS = FindObject(".PersistentLevel.FestivusSequence_01_2.AnimationPlayer2");
+				UObject* Func = FS->Function("Play");
+				FS->ProcessEvent(Func);
 			}
 			else if (Version == 7.20f) {
 				std::cout << _("Event not yet implemented!\n");
 			}
+			else if (Version == 6.21f) {
+				UObject* BF = FindObject("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4");
+				UObject* Func = BF->Function("ButterflySequence");
+				BF->ProcessEvent(Func);
+				//(TODO) Fix screen going white when cube explodes (Im guessing its similar to the Map loading issue on 8.51 Event)
+			}
 			else if (Version == 4.5f) {
-				UObject* CD = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/Events/Athena_Gameplay_Geode.Athena_Gameplay_Geode.Athena_Gameplay_Geode.PersistentLevel.LevelSequence_LaunchRocket.AnimationPlayer");
-				UObject* Func = CD->Function("Play");
-				CD->ProcessEvent(Func);
+				UObject* LR = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/Events/Athena_Gameplay_Geode.Athena_Gameplay_Geode.Athena_Gameplay_Geode.PersistentLevel.LevelSequence_LaunchRocket.AnimationPlayer");
+				UObject* Func = LR->Function("Play");
+				LR->ProcessEvent(Func);
 			}
 		}
 	}
