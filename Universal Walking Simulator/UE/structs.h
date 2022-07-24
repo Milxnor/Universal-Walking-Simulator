@@ -98,7 +98,8 @@ public:
 		// if (Number > ArrayMax)
 		{
 			// Data = (ElementType*)realloc(Data, Size * (ArrayNum + 1));
-			Data = Slack() >= Number ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + Number) * Size, 0);
+			// Data = Slack() >= Number ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + Number) * Size, 0);
+			Data = (ElementType*)realloc(Data, sizeof(ElementType) * (ArrayNum + 1));
 		}
 	}
 

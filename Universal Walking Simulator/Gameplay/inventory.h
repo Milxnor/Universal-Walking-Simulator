@@ -20,6 +20,14 @@ namespace FFortItemEntry
 		return Count;
 	}
 
+	FGuid* GetGuid(__int64* Entry)
+	{
+		static auto GuidOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemGuid"));
+		auto Guid = (FGuid*)(__int64(&*Entry) + GuidOffset);
+
+		return Guid;
+	}
+
 	UObject* GetItemDefinition(__int64* Entry)
 	{
 		static auto ItemDefinitionOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
@@ -45,7 +53,7 @@ namespace Inventory
 
 		auto Inventory = GetInventory(Controller);
 
-		std::cout << _("ItemInstances Offset: ") << ItemInstancesOffset << '\n';
+		// std::cout << _("ItemInstances Offset: ") << ItemInstancesOffset << '\n';
 
 		// ItemInstancesOffset = 0x110;
 
@@ -338,7 +346,7 @@ namespace Inventory
 	}
 
 	template <typename EntryStruct, typename Type>
-	bool ChangeItemInReplicatedEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal)
+	bool ChangeItemInReplicatedEntriesWithEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal)
 	{
 		if (!Controller || !Definition)
 			return false;
@@ -355,11 +363,42 @@ namespace Inventory
 				static auto Offset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), Name);
 				*(Type*)(__int64(&ItemEntry) + Offset) = NewVal;
 				bSuccessful = true;
+				auto Inventory = GetInventory(Controller);
+				((FFastArraySerializer*)Inventory)->MarkItemDirty((FFastArraySerializerItem*)&ItemEntry);
 				// break;
 			}
 		}
 
 		return bSuccessful;
+	}
+
+	template <typename Type>
+	bool ChangeItemInReplicatedEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal)
+	{
+		static const auto FlooredVer = std::floor(std::stod(FN_Version));
+
+		if (FlooredVer == 3)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
+		}
+		else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
+		}
+		else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x120]; };
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
+		}
+		else if (std::stod(FN_Version) >= 424)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x150]; };
+			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
+		}
+
+		return false;
 	}
 
 	template <typename EntryStruct>
@@ -388,7 +427,7 @@ namespace Inventory
 		return bSuccessful;
 	}
 
-	static void AddItem(UObject* Controller, UObject* FortItem, EFortQuickBars Bars, int Slot)
+	static void AddItem(UObject* Controller, UObject* FortItem, EFortQuickBars Bars, int Slot, int Count = 1)
 	{
 		if (!Controller || !FortItem)
 			return;
@@ -396,6 +435,8 @@ namespace Inventory
 		static const auto FlooredVer = std::floor(std::stod(FN_Version));
 
 		// auto Inventory = GetInventory(Controller);
+
+		*FFortItemEntry::GetCount(FortItem->Member<__int64>(_("ItemEntry"))) = Count;
 
 		GetItemInstances(Controller)->Add(FortItem);
 
@@ -459,7 +500,7 @@ namespace Inventory
 			auto Instance = CreateItemInstance(Controller, Definition, Count);
 
 			if (Instance)
-				AddItem(Controller, Instance, Bars, Slot);
+				AddItem(Controller, Instance, Bars, Slot, Count);
 			else
 				std::cout << _("Failed to create ItemInstance!\n");
 		}
@@ -560,28 +601,7 @@ namespace Inventory
 					auto NewCount = *CurrentCount + Count;
 					*CurrentCount = NewCount;
 
-					static const auto FlooredVer = std::floor(std::stod(FN_Version));
-
-					if (FlooredVer == 3)
-					{
-						struct ItemEntrySize { unsigned char Unk00[0xC0]; };
-						ChangeItemInReplicatedEntries<ItemEntrySize, int>(Controller, Definition, _("Count"), NewCount);
-					}
-					else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
-					{
-						struct ItemEntrySize { unsigned char Unk00[0xD0]; };
-						ChangeItemInReplicatedEntries<ItemEntrySize, int>(Controller, Definition, _("Count"), NewCount);
-					}
-					else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
-					{
-						struct ItemEntrySize { unsigned char Unk00[0x120]; };
-						ChangeItemInReplicatedEntries<ItemEntrySize, int>(Controller, Definition, _("Count"), NewCount);
-					}
-					else if (std::stod(FN_Version) >= 424)
-					{
-						struct ItemEntrySize { unsigned char Unk00[0x150]; };
-						ChangeItemInReplicatedEntries<ItemEntrySize, int>(Controller, Definition, _("Count"), NewCount);
-					}
+					ChangeItemInReplicatedEntries<int>(Controller, Definition, _("Count"), NewCount);
 
 					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
 
@@ -593,12 +613,42 @@ namespace Inventory
 		return false;
 	}
 
-	UObject* DecreaseItemCount(UObject* Controller, UObject* Definition, int Count)
+	bool DecreaseItemCount(UObject* Controller, UObject* Definition, int Count, __int64** OutItemEntry = nullptr)
 	{
 		if (Controller && Definition)
 		{
+			auto ItemInstances = GetItemInstances(Controller);
 
+			for (int j = 0; j < ItemInstances->Num(); j++)
+			{
+				auto ItemInstance = ItemInstances->At(j);
+
+				if (!ItemInstance)
+					continue;
+
+				auto CurrentDefinition = GetItemDefinition(ItemInstance);
+				if (CurrentDefinition == Definition)
+				{
+					auto ItemEntry = ItemInstance->Member<__int64>(_("ItemEntry")); // Keep as pointer!
+					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
+
+					// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
+					auto NewCount = *CurrentCount - Count;
+					*CurrentCount = NewCount;
+
+					ChangeItemInReplicatedEntries<int>(Controller, Definition, _("Count"), NewCount);
+
+					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
+
+					if (OutItemEntry)
+						*OutItemEntry = ItemEntry;
+
+					return true;
+				}
+			}
 		}
+
+		return false;
 	}
 
 	void GiveAllAmmo(UObject* Controller)
@@ -705,7 +755,7 @@ inline bool ServerExecuteInventoryWeaponHook(UObject* Controller, UFunction* Fun
 
 inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
-	if (Controller && Parameters)
+	if (Controller && Parameters && !Helper::IsInAircraft(Controller))
 	{
 		struct AFortPlayerController_ServerAttemptInventoryDrop_Params
 		{
@@ -854,45 +904,133 @@ inline bool ServerSetShouldSwapPickupHook(UObject* Controller, UFunction* Functi
 	return false;
 }
 
+template <typename EntryStruct>
+void idekatthispoint(UObject* PlayerController, UObject* Def, int AmountToRemove)
+{
+	auto& ReplicatedEntries = Inventory::GetReplicatedEntries<EntryStruct>(PlayerController);
+	for (int i = 0; i < ReplicatedEntries->Num(); i++)
+	{
+		auto& CurrentEntry = ReplicatedEntries->At(i);
+		if (FFortItemEntry::GetItemDefinition((__int64*)(&CurrentEntry)) == Def)
+		{
+			*FFortItemEntry::GetCount(CurrentEntry) -= AmountToRemove;
+			Inventory::Update(PlayerController, false, CurrentEntry);
+		}
+	}
+}
+
+void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // nova go brr
+{
+	if (!Weapon)
+		return;
+
+	static auto GetOwner = Weapon->Function(_("GetOwner"));
+	UObject* Pawn;
+	Weapon->ProcessEvent(GetOwner, &Pawn);
+
+	if (!Pawn)
+		return;
+
+	auto PlayerController = *Pawn->Member<UObject*>(_("Controller"));
+
+	if (PlayerController)
+	{
+		auto WeaponData = *Weapon->Member<UObject*>(_("WeaponData"));
+		static auto GetAmmoWorldItemDefinition_BP = WeaponData->Function(_("GetAmmoWorldItemDefinition_BP"));
+		UObject* AmmoDef;
+		WeaponData->ProcessEvent(GetAmmoWorldItemDefinition_BP, &AmmoDef);
+
+		if (!AmmoDef || WeaponData->GetName().contains("TID"))
+			AmmoDef = WeaponData;
+
+		__int64* ItemEntry = nullptr;
+
+		Inventory::DecreaseItemCount(PlayerController, AmmoDef, AmountToRemove, &ItemEntry);
+
+		if (ItemEntry)
+		{
+			if (*FFortItemEntry::GetCount(ItemEntry) <= 0)
+			{
+				Inventory::RemoveItem(PlayerController, *FFortItemEntry::GetGuid(ItemEntry));
+			}
+		}
+
+		/* static const auto FlooredVer = std::floor(std::stod(FN_Version));
+
+		if (FlooredVer == 3)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			return idekatthispoint<ItemEntrySize>(PlayerController, AmountToRemove);
+		}
+		else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
+			return idekatthispoint<ItemEntrySize>(PlayerController, AmountToRemove);
+		}
+		else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x120]; };
+			return idekatthispoint<ItemEntrySize>(PlayerController, AmountToRemove);
+		}
+		else if (std::stod(FN_Version) >= 424)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x150]; };
+			return idekatthispoint<ItemEntrySize>(PlayerController, AmountToRemove);
+		}
+
+		auto ItemInstances = Inventory::GetItemInstances(PlayerController);
+
+		for (int j = 0; j < ItemInstances->Num(); j++)
+		{
+			auto ItemInstance = ItemInstances->At(j);
+
+			if (ItemInstance)
+			{
+				static auto GetItemDefinitionBP = ItemInstance->Function(_("GetItemDefinitionBP"));
+				UObject* CurrentAmmoDef = nullptr;
+				ItemInstance->ProcessEvent(GetItemDefinitionBP, &CurrentAmmoDef);
+
+				if (ItemInstance && CurrentAmmoDef == AmmoDef)
+				{
+					auto ItemEntry = ItemInstance->Member<__int64>(_("ItemEntry")); // Keep as pointer!
+					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
+
+					// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
+					auto NewCount = *CurrentCount - Count;
+					*CurrentCount = NewCount;
+
+					ChangeItemInReplicatedEntries<int>(Controller, Definition, _("Count"), NewCount);
+
+					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
+				}
+					ItemInstances->RemoveAt(j);
+			}
+		}
+		*/
+
+		return HandleReloadCost(Weapon, AmountToRemove);
+	}
+}
+
 void InitializeInventoryHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
+
 	if (Engine_Version >= 423)
 		AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
+
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"), ServerHandlePickupHook);
+
 	if (std::stod(FN_Version) >= 7.40)
 	{
 		AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupWithSwap"), ServerHandlePickupWithSwapHook);
 		AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerSetShouldSwapPickup"), ServerSetShouldSwapPickupHook)
 	}
-}
 
-namespace Player
-{
-	void RespawnPlayer(UObject* PlayerController)
+	if (HandleReloadCost)
 	{
-		auto Pawn = *PlayerController->Member<UObject*>("Pawn");
-		auto PawnLocation = Helper::GetActorLocation(Pawn);
-
-		if (Pawn)
-		{
-			Helper::DestroyActor(Pawn);
-		}
-
-		static auto setHealthFn = Pawn->Function(_("SetHealth"));
-		struct { float NewHealthVal; }healthParams{ 100 };
-
-		if (setHealthFn)
-			Pawn->ProcessEvent(setHealthFn, &healthParams);
-		static auto PickaxeDefinition = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-
-		// TODO: StructProperty /Script/FortniteGame.FortPlaylistAthena.RespawnHeight
-		struct { float HeightAboveGround; }TeleportToSkyDiveParams{10000};
-
-		auto NewPawn = Helper::InitPawn(PlayerController, false, PawnLocation);
-		// static auto TeleportToSkyDiveFn = NewPawn->Function(_("TeleportToSkyDive"));
-		// NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
-		// PlayerController->ProcessEvent(_("RespawnPlayer"));
+		MH_CreateHook((PVOID)HandleReloadCostAddr, HandleReloadCostDetour, (void**)&HandleReloadCost);
+		MH_EnableHook((PVOID)HandleReloadCostAddr);
 	}
 }

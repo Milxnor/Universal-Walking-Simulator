@@ -130,5 +130,8 @@
     <ClInclude Include="discord.h">
       <Filter>Header Files\Other</Filter>
     </ClInclude>
+    <ClInclude Include="player.h">
+      <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

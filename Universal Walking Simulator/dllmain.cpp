@@ -213,6 +213,12 @@ void InitializePatterns()
     // NetDebugAddr = FindPattern(Patterns::NetDebug);
     // CheckPattern(_("NetDebug"), NetDebugAddr, &NetDebug);
 
+    HandleReloadCostAddr = FindPattern(Patterns::HandleReloadCost);
+    if (!HandleReloadCostAddr)
+        std::cout << _("[WARNING] Unable to find HandleReloadCost! Will not be able to deplete ammo.\n");
+    else
+        HandleReloadCost = decltype(HandleReloadCost)(HandleReloadCostAddr);
+
     if (Engine_Version != 424)
     {
         KickPlayerAddr = FindPattern(Patterns::KickPlayer);

@@ -80,8 +80,26 @@ namespace Helper
 		}
 	}
 
+	bool IsInAircraft(UObject* Controller)
+	{
+		if (!Controller)
+			return false;
+
+		static auto fn = Controller->Function(_("IsInAircraft"));
+		
+		bool bIsInAircraft = false;
+
+		if (fn)
+			Controller->ProcessEvent(fn, &bIsInAircraft);
+
+		return bIsInAircraft;
+	}
+
 	FVector GetActorLocation(UObject* Actor)
 	{
+		if (!Actor)
+			return FVector();
+
 		static auto K2_GetActorLocationFN = Actor->Function(_("K2_GetActorLocation"));
 
 		if (K2_GetActorLocationFN)

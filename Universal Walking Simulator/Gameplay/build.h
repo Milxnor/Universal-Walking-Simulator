@@ -43,6 +43,13 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 {
 	if (Controller && Parameters)
 	{
+		static auto WoodItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+		static auto StoneItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+		static auto MetalItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+		bool bSuccessful = false;
+		UObject* MatDefinition = nullptr;
+
 #ifndef BEFORE_SEASONEIGHT
 		{
 			struct FCreateBuildingActorData
@@ -82,6 +89,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 					{
 						// auto BuildingClass = Controller->Member<UObject*>(_("CurrentBuildableClass"));
 						auto BuildingClass = (*RemoteClientInfo)->Member<UObject*>(_("RemoteBuildableClass"));
+
 						// std::cout << _("BuildLocation Offset: ") << BuildLocOffset << '\n';
 						auto BuildLoc = Params->CreateBuildingData.BuildLoc; // (FVector*)(__int64(Params->CreateBuildingData) + BuildLocOffset)// Get<FVector>(BuildLocOffset, Params->CreateBuildingData);
 						auto BuildRot = Params->CreateBuildingData.BuildRot; // Get<FRotator>(BuildRotOffset, Params->CreateBuildingData);
@@ -95,15 +103,35 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 						if (BuildingClass && *BuildingClass)
 						{
-							// std::cout << _("Goofy class: ") << (*BuildingClass)->GetFullName();
-							auto BuildingActor = Easy::SpawnActor(*BuildingClass, BuildLoc, BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
+							auto BuildingClassName = (*BuildingClass)->GetFullName();
 
-							if (BuildingActor)
+							// TODO:" figure out a better way
+
+							if (BuildingClassName.contains(_("W1")))
+								MatDefinition = WoodItemData;
+							else if (BuildingClassName.contains(_("S1")))
+								MatDefinition = StoneItemData;
+							else if (BuildingClassName.contains(_("M1")))
+								MatDefinition = MetalItemData;
+
+							if (MatDefinition)
 							{
-								Helper::InitializeBuildingActor(Controller, BuildingActor, true);
+								auto MatInstance = Inventory::FindItemInInventory(Controller, MatDefinition);
+
+								if (*FFortItemEntry::GetCount(MatInstance->Member<__int64>(_("ItemEntry"))) < 10)
+									return false;
+
+								// std::cout << _("Goofy class: ") << (*BuildingClass)->GetFullName();
+								UObject* BuildingActor = Easy::SpawnActor(*BuildingClass, BuildLoc, BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
+
+								if (BuildingActor)
+								{
+									Helper::InitializeBuildingActor(Controller, BuildingActor, true);
+									bSuccessful = true;
+								}
+								else
+									std::cout << _("Unable to summon the building!\n");
 							}
-							else
-								std::cout << _("Unable to summon the building!\n");
 						}
 						else
 							std::cout << _("Unable to get BuildingClass!\n");
@@ -147,24 +175,42 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 				if (BuildingClass) // && *BuildingClass)
 				{
-					// std::cout << _("Printing name...");
-					// std::cout << _("Goofy class: ") << BuildingClass->GetFullName();
-					auto BuildingActor = Easy::SpawnActor(BuildingClass, Params->BuildLoc, Params->BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
+					auto BuildingClassName = BuildingClass->GetFullName();
 
-					if (BuildingActor)
+					// TODO:" figure out a better way
+
+					if (BuildingClassName.contains(_("W1")))
+						MatDefinition = WoodItemData;
+					else if (BuildingClassName.contains(_("S1")))
+						MatDefinition = StoneItemData;
+					else if (BuildingClassName.contains(_("M1")))
+						MatDefinition = MetalItemData;
+
+					if (MatDefinition)
 					{
-						if (true) // CanBuild(BuildingActor) && Helper::IsStructurallySupported(BuildingActor))
+						auto MatInstance = Inventory::FindItemInInventory(Controller, MatDefinition);
+
+						if (*FFortItemEntry::GetCount(MatInstance->Member<__int64>(_("ItemEntry"))) < 10)
+							return false;
+
+						UObject* BuildingActor = Easy::SpawnActor(BuildingClass, Params->BuildLoc, Params->BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
+
+						if (BuildingActor)
 						{
-							Helper::InitializeBuildingActor(Controller, BuildingActor, true);
+							if (true) // CanBuild(BuildingActor)) // && Helper::IsStructurallySupported(BuildingActor))
+							{
+								Helper::InitializeBuildingActor(Controller, BuildingActor, true);
+								bSuccessful = true;
+							}
+							else
+							{
+								Helper::SetActorScale3D(BuildingActor, {});
+								Helper::SilentDie(BuildingActor);
+							}
 						}
 						else
-						{
-							Helper::SetActorScale3D(BuildingActor, {});
-							Helper::SilentDie(BuildingActor);
-						}
+							std::cout << _("Unable to summon the building!\n");
 					}
-					else
-						std::cout << _("Unable to summon the building!\n");
 				}
 				else
 					std::cout << _("No BuildingClass!\n");
@@ -172,6 +218,18 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 		}
 
 #endif
+		if (bSuccessful)
+		{
+			// TEnumAsByte<EFortResourceType>                     ResourceType;
+			// auto ResourceType = *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(_("ResourceType"));
+
+			if (MatDefinition)
+				Inventory::DecreaseItemCount(Controller, MatDefinition, 10);
+			else
+				std::cout << _("Is bro using permanite!?!?!?");
+		}
+		else
+			std::cout << _("failed to build!\n");
 	}
 
 	return false;
@@ -227,6 +285,22 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 
 		if (BuildingActor && NewBuildingClass)
 		{
+			struct Bitfield {
+				unsigned char                                      bSurpressHealthBar : 1;                                   // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
+				unsigned char                                      bCreateVerboseHealthLogs : 1;                             // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
+				unsigned char                                      bIsIndestructibleForTargetSelection : 1;                  // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
+				unsigned char                                      bDestroyed : 1;                                           // 0x0541(0x0001) (BlueprintVisible, BlueprintReadOnly, Net, Transient)
+				unsigned char                                      bPersistToWorld : 1;                                      // 0x0541(0x0001) (Edit, DisableEditOnInstance)
+				unsigned char                                      bRefreshFullSaveDataBeforeZoneSave : 1;                   // 0x0541(0x0001) (Edit, DisableEditOnInstance)
+				unsigned char                                      bBeingDragged : 1;                                        // 0x0541(0x0001) (Transient)
+				unsigned char                                      bRotateInPlaceGame : 1;                                   // 0x0541(0x0001)
+			};
+
+			Bitfield* BitField = Params->BuildingActorToEdit->Member<Bitfield>(_("bDestroyed"));
+
+			if (BitField && BitField->bDestroyed)
+				return false;
+
 			auto Location = Helper::GetActorLocation(BuildingActor);
 			auto Rotation = Helper::GetActorRotation(BuildingActor);
 
@@ -308,7 +382,7 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 
 inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
-	if (Controller && Parameters)
+	if (Controller && Parameters && !Helper::IsInAircraft(Controller))
 	{
 		// TODO: Check if the controller is in aircraft, if they edit on spawn island, it will make them end on the battle bus, which will not go well.
 

@@ -12,8 +12,9 @@
 #include <Gameplay/events.h>
 
 #include <mutex>
+#include "player.h"
 
-#define LOGGING
+// #define LOGGING
 
 // HEAVILY INSPIRED BY KEMOS UFUNCTION HOOKING
 

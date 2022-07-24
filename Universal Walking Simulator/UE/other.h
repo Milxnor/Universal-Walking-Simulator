@@ -31,6 +31,16 @@ struct FQuat
 	float W;
 };
 
+enum class EFortResourceType : uint8_t
+{
+	Wood = 0,
+	Stone = 1,
+	Metal = 2,
+	Permanite = 3,
+	None = 4,
+	EFortResourceType_MAX = 5
+};
+
 struct FTransform // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4c8e09b606f10a09776b4d1f38/Engine/Source/Runtime/Core/Public/Math/TransformNonVectorized.h#L28
 {
 	FQuat Rotation;
@@ -59,9 +69,9 @@ struct TEnumAsByte // https://github.com/EpicGames/UnrealEngine/blob/4.21/Engine
 
 	TEnumAsByte() : Value(0) {}
 
-	auto Get()
+	TEnum Get()
 	{
-		return Value;
+		return (TEnum)Value;
 	}
 };
 

@@ -67,7 +67,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>Project Reboot VPS</TargetName>
+    <TargetName>Project Reboot VPa</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -200,6 +200,7 @@
     <ClInclude Include="hooks.h" />
     <ClInclude Include="Net\nethooks.h" />
     <ClInclude Include="Net\server.h" />
+    <ClInclude Include="player.h" />
     <ClInclude Include="UE\finder.h" />
     <ClInclude Include="UE\other.h" />
     <ClInclude Include="UE\structs.h" />

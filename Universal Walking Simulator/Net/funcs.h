@@ -33,6 +33,9 @@ uint64_t ValidationFailureAddr = 0;
 uint64_t CollectGarbageAddr = 0;
 uint64_t GetPlayerViewpointAddr = 0;
 uint64_t CreateNetDriver_LocalAddr = 0;
+uint64_t HandleReloadCostAddr = 0;
+
+void(__fastcall* HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 
 UObject* (__fastcall* CreateNetDriver_Local)(__int64 a1, __int64 a2, __int64 a3);
 
