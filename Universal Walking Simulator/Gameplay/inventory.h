@@ -62,9 +62,11 @@ namespace Inventory
 
 	inline void EquipWeapon(UObject* Pawn, UObject* FortWeapon, const FGuid& Guid, int Ammo = 0)
 	{
+		static auto PickaxeDef = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+		auto CurrentWeapon = *Pawn->Member<UObject*>(_("CurrentWeapon"));
 		if (FortWeapon && Pawn)
 		{
-			// if (bEquipWithMaxAmmo)
+			//if (*CurrentWeapon->Member<UObject*>(_("WeaponData")) != PickaxeDef)
 			{
 				static auto getBulletsFn = FortWeapon->Function(_("GetBulletsPerClip"));
 				if (getBulletsFn)
@@ -207,8 +209,15 @@ namespace Inventory
 
 			if (GetItemGuid(CurrentItemInstance) == Guid)
 			{
-				if (auto Def = GetItemDefinition(CurrentItemInstance))
-					return EquipWeaponDefinition(Pawn, Def, Guid);
+				auto Def = GetItemDefinition(CurrentItemInstance);
+				if (Def != nullptr) {
+					if (std::stof(FN_Version) >= 7.40) {
+						return EquipWeaponDefinition(Pawn, Def, Guid);
+					}
+					else {
+						EquipWeapon(Pawn, Def, Guid);
+					}
+				}
 			}
 		}
 
@@ -472,7 +481,7 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
 			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
+		else if (std::stof(FN_Version) < 7.40f)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);

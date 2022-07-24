@@ -58,7 +58,9 @@ void InitializePatterns()
     CheckPattern(_("InitListen"), InitListenAddr, &InitListen);
 
     TickFlushAddr = FindPattern(Patterns::TickFlush);
-
+#ifdef T_F
+    TickFlushAddr = FindPattern(Patterns::TickFlush2);
+#endif
     if (!TickFlushAddr)
         TickFlushAddr = FindPattern(_("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0"));
 
@@ -87,13 +89,18 @@ void InitializePatterns()
     CheckPattern(_("WelcomePlayer"), WelcomePlayerAddr, &WelcomePlayer);
 
     World_NotifyControlMessageAddr = FindPattern(Patterns::World_NotifyControlMessage);
-
+#ifdef T_F
+    World_NotifyControlMessageAddr = FindPattern(Patterns::World_NotifyControlMessage2);
+#endif
     if (!World_NotifyControlMessageAddr)
         World_NotifyControlMessageAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B D9 89 7C 24 60"));
 
     CheckPattern(_("World_NotifyControlMessage"), World_NotifyControlMessageAddr, &World_NotifyControlMessage);
 
     SpawnPlayActorAddr = FindPattern(Patterns::SpawnPlayActor);
+#ifdef T_F
+    SpawnPlayActorAddr = FindPattern(Patterns::SpawnPlayActor2);
+#endif
     CheckPattern(_("SpawnPlayActor"), SpawnPlayActorAddr, &SpawnPlayActor);
 
     NetDebugAddr = FindPattern(Patterns::NetDebug);
@@ -202,7 +209,9 @@ void InitializePatterns()
         CheckPattern(_("InitHost"), InitHostAddr, &InitHost);
 
         Beacon_NotifyControlMessageAddr = FindPattern(Patterns::Beacon_NotifyControlMessage);
-
+#ifdef T_F
+        Beacon_NotifyControlMessageAddr = FindPattern(Patterns::Beacon_NotifyControlMessage2);
+#endif
         if (!Beacon_NotifyControlMessageAddr)
             Beacon_NotifyControlMessageAddr = FindPattern(_("4C 8B DC 49 89 5B 18 49 89 73 20 49 89 4B 08 55 57 41 54 41 56 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B F1"));
 

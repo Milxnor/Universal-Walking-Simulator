@@ -83,13 +83,9 @@ inline void initStuff()
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
 				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
 				// static auto Playlist = FindObject(_("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
-				static auto OnRepPlaylist = FindObject(_("Function /Script/FortniteGame.FortGameStateAthena.OnRep_CurrentPlaylistInfo"));
-
-				static auto BasePlaylistOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("BasePlaylist"));
-
 				if (std::stod(FN_Version) > 6.00)
 				{
-					OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistInfo"));
+					auto OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistInfo"));
 
 					static auto BasePlaylistOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("BasePlaylist"));
 					static auto PlaylistReplicationKeyOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("PlaylistReplicationKey"));
@@ -118,14 +114,16 @@ inline void initStuff()
 						std::cout << _("OnRepPlaylist: ") << OnRepPlaylist << '\n';
 						std::cout << _("Playlist: ") << Playlist << '\n';
 					}
+
+					gameState->ProcessEvent(OnRepPlaylist);
 				}
 				else
 				{
-					OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistData"));
-					*gameState->Member<UObject*>(_("CurrentPlaylistData")) = Playlist;
-				}
+					/*static auto OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistData"));
+					*gameState->Member<UObject*>(_("CurrentPlaylistData")) = Playlist;*/
 
-				gameState->ProcessEvent(OnRepPlaylist);
+					/*gameState->ProcessEvent(OnRepPlaylist);*/
+				}
 			}
 			else
 			{

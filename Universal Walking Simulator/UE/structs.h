@@ -966,7 +966,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ServerReplicateActorsOffset = 0x54;
 	else if (Engine_Version == 421 || (Engine_Version == 422 || Engine_Version == 423))
 		ServerReplicateActorsOffset = 0x56;
-	if (FnVerDouble == 7.40 || FnVerDouble < 8.40)
+	if (FnVerDouble >= 7.40 && FnVerDouble < 8.40)
 		ServerReplicateActorsOffset = 0x57;
 	if (Engine_Version == 424)
 		ServerReplicateActorsOffset = 0x5A;
