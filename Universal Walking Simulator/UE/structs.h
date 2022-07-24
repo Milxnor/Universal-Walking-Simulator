@@ -422,6 +422,12 @@ static ReturnType* StaticFindObject(const std::string& str)
 }
 
 template <typename ReturnType = UObject>
+static ReturnType* GetByIndex(int Index)
+{
+	return ObjObjects ? ObjObjects->GetObjectById(Index) : OldObjects->GetObjectById(Index);
+}
+
+template <typename ReturnType = UObject>
 static ReturnType* FindObjectOld(const std::string& str, bool bIsEqual = false, bool bIsName = false)
 {
 	if (bIsName) bIsEqual = true;
@@ -1264,9 +1270,13 @@ public:
 };
 
 template<class T, class TWeakObjectPtrBase = FWeakObjectPtr>
-struct TWeakObjectPtr : public TWeakObjectPtrBase
+struct TWeakObjectPtr : public FWeakObjectPtr
 {
 public:
+
+	inline T* Get() {
+		return GetByIndex<T>(ObjectIndex);
+	}
 };
 
 template<typename TObjectID>

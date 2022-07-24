@@ -116,10 +116,11 @@ namespace Helper
 
 	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true)
 	{
+		static UObject* EffectClass = FindObject("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C");
 		static UObject* PickupClass = FindObject(_("Class /Script/FortniteGame.FortPickupAthena"));
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location);
-
+		auto Effect = Easy::SpawnActor(EffectClass, Location);
 		if (Pickup && Definition)
 		{
 			auto ItemEntry = Pickup->Member<void>(_("PrimaryPickupItemEntry"));
@@ -130,6 +131,10 @@ namespace Helper
 
 			if (ItemEntry && OnRep_PrimaryPickupItemEntry)
 			{
+				auto PEBP = Pickup->Member<TWeakObjectPtr<UObject>>("PickupEffectBlueprint")->Get();
+				PEBP = Effect;
+				Effect->ProcessEvent("OnAttached");
+				*Pickup->Member<UObject*>("PrimaryPickupDummyItem") = Definition;
 				*(int*)(__int64(ItemEntry) + CountOffset) = Count;
 				*(UObject**)(__int64(ItemEntry) + ItemDefOffset) = Definition;
 

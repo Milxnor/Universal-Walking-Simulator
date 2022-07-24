@@ -391,7 +391,7 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
 			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
 		}
-		else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
+		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
@@ -564,7 +564,7 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
 			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
+		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
