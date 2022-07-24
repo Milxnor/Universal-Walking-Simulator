@@ -67,7 +67,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>Project Reboot VPa</TargetName>
+    <TargetName>Project Reboot VPS</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -195,12 +195,13 @@
     <ClInclude Include="Gameplay\inventory.h" />
     <ClInclude Include="gui.h" />
     <ClInclude Include="Gameplay\loot.h" />
+    <ClInclude Include="Gameplay\harvesting.h" />
     <ClInclude Include="patterns.h" />
     <ClInclude Include="Net\funcs.h" />
     <ClInclude Include="hooks.h" />
     <ClInclude Include="Net\nethooks.h" />
     <ClInclude Include="Net\server.h" />
-    <ClInclude Include="player.h" />
+    <ClInclude Include="Gameplay\player.h" />
     <ClInclude Include="UE\finder.h" />
     <ClInclude Include="UE\other.h" />
     <ClInclude Include="UE\structs.h" />

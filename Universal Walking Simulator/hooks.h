@@ -12,7 +12,7 @@
 #include <Gameplay/events.h>
 
 #include <mutex>
-#include "player.h"
+#include <Gameplay/player.h>
 
 // #define LOGGING
 

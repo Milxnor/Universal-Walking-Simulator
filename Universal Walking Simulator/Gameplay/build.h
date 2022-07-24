@@ -10,6 +10,17 @@
 
 std::vector<UObject*> ExistingBuildings;
 
+struct IsDestroyedBitField {
+	unsigned char                                      bSurpressHealthBar : 1;                                   // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
+	unsigned char                                      bCreateVerboseHealthLogs : 1;                             // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
+	unsigned char                                      bIsIndestructibleForTargetSelection : 1;                  // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
+	unsigned char                                      bDestroyed : 1;                                           // 0x0541(0x0001) (BlueprintVisible, BlueprintReadOnly, Net, Transient)
+	unsigned char                                      bPersistToWorld : 1;                                      // 0x0541(0x0001) (Edit, DisableEditOnInstance)
+	unsigned char                                      bRefreshFullSaveDataBeforeZoneSave : 1;                   // 0x0541(0x0001) (Edit, DisableEditOnInstance)
+	unsigned char                                      bBeingDragged : 1;                                        // 0x0541(0x0001) (Transient)
+	unsigned char                                      bRotateInPlaceGame : 1;                                   // 0x0541(0x0001)
+};
+
 bool CanBuild(UObject* BuildingActor)
 {
 	if (!BuildingActor)
@@ -17,10 +28,16 @@ bool CanBuild(UObject* BuildingActor)
 
 	bool bCanBuild = true;
 
-	for (auto Building : ExistingBuildings)
+	for (int i = 0; i < ExistingBuildings.size(); i++)// (const auto Building : ExistingBuildings)
 	{
+		auto Building = ExistingBuildings[i];
+
 		if (!Building)
 			continue;
+
+		// TODO: Test the code below!
+		if (Building->Member<IsDestroyedBitField>(_("bDestroyed"))->bDestroyed)
+			ExistingBuildings.erase(ExistingBuildings.begin() + i);
 
 		if ((Helper::GetActorLocation(Building) == Helper::GetActorLocation(BuildingActor)) &&
 			(*Building->Member<EFortBuildingType>(_("BuildingType")) == *BuildingActor->Member<EFortBuildingType>(_("BuildingType"))))
@@ -197,7 +214,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 						if (BuildingActor)
 						{
-							if (true) // CanBuild(BuildingActor)) // && Helper::IsStructurallySupported(BuildingActor))
+							if (CanBuild(BuildingActor)) // && Helper::IsStructurallySupported(BuildingActor))
 							{
 								Helper::InitializeBuildingActor(Controller, BuildingActor, true);
 								bSuccessful = true;
@@ -285,18 +302,7 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 
 		if (BuildingActor && NewBuildingClass)
 		{
-			struct Bitfield {
-				unsigned char                                      bSurpressHealthBar : 1;                                   // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
-				unsigned char                                      bCreateVerboseHealthLogs : 1;                             // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
-				unsigned char                                      bIsIndestructibleForTargetSelection : 1;                  // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
-				unsigned char                                      bDestroyed : 1;                                           // 0x0541(0x0001) (BlueprintVisible, BlueprintReadOnly, Net, Transient)
-				unsigned char                                      bPersistToWorld : 1;                                      // 0x0541(0x0001) (Edit, DisableEditOnInstance)
-				unsigned char                                      bRefreshFullSaveDataBeforeZoneSave : 1;                   // 0x0541(0x0001) (Edit, DisableEditOnInstance)
-				unsigned char                                      bBeingDragged : 1;                                        // 0x0541(0x0001) (Transient)
-				unsigned char                                      bRotateInPlaceGame : 1;                                   // 0x0541(0x0001)
-			};
-
-			Bitfield* BitField = Params->BuildingActorToEdit->Member<Bitfield>(_("bDestroyed"));
+			IsDestroyedBitField* BitField = Params->BuildingActorToEdit->Member<IsDestroyedBitField>(_("bDestroyed"));
 
 			if (BitField && BitField->bDestroyed)
 				return false;

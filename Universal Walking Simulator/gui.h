@@ -421,12 +421,6 @@ DWORD WINAPI GuiThread(LPVOID)
 		ImGui_ImplDX9_NewFrame();
 
 		static int Tab = 1;
-		static float currentFOV = 80;
-		static float FOV = 80;
-		static char WID[60] = {};
-		static bool bConsoleIsOpen = false;
-		static char headPath[MAX_PATH] = "";
-		static char bodyPath[MAX_PATH] = "";
 
 		ImGui::Begin("Reboot", nullptr, ImVec2(600, 400), 1.0f, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		{
@@ -444,7 +438,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						*gameState->Member<float>(_("AircraftStartTime")) = 10.0f;
 						*gameState->Member<float>(_("WarmupCountdownEndTime")) = 5.0f;
 					}
-					std::cout << _("Aircraft will start too!\n");
+					std::cout << _("Aircraft will start!\n");
 					/* FString StartAircraftCmd;
 					StartAircraftCmd.Set(L"startaircraft");
 
@@ -453,6 +447,23 @@ DWORD WINAPI GuiThread(LPVOID)
 					std::cout << _("Started aircraft!\n"); */
 				}
 			}
+
+			/* if (ImGui::Button(_("Clear all Buildings")))
+			{
+				static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
+
+				auto Buildings = Helper::GetAllActorsOfClass(BuildingSMActorClass);
+
+				for (int i = 0; i < Buildings.Num(); i++)
+				{
+					auto Building = Buildings.At(i);
+
+					if (Building)
+						Helper::DestroyActor(Building);
+				}
+				
+				std::cout << _("Destroyed all Buildings!\n");
+			} */
 
 			if (ImGui::Button(_("Fill vending machiees")))
 			{

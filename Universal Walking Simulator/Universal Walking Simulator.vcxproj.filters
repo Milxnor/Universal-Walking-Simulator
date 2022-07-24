@@ -130,7 +130,10 @@
     <ClInclude Include="discord.h">
       <Filter>Header Files\Other</Filter>
     </ClInclude>
-    <ClInclude Include="player.h">
+    <ClInclude Include="Gameplay\player.h">
+      <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="Gameplay\harvesting.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
   </ItemGroup>

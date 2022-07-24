@@ -554,6 +554,11 @@ UObject* __fastcall CreateNetDriver_LocalDetour(UObject* Engine, __int64 a2, FNa
 
 __int64 CollectGarbageDetour(__int64) { return 0; }
 
+bool TryCollectGarbageHook()
+{
+    return 0;
+}
+
 void InitializeNetHooks()
 {
     static const auto FnVerDouble = std::stod(FN_Version);
@@ -595,8 +600,16 @@ void InitializeNetHooks()
 
         if (CollectGarbageAddr)
         {
-            MH_CreateHook((PVOID)CollectGarbageAddr, CollectGarbageDetour, (void**)&CollectGarbage);
-            MH_EnableHook((PVOID)CollectGarbageAddr);
+            if (Engine_Version >= 422)
+            {
+                MH_CreateHook((PVOID)CollectGarbageAddr, TryCollectGarbageHook, nullptr);
+                MH_EnableHook((PVOID)CollectGarbageAddr);
+            }
+            else
+            {
+                MH_CreateHook((PVOID)CollectGarbageAddr, CollectGarbageDetour, (void**)&CollectGarbage);
+                MH_EnableHook((PVOID)CollectGarbageAddr);
+            }
         }
         else
             std::cout << _("[WARNING] Unable to hook CollectGarbage!\n");

@@ -949,7 +949,7 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // n
 
 		if (ItemEntry)
 		{
-			if (*FFortItemEntry::GetCount(ItemEntry) <= 0)
+			if (*FFortItemEntry::GetCount(ItemEntry) <= 0) // Destroy the item if it has no count
 			{
 				Inventory::RemoveItem(PlayerController, *FFortItemEntry::GetGuid(ItemEntry));
 			}

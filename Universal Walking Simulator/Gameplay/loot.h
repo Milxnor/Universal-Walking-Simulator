@@ -22,16 +22,16 @@ namespace Looting
 
 			auto Random = distr(gen);
 
-			if (Random <= 35)
+			if (Random <= 50)
 				return 0;
 
-			if (Random <= 60)
+			if (Random <= 75)
 				return 1;
 
-			if (Random <= 80)
+			if (Random <= 90)
 				return 2;
 
-			if (Random <= 95)
+			if (Random <= 97)
 				return 3;
 
 			if (Random <= 100)
@@ -353,7 +353,7 @@ namespace Looting
 							if (auto Consumable = Tables::GetConsumableDef())
 							{
 								try {
-									Helper::SummonPickup(nullptr, Consumable, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, *Consumable->Member<int>(_("DropCount")));
+									Helper::SummonPickup(nullptr, Consumable, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, 1); // *Consumable->Member<int>(_("DropCount")));
 								}
 								catch (...)
 								{

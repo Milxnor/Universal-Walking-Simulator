@@ -10,6 +10,7 @@
 #include <hooks.h>
 #include <Gameplay/abilities.h>
 #include <Gameplay/build.h>
+#include <Gameplay/harvesting.h>
 
 void InitializePatterns()
 {
@@ -47,7 +48,11 @@ void InitializePatterns()
     LP_SpawnPlayActorAddr = FindPattern(Patterns::LocalPlayerSpawnPlayActor);
     CheckPattern(_("LocalPlayer::SpawnPlayActor"), LP_SpawnPlayActorAddr, &LP_SpawnPlayActor);
 
-    // CollectGarbage = decltype(CollectGarbage)(FindPattern(Patterns::CollectGarbage));
+    CollectGarbageAddr = FindPattern(Patterns::CollectGarbage);
+    if (!CollectGarbageAddr)
+        std::cout << _("[WARNING] Could not find CollectGarbage! Probably going to crash down the line.\n");
+    else
+        CollectGarbage = decltype(CollectGarbage)(CollectGarbageAddr);
 
     InitListenAddr = FindPattern(Patterns::InitListen);
     CheckPattern(_("InitListen"), InitListenAddr, &InitListen);
@@ -93,12 +98,6 @@ void InitializePatterns()
 
     NetDebugAddr = FindPattern(Patterns::NetDebug);
     CheckPattern(_("NetDebug"), NetDebugAddr, &NetDebug);
-
-    if (Engine_Version == 420)
-    {
-        CollectGarbageAddr = FindPattern(Patterns::CollectGarbage); //, true, 1);
-        CheckPattern(_("CollectGarbage"), CollectGarbageAddr, &CollectGarbage);
-    }
 
     // if (Engine_Version != 421)
     {
@@ -295,6 +294,7 @@ DWORD WINAPI Main(LPVOID)
 
     InitializeInventoryHooks();
     InitializeBuildHooks();
+    InitializeHarvestingHooks();
 
     FinishInitializeUHooks();
 
