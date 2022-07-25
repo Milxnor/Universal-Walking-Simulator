@@ -18,7 +18,7 @@ void InitializePatterns()
 
     static auto ReallocAddr = FindPattern(Patterns::Realloc);
     // FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddr); // we don't need this I think
-    CheckPattern(_("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
+    //CheckPattern(_("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
 
     static auto StaticFindObjectAddr = FindPattern(Patterns::StaticFindObject);
 
@@ -46,7 +46,7 @@ void InitializePatterns()
     }
 
     LP_SpawnPlayActorAddr = FindPattern(Patterns::LocalPlayerSpawnPlayActor);
-    CheckPattern(_("LocalPlayer::SpawnPlayActor"), LP_SpawnPlayActorAddr, &LP_SpawnPlayActor);
+    //CheckPattern(_("LocalPlayer::SpawnPlayActor"), LP_SpawnPlayActorAddr, &LP_SpawnPlayActor);
 
     CollectGarbageAddr = FindPattern(Patterns::CollectGarbage);
     if (!CollectGarbageAddr)

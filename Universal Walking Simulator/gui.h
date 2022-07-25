@@ -536,6 +536,10 @@ DWORD WINAPI GuiThread(LPVOID)
 
 				std::cout << _("Spawn Plane at spawn");
 			}*/
+
+			if (ImGui::Button("Dump Objects (Objects.txt)")) {
+				Helper::DumpObjects();
+			}
 		}
 
 		// Rendering

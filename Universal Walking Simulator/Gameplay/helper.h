@@ -1,5 +1,8 @@
 #pragma once
 
+#include <iostream>
+#include <ostream>
+#include <fstream>
 #include <UE/structs.h>
 #include <Net/funcs.h>
 
@@ -48,6 +51,20 @@ namespace Easy
 
 namespace Helper
 {
+	void DumpObjects() {
+		std::ofstream file("Objects.txt");
+		for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
+		{
+			auto Object = ObjObjects ? ObjObjects->GetObjectById(i) : OldObjects->GetObjectById(i);
+
+			if (!Object) continue;
+
+			auto ObjectName = Object->GetFullName();
+
+			file << ObjectName << "\n";
+		}
+	}
+
 	UObject* GetWorld()
 	{
 		return GetWorldW();

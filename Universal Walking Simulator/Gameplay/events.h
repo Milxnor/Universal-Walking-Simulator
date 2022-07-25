@@ -22,6 +22,13 @@ namespace Events {
 				bool Condition = true;
 				CD->ProcessEvent(Func, &Condition);
 			}
+			if (Version == 7.20f) {
+				UObject* ML = FindObject("BP_MooneyLoader_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_MooneyLoader_2");
+				UObject* Func = ML->Function("LoadSequence");
+				UObject* Func2 = ML->Function("LoadMap");
+				ML->ProcessEvent(Func2);
+				ML->ProcessEvent(Func);
+			}
 			if (Version == 6.21f) {
 				UObject* BF = FindObject("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4");
 				UObject* Func = BF->Function("LoadButterflySublevel");
@@ -64,7 +71,9 @@ namespace Events {
 				FS->ProcessEvent(Func);
 			}
 			else if (Version == 7.20f) {
-				std::cout << _("Event not yet implemented!\n");
+				UObject* MS = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/S7/MooneySequenceMap.MooneySequenceMap.PersistentLevel.MooneySequence.AnimationPlayer");
+				UObject* Func = MS->Function("Play");
+				MS->ProcessEvent(Func);
 			}
 			else if (Version == 6.21f) {
 				UObject* BF = FindObject("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4");
