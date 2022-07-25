@@ -26,7 +26,7 @@ namespace Patterns
     constexpr const char* ReceiveFString = "40 55 53 56 57 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 0F B6 41 28";
     constexpr const char* ReceiveUniqueIdRepl = "48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9 0F 84 ? ? ? ? F6 41 2B 02";
 
-    //4.5
+    //S4 Fixed Patterns (Tested on 4.5)
     constexpr const char* TickFlush2 = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 48 8D 05 ? ? ? ? 49 89 73 F0 33 F6 40 38 35 ? ? ? ? 49 89 7B E8 48 8B F9 48 0F 45 C6";
     constexpr const char* World_NotifyControlMessage2 = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 F6 49 8B D9";
     constexpr const char* SpawnPlayActor2 = "48 8B C4 44 89 40 18 48 89 50 10 48 89 48 08 55 56 48 8D 68 B9 48 81 EC ? ? ? ?";

@@ -145,8 +145,8 @@ namespace Inventory
 				if (Weapon)
 				{
 					Helper::SetOwner(Weapon, Pawn);
-					*Weapon->Member<UObject*>(_("WeaponData")) = Definition;
-					EquipWeapon(Pawn, Weapon, Guid, Ammo);
+					//*Weapon->Member<UObject*>(_("WeaponData")) = Definition;
+					//EquipWeapon(Pawn, Weapon, Guid, Ammo);
 					return Weapon;
 				}
 				else
@@ -210,14 +210,15 @@ namespace Inventory
 			if (GetItemGuid(CurrentItemInstance) == Guid)
 			{
 				auto Def = GetItemDefinition(CurrentItemInstance);
-				if (Def != nullptr) {
+				/*if (Def != nullptr) {
 					if (std::stof(FN_Version) >= 7.40) {
 						return EquipWeaponDefinition(Pawn, Def, Guid);
 					}
 					else {
 						EquipWeapon(Pawn, Def, Guid);
 					}
-				}
+				}*/
+				EquipWeaponDefinition(Pawn, Def, Guid);
 			}
 		}
 
