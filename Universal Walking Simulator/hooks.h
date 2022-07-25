@@ -65,8 +65,11 @@ inline void initStuff()
 			{
 				AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartPlay")), nullptr);
 
-				AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartMatch")), nullptr);
+				auto FNVer = std::stod(FN_Version);
 
+				if (FNVer < 4.0 || FNVer >= 8.0) {
+					AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartMatch")), nullptr);
+				}
 				// *AuthGameMode->Member<bool>(_("bAlwaysDBNO")) = true;
 
 				// Is this correct?
@@ -81,9 +84,9 @@ inline void initStuff()
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
-				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
+				 static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
 				// static auto Playlist = FindObject(_("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
-				if (std::stod(FN_Version) > 6.00)
+				if (std::stod(FN_Version) > 7.00)
 				{
 					auto OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistInfo"));
 
@@ -119,10 +122,15 @@ inline void initStuff()
 				}
 				else
 				{
-					/*static auto OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistData"));
-					*gameState->Member<UObject*>(_("CurrentPlaylistData")) = Playlist;*/
+					if (Playlist) {
+						static auto OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistData"));
+						*gameState->Member<UObject*>(_("CurrentPlaylistData")) = Playlist;
 
-					/*gameState->ProcessEvent(OnRepPlaylist);*/
+						gameState->ProcessEvent(OnRepPlaylist);
+					}
+					else {
+						std::cout << _("Playlist is NULL") << '\n';
+					}
 				}
 			}
 			else
