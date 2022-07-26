@@ -82,23 +82,14 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     // Attempt to activate the ability (server side) and tell the client if it succeeded or failed.
 
-    if (InternalTryActivateAbility(ASC, Handle, PredictionKey, &InstancedAbility, nullptr, TriggerEventData))
-    {
-        // TryActivateAbility handles notifying the client of success
-    }
-    else
+    if (!InternalTryActivateAbility(ASC, Handle, PredictionKey, &InstancedAbility, nullptr, TriggerEventData))
     {
         auto InternalTryActivateAbilityFailureTags = ASC->Member<FGameplayTagContainer>(_("ClientDebugStrings"), sizeof(FGameplayTagContainer));
         std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed: {}\n", Spec->Ability->GetName(), InternalTryActivateAbilityFailureTags->ToStringSimple(true));
         Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, PredictionKey.Current);
         Spec->InputPressed = false;
+        ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkItemDirty(Spec);
     }
-
-    ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkArrayDirty();
-    // ASC->Member< FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkItemDirty(*Spec);
-    
-    // MarkAbilitySpecDirtyNew(ASC, *Spec, true);
-    // MarkAbilitySpecDirtyNew(ASC, *Spec, false);
 }
 
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
@@ -202,17 +193,33 @@ inline bool ServerTryActivateAbilityWithEventDataHook(UObject* AbilitySystemComp
     return false;
 }
 
+// BY ANDROID THANKS FIXES ABILITIES
+
+bool (*o_CanActivateAbility)(UObject* GameplayAbility, const FGameplayAbilitySpecHandle Handle, const void* ActorInfo, const void* SourceTags, const void* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags);
+bool hk_CanActivateAbility(UObject* GameplayAbility, const FGameplayAbilitySpecHandle Handle, const void* ActorInfo, const void* SourceTags, const void* TargetTags, OUT FGameplayTagContainer* OptionalRelevantTags)
+{
+    // bool ret = o_CanActivateAbility(GameplayAbility, Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
+
+    return true;
+}
+
 void InitializeAbilityHooks()
 {
     AddHook(_("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData"), ServerTryActivateAbilityWithEventDataHook);
     AddHook(_("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch"), ServerAbilityRPCBatchHook);
     AddHook(_("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility"), ServerTryActivateAbilityHook);
+
+    if (o_CanActivateAbility)
+    {
+        MH_CreateHook((PVOID)CanActivateAbilityAddr, hk_CanActivateAbility, (void**)&o_CanActivateAbility);
+        MH_EnableHook((PVOID)CanActivateAbilityAddr);
+    }
 }
 
 template <typename actualClass>
 void AHH(const std::string& ClassName)
 {
-    static auto Class = FindObjectOld(ClassName, true);
+    static auto Class = FindObject(ClassName, true);
     if (Class)
     {
         auto SizeOfClass = GetSizeOfStruct(Class);

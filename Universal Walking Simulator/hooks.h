@@ -168,6 +168,36 @@ bool ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Functi
 	return false;
 }
 
+bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* Parameters) // FortAthenaVehicle
+{
+	if (Vehicle && Parameters)
+	{
+		/* struct parms { __int64 InState; };
+		auto Params = (parms*)Parameters;
+
+		auto TranslationOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), _("Translation"));
+		auto Translation = (FVector*)(__int64(&Params->InState) + TranslationOffset);
+
+		std::cout << _("TranslationOffset: ") << TranslationOffset << '\n';
+
+		auto RotationOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), _("Rotation"));
+		auto Rotation = (FQuat*)(__int64(&Params->InState) + RotationOffset);
+
+		if (Translation && Rotation)
+		{
+			std::cout << _("X: ") << Translation->X << '\n';
+			std::cout << _("Y: ") << Translation->Y << '\n';
+			std::cout << _("Z: ") << Translation->Z << '\n';
+
+			// Helper::SetActorLocation(Vehicle, *Translation);
+			auto rot = Rotation->Rotator();
+			Helper::SetActorLocationAndRotation(Vehicle, *Translation, rot);
+		} */
+	}
+
+	return false;
+}
+
 bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
 	struct Param{
@@ -680,6 +710,7 @@ void FinishInitializeUHooks()
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
+	AddHook(_("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);
 
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 

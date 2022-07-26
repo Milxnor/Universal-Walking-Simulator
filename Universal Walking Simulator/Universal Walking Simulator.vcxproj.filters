@@ -24,9 +24,6 @@
     <Filter Include="Vendor\ImGUI">
       <UniqueIdentifier>{f7bb66c3-c92f-485f-b853-ff35c1ca77fb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Vendor\VPSImGui">
-      <UniqueIdentifier>{2c9f547a-6b82-46f1-b996-c771811bd710}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Other">
       <UniqueIdentifier>{4d642d8c-0240-4ee6-948c-9333811baadd}</UniqueIdentifier>
     </Filter>
@@ -67,18 +64,6 @@
     </ClCompile>
     <ClCompile Include="..\vendor\Kiero\kiero.cpp">
       <Filter>Vendor</Filter>
-    </ClCompile>
-    <ClCompile Include="..\vendor\VPSImGui\imgui.cpp">
-      <Filter>Vendor\VPSImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\vendor\VPSImGui\imgui_demo.cpp">
-      <Filter>Vendor\VPSImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\vendor\VPSImGui\imgui_draw.cpp">
-      <Filter>Vendor\VPSImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\vendor\VPSImGui\imgui_impl_dx9.cpp">
-      <Filter>Vendor\VPSImGui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -135,6 +120,15 @@
     </ClInclude>
     <ClInclude Include="Gameplay\harvesting.h">
       <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="replication.h">
+      <Filter>Header Files\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="anticheat.h">
+      <Filter>Header Files\Other</Filter>
+    </ClInclude>
+    <ClInclude Include="fontawesome.h">
+      <Filter>Vendor\ImGUI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

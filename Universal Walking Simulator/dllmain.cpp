@@ -78,6 +78,13 @@ void InitializePatterns()
 
     WelcomePlayerAddr = FindPattern(Patterns::WelcomePlayer);
 
+    CanActivateAbilityAddr = FindPattern(Patterns::CanActivateAbility);
+
+    if (!CanActivateAbilityAddr)
+        std::cout << _("[WARNING] Abilities may fail!\n");
+    else
+        o_CanActivateAbility = decltype(o_CanActivateAbility)(CanActivateAbilityAddr);
+
     if (!WelcomePlayerAddr) // s6
     {
         WelcomePlayerAddr = FindPattern(_("48 8B C4 55 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 20 48 8B F1 48 89 78 F0 48 8B CA 4C 89 70 E8 48 8B FA"));

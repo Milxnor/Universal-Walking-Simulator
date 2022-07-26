@@ -371,6 +371,11 @@ struct FFixedUObjectArray
 	{
 		return Objects[Index].Object;
 	}
+
+	INL FUObjectItem* GetItemById(int32_t Index) const
+	{
+		return &Objects[Index];
+	}
 };
 
 struct FChunkedFixedUObjectArray // https://github.com/EpicGames/UnrealEngine/blob/7acbae1c8d1736bb5a0da4f6ed21ccb237bc8851/Engine/Source/Runtime/CoreUObject/Public/UObject/UObjectArray.h#L321
@@ -406,6 +411,22 @@ struct FChunkedFixedUObjectArray // https://github.com/EpicGames/UnrealEngine/bl
 
 		return obj;
 	}
+
+	INL FUObjectItem* GetItemById(int32_t Index) const
+	{
+		if (Index > NumElements || Index < 0) return nullptr;
+
+		const int32_t ChunkIndex = Index / NumElementsPerChunk;
+		const int32_t WithinChunkIndex = Index % NumElementsPerChunk;
+
+		if (ChunkIndex > NumChunks) return nullptr;
+		FUObjectItem* Chunk = Objects[ChunkIndex];
+		if (!Chunk) return nullptr;
+
+		auto obj = (Chunk + WithinChunkIndex);
+
+		return obj;
+	}
 };
 
 static UObject* (*StaticFindObjectO)(
@@ -424,7 +445,7 @@ static ReturnType* StaticFindObject(const std::string& str)
 template <typename ReturnType = UObject>
 static ReturnType* GetByIndex(int Index)
 {
-	return ObjObjects ? ObjObjects->GetObjectById(Index) : OldObjects->GetObjectById(Index);
+	return (ReturnType*)(ObjObjects ? ObjObjects->GetObjectById(Index) : OldObjects->GetObjectById(Index));
 }
 
 template <typename ReturnType = UObject>
@@ -1303,6 +1324,11 @@ class TSoftObjectPtr : FSoftObjectPtr
 {
 
 };
+
+auto GetSerialNumber(UObject* Object)
+{
+	return (ObjObjects ? ObjObjects->GetItemById(Object->InternalIndex) : OldObjects->GetItemById(Object->InternalIndex))->SerialNumber;
+}
 
 namespace EAbilityGenericReplicatedEvent
 {

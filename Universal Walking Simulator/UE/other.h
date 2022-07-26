@@ -1,6 +1,9 @@
 #include <Windows.h>
 #include <vector>
 #include <string>
+#define _USE_MATH_DEFINES
+
+#include <math.h>
 #include <random>
 
 struct FVector
@@ -23,12 +26,87 @@ struct FVector
 	}
 };
 
+struct FRotator
+{
+	float Pitch;
+	float Yaw;
+	float Roll;
+
+	static __forceinline float ClampAxis(float Angle)
+	{
+		// returns Angle in the range (-360,360)
+		Angle = fmod(Angle, 360.f);
+
+		if (Angle < 0.f)
+		{
+			// shift to [0,360) range
+			Angle += 360.f;
+		}
+
+		return Angle;
+	}
+
+	static __forceinline float NormalizeAxis(float Angle)
+	{
+		// returns Angle in the range [0,360)
+		Angle = ClampAxis(Angle);
+
+		if (Angle > 180.f)
+		{
+			// shift to (-180,180]
+			Angle -= 360.f;
+		}
+
+		return Angle;
+	}
+};
+
 struct FQuat
 {
 	float X;
 	float Y;
 	float Z;
 	float W;
+
+	FRotator Rotator() const
+	{
+		// DiagnosticCheckNaN();
+		const float SingularityTest = Z * X - W * Y;
+		const float YawY = 2.f * (W * Z + X * Y);
+		const float YawX = (1.f - 2.f * ((Y * Y) + (Z * Z)));
+
+		// reference 
+		// http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+		// http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
+
+		// this value was found from experience, the above websites recommend different values
+		// but that isn't the case for us, so I went through different testing, and finally found the case 
+		// where both of world lives happily. 
+		const float SINGULARITY_THRESHOLD = 0.4999995f;
+		const float RAD_TO_DEG = (180.f) / M_PI;
+		FRotator RotatorFromQuat;
+
+		if (SingularityTest < -SINGULARITY_THRESHOLD)
+		{
+			RotatorFromQuat.Pitch = -90.f;
+			RotatorFromQuat.Yaw = atan2(YawY, YawX) * RAD_TO_DEG;
+			RotatorFromQuat.Roll = FRotator::NormalizeAxis(-RotatorFromQuat.Yaw - (2.f * atan2(X, W) * RAD_TO_DEG));
+		}
+		else if (SingularityTest > SINGULARITY_THRESHOLD)
+		{
+			RotatorFromQuat.Pitch = 90.f;
+			RotatorFromQuat.Yaw = atan2(YawY, YawX) * RAD_TO_DEG;
+			RotatorFromQuat.Roll = FRotator::NormalizeAxis(RotatorFromQuat.Yaw - (2.f * atan2(X, W) * RAD_TO_DEG));
+		}
+		else
+		{
+			RotatorFromQuat.Pitch = asin(2.f * (SingularityTest)) * RAD_TO_DEG;
+			RotatorFromQuat.Yaw = atan2(YawY, YawX) * RAD_TO_DEG;
+			RotatorFromQuat.Roll = atan2(-2.f * (W * X + Y * Z), (1.f - 2.f * ((X * X) + (Y * Y)))) * RAD_TO_DEG;
+		}
+
+		return RotatorFromQuat;
+	}
 };
 
 enum class EFortResourceType : uint8_t
@@ -48,13 +126,6 @@ struct FTransform // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12
 	char pad_1C[0x4]; // Padding never changes
 	FVector Scale3D;
 	char pad_2C[0x4];
-};
-
-struct FRotator
-{
-	float Pitch;
-	float Yaw;
-	float Roll;
 };
 
 template<class TEnum>

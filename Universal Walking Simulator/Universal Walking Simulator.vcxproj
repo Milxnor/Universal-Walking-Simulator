@@ -140,54 +140,66 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\vendor\ImGui\imgui.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_demo.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_draw.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_impl_dx10.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_impl_dx11.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_impl_dx12.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_impl_dx9.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_impl_win32.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_tables.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_widgets.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\vendor\Kiero\kiero.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\vendor\VPSImGui\imgui.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\vendor\VPSImGui\imgui_demo.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\vendor\VPSImGui\imgui_draw.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\vendor\VPSImGui\imgui_impl_dx9.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="anticheat.h" />
     <ClInclude Include="discord.h" />
+    <ClInclude Include="fontawesome.h" />
     <ClInclude Include="Gameplay\build.h" />
     <ClInclude Include="Gameplay\abilities.h" />
     <ClInclude Include="Gameplay\events.h" />
@@ -202,6 +214,7 @@
     <ClInclude Include="Net\nethooks.h" />
     <ClInclude Include="Net\server.h" />
     <ClInclude Include="Gameplay\player.h" />
+    <ClInclude Include="replication.h" />
     <ClInclude Include="UE\finder.h" />
     <ClInclude Include="UE\other.h" />
     <ClInclude Include="UE\structs.h" />

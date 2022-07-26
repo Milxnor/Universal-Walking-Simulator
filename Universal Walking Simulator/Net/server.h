@@ -111,7 +111,7 @@ void Listen(int Port = 7777)
         std::cout << _("No NetDriver!\n");
 
     if (ReplicationDriver)
-        ServerReplicateActors = decltype(ServerReplicateActors)(ReplicationDriver->VFTable[ServerReplicateActorsOffset]);
+        RepGraph_ServerReplicateActors = decltype(RepGraph_ServerReplicateActors)(ReplicationDriver->VFTable[ServerReplicateActorsOffset]);
     else
         std::cout << dye::red(_("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
 

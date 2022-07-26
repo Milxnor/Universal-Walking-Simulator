@@ -779,7 +779,11 @@ inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Funct
 		auto Pawn = Controller->Member<UObject*>(_("Pawn"));
 
 		if (Pawn && *Pawn)
-			Helper::SummonPickup(*Pawn, Definition, Helper::GetActorLocation(*Pawn), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count);
+		{
+			auto loc = Helper::GetActorLocation(*Pawn);
+
+			auto Pickup = Helper::SummonPickup(*Pawn, Definition, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count);
+		}
 	}
 
 	return false;
@@ -816,17 +820,46 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 				auto Definition = (UObject**)(__int64(&*PrimaryPickupItemEntry) + ItemDefinitionOffset);
 				auto Count = (int*)(__int64(&*PrimaryPickupItemEntry) + CountOffset);
 
-				std::cout << "Def: " << Definition << '\n';
-				std::cout << "ItemDefOffset: " << ItemDefinitionOffset << '\n';
-
 				if (Controller && *Controller)
 				{
 					if (Definition && *Definition && Count)
 					{
-						std::cout << _("Def Deref: ") << *Definition << '\n';
-						std::cout << _("Def: ") << (*Definition)->GetFullName() << '\n';
+						static UObject* EffectClass = FindObject("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C");
 
-						std::cout << _("Num Primary Slots: ") << Inventory::GetNumQuickbarSlots(*Controller, EFortQuickBars::Primary) << '\n';
+						if (EffectClass)
+						{
+							UObject* Effect = Easy::SpawnActor(EffectClass, Helper::GetActorLocation(Pawn));
+
+							if (Effect)
+							{
+								*Effect->Member<UObject*>(_("ItemDefinition")) = *Definition;
+
+								auto PEBP = Params->Pickup->Member<TWeakObjectPtr<UObject>>("PickupEffectBlueprint");
+								PEBP->ObjectIndex = Effect->InternalIndex;
+								PEBP->ObjectSerialNumber = GetSerialNumber(Effect);
+
+								// PEBP = Effect;
+
+								static auto OnPickup = Effect->Function(_("OnPickup"));
+								// static auto OnPickup = Effect->Function(_("OnPickedUp"));
+
+								/*
+
+								void OnTossed();
+								void OnPickedUp();
+
+								*/
+
+								if (OnPickup)
+									Effect->ProcessEvent(OnPickup);
+								else
+									std::cout << _("Failed to find OnPickup!\n");
+							}
+							else
+								std::cout << _("Failed to spawn effect!\n");
+						}
+						else
+							std::cout << _("Could not find Effectclass!\n");
 
 						auto bWasAbleToStack = Inventory::IncreaseItemCount(*Controller, *Definition, *Count);
 						if (!bWasAbleToStack)

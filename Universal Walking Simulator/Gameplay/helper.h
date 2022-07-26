@@ -148,10 +148,6 @@ namespace Helper
 
 			if (ItemEntry && OnRep_PrimaryPickupItemEntry)
 			{
-				auto PEBP = Pickup->Member<TWeakObjectPtr<UObject>>("PickupEffectBlueprint")->Get();
-				PEBP = Effect;
-				Effect->ProcessEvent("OnAttached");
-				*Pickup->Member<UObject*>("PrimaryPickupDummyItem") = Definition;
 				*(int*)(__int64(ItemEntry) + CountOffset) = Count;
 				*(UObject**)(__int64(ItemEntry) + ItemDefOffset) = Definition;
 
@@ -176,7 +172,7 @@ namespace Helper
 			}
 		}
 
-		return nullptr;
+		return Pickup;
 	}
 
 	UObject* GetOwnerOfComponent(UObject* Component)
@@ -690,6 +686,44 @@ namespace Helper
 
 		if (fn)
 			BuildingActor->ProcessEvent(fn);
+	}
+
+	bool SetActorLocation(UObject* Actor, FVector& Location)
+	{
+		static auto fn = Actor->Function(_("K2_SetActorLocation"));
+
+		struct
+		{
+			FVector                                     NewLocation;                                              // (Parm, IsPlainOldData)
+			bool                                               bSweep;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+			char hitresult[0x88];
+			bool                                               bTeleport;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
+		} parms{ Location, false, 0, true };
+		if (fn)
+			Actor->ProcessEvent(fn, &parms);
+
+		return parms.ReturnValue;
+	}
+
+	bool SetActorLocationAndRotation(UObject* Actor, FVector& Location, FRotator& Rotation)
+	{
+		static auto fn = Actor->Function(_("K2_SetActorLocationAndRotation"));
+
+		struct 
+		{
+			struct FVector                                     NewLocation;                                              // (Parm, IsPlainOldData)
+			struct FRotator                                    NewRotation;                                              // (Parm, IsPlainOldData)
+			bool                                               bSweep;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+			char hitresult[0x88];
+			bool                                               bTeleport;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
+		} parms{ Location, Rotation, false, 0, true };
+
+		if (fn)
+			Actor->ProcessEvent(fn, &parms);
+
+		return parms.ReturnValue;
 	}
 
 	namespace Abilities

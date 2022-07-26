@@ -34,6 +34,7 @@ uint64_t CollectGarbageAddr = 0;
 uint64_t GetPlayerViewpointAddr = 0;
 uint64_t CreateNetDriver_LocalAddr = 0;
 uint64_t HandleReloadCostAddr = 0;
+uint64_t CanActivateAbilityAddr = 0;
 
 void(__fastcall* HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 
@@ -49,7 +50,7 @@ static void* (*SetWorld)(UObject* NetDriver, UObject* World);
 static bool (*InitListen)(UObject* Driver, void* InNotify, FURL& LocalURL, bool bReuseAddressAndPort, FString& Error);
 static void (*TickFlush)(UObject* NetDriver, float DeltaSeconds);
 
-static void (*ServerReplicateActors)(UObject* ReplicationDriver);
+static void (*RepGraph_ServerReplicateActors)(UObject* ReplicationDriver);
 
 static void (*ReceiveFString)(void* Bunch, FString& Str);
 static void (*ReceiveUniqueIdRepl)(void* Bunch, void* Str);
@@ -381,17 +382,19 @@ struct FGameplayAbilityReplicatedDataContainer
     {
         for (int i = 0; i < InUseData.Num(); i++)
         {
-            if (InUseData[i].Key().AbilityHandle.Handle == Key.AbilityHandle.Handle && InUseData[i].Key().PredictionKeyAtCreation == Key.PredictionKeyAtCreation)
             {
-                return InUseData[i].Value();
+                if (InUseData[i].Key().AbilityHandle.Handle == Key.AbilityHandle.Handle && InUseData[i].Key().PredictionKeyAtCreation == Key.PredictionKeyAtCreation)
+                {
+                    return InUseData[i].Value();
+                }
             }
         }
 
-        auto SharedPtr = TSharedPtr<FAbilityReplicatedDataCache>(new FAbilityReplicatedDataCache());
+        /* auto SharedPtr = TSharedPtr<FAbilityReplicatedDataCache>(new FAbilityReplicatedDataCache());
         TSharedRef<FAbilityReplicatedDataCache> SharedRef = SharedPtr.ToSharedRef();
         FKeyDataPair pair = FKeyDataPair(Key, SharedRef);
-        InUseData.Add(pair);
+        InUseData.Add(pair); */
 
-        return SharedRef;
+        return TSharedRef<FAbilityReplicatedDataCache>(); // SharedRef;
     }
 };

@@ -304,7 +304,7 @@ bool ImGui_ImplDX9_Init(void* hwnd, IDirect3DDevice9* device)
 	io.KeyMap[ImGuiKey_Y] = 'Y';
 	io.KeyMap[ImGuiKey_Z] = 'Z';
 
-	io.RenderDrawListsFn = ImGui_ImplDX9_RenderDrawLists;   // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
+	// io.RenderDrawListsFn = ImGui_ImplDX9_RenderDrawLists;   // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
 	io.ImeWindowHandle = g_hWnd;
 
 	return true;
@@ -313,7 +313,7 @@ bool ImGui_ImplDX9_Init(void* hwnd, IDirect3DDevice9* device)
 void ImGui_ImplDX9_Shutdown()
 {
 	ImGui_ImplDX9_InvalidateDeviceObjects();
-	ImGui::Shutdown();
+	// ImGui::Shutdown();
 	g_pd3dDevice = NULL;
 	g_hWnd = 0;
 }
