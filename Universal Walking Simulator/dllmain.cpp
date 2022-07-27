@@ -359,6 +359,9 @@ DWORD WINAPI Main(LPVOID)
     CreateThread(0, 0, Input, 0, 0, 0);
     CreateThread(0, 0, GuiThread, 0, 0, 0);
     CreateThread(0, 0, Helper::Console::Setup , 0, 0, 0);
+#ifndef DPP_DISABLED
+    CreateThread(0, 0, BotThread, 0, 0, 0);
+#endif
 
     Looting::Tables::Init(nullptr);
     SetConsoleTitleA(_("Project Reboot Server"));

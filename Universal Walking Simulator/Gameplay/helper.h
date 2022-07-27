@@ -478,7 +478,7 @@ namespace Helper
 
 	static std::string GetPlayerName(UObject* PlayerState)
 	{
-		FString Name;
+		FString Name; // = *PlayerState->Member<FString>(_("PlayerNamePrivate"));
 
 		if (PlayerState)
 		{
@@ -488,7 +488,7 @@ namespace Helper
 				PlayerState->ProcessEvent(fn, &Name);
 		}
 
-		return Name.Data.GetData() ? Name.ToString() : "";
+		return Name.Data.GetData() ? Name.ToString() : "INVALID_NAME";
 	}
 
 	static std::string GetIP(UObject* PlayerState)

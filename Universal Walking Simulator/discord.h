@@ -1,16 +1,23 @@
 #pragma once
 
-// I tried using dpp, it kept crashing..
-
 #define CURL_STATICLIB
+#define DPP_DISABLED
+
+// ^ Why? You need all these dlls n stuff in your win64 in order for the dll to actually work witso.
 
 #include <string>
 #include <curl/curl.h>
 #include <iostream>
 #include <string>
 #include <UE/structs.h>
+#ifndef DPP_DISABLED
+#include <dpp/dpp.h>
+#endif
+
+#include <Gameplay/helper.h>
 
 #include <curl/curl.h>
+
 class DiscordWebhook {
 public:
     // Parameters:
@@ -77,3 +84,135 @@ void SendDiscordEnd()
 {
     HostingWebHook.send_message(std::format("Servers are down on version: {}.", FN_Version));
 }
+
+#ifndef DPP_DISABLED
+
+std::string BOT_TOKEN =                                                                                         "MTAwMTg2MjkwNTU0NjkzNjMzMA.G1TMAo.TAGjD2_B9J1JHWL0OKwOIQo6lcOs2QbT7CGQ0o";
+const std::string PREFIX = "!";
+
+bool comp(std::pair<std::string, int> a, std::pair<std::string, int> b) {
+    return a.second > b.second;
+}
+
+DWORD WINAPI BotThread(LPVOID) {
+    dpp::cluster bot(BOT_TOKEN, dpp::i_default_intents | dpp::i_message_content);
+
+    bot.on_log(dpp::utility::cout_logger());
+
+    bot.on_message_create([&](const dpp::message_create_t& event) {
+        std::string msg = event.msg.content;
+
+        msg = msg.substr(event.msg.content.find(PREFIX) + 1);
+
+        if (!event.msg.content.starts_with(PREFIX))
+            return;
+
+        if (msg == "players") {
+            std::unordered_map<std::string, int> PlayerAndKillsMap = {};
+
+            static const auto World = Helper::GetWorld();
+            auto NetDriver = *World->Member<UObject*>(_("NetDriver"));
+            auto ClientConnections = NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+
+            if (ClientConnections->Num() == 0)
+            {
+                event.reply(_("No one is connected!\n"));
+                return;
+            }
+
+            for (int i = 0; i < ClientConnections->Num(); i++)
+            {
+                auto Connection = ClientConnections->At(i);
+
+                if (!Connection)
+                    return;
+
+                auto Controller = *Connection->Member<UObject*>(_("PlayerController"));
+
+                if (Controller)
+                {
+                    auto PlayerState = *Controller->Member<UObject*>(_("PlayerState"));
+
+                    if (PlayerState)
+                    {
+                        PlayerAndKillsMap.emplace(
+                            Helper::GetPlayerName(PlayerState),
+                            *PlayerState->Member<int>(_("KillScore"))
+                        );
+                    }
+                }
+            }
+
+            std::vector<std::pair<std::string, int>> PlayerAndKills(PlayerAndKillsMap.begin(), PlayerAndKillsMap.end());
+            std::sort(PlayerAndKills.begin(), PlayerAndKills.end(), comp);
+
+            std::vector<std::string> FullPlayerLists;
+
+            for (int i = 0; i < 10; i++)
+            {
+                FullPlayerLists.push_back("");
+            }
+
+            for (int i = 0; i < PlayerAndKills.size(); i++)
+            {
+                auto& Player = PlayerAndKills[i];
+
+                FullPlayerLists[i / 10] += std::format("{} - {} Kills\n", Player.first, Player.second);
+            }
+
+            /* create the embed */
+            auto logo = "https://media.discordapp.net/attachments/998297579857137734/1001876926471880704/reboot1.png?width=675&height=675";
+            dpp::embed embed = dpp::embed().
+                set_color(dpp::colors::sti_blue).
+                set_title("Leaderboard").
+                set_url("https://projectreboot.tk//").
+                set_author("Game Leaderboard", "https://projectreboot.tk/", logo).
+                set_description(std::format("Leaderboard of all players [{}/100]", ClientConnections->Num())).
+                set_thumbnail(logo);
+
+            for (int i = 0; i < PlayerAndKills.size(); i++)
+            {
+                if (i % 10 == 0 || i == 0)
+                {
+                    embed.add_field(
+                        std::format("Players #{}", (i / 10) + 1),
+                        // 10 people until new field
+                        FullPlayerLists[i / 10]
+                    );
+                }
+            }
+            // set_image("https://dpp.dev/DPP-Logo.png").
+            embed.set_footer(dpp::embed_footer().set_text("Page 1 of 1").set_icon(logo)).
+                set_timestamp(time(0));
+
+            /* reply with the created embed */
+            bot.message_create(dpp::message(event.msg.channel_id, embed).set_reference(event.msg.id));
+        }
+        });
+
+    bot.on_slashcommand([&bot](const dpp::slashcommand_t& event) {
+        if (event.command.get_command_name() == "version") {
+            event.reply(std::format("Server is running on version: {}", FN_Version));
+        }
+        else if (event.command.get_command_name() == "status") {
+            event.reply("Up!");
+        }
+    });
+
+    bot.on_ready([&bot](const dpp::ready_t& event) {
+        if (dpp::run_once<struct register_bot_commands>()) {
+            bot.global_command_create(
+                dpp::slashcommand("version", "Tells you the current version of the server up", bot.me.id)
+            );
+            bot.global_command_create(
+                dpp::slashcommand("status", "Tells you the status of the server", bot.me.id)
+            );
+        }
+        });
+
+    bot.start(dpp::st_wait);
+
+    return 0;
+}
+
+#endif
