@@ -1,13 +1,13 @@
 #pragma once
 
-#define N_T // S2
+// #define N_T // S2
 // #define T_F // S3-S4
 // #define S_F // S5-S6
-// #define S_T // S7+
+#define S_T // S7+
 // #define F_TF // 4.24
 // #define F_FF // UE4.25
 
-#define BEFORE_SEASONEIGHT
+// #define BEFORE_SEASONEIGHT
 
 // 3.5 Patterns are from raider, some patterns are not mine.
 
@@ -102,6 +102,7 @@ namespace Patterns
     constexpr const char* GetPlayerViewpoint = "48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 50 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 D0 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB ? ? ? ? ? 75 41";
 
     // paddin
+    constexpr const char* CanActivateAbility = "4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1";
     constexpr const char* HasClientLoadedCurrentWorld = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F9 48 85 DB 74 23 E8 ? ? ? ? 48 8B 53 10 4C 8D 40 30 48 63 40 38 3B 42 38 7F 0D 48 8B C8 48 8B 42 30 4C 39 04 C8 74 17 48 8B 1D ? ? ? ? 48 85 DB";
     constexpr const char* ClientTravel = "48 83 EC 48 45 84 C9 74 0D 41 83 F8 02 75 07 66 FF 81 ? ? ? ? 48 8B 44 24 ? 0F 10 00";
     constexpr const char* CreateNetDriver = "48 89 5C 24 08 57 48 83 EC ? 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0";
@@ -135,6 +136,10 @@ namespace Patterns
     constexpr const char* GetPlayerViewpoint = "48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 38 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB ? ? ? ? ? 75 41 48 8B 03 48 8B CB";
 
     // paddin
+
+    constexpr const char* HandleReloadCost = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85";
+    constexpr const char* CanActivateAbility = "4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1";
+    constexpr const char* StaticFindObject = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 4E 48 8B 05 ? ? ? ? 48 8D 35 ? ? ? ?";
     constexpr const char* InitHost = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
     constexpr const char* PauseBeaconRequests = "40 53 48 83 EC 30 48 8B 99 ? ? ? ? 48 85 DB 0F 84 ? ? ? ? 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 41 B9";
     constexpr const char* Beacon_NotifyControlMessage = "4C 8B DC 49 89 5B 18 49 89 7B 20 49 89 4B 08";

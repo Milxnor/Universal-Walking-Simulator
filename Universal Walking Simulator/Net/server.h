@@ -8,7 +8,11 @@ static bool bListening = false;
 
 void Listen(int Port = 7777)
 {
-    bool bUseBeacons = false;//(Engine_Version >= 425) ? false : true; // CreateNetDriver ? false : true;
+    bool bUseBeacons = true;//(Engine_Version >= 425) ? false : true; // CreateNetDriver ? false : true;
+
+    if (!bUseBeacons)
+        bUseBeacons = (CreateNetDriver ? false : true);
+
     static const auto World = Helper::GetWorld();
 
     UObject* NetDriver = nullptr;
@@ -80,7 +84,7 @@ void Listen(int Port = 7777)
         std::cout << _("Called InitListen on the NetDriver!\n");
     }
 
-    if (false && SetWorld && NetDriver)
+    if (SetWorld && NetDriver)
     {
         std::cout << _("Setting!\n");
         SetWorld(NetDriver, World);

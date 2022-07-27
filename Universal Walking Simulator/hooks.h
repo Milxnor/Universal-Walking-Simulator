@@ -143,8 +143,18 @@ inline void initStuff()
 				std::cout << dye::yellow(_("[WARNING] ")) << _("Failed to find AuthorityGameMode!\n");
 			}
 
-			*gameState->Member<int>(_("PlayersLeft")) = 0;
-			gameState->ProcessEvent(_("OnRep_PlayersLeft"));
+			if (Engine_Version != 421)
+			{
+				auto PlayersLeft = gameState->Member<int>(_("PlayersLeft"));
+
+				if (PlayersLeft && *PlayersLeft)
+					*PlayersLeft = 0;
+
+				static auto OnRep_PlayersLeft = gameState->Function(_("OnRep_PlayersLeft"));
+
+				if (OnRep_PlayersLeft)
+					gameState->ProcessEvent(OnRep_PlayersLeft);
+			}
 
 			if (Helper::IsRespawnEnabled())
 			{
@@ -717,7 +727,9 @@ void FinishInitializeUHooks()
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
-	AddHook(_("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);
+
+	if (Engine_Version >= 420)
+		AddHook(_("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);
 
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 

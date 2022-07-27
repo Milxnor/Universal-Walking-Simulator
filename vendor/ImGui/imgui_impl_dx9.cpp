@@ -284,7 +284,7 @@ bool ImGui_ImplDX9_Init(void* hwnd, IDirect3DDevice9* device)
 		return false;
 
 	ImGuiIO& io = ImGui::GetIO();
-	io.KeyMap[ImGuiKey_Tab] = VK_TAB;                       // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array that we will update during the application lifetime.
+	/* io.KeyMap[ImGuiKey_Tab] = VK_TAB;                       // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array that we will update during the application lifetime.
 	io.KeyMap[ImGuiKey_LeftArrow] = VK_LEFT;
 	io.KeyMap[ImGuiKey_RightArrow] = VK_RIGHT;
 	io.KeyMap[ImGuiKey_UpArrow] = VK_UP;
@@ -302,7 +302,7 @@ bool ImGui_ImplDX9_Init(void* hwnd, IDirect3DDevice9* device)
 	io.KeyMap[ImGuiKey_V] = 'V';
 	io.KeyMap[ImGuiKey_X] = 'X';
 	io.KeyMap[ImGuiKey_Y] = 'Y';
-	io.KeyMap[ImGuiKey_Z] = 'Z';
+	io.KeyMap[ImGuiKey_Z] = 'Z'; */
 
 	// io.RenderDrawListsFn = ImGui_ImplDX9_RenderDrawLists;   // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
 	io.ImeWindowHandle = g_hWnd;
