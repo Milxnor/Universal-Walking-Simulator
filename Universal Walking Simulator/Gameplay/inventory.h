@@ -830,6 +830,8 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 				auto Definition = (UObject**)(__int64(&*PrimaryPickupItemEntry) + ItemDefinitionOffset);
 				auto Count = (int*)(__int64(&*PrimaryPickupItemEntry) + CountOffset);
 
+				UObject* Effect = nullptr;
+
 				if (Controller && *Controller)
 				{
 					if (Definition && *Definition && Count)
@@ -838,7 +840,7 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 						if (EffectClass)
 						{
-							UObject* Effect = Easy::SpawnActor(EffectClass, Helper::GetActorLocation(Pawn));
+							Effect = Easy::SpawnActor(EffectClass, Helper::GetActorLocation(Pawn));
 
 							if (Effect)
 							{
@@ -850,8 +852,11 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 								// PEBP = Effect;
 
-								static auto OnPickup = Effect->Function(_("OnPickup"));
-								// static auto OnPickup = Effect->Function(_("OnPickedUp"));
+								// static auto OnPickup = Effect->Function(_("OnPickup"));
+								static auto OnPickup = Effect->Function(_("OnPickedUp"));
+								static auto OnAboutToEnterBackpack = Effect->Function(_("OnAboutToEnterBackpack"));
+
+								struct { UObject* PickupTarget; }effparams{Pawn}; // AFortPawn
 
 								/*
 
@@ -864,6 +869,12 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 									Effect->ProcessEvent(OnPickup);
 								else
 									std::cout << _("Failed to find OnPickup!\n");
+
+
+								if (OnAboutToEnterBackpack)
+									Effect->ProcessEvent(OnAboutToEnterBackpack, &effparams);
+								else
+									std::cout << _("Failed to find OnAboutToEnterBackpack!\n");
 							}
 							else
 								std::cout << _("Failed to spawn effect!\n");
@@ -885,6 +896,9 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 				*bPickedUp = true;
 				static auto bPickedUpFn = Params->Pickup->Function(_("OnRep_bPickedUp"));
 				Params->Pickup->ProcessEvent(bPickedUpFn);
+
+				if (Effect)
+					Helper::DestroyActor(Effect);
 			}
 		}
 	}

@@ -100,7 +100,7 @@
     <ClInclude Include="Gameplay\harvesting.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
-    <ClInclude Include="replication.h">
+    <ClInclude Include="Net\replication.h">
       <Filter>Header Files\Net</Filter>
     </ClInclude>
     <ClInclude Include="anticheat.h">

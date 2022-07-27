@@ -267,9 +267,9 @@ namespace Looting
 							// So this is equal to Array[1] + OutputItemOffset, but since the array is __int64, it doesn't calcuate it properly so we have to implement it ourselves
 							std::cout << __int64(&ItemCollections->At(0).OutputItem) << '\n';
 							std::cout << __int64(&*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)) + OutputItemOffset)) << '\n';
-							*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)) + OutputItemOffset) = Looting::Tables::GetWeaponDef();
-							*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 1)) + OutputItemOffset) = Looting::Tables::GetWeaponDef();
-							*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 2)) + OutputItemOffset) = Looting::Tables::GetWeaponDef();
+							*(UObject**)(*(__int64*)((__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0))) + OutputItemOffset) = Looting::Tables::GetWeaponDef();
+							*(UObject**)(*(__int64*)((__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 1))) + OutputItemOffset) = Looting::Tables::GetWeaponDef();
+							*(UObject**)(*(__int64*)((__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 2))) + OutputItemOffset) = Looting::Tables::GetWeaponDef();
 							/* ItemCollections->At(0).OutputItem = Looting::Tables::GetWeaponDef();
 							ItemCollections->At(1).OutputItem = Looting::Tables::GetWeaponDef();
 							ItemCollections->At(2).OutputItem = Looting::Tables::GetWeaponDef(); */

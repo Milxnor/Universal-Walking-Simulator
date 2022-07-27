@@ -613,43 +613,52 @@ namespace Helper
 				PlayerState->ProcessEvent(OnRep_Parts, nullptr);
 		}
 
-		if (Engine_Version < 423)
+		if (false && std::stod(FN_Version) >= 7.40)
 		{
+			auto TeamIndex = *PlayerState->Member<uint8_t>(_("TeamIndex"));
+
+			*PlayerState->Member<uint8_t>(_("SquadId")) = TeamIndex;
+
+			*PlayerState->Member<ETeamMemberState>(_("TeamMemberState")) = ETeamMemberState::None;
+			*PlayerState->Member<ETeamMemberState>(_("ReplicatedTeamMemberState")) = ETeamMemberState::None;
+
+			auto PlayerTeam = PlayerState->Member<UObject*>(_("PlayerTeam"));
+
+			static auto world = Helper::GetWorld();
+			static auto gameState = *world->Member<UObject*>(_("GameState"));
+
+			*PlayerTeam = gameState->Member<TArray<UObject*>>(_("Teams"))->At(TeamIndex); // TArray<class AFortTeamInfo*>
+
+			auto PrivateInfo = (*PlayerTeam)->Member<UObject*>(_("PrivateInfo"));
+			if (PrivateInfo && *PrivateInfo)
+				*PlayerState->Member<UObject*>(_("PlayerTeamPrivate")) = *PrivateInfo;
+
 			static auto OnRepSquadIdFn = PlayerState->Function(_("OnRep_SquadId"));
-			static auto OnRepPlayerFn = PlayerState->Function(_("OnRep_PlayerTeam"));
-
-			static uint8_t TeamIndex = 3;
-			static const int SquadId = 1;
-
-			*PlayerState->Member<unsigned char>(_("SquadId")) = SquadId;
-			*PlayerState->Member<uint8_t>(_("TeamIndex")) = TeamIndex;
-
-			/*static uint8_t TeamIndex = 3;
-			static int SquadId = 1;
-			static std::vector<UObject*> Members;
-
-			*PlayerState->Member<uint8_t>(_("TeamIndex")) = TeamIndex;
-			auto PlayerTeam = *PlayerState->Member<UObject*>(_("PlayerTeam")); // AFortTeamInfo
-			*PlayerTeam->Member<uint8_t>(_("Team")) = TeamIndex;
-			*PlayerState->Member<unsigned char>(_("SquadId")) = SquadId;
-			SquadId++;
-
-			for (auto& _Member : Members)
-			{
-				PlayerTeam->Member<TArray<UObject*>>(_("TeamMembers"))->Add(_Member); // AController
-			} */
 
 			if (OnRepSquadIdFn)
 				PlayerState->ProcessEvent(OnRepSquadIdFn);
 			else
 				std::cout << _("Unable to find OnRepSquadIdFn!\n");
 
-			if (OnRepPlayerFn)
-				PlayerState->ProcessEvent(OnRepPlayerFn);
-			else
-				std::cout << _("Unable to find OnRepPlayerFn!\n");
+			if (PlayerTeam && *PlayerTeam)
+			{
+				(*PlayerTeam)->Member<TArray<UObject*>>(_("TeamMembers"))->Add(PC);
+				static auto OnRepPlayerFn = PlayerState->Function(_("OnRep_PlayerTeam"));
 
-			TeamIndex++;
+				if (OnRepPlayerFn)
+					PlayerState->ProcessEvent(OnRepPlayerFn);
+				else
+					std::cout << _("Unable to find OnRepPlayerFn!\n");
+			}
+
+			static auto OnRep_TeamIndex = PlayerState->Function(_("OnRep_TeamIndex"));
+
+			unsigned char OldVal = 0;
+
+			if (OnRep_TeamIndex)
+				PlayerState->ProcessEvent(OnRep_TeamIndex, &OldVal);
+			else
+				std::cout << _("Unable to find OnRep_TeamIndex!\n");
 		}
 
 		return Pawn;

@@ -438,6 +438,25 @@ enum class ENetDormancy : uint8_t
 	DORM_MAX = 5
 };
 
+enum class ETeamMemberState : uint8_t
+{
+	None = 0,
+	FIRST_CHAT_MESSAGE = 1,
+	NeedAmmoHeavy = 2,
+	NeedAmmoLight = 3,
+	NeedAmmoMedium = 4,
+	NeedAmmoShells = 5,
+	NeedAmmoRocket = 6,
+	ChatBubble = 7,
+	EnemySpotted = 8,
+	NeedBandages = 9,
+	NeedMaterials = 10,
+	NeedShields = 11,
+	NeedWeapon = 12,
+	LAST_CHAT_MESSAGE = 13,
+	MAX = 14
+};
+
 enum EChannelType
 {
 	CHTYPE_None = 0,  // Invalid type.

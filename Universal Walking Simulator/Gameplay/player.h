@@ -25,8 +25,15 @@ namespace Player
 		struct { float HeightAboveGround; }TeleportToSkyDiveParams{ 10000 };
 
 		auto NewPawn = Helper::InitPawn(PlayerController, false, PawnLocation);
-		// static auto TeleportToSkyDiveFn = NewPawn->Function(_("TeleportToSkyDive"));
-		// NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
+
+		if (NewPawn)
+		{
+			static auto TeleportToSkyDiveFn = NewPawn->Function(_("TeleportToSkyDive"));
+
+			if (TeleportToSkyDiveFn)
+				NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
+		}
+
 		// PlayerController->ProcessEvent(_("RespawnPlayer"));
 	}
 }

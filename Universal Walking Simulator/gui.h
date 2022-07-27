@@ -461,6 +461,11 @@ DWORD WINAPI GuiThread(LPVOID)
 				CreateThread(0, 0, Looting::Tables::FillVendingMachines, 0, 0, 0);
 			}
 
+			if (ImGui::Button(_("Spawn FloorLoot")))
+			{
+				CreateThread(0, 0, Looting::Tables::SpawnFloorLoot, 0, 0, 0);
+			}
+
 			if (Events::HasEvent()) {
 				if (ImGui::Button(_("Start Event"))) {
 					Events::StartEvent();

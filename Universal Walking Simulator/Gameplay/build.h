@@ -124,7 +124,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 						{
 							auto BuildingClassName = (*BuildingClass)->GetFullName();
 
-							// TODO:" figure out a better way
+							// TODO: figure out a better way
 
 							if (BuildingClassName.contains(_("W1")))
 								MatDefinition = WoodItemData;
@@ -312,7 +312,7 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 			auto Location = Helper::GetActorLocation(BuildingActor);
 			auto Rotation = Helper::GetActorRotation(BuildingActor);
 
-			if (*BuildingActor->Member<EFortBuildingType>(_("BuildingType")) != EFortBuildingType::Wall)
+			if (*BuildingActor->Member<EFortBuildingType>(_("BuildingType")) != EFortBuildingType::Wall) // wtf this isnt working this line
 			{
 				int Yaw = (int(Rotation.Yaw) + 360) % 360; // credits: PRO100KatYT
 

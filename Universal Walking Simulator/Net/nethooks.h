@@ -10,7 +10,7 @@
 #include <Gameplay/loot.h>
 
 #include <discord.h>
-#include <replication.h>
+#include <Net/replication.h>
 
 static bool bTraveled = false;
 
@@ -156,12 +156,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (!Pawn)
         return PlayerController;
 
-    auto bUseNewPickupSwapLogic = PlayerController->Member<bool>(_("bUseNewPickupSwapLogic"));
-
-    std::cout << _("bUseNewPickupSwapLogic: ") << *bUseNewPickupSwapLogic << '\n';
-
-    *bUseNewPickupSwapLogic = true;
-
     if (GiveAbility)
     {
         auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
@@ -281,11 +275,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     std::cout << _("Spawned Player!\n");
 
-    static auto world = Helper::GetWorld();
-    static auto gameState = *world->Member<UObject*>(_("GameState"));
-
-    UObject* PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
-
     return PlayerController;
 }
 
@@ -376,10 +365,10 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
         break;
     }
     case 4: // NMT_Netspeed // Do we even have to rei,plment this?
-        if (Engine_Version >= 423)
-            *Connection->Member<int>(_("CurrentNetSpeed")) = 60000; // sometimes 60000
-        else
-            *Connection->Member<int>(_("CurrentNetSpeed")) = 30000; // sometimes 60000
+        // if (Engine_Version >= 423)
+          //  *Connection->Member<int>(_("CurrentNetSpeed")) = 60000; // sometimes 60000
+        // else
+        *Connection->Member<int>(_("CurrentNetSpeed")) = 30000; // sometimes 60000
         return;
     case 5: // NMT_Login
     {

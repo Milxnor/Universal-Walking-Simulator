@@ -14,7 +14,7 @@
 #include <mutex>
 #include <Gameplay/player.h>
 
-// #define LOGGING
+#define LOGGING
 
 // HEAVILY INSPIRED BY KEMOS UFUNCTION HOOKING
 
@@ -349,45 +349,92 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 	}
 	return true;
 }
-inline bool ClientOnPawnDiedHook(UObject* Controller, UFunction* Function, void* Parameters)
+inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Parameters)
 {
-	static bool bRespawning = true;
-	if (bRespawning)
-		Player::RespawnPlayer(Controller);
-	else
+	if (DeadPC && Parameters)
 	{
-		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
-		auto Chip = Helper::SpawnChip(Controller);
-		// 0x0018
-		struct FFortResurrectionData
-		{
-			bool                                               bResurrectionChipAvailable;                               // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData)
-			unsigned char                                      UnknownData00[0x3];                                       // 0x0001(0x0003) MISSED OFFSET
-			float                                              ResurrectionExpirationTime;                               // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData)
-			float                                              ResurrectionExpirationLength;                             // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData)
-			struct FVector                                     WorldLocation;                                            // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
-		};
+		auto DeadPawn = *DeadPC->Member<UObject*>(_("Pawn"));
+		auto DeadPlayerState = *DeadPC->Member<UObject*>(_("PlayerState"));
 
-		auto PlayerState = *Pawn->Member<UObject*>(_("PlayerState"));
-		auto FortResurrectionData = PlayerState->Member<FFortResurrectionData>(_("ResurrectionChipAvailable"));
+		struct parms { __int64 DeathReport; };
 
-		if (FortResurrectionData)
-		{
-			std::cout << _("FortResurrectionData valid!\n");
-			std::cout << _("FortResurrectionData Location X: ") << FortResurrectionData->WorldLocation.X << '\n';
-		}
+		auto Params = (parms*)Parameters;
+
+		if (Helper::IsRespawnEnabled())
+			Player::RespawnPlayer(DeadPC);
 		else
-			std::cout << _("No FortResurrectionData!\n");
+		{
+			// PlayersLeft--;
 
-		auto ResurrectionData = FFortResurrectionData{};
-		ResurrectionData.bResurrectionChipAvailable = true;
-		ResurrectionData.ResurrectionExpirationLength = 99999.f;
-		ResurrectionData.ResurrectionExpirationTime = 99999.f;
-		ResurrectionData.WorldLocation = Helper::GetActorLocation(Chip);
+			if (Engine_Version >= 423) // wrong
+			{
+				auto Chip = Helper::SpawnChip(DeadPC);
+				// 0x0018
+				struct FFortResurrectionData
+				{
+					bool                                               bResurrectionChipAvailable;                               // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData)
+					unsigned char                                      UnknownData00[0x3];                                       // 0x0001(0x0003) MISSED OFFSET
+					float                                              ResurrectionExpirationTime;                               // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData)
+					float                                              ResurrectionExpirationLength;                             // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData)
+					struct FVector                                     WorldLocation;                                            // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
+				};
 
-		if (FortResurrectionData)
-			*FortResurrectionData = ResurrectionData;
-		std::cout << _("Spawned Chip!\n");
+				auto PlayerState = *DeadPawn->Member<UObject*>(_("PlayerState"));
+				auto FortResurrectionData = PlayerState->Member<FFortResurrectionData>(_("ResurrectionChipAvailable"));
+
+				if (FortResurrectionData)
+				{
+					std::cout << _("FortResurrectionData valid!\n");
+					std::cout << _("FortResurrectionData Location X: ") << FortResurrectionData->WorldLocation.X << '\n';
+				}
+				else
+					std::cout << _("No FortResurrectionData!\n");
+
+				auto ResurrectionData = FFortResurrectionData{};
+				ResurrectionData.bResurrectionChipAvailable = true;
+				ResurrectionData.ResurrectionExpirationLength = 99999.f;
+				ResurrectionData.ResurrectionExpirationTime = 99999.f;
+				ResurrectionData.WorldLocation = Helper::GetActorLocation(Chip);
+
+				if (FortResurrectionData)
+					*FortResurrectionData = ResurrectionData;
+				std::cout << _("Spawned Chip!\n");
+			}
+		}
+
+		auto KillerPawnOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), _("KillerPawn"));
+		auto KillerPlayerStateOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), _("KillerPlayerState"));
+
+		auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
+		auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
+
+		UObject* KillerController = nullptr;
+
+		if (KillerPawn)
+			KillerController = *KillerPawn->Member<UObject*>(_("Controller"));
+
+		if (KillerPlayerState)
+		{
+			if (KillerController)
+			{
+				static auto ClientReceiveKillNotification = KillerController->Function(_("ClientReceiveKillNotification"));
+
+				struct {
+					// Both playerstates
+					UObject* Killer;
+					UObject* Killed;
+				} ClientReceiveKillNotification_Params{KillerPlayerState, DeadPlayerState};
+
+				if (ClientReceiveKillNotification)
+					KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
+			}
+
+			(*KillerPlayerState->Member<int>(_("KillScore")))++;
+			(*KillerPlayerState->Member<int>(_("TeamKillScore")))++;
+
+			static auto OnRep_Kills = KillerPlayerState->Function(_("OnRep_Kills"));
+			KillerPlayerState->ProcessEvent(OnRep_Kills);
+		}
 	}
 	
 	return true;
@@ -475,7 +522,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 		Controller = Helper::GetOwnerOfComponent(Controllera);
 	}
 
-	ProcessEventO(Controller, Function, Parameters);
+	// ProcessEventO(Controller, Function, Parameters);
 
 	struct SAIParams {
 		UObject* ReceivingActor;                                           // (Parm, ZeroConstructor, IsPlainOldData)
@@ -559,6 +606,22 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 				auto SpawnLocation = *ReceivingActor->Member<FVector>(_("LootSpawnLocation"));
 			}
+
+			else if (ReceivingActorName.contains(_("CampFire_"))) //  Athena_Prop_Recreation_CampFire_4
+			{
+				auto InitCampfireEffects = ReceivingActor->Function(_("InitCampfireEffects")); // INVALID!
+
+				auto Super = (UClass_FTT*)ReceivingActor;
+				for (auto Super = (UClass_FTT*)ReceivingActor; Super; Super = (UClass_FTT*)Super->SuperStruct)
+				{
+					std::cout << _("Campfire SuperStruct: ") << Super->GetFullName() << '\n';
+				}
+
+				if (InitCampfireEffects)
+					ReceivingActor->ProcessEvent(InitCampfireEffects);
+				else
+					std::cout << _("Unable to find InitCampfireEffects!\n");
+ 			}
 
 			/* if (ReceivingActorName.contains(_("Vehicle")))
 			{
@@ -802,9 +865,9 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 {
 	if (pc)
 	{
-		// static auto fn = FindObject(_("Function /Script/Engine.Controller.GetViewTarget"));
-		UObject* TheViewTarget = *pc->Member<UObject*>(_("Pawn"));
-		// pc->ProcessEvent(fn, &TheViewTarget);
+		static auto fn = FindObject(_("Function /Script/Engine.Controller.GetViewTarget"));
+		UObject* TheViewTarget = nullptr; // *pc->Member<UObject*>(_("Pawn"));
+		pc->ProcessEvent(fn, &TheViewTarget);
 
 		if (TheViewTarget)
 		{
