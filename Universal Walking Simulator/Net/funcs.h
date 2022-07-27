@@ -35,6 +35,18 @@ uint64_t GetPlayerViewpointAddr = 0;
 uint64_t CreateNetDriver_LocalAddr = 0;
 uint64_t HandleReloadCostAddr = 0;
 uint64_t CanActivateAbilityAddr = 0;
+uint64_t CallPreReplicationAddr = 0;
+uint64_t ReplicateActorAddr = 0;
+uint64_t SendClientAdjustmentAddr = 0;
+uint64_t SetChannelActorAddr = 0;
+uint64_t CreateChannelAddr = 0;
+
+void (*SetChannelActor)(UObject* ActorChannel, UObject* InActor);
+UObject* (*CreateChannel)(UObject* Connection, EChannelType Type, bool bOpenedLocally, int32_t ChannelIndex);
+
+void(__fastcall* SendClientAdjustment)(UObject* controller);
+void(__fastcall* CallPreReplication)(UObject* actor, UObject* driver);
+char (__fastcall* ReplicateActor)(UObject* ActorChannel);
 
 void(__fastcall* HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 

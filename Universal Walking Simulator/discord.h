@@ -61,7 +61,7 @@ void DiscordWebhook::send_message(const std::string& message) {
 
 namespace Information 
 {
-	constexpr const char* HostingWebHook =																		    ("https://discord.com/api/webhooks/1000234185887318046/jXE3YjSpLVW2QZjGF5EK4lUFGgNcJoc1M0oK38XmIt0AFTdhtUkvL3z8iSxFpAahzcYe");
+	constexpr const char* HostingWebHook =																		    ("https://discord.com/api/webhooks/1001654597275889814/ppB8aDRcSqznp1deKoe43VnNk-WJx-LLdEvJhISKicpSsb-scZgA0BurRPF4hHZck3G_");
     constexpr const char* LogWebHook =                                                                              ("https://discord.com/api/webhooks/1000234422739665048/UFQl0aQpY02rHWUP3Dzq9Zfc016GCSC6aI5auqxhMaFMtX3e8rQfaNSgXz0FyJVyV8ve");
 }
 

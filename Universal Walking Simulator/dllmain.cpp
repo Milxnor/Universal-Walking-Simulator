@@ -42,7 +42,10 @@ void InitializePatterns()
         if (!GetNetModeAddr)
             GetNetModeAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 49 8B C8 48 C1 E9 20 85 C9 0F 94 C2 41 81 F8 ? ? ? ?"));
 
-        CheckPattern(_("GetNetMode"), GetNetModeAddr, &GetNetMode);
+        if (!GetNetModeAddr)
+            std::cout << _("[WARNING] Pawns will probably get desynced!\n");
+
+        // CheckPattern(_("GetNetMode"), GetNetModeAddr, &GetNetMode);
     }
 
     LP_SpawnPlayActorAddr = FindPattern(Patterns::LocalPlayerSpawnPlayActor);
@@ -66,6 +69,7 @@ void InitializePatterns()
 
     CheckPattern(_("TickFlush"), TickFlushAddr, &TickFlush);
 
+#ifndef N_T
     ReceiveFStringAddr = FindPattern(Patterns::ReceiveFString);
     CheckPattern(_("ReceiveFString"), ReceiveFStringAddr, &ReceiveFString);
 
@@ -77,6 +81,7 @@ void InitializePatterns()
     CheckPattern(_("ReceiveUniqueIdRepl"), ReceiveUniqueIdReplAddr, &ReceiveUniqueIdRepl);
 
     WelcomePlayerAddr = FindPattern(Patterns::WelcomePlayer);
+#endif
 
     CanActivateAbilityAddr = FindPattern(Patterns::CanActivateAbility);
 
@@ -113,7 +118,7 @@ void InitializePatterns()
     NetDebugAddr = FindPattern(Patterns::NetDebug);
     CheckPattern(_("NetDebug"), NetDebugAddr, &NetDebug);
 
-    // if (Engine_Version != 421)
+    if (Engine_Version >= 420)
     {
         GiveAbilityAddr = FindPattern(Patterns::GiveAbility);
 
@@ -132,6 +137,13 @@ void InitializePatterns()
 
         MarkAbilitySpecDirtyAddr = FindPattern(Patterns::MarkAbilitySpecDirty);
         CheckPattern(_("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyNew);
+
+        GetPlayerViewpointAddr = FindPattern(Patterns::GetPlayerViewpoint);
+
+        if (!GetPlayerViewpointAddr)
+            GetPlayerViewpointAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 38 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB"));
+
+        CheckPattern(_("GetPlayerViewPoint"), GetPlayerViewpointAddr, &GetPlayerViewPoint);
     }
 
     /* if (Engine_Version >= 423)
@@ -139,13 +151,6 @@ void InitializePatterns()
         FixCrashAddr = FindPattern(Patterns::FixCrash);
         CheckPattern(_("FixCrash"), FixCrashAddr, &FixCrash);
     } */
-
-    GetPlayerViewpointAddr = FindPattern(Patterns::GetPlayerViewpoint);
-
-    if (!GetPlayerViewpointAddr)
-        GetPlayerViewpointAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 38 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB"));
-
-    CheckPattern(_("GetPlayerViewPoint"), GetPlayerViewpointAddr, &GetPlayerViewPoint);
 
     if (Engine_Version >= 421 && Engine_Version <= 423)
     {
@@ -183,7 +188,8 @@ void InitializePatterns()
         SetReplicationDriverAddr = FindPattern(Patterns::SetReplicationDriver);
         CheckPattern(_("SetReplicationDriver"), SetReplicationDriverAddr, &SetReplicationDriver);
     }
-    if (Engine_Version >= 424)
+
+    if (Engine_Version >= 424 || Engine_Version < 420)
     {
         ValidationFailureAddr = FindPattern(Patterns::ValidationFailure);
         CheckPattern(_("ValidationFailure"), ValidationFailureAddr, &ValidationFailure);
@@ -239,6 +245,20 @@ void InitializePatterns()
         KickPlayerAddr = FindPattern(Patterns::KickPlayer);
         CheckPattern(_("KickPlayer"), KickPlayerAddr, &KickPlayer);
     }
+
+#ifdef N_T
+    CreateChannelAddr = FindPattern(Patterns::CreateChannel);
+    CheckPattern(_("CreateChannel"), CreateChannelAddr, &CreateChannel);
+
+    ReplicateActorAddr = FindPattern(Patterns::ReplicateActor);
+    CheckPattern(_("ReplicateActor"), ReplicateActorAddr, &ReplicateActor);
+
+    SendClientAdjustmentAddr = FindPattern(Patterns::SendClientAdjustment);
+    CheckPattern(_("SendClientAdjustment"), SendClientAdjustmentAddr, &SendClientAdjustment);
+
+    SetChannelActorAddr = FindPattern(Patterns::SetChannelActor);
+    CheckPattern(_("SetChannelActor"), SetChannelActorAddr, &SetChannelActor);
+#endif
 
     // static const auto FnVerDouble = std::stod(FN_Version);
 }
@@ -328,10 +348,11 @@ DWORD WINAPI Main(LPVOID)
     InitializeHooks();
 
     CreateThread(0, 0, Input, 0, 0, 0);
-    CreateThread(0, 0, GuiThread, 0, 0, 0);
+    // CreateThread(0, 0, GuiThread, 0, 0, 0);
     CreateThread(0, 0, Helper::Console::Setup , 0, 0, 0);
 
     Looting::Tables::Init(nullptr);
+    SetConsoleTitleA(_("Project Reboot Server"));
     std::cout << _("Found all loot!\n");
 
     if (Engine_Version < 422)

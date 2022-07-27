@@ -50,16 +50,19 @@ inline void initStuff()
 
 			*gameState->Member<EFriendlyFireType>(_("FriendlyFireType")) = EFriendlyFireType::On;
 
-			*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Warmup;
+			if (Engine_Version >= 420)
+			{
+				*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Warmup;
 
-			struct {
-				EAthenaGamePhase OldPhase;
-			} params2{ EAthenaGamePhase::None };
+				struct {
+					EAthenaGamePhase OldPhase;
+				} params2{ EAthenaGamePhase::None };
 
-			static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
+				static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
 
-			if (fnGamephase)
-				gameState->ProcessEvent(fnGamephase, &params2);
+				if (fnGamephase)
+					gameState->ProcessEvent(fnGamephase, &params2);
+			}
 
 			if (AuthGameMode)
 			{
@@ -67,7 +70,7 @@ inline void initStuff()
 
 				auto FNVer = std::stod(FN_Version);
 
-				if (FNVer < 4.0 || FNVer >= 8.0) {
+				if (std::floor(FNVer) == 3 || FNVer >= 8.0) {
 					AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartMatch")), nullptr);
 				}
 				// *AuthGameMode->Member<bool>(_("bAlwaysDBNO")) = true;
@@ -84,9 +87,10 @@ inline void initStuff()
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
-				 static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
+				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
 				// static auto Playlist = FindObject(_("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
-				if (std::stod(FN_Version) > 7.00)
+				 
+				if (std::stod(FN_Version) >= 7.00)
 				{
 					auto OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistInfo"));
 
@@ -126,7 +130,8 @@ inline void initStuff()
 						static auto OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistData"));
 						*gameState->Member<UObject*>(_("CurrentPlaylistData")) = Playlist;
 
-						gameState->ProcessEvent(OnRepPlaylist);
+						if (OnRepPlaylist)
+							gameState->ProcessEvent(OnRepPlaylist);
 					}
 					else {
 						std::cout << _("Playlist is NULL") << '\n';
@@ -156,7 +161,9 @@ inline void initStuff()
 		InitializeNetHooks();
 
 		std::cout << _("Initialized NetHooks!\n");
-		Events::LoadEvents();
+
+		if (Engine_Version >= 420)
+			Events::LoadEvents();
 	}
 }
 

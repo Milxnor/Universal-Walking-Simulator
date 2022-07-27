@@ -8,7 +8,7 @@ static bool bListening = false;
 
 void Listen(int Port = 7777)
 {
-    bool bUseBeacons = true;//(Engine_Version >= 425) ? false : true; // CreateNetDriver ? false : true;
+    bool bUseBeacons = false;//(Engine_Version >= 425) ? false : true; // CreateNetDriver ? false : true;
     static const auto World = Helper::GetWorld();
 
     UObject* NetDriver = nullptr;
@@ -19,7 +19,12 @@ void Listen(int Port = 7777)
 
     if (bUseBeacons)
     {
-        static auto BeaconHostClass = FindObject("Class /Script/FortniteGame.FortOnlineBeaconHost");
+        static UObject* BeaconHostClass = nullptr;
+
+        if (Engine_Version >= 420)
+            BeaconHostClass = FindObject("Class /Script/FortniteGame.FortOnlineBeaconHost");
+        else
+            BeaconHostClass = FindObjectOld("Class /Script/OnlineSubsystemUtils.OnlineBeaconHost", true);
 
         if (!BeaconHostClass)
         {
@@ -40,7 +45,15 @@ void Listen(int Port = 7777)
         std::cout << _("Spawned Beacon!\n");
 
         *BeaconHost->Member<int>(_("ListenPort")) = Port - 1;
-        auto bInitBeacon = InitHost(BeaconHost);
+        bool bInitBeacon = false;
+
+        if (InitHost)
+            bInitBeacon = InitHost(BeaconHost);
+        else
+        {
+            std::cout << dye::red(_("[ERROR] ")) << _("No InitHost!\n");
+            return;
+        }
 
         if (!bInitBeacon)
         {
@@ -63,11 +76,11 @@ void Listen(int Port = 7777)
     {
         NetDriver = CreateNetDriver(GetEngine(), World, FName(282));
         std::cout << _("Created NetDriver!\n");
-        InitListen(NetDriver, Helper::GetWorld(), InURL, true, Error);
+        InitListen(NetDriver, World, InURL, true, Error);
         std::cout << _("Called InitListen on the NetDriver!\n");
     }
 
-    if (SetWorld && NetDriver)
+    if (false && SetWorld && NetDriver)
     {
         std::cout << _("Setting!\n");
         SetWorld(NetDriver, World);

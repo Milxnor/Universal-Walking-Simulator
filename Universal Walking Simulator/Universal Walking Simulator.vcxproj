@@ -67,7 +67,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='VPS|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>Project Reboot VPS</TargetName>
+    <TargetName>Project Reboot VPS 2.4.2bb</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

@@ -752,7 +752,7 @@ UFunction* FindFunction(const std::string& Name, UObject* Object) // might as we
 {
 	for (auto Member : GetMembersAsObjects(Object, false, true))
 	{
-		if (Member->GetName() == Name) // dont use IsA cuz slower
+		if (Member && Member->GetName() == Name) // dont use IsA cuz slower
 			return (UFunction*)Member;
 	}
 	

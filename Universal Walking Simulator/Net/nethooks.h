@@ -383,44 +383,47 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
         return;
     case 5: // NMT_Login
     {
-        Bunch[7] += (16 * 1024 * 1024);
-
-        FString OnlinePlatformName;
-
-        static double CurrentFortniteVersion = std::stod(FN_Version);
-
-        if (CurrentFortniteVersion >= 7 && Engine_Version < 424)
+        if (Engine_Version >= 420)
         {
-            ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 400)); // clientresponse
-            ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 424)); // requesturl
+            Bunch[7] += (16 * 1024 * 1024);
+
+            FString OnlinePlatformName;
+
+            static double CurrentFortniteVersion = std::stod(FN_Version);
+
+            if (CurrentFortniteVersion >= 7 && Engine_Version < 424)
+            {
+                ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 400)); // clientresponse
+                ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 424)); // requesturl
+            }
+            else if (CurrentFortniteVersion < 7)
+            {
+                ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 51));
+                ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 54));
+            }
+            else if (Engine_Version >= 424)
+            {
+                ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 416));
+                ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 440));
+            }
+
+            ReceiveUniqueIdRepl(Bunch, Connection->Member<__int64>(_("PlayerID")));
+            std::cout << "Got PlayerID!\n";
+            // std::cout << "PlayerID => " + *Connection->Member<__int64>(_("PlayerID")) << '\n';
+            // std::cout << "PlayerID => " + std::to_string(*UniqueId) << '\n';
+            ReceiveFString(Bunch, OnlinePlatformName);
+
+            std::cout << "Got OnlinePlatformName!\n";
+
+            if (OnlinePlatformName.Data.GetData())
+                std::cout << "OnlinePlatformName => " << OnlinePlatformName.ToString() << '\n';
+
+            Bunch[7] -= (16 * 1024 * 1024);
+
+            WelcomePlayer(Helper::GetWorld(), Connection);
+
+            return;
         }
-        else if (CurrentFortniteVersion < 7)
-        {
-            ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 51));
-            ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 54));
-        }
-        else if (Engine_Version >= 424)
-        {
-            ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 416));
-            ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 440));
-        }
-
-        ReceiveUniqueIdRepl(Bunch, Connection->Member<__int64>(_("PlayerID")));
-        std::cout << "Got PlayerID!\n";
-        // std::cout << "PlayerID => " + *Connection->Member<__int64>(_("PlayerID")) << '\n';
-        // std::cout << "PlayerID => " + std::to_string(*UniqueId) << '\n';
-        ReceiveFString(Bunch, OnlinePlatformName);
-
-        std::cout << "Got OnlinePlatformName!\n";
-
-        if (OnlinePlatformName.Data.GetData())
-            std::cout << "OnlinePlatformName => " << OnlinePlatformName.ToString() << '\n';
-
-        Bunch[7] -= (16 * 1024 * 1024);
-
-        WelcomePlayer(Helper::GetWorld(), Connection);
-
-        return;
     }
     case 9: // NMT_Join
     {
@@ -563,7 +566,7 @@ void InitializeNetHooks()
     MH_CreateHook((PVOID)World_NotifyControlMessageAddr, World_NotifyControlMessageDetour, (void**)&World_NotifyControlMessage);
     MH_EnableHook((PVOID)World_NotifyControlMessageAddr);
 
-    if (Engine_Version < 425)
+    if (Engine_Version < 425 && GetNetModeAddr)
     {
         MH_CreateHook((PVOID)GetNetModeAddr, GetNetModeDetour, (void**)&GetNetMode);
         MH_EnableHook((PVOID)GetNetModeAddr);
@@ -578,16 +581,22 @@ void InitializeNetHooks()
     MH_CreateHook((PVOID)TickFlushAddr, TickFlushDetour, (void**)&TickFlush);
     MH_EnableHook((PVOID)TickFlushAddr);
 
-    MH_CreateHook((PVOID)KickPlayerAddr, KickPlayerDetour, (void**)&KickPlayer);
-    MH_EnableHook((PVOID)KickPlayerAddr);
+    if (KickPlayer)
+    {
+        MH_CreateHook((PVOID)KickPlayerAddr, KickPlayerDetour, (void**)&KickPlayer);
+        MH_EnableHook((PVOID)KickPlayerAddr);
+    }
 
     /* MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
     MH_EnableHook((PVOID)LP_SpawnPlayActorAddr); */
 
     // if (NetDebug)
     {
-        MH_CreateHook((PVOID)NetDebugAddr, NetDebugDetour, (void**)&NetDebug);
-        MH_EnableHook((PVOID)NetDebugAddr);
+        if (NetDebugAddr)
+        {
+            MH_CreateHook((PVOID)NetDebugAddr, NetDebugDetour, (void**)&NetDebug);
+            MH_EnableHook((PVOID)NetDebugAddr);
+        }
 
         if (CollectGarbageAddr)
         {

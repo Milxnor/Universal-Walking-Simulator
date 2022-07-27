@@ -428,6 +428,29 @@ enum EClassCastFlags
 	CASTCLASS_FFieldPathProperty = 0x0010000000000000,
 };
 
+enum class ENetDormancy : uint8_t
+{
+	DORM_Never = 0,
+	DORM_Awake = 1,
+	DORM_DormantAll = 2,
+	DORM_DormantPartial = 3,
+	DORM_Initial = 4,
+	DORM_MAX = 5
+};
+
+enum EChannelType
+{
+	CHTYPE_None = 0,  // Invalid type.
+	CHTYPE_Control = 1,  // Connection control.
+	CHTYPE_Actor = 2,  // Actor-update channel.
+
+	// @todo: Remove and reassign number to CHTYPE_Voice (breaks net compatibility)
+	CHTYPE_File = 3,  // Binary file transfer.
+
+	CHTYPE_Voice = 4,  // VoIP data channel
+	CHTYPE_MAX = 8,  // Maximum.
+};
+
 static uint64_t FindPattern(const char* signature, bool bRelative = false, uint32_t offset = 0, bool bIsVar = false)
 {
 	auto base_address = (uint64_t)GetModuleHandleW(NULL);
