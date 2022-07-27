@@ -27,7 +27,7 @@ static FAbilityReplicatedDataCache* FindReplicatedTargetData(UObject* AbilitySys
     auto ReplicatedDataContainer = (FGameplayAbilityReplicatedDataContainer*)(__int64(AbilitySystemComponent) + 1312); // Found at uhm serverseetreplicaqteddata
     
     if (ReplicatedDataContainer)
-        return ReplicatedDataContainer->FindOrAdd(FGameplayAbilitySpecHandleAndPredictionKey{ Handle, PredictionKey.Current }).Get();
+        return ReplicatedDataContainer->Find(FGameplayAbilitySpecHandleAndPredictionKey{ Handle, PredictionKey.Current }).Get();
 
     return nullptr;
 }
@@ -75,7 +75,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
     }
 
     // Consume any pending target info, to clear out cancels from old executions
-    // ConsumeAllReplicatedData(ASC, Handle, PredictionKey);
+    // ConsumeAllReplicatedData(ASC, Handle, PredictionKey); // Try this?
 
     UObject* InstancedAbility = nullptr;
     Spec->InputPressed = true;

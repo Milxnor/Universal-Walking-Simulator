@@ -278,13 +278,13 @@ bool ImGui_ImplDX9_Init(void* hwnd, IDirect3DDevice9* device)
 	g_hWnd = (HWND)hwnd;
 	g_pd3dDevice = device;
 
-	if (!QueryPerformanceFrequency((LARGE_INTEGER*)&g_TicksPerSecond))
+	if (!QueryPerformanceFrequency((LARGE_INTEGER *)&g_TicksPerSecond))
 		return false;
-	if (!QueryPerformanceCounter((LARGE_INTEGER*)&g_Time))
+	if (!QueryPerformanceCounter((LARGE_INTEGER *)&g_Time))
 		return false;
 
 	ImGuiIO& io = ImGui::GetIO();
-	/* io.KeyMap[ImGuiKey_Tab] = VK_TAB;                       // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array that we will update during the application lifetime.
+	io.KeyMap[ImGuiKey_Tab] = VK_TAB;                       // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array that we will update during the application lifetime.
 	io.KeyMap[ImGuiKey_LeftArrow] = VK_LEFT;
 	io.KeyMap[ImGuiKey_RightArrow] = VK_RIGHT;
 	io.KeyMap[ImGuiKey_UpArrow] = VK_UP;
@@ -302,9 +302,9 @@ bool ImGui_ImplDX9_Init(void* hwnd, IDirect3DDevice9* device)
 	io.KeyMap[ImGuiKey_V] = 'V';
 	io.KeyMap[ImGuiKey_X] = 'X';
 	io.KeyMap[ImGuiKey_Y] = 'Y';
-	io.KeyMap[ImGuiKey_Z] = 'Z'; */
+	io.KeyMap[ImGuiKey_Z] = 'Z';
 
-	// io.RenderDrawListsFn = ImGui_ImplDX9_RenderDrawLists;   // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
+	io.RenderDrawListsFn = ImGui_ImplDX9_RenderDrawLists;   // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
 	io.ImeWindowHandle = g_hWnd;
 
 	return true;
@@ -313,7 +313,7 @@ bool ImGui_ImplDX9_Init(void* hwnd, IDirect3DDevice9* device)
 void ImGui_ImplDX9_Shutdown()
 {
 	ImGui_ImplDX9_InvalidateDeviceObjects();
-	// ImGui::Shutdown();
+	ImGui::Shutdown();
 	g_pd3dDevice = NULL;
 	g_hWnd = 0;
 }
@@ -409,11 +409,11 @@ static bool ImGui_ImplDX9_CreateFontsTexture()
 	if (g_FontTexture->LockRect(0, &tex_locked_rect, NULL, 0) != D3D_OK)
 		return false;
 	for (int y = 0; y < height; y++)
-		memcpy((unsigned char*)tex_locked_rect.pBits + tex_locked_rect.Pitch * y, pixels + (width * bytes_per_pixel) * y, (width * bytes_per_pixel));
+		memcpy((unsigned char *)tex_locked_rect.pBits + tex_locked_rect.Pitch * y, pixels + (width * bytes_per_pixel) * y, (width * bytes_per_pixel));
 	g_FontTexture->UnlockRect(0);
 
 	// Store our identifier
-	io.Fonts->TexID = (void*)g_FontTexture;
+	io.Fonts->TexID = (void *)g_FontTexture;
 
 	return true;
 }
@@ -462,7 +462,7 @@ void ImGui_ImplDX9_NewFrame()
 
 	// Setup time step
 	INT64 current_time;
-	QueryPerformanceCounter((LARGE_INTEGER*)&current_time);
+	QueryPerformanceCounter((LARGE_INTEGER *)&current_time);
 	io.DeltaTime = (float)(current_time - g_Time) / g_TicksPerSecond;
 	g_Time = current_time;
 

@@ -357,7 +357,7 @@ DWORD WINAPI Main(LPVOID)
     InitializeHooks();
 
     CreateThread(0, 0, Input, 0, 0, 0);
-    // CreateThread(0, 0, GuiThread, 0, 0, 0);
+    CreateThread(0, 0, GuiThread, 0, 0, 0);
     CreateThread(0, 0, Helper::Console::Setup , 0, 0, 0);
 
     Looting::Tables::Init(nullptr);

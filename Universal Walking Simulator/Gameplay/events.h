@@ -60,10 +60,25 @@ namespace Events {
 				CD->ProcessEvent(Func);
 			}
 			else if (Version == 8.51f) {
-				UObject* SS = FindObject(".PersistentLevel.SnowSequence_2.AnimationPlayer");
-				UObject* Func = SS->Function("Play");
-				SS->ProcessEvent(Func);
-				//(TODO) Find a way to auto destroy death barrier and load the Map for all players when the screen goes white (Map Name: Next2)
+				UObject* SS = FindObject(_("LevelSequencePlayer /Temp/Game/Athena/Maps/POI/Athena_POI_Lake_004c_e347d57e.Athena_POI_Lake_004c.PersistentLevel.SnowSequence_2.AnimationPlayer"));
+
+				if (SS)
+				{
+					UObject* Func = SS->Function("Play");
+					if (Func)
+					{
+						SS->ProcessEvent(Func);
+						HostingWebHook.send_message(_("Started Unvaulting Event!\n"));
+						std::cout << _("Started Event!\n");
+					}
+					else
+						std::cout << _("No play func!\n");
+				}
+				else
+					std::cout << _("No Player!\n");
+
+				//(TODO: GD) Find a way to auto destroy death barrier and load the Map for all players when the screen goes white (Map Name: Next2)
+				// (MILXNOR) ^ ClientTravel?
 			}
 			else if (Version == 7.30f) {
 				UObject* FS = FindObject(".PersistentLevel.FestivusSequence_01_2.AnimationPlayer2");
@@ -84,7 +99,8 @@ namespace Events {
 			else if (Version == 4.5f) {
 				UObject* LR = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/Events/Athena_Gameplay_Geode.Athena_Gameplay_Geode.PersistentLevel.LevelSequence_LaunchRocket.AnimationPlayer");
 				UObject* Func = LR->Function("Play");
-				LR->ProcessEvent(Func);
+				if (Func)
+					LR->ProcessEvent(Func);
 			}
 		}
 	}

@@ -390,7 +390,7 @@ struct FGameplayAbilityReplicatedDataContainer
     TArray<FKeyDataPair> InUseData;
     TArray<void*> FreeData;
 
-    TSharedRef<FAbilityReplicatedDataCache> FindOrAdd(const FGameplayAbilitySpecHandleAndPredictionKey& Key)
+    TSharedRef<FAbilityReplicatedDataCache> Find(const FGameplayAbilitySpecHandleAndPredictionKey& Key)
     {
         for (int i = 0; i < InUseData.Num(); i++)
         {

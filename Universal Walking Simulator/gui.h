@@ -13,8 +13,6 @@
 #define VPS
 
 #include <ImGui/imgui.h>
-#include <ImGui/imgui_impl_win32.h>
-#include <ImGui/imgui_impl_dx11.h>
 #include <Kiero/kiero.h>
 #include <filesystem>
 
@@ -395,15 +393,13 @@ DWORD WINAPI GuiThread(LPVOID)
 	ImGui_ImplDX9_Init(hwnd, g_pd3dDevice);
 
 	ImGuiIO& io = ImGui::GetIO();
-	// io.Fonts->AddFontDefault();
+	io.Fonts->AddFontDefault();
 
 	// Main loop
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
 	ShowWindow(hwnd, SW_SHOWDEFAULT);
 	UpdateWindow(hwnd);
-
-	// ShowWindow(FindWindowA("UnrealWindow", "Fortnite  "), SW_HIDE);
 
 	while (msg.message != WM_QUIT)
 	{

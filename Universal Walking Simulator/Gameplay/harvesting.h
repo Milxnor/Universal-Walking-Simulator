@@ -24,7 +24,7 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 		};
 
 		auto BitField = BuildingActor->Member<Bitfield>(_("bPlayerPlaced"));
-		auto bPlayerPlaced = BitField->bPlayerPlaced;
+		auto bPlayerPlaced = false; // BitField->bPlayerPlaced;
 
 		static auto FortPlayerControllerAthenaClass = FindObject(_("Class /Script/FortniteGame.FortPlayerControllerAthena"));
 
@@ -109,7 +109,10 @@ inline bool ClientReportDamagedResourceBuildingHook(UObject* Controller, UFuncti
 			}
 		}
 
-		Inventory::IncreaseItemCount(Controller, ItemDef, Params->PotentialResourceCount); // ??????????????????????????????????
+		if (!Inventory::IncreaseItemCount(Controller, ItemDef, Params->PotentialResourceCount))
+		{
+			// we have to create it
+		}
 	}
 
 	return false;

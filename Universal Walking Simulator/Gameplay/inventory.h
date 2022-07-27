@@ -37,6 +37,11 @@ namespace FFortItemEntry
 	}
 }
 
+namespace QuickBars
+{
+
+}
+
 namespace Inventory
 {
 	__int64* GetInventory(UObject* Controller)
@@ -659,6 +664,11 @@ namespace Inventory
 		}
 
 		return false;
+	}
+
+	bool CreateOrAdd()
+	{
+
 	}
 
 	void GiveAllAmmo(UObject* Controller)
