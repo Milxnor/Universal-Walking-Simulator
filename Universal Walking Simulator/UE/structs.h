@@ -80,7 +80,10 @@ public:
 
 	INL ElementType& operator[](int Index) const { return Data[Index]; }
 
-	INL ElementType& At(int Index) const { return Data[Index]; }
+	INL ElementType& At(int Index) const 
+	{
+		return Data[Index]; 
+	}
 
 	INL int32_t Slack() const
 	{
@@ -245,6 +248,9 @@ struct FName // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4c8
 
 	INL std::string ToString()
 	{
+		if (!this)
+			return "";
+
 		FString temp;
 
 		ToStringO(this, temp);

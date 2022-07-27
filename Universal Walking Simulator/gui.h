@@ -439,6 +439,43 @@ DWORD WINAPI GuiThread(LPVOID)
 				}
 			}
 
+			if (ImGui::Button(_("do zipline funny")))
+			{
+				static auto FortAthenaZiplineClass = FindObject(_("Class /Script/FortniteGame.FortAthenaZipline"));
+
+				auto Ziplines = Helper::GetAllActorsOfClass(FortAthenaZiplineClass);
+
+				for (int i = 0; i < Ziplines.Num(); i++)
+				{
+					auto Zipline = Ziplines.At(i);
+
+					if (Zipline)
+					{
+						auto bInitialized = Zipline->Member<bool>(_("bInitialized"));
+
+						static auto Initialize = Zipline->Function(_("Initialize"));
+						
+						std::cout << _("bInitialized: ") << *bInitialized << '\n';
+
+						if (Initialize)
+						{
+							struct
+							{
+								FVector                                     NewStartPosition;                                         // (ConstParm, Parm, ZeroConstructor, ReferenceParm, IsPlainOldData)
+								FVector                                     NewEndPosition;                                           // (ConstParm, Parm, ZeroConstructor, ReferenceParm, IsPlainOldData)
+							} AFortAthenaZipline_Initialize_Params{*Zipline->Member<FVector>(_("StartPosition")), *Zipline->Member<FVector>(_("EndPosition")) };
+
+							Zipline->ProcessEvent(Initialize, &AFortAthenaZipline_Initialize_Params);
+							*bInitialized = true;
+						}
+						else
+							std::cout << _("Failed to find Initialize!\n");
+					}
+				}
+
+				Ziplines.Free();
+			}
+
 			/* if (ImGui::Button(_("Clear all Buildings")))
 			{
 				static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));

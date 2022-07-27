@@ -349,6 +349,45 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 	}
 	return true;
 }
+
+auto GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on github, from raider3.5
+{
+	static std::map<std::string, EDeathCause> DeathCauses{
+		{ "weapon.ranged.shotgun", EDeathCause::Shotgun },
+		{ "weapon.ranged.assault", EDeathCause::Rifle },
+		{ "Gameplay.Damage.Environment.Falling", EDeathCause::FallDamage },
+		{ "weapon.ranged.sniper", EDeathCause::Sniper },
+		{ "Weapon.Ranged.SMG", EDeathCause::SMG },
+		{ "weapon.ranged.heavy.rocket_launcher", EDeathCause::RocketLauncher },
+		{ "weapon.ranged.heavy.grenade_launcher", EDeathCause::GrenadeLauncher },
+		{ "Weapon.ranged.heavy.grenade", EDeathCause::Grenade },
+		{ "Weapon.Ranged.Heavy.Minigun", EDeathCause::Minigun },
+		{ "Weapon.Ranged.Crossbow", EDeathCause::Bow },
+		{ "trap.floor", EDeathCause::Trap },
+		{ "weapon.ranged.pistol", EDeathCause::Pistol },
+		{ "Gameplay.Damage.OutsideSafeZone", EDeathCause::OutsideSafeZone },
+		{ "Weapon.Melee.Impact.Pickaxe", EDeathCause::Melee }
+	};
+
+	for (int i = 0; i < Tags.GameplayTags.Num(); i++)
+	{
+		auto TagName = Tags.GameplayTags.At(i).TagName;
+
+		if (TagName.ComparisonIndex == 0 || TagName.Number == 0)
+			continue;
+
+		for (auto& Map : DeathCauses)
+		{
+			if (TagName.ToString() == Map.first) return Map.second;
+			else continue;
+		}
+	}
+
+	std::cout << std::format("Unspecified Death: {}\n", Tags.ToStringSimple(false));
+
+	return EDeathCause::Unspecified;
+}
+
 inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Parameters)
 {
 	if (DeadPC && Parameters)
@@ -429,8 +468,32 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 					KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
 			}
 
+			auto DeathInfo = DeadPlayerState->Member<__int64>(_("DeathInfo"));
+
+			auto TagsOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("Tags"));
+			auto DeathCauseOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("DeathCause"));
+			auto FinisherOrDownerOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("FinisherOrDowner"));
+			auto bDBNOOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("bDBNO"));
+
+			auto Tags = (FGameplayTagContainer*)(__int64(&*DeathInfo) + TagsOffset);
+
+			*(EDeathCause*)(__int64(&*DeathInfo) + DeathCauseOffset) = EDeathCause::Cube; // Tags ? GetDeathCause(*Tags) : EDeathCause::Unspecified;
+			*(UObject**)(__int64(&*DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
+			*(bool*)(__int64(&*DeathInfo) + bDBNOOffset) = false;
+
+			static auto OnRep_DeathInfo = DeadPlayerState->Function(_("OnRep_DeathInfo"));
+
+			if (OnRep_DeathInfo)
+				DeadPlayerState->ProcessEvent(OnRep_DeathInfo);
+
+			// *DeadPlayerState->Member<__int64>(_("DeathInfo")) = *(__int64*)malloc(GetSizeOfStruct(FindObject(_("ScriptStruct /Script/FortniteGame.DeathInfo"))));
+
 			(*KillerPlayerState->Member<int>(_("KillScore")))++;
 			(*KillerPlayerState->Member<int>(_("TeamKillScore")))++;
+
+			static auto ClientReportKill = KillerPlayerState->Function(_("ClientReportKill"));
+			struct { UObject* PlayerState; }ClientReportKill_Params{DeadPlayerState};
+			KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
 
 			static auto OnRep_Kills = KillerPlayerState->Function(_("OnRep_Kills"));
 			KillerPlayerState->ProcessEvent(OnRep_Kills);
@@ -453,7 +516,7 @@ inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Functio
 		if (Vehicle)
 		{
 			Helper::SetLocalRole(*Pawn, ENetRole::ROLE_Authority);
-			Helper::SetLocalRole(Vehicle, ENetRole::ROLE_Authority);
+			// Helper::SetLocalRole(Vehicle, ENetRole::ROLE_Authority);
 		}
 	}
 
@@ -623,15 +686,43 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 					std::cout << _("Unable to find InitCampfireEffects!\n");
  			}
 
-			/* if (ReceivingActorName.contains(_("Vehicle")))
+			if (ReceivingActorName.contains(_("Vehicle")))
 			{
-				Helper::SetLocalRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);
-				Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
-			} */
+				// Helper::SetRemoteRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);
+				// Helper::SetLocalRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);
+				// Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
+			}
 		}
 	}
 
-	return true;
+	return false;
+}
+
+inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void* Parameters)
+{
+	if (Pawn && Parameters)
+	{
+		struct parms { __int64 ZiplineState; };
+		auto Params = (parms*)Parameters;
+
+		static auto ZiplineOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ZiplinePawnState"), _("Zipline"));
+
+		auto Zipline = (UObject**)(__int64(&Params->ZiplineState) + ZiplineOffset);
+
+		// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
+		// Helper::SetRemoteRole(Pawn, ENetRole::ROLE_Authority);
+
+		if (Zipline && *Zipline)
+		{
+			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_AutonomousProxy);
+			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_Authority); // UNTESTED
+			// Helper::SetRemoteRole(*Zipline, ENetRole::ROLE_Authority);
+		}
+		else
+			std::cout << _("No zipline!\n");
+	}
+
+	return false;
 }
 
 inline bool PlayButtonHook(UObject* Object, UFunction* Function, void* Parameters)
@@ -790,6 +881,7 @@ void FinishInitializeUHooks()
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
+	AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
 
 	if (Engine_Version >= 420)
 		AddHook(_("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);

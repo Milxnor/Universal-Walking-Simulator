@@ -26,6 +26,52 @@ struct FVector
 	}
 };
 
+enum class EDeathCause : uint8_t
+{
+	OutsideSafeZone = 0,
+	FallDamage = 1,
+	Pistol = 2,
+	Shotgun = 3,
+	Rifle = 4,
+	SMG = 5,
+	Sniper = 6,
+	SniperNoScope = 7,
+	Melee = 8,
+	InfinityBlade = 9,
+	Grenade = 10,
+	C4 = 11,
+	GrenadeLauncher = 12,
+	RocketLauncher = 13,
+	Minigun = 14,
+	Bow = 15,
+	Trap = 16,
+	DBNOTimeout = 17,
+	Banhammer = 18,
+	RemovedFromGame = 19,
+	MassiveMelee = 20,
+	MassiveDiveBomb = 21,
+	MassiveRanged = 22,
+	Vehicle = 23,
+	LMG = 24,
+	GasGrenade = 25,
+	InstantEnvironmental = 26,
+	Turret = 27,
+	Cube = 28,
+	Balloon = 29,
+	StormSurge = 30,
+	BasicFiend = 31,
+	EliteFiend = 32,
+	RangedFiend = 33,
+	BasicBrute = 34,
+	EliteBrute = 35,
+	MegaBrute = 36,
+	LoggedOut = 37,
+	TeamSwitchSuicide = 38,
+	WonMatch = 39,
+	Unspecified = 40,
+	EDeathCause_MAX = 41
+};
+
 struct FRotator
 {
 	float Pitch;
