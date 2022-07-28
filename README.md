@@ -2,9 +2,8 @@
 ### FYI: This isn't 100% universal, there are bugs on almost every season and some seasons have no support at all.<br> <a href="https://discord.com/invite/42pXp7Wqtf">Discord Server</a>.
 
 # Supported Versions
-Todo: 3.5-4.5, S5-S6<br>
-Possibly Add: S12-S15<br>
-Currently Supported: S7-S9<br>
+Currently Supported: ~S2-S9<br>
+WIP: 1.7.2-2.4.2, S11
 
 # PLANS
 
@@ -21,7 +20,7 @@ Console Colors are a 30/70.<br>
 
 # CONTRIBUTING
 
-In order to find a UFunction, please use UObject->Function("FunctionName") instead of FindObject("Function ..").<br>
+In order to find a UFunction, please use UObject->Function("FunctionName") instead of FindObject("Function ...").<br>
 Test your code.<br>
 Document what versions you tested your code on in this format: Season.xx (example: 4.1, 6.21, 7.30, etc)<br>
 Give a descriptive summary of what your code does and how its beneficial to the project<br>
@@ -35,4 +34,4 @@ If you are to use this base for your own project, please credit us and link the 
 
 Some of this code is from or inspired by <a href="https://github.com/kem0x/raider3.5">Raider by kem0x</a>.
 <br>
-The flashing fix (hooking GetPlayerViewpoint) was found by  <a href="https://github.com/biggest-d">danii/a>.
+The flashing fix (hooking GetPlayerViewpoint) was found by  <a href="https://github.com/biggest-d">danii</a>.
