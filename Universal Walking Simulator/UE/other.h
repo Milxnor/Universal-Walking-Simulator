@@ -80,11 +80,56 @@ enum class EDeathCause : uint8_t
 	EDeathCause_MAX = 41
 };
 
+static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)
+{
+	// Map Value to y in [-pi,pi], x = 2*pi*quotient + remainder.
+	float quotient = (0.31830988618f * 0.5f) * Value;
+	if (Value >= 0.0f)
+	{
+		quotient = (float)((int)(quotient + 0.5f));
+	}
+	else
+	{
+		quotient = (float)((int)(quotient - 0.5f));
+	}
+	float y = Value - (2.0f * M_PI) * quotient;
+
+	// Map y to [-pi/2,pi/2] with sin(y) = sin(Value).
+	float sign;
+	if (y > 1.57079632679f)
+	{
+		y = M_PI - y;
+		sign = -1.0f;
+	}
+	else if (y < -1.57079632679f)
+	{
+		y = -M_PI - y;
+		sign = -1.0f;
+	}
+	else
+	{
+		sign = +1.0f;
+	}
+
+	float y2 = y * y;
+
+	// 11-degree minimax approximation
+	*ScalarSin = (((((-2.3889859e-08f * y2 + 2.7525562e-06f) * y2 - 0.00019840874f) * y2 + 0.0083333310f) * y2 - 0.16666667f) * y2 + 1.0f) * y;
+
+	// 10-degree minimax approximation
+	float p = ((((-2.6051615e-07f * y2 + 2.4760495e-05f) * y2 - 0.0013888378f) * y2 + 0.041666638f) * y2 - 0.5f) * y2 + 1.0f;
+	*ScalarCos = sign * p;
+}
+
+struct FQuat;
+
 struct FRotator
 {
 	float Pitch;
 	float Yaw;
 	float Roll;
+
+	FQuat Quaternion() const;
 
 	static __forceinline float ClampAxis(float Angle)
 	{
@@ -113,6 +158,27 @@ struct FRotator
 
 		return Angle;
 	}
+};
+
+struct FText
+{
+	char UnknownData[0x18];
+};
+
+enum class EFortRarity : uint8_t
+{
+	Handmade = 0,
+	Ordinary = 1,
+	Sturdy = 2,
+	Quality = 3,
+	Fine = 4,
+	Elegant = 5,
+	Masterwork = 6,
+	Epic = 7,
+	Badass = 8,
+	Legendary = 9,
+	NumRarityValues = 10,
+	EFortRarity_MAX = 11
 };
 
 struct FQuat
@@ -163,6 +229,30 @@ struct FQuat
 	}
 };
 
+FQuat FRotator::Quaternion() const
+{
+	const float DEG_TO_RAD = M_PI / (180.f);
+	const float RADS_DIVIDED_BY_2 = DEG_TO_RAD / 2.f;
+	float SP, SY, SR;
+	float CP, CY, CR;
+
+	const float PitchNoWinding = fmod(Pitch, 360.0f);
+	const float YawNoWinding = fmod(Yaw, 360.0f);
+	const float RollNoWinding = fmod(Roll, 360.0f);
+
+	SinCos(&SP, &CP, PitchNoWinding * RADS_DIVIDED_BY_2);
+	SinCos(&SY, &CY, YawNoWinding * RADS_DIVIDED_BY_2);
+	SinCos(&SR, &CR, RollNoWinding * RADS_DIVIDED_BY_2);
+
+	FQuat RotationQuat;
+	RotationQuat.X = CR * SP * SY - SR * CP * CY;
+	RotationQuat.Y = -CR * SP * CY - SR * CP * SY;
+	RotationQuat.Z = CR * CP * SY - SR * SP * CY;
+	RotationQuat.W = CR * CP * CY + SR * SP * SY;
+
+	return RotationQuat;
+}
+
 enum class EFortResourceType : uint8_t
 {
 	Wood = 0,
@@ -180,6 +270,15 @@ struct FTransform // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12
 	char pad_1C[0x4]; // Padding never changes
 	FVector Scale3D;
 	char pad_2C[0x4];
+};
+
+enum ESpawnActorCollisionHandlingMethod
+{
+	Undefined,
+	AlwaysSpawn,
+	AdjustIfPossibleButAlwaysSpawn,
+	AdjustIfPossibleButDontSpawnIfColliding,
+	DontSpawnIfColliding,
 };
 
 template<class TEnum>

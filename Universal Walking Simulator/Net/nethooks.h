@@ -239,8 +239,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         Inventory::CreateAndAddItem(PlayerController, SlurpJuice, EFortQuickBars::Primary, 5, 1);
 
         Inventory::GiveAllAmmo(PlayerController);
-        // Inventory::GiveBuildings(PlayerController);
-        Inventory::GiveStartingItems(PlayerController); // Gives the needed items
+        Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
         Inventory::GiveMats(PlayerController);
     }
 
@@ -547,8 +546,11 @@ void InitializeNetHooks()
         MH_EnableHook((PVOID)KickPlayerAddr);
     }
 
-    /* MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
-    MH_EnableHook((PVOID)LP_SpawnPlayActorAddr); */
+    if (LP_SpawnPlayActorAddr)
+    {
+        MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
+        MH_EnableHook((PVOID)LP_SpawnPlayActorAddr);
+    }
 
     // if (NetDebug)
     {

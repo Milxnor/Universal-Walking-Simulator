@@ -1,7 +1,7 @@
 #pragma once
 
 #define CURL_STATICLIB
-#define DPP_DISABLED
+// #define DPP_DISABLED
 
 // ^ Why? You need all these dlls n stuff in your win64 in order for the dll to actually work witso.
 

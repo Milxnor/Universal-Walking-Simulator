@@ -49,6 +49,10 @@ void InitializePatterns()
     }
 
     LP_SpawnPlayActorAddr = FindPattern(Patterns::LocalPlayerSpawnPlayActor);
+
+    if (!LP_SpawnPlayActorAddr)
+        std::cout << _("[WARNING] Will not be able to prevent the creation of the player controller! Must be logged in to Fortnite to host.\n");
+
     //CheckPattern(_("LocalPlayer::SpawnPlayActor"), LP_SpawnPlayActorAddr, &LP_SpawnPlayActor);
 
     CollectGarbageAddr = FindPattern(Patterns::CollectGarbage);

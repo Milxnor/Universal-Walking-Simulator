@@ -43,9 +43,31 @@ namespace Easy
 
 	UObject* SpawnActor(UObject* Class, const FVector& Location = FVector(), const FRotator& Rotation = FRotator())
 	{
+		/* FTransform transform;
+		transform.Translation = Location;
+		transform.Rotation = Rotation.Quaternion();
+		transform.Scale3D = FVector(1, 1, 1);
+
+		struct
+		{
+			UObject* WorldContextObject;                                       // (ConstParm, Parm, ZeroConstructor, IsPlainOldData)
+			UObject* ActorClass;                                               // (Parm, ZeroConstructor, IsPlainOldData)
+			FTransform                                  SpawnTransform;                                           // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
+			bool                                               bNoCollisionFail;                                         // (Parm, ZeroConstructor, IsPlainOldData)
+			class AActor* Owner;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
+			class AActor* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
+		} params{Helper::GetWorld(), Class, transform, false, nullptr};
+
+		static auto GSC = FindObject(_("Class /Script/Engine.GameplayStatics"));
+		static auto BeginSpawningActorFromClass = GSC->Function(_("BeginSpawningActorFromClass"));
+
+		if (BeginSpawningActorFromClass) */
+
 		auto Loc = Location;
 		auto Rot = Rotation;
-		return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, FActorSpawnParameters());
+		FActorSpawnParameters spawnParams = FActorSpawnParameters();
+		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, spawnParams);
 	}
 }
 
@@ -709,6 +731,59 @@ namespace Helper
 				KSLClass->ProcessEvent(fn, &Object);
 
 			return params.ReturnValue;
+		}
+
+		std::string RarityToString(EFortRarity Rarity)
+		{
+			switch (Rarity)
+			{
+			case EFortRarity::Badass:
+				return _("Badass");
+			case EFortRarity::Elegant:
+				return _("Elegant");
+			case EFortRarity::Epic:
+				return _("Epic");
+			case EFortRarity::Masterwork:
+				return _("Masterwork");
+			case EFortRarity::Legendary:
+				return _("Legendary");
+			case EFortRarity::Sturdy:
+				return _("Sturdy");
+			case EFortRarity::Quality:
+				return _("Quality");
+			case EFortRarity::Ordinary:
+				return _("Ordinary");
+			default:
+				return _("InvalidRarity");
+			}
+		}
+
+		std::string TextToString(FText Text)
+		{
+			static auto KTL = FindObject(_("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
+
+			FString String;
+
+			if (KTL)
+			{
+				static auto fn = KTL->Function(_("Conv_TextToString"));
+
+				struct {
+					FText InText;
+					FString ReturnValue;
+				} params{ Text };
+
+				if (fn)
+					KTL->ProcessEvent(fn, &params);
+				else
+					std::cout << _("Unable to find Conv_TextToString!\n");
+
+				String = params.ReturnValue;
+			}
+			else
+				std::cout << _("Unable to find KTL!\n");
+
+			return String.Data.GetData() ? String.ToString() : "INVALID_WEAPON";
 		}
 	}
 

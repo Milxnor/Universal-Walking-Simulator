@@ -855,7 +855,17 @@ FString(*GetEngineVersion)();
 
 struct FActorSpawnParameters
 {
-	unsigned char Unk00[0x40];
+	FName Name;
+	UObject* Template; // AActor*
+	UObject* Owner; // AActor*
+	UObject* Instigator; // APawn*
+	UObject* OverrideLevel; // ULevel*
+	ESpawnActorCollisionHandlingMethod SpawnCollisionHandlingOverride;
+	uint16_t	bRemoteOwned : 1;
+	uint16_t	bNoFail : 1;
+	uint16_t	bDeferConstruction : 1;
+	uint16_t	bAllowDuringConstructionScript : 1;
+	EObjectFlags ObjectFlags;
 };
 
 static UObject* (*SpawnActorO)(UObject* World, UObject* Class, FVector* Position, FRotator* Rotation, const FActorSpawnParameters& SpawnParameters);

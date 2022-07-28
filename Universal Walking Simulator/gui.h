@@ -264,12 +264,22 @@ DWORD WINAPI GuiThread(LPVOID)
 									auto PlayerState = *Controller->Member<UObject*>(_("PlayerState"));
 									auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
 
-									if (PlayerState && Pawn)
+									if (Pawn)
 									{
-										Players.push_back({
-											Pawn,
-											PlayerState
-										});
+										static auto IsActorBeingDestroyed = Pawn->Function(_("IsActorBeingDestroyed"));
+
+										bool bIsActorBeingDestroyed = true;
+
+										if (IsActorBeingDestroyed)
+											Pawn->ProcessEvent(IsActorBeingDestroyed, &bIsActorBeingDestroyed);
+
+										if (PlayerState && Pawn && !bIsActorBeingDestroyed)
+										{
+											Players.push_back({
+												Pawn,
+												PlayerState
+												});
+										}
 									}
 								}
 							}
@@ -379,51 +389,117 @@ DWORD WINAPI GuiThread(LPVOID)
 			else
 			{
 				InitializePlayers();
-				if (!bInformationTab)
+				if (PlayerTab < Players.size())
 				{
-					static std::string WID;
+					auto& CurrentPlayer = Players.at(PlayerTab); // Iirc .at does more checking
 
-					ImGui::Text(("Player: " + Helper::GetPlayerName(Players[PlayerTab].second)).c_str());
-					if (ImGui::Button("Game Statistics"))
+					if (CurrentPlayer.first && CurrentPlayer.second)
 					{
-						bInformationTab = true;
-					}
-					ImGui::NewLine();
-					if (ImGui::Button(ICON_FA_HAMMER " Ban (COMING SOON)"))
-					{
+						if (!bInformationTab)
+						{
+							static std::string WID;
+							static int Count = 1;
 
-					}
-					if (ImGui::Button(ICON_FA_CROSSHAIRS " Kill"))
-					{
+							ImGui::Text(("Player: " + Helper::GetPlayerName(CurrentPlayer.second)).c_str());
+							if (ImGui::Button("Game Statistics"))
+							{
+								bInformationTab = true;
+							}
+							ImGui::NewLine();
+							if (ImGui::Button(ICON_FA_HAMMER " Ban (COMING SOON)"))
+							{
 
-					}
+							}
+							if (ImGui::Button(ICON_FA_CROSSHAIRS " Kill"))
+							{
 
-					ImGui::InputText("WID", &WID);
-					if (ImGui::Button(ICON_FA_HAND_HOLDING_USD " Give Weapon"))
-					{
-						Inventory::CreateAndAddItem(*Players[PlayerTab].first->Member<UObject*>(_("Controller")), FindObject(WID), EFortQuickBars::Primary, 1);
-					}
+							}
 
-					ImGui::NewLine();
+							ImGui::InputText("WID", &WID);
+							// ImGui::SliderInt("Count", &Count, 1, INT32_MAX);
+							ImGui::InputInt("Count", &Count);
+							if (ImGui::Button(ICON_FA_HAND_HOLDING_USD " Give Weapon"))
+							{
+								Inventory::CreateAndAddItem(*CurrentPlayer.first->Member<UObject*>(_("Controller")), FindObject(WID), EFortQuickBars::Primary, 1, Count);
+							}
 
-					if (ImGui::Button(ICON_FA_BACKWARD " Back"))
-					{
-						PlayerTab = -1;
-						Tab = 2;
-						WID = "";
-					}
-				}
-				else
-				{
-					TextCentered(std::format("Kills: {}", *Players[PlayerTab].second->Member<int>(_("KillScore"))));
-					auto PawnLocation = Helper::GetActorLocation(Players[PlayerTab].first);
-					TextCentered(std::format("X: {} Y: {} Z: {}", (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 
+							ImGui::NewLine();
 
-					ImGui::NewLine();
+							if (ImGui::Button(ICON_FA_BACKWARD " Back"))
+							{
+								PlayerTab = -1;
+								Tab = 2;
+								WID = "";
+							}
+						}
+						else
+						{
+							auto Pawn = CurrentPlayer.first;
+							TextCentered(std::format("Kills: {}", *CurrentPlayer.second->Member<int>(_("KillScore"))));
+							auto PawnLocation = Helper::GetActorLocation(Pawn);
+							TextCentered(std::format("X: {} Y: {} Z: {}", (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 
 
-					if (ButtonCentered("Exit"))
-					{
-						bInformationTab = false;
+							auto CurrentWeapon = *Pawn->Member<UObject*>(_("CurrentWeapon"));
+
+							if (CurrentWeapon)
+							{
+								auto Guid = CurrentWeapon->Member<FGuid>(_("ItemEntryGuid"));
+
+								if (Guid)
+								{
+									auto Controller = *Pawn->Member<UObject*>(_("Controller"));
+									UObject* Definition = nullptr;
+									int Count = -1;
+
+									if (Controller)
+									{
+										auto ItemInstances = Inventory::GetItemInstances(Controller);
+										UObject* ItemDefinition = nullptr;
+
+										if (ItemInstances)
+										{
+											for (int j = 0; j < ItemInstances->Num(); j++)
+											{
+												auto ItemInstance = ItemInstances->At(j);
+
+												if (!ItemInstance)
+													continue;
+
+												auto CurrentGuid = Inventory::GetItemGuid(ItemInstance);
+
+												if (CurrentGuid == *Guid)
+												{
+													Definition = Inventory::GetItemDefinition(ItemInstance);
+													Count = *FFortItemEntry::GetCount(ItemInstance->Member<__int64>(_("ItemEntry"))); // lets hope its a UFortWorldItem*
+													// break;
+												}
+											}
+
+											if (Definition)
+											{
+												auto Name = Definition->Member<FText>(_("DisplayName"));
+
+												if (Name)
+												{
+													auto DisplayName = Helper::Conversion::TextToString(*Name);
+													// auto Rarity = *Definition->Member<EFortRarity>(_("Rarity"));
+
+													bool bMultiple = Count > 1;
+													TextCentered(std::format("Holding {} {}", bMultiple ? std::format("{}x", Count) : "a", bMultiple ? DisplayName + "s" : DisplayName)); // TODO: Add Count and Rarity
+												}
+											}
+										}
+									}
+								}
+							}
+
+							ImGui::NewLine();
+
+							if (ButtonCentered("Exit"))
+							{
+								bInformationTab = false;
+							}
+						}
 					}
 				}
 			}
@@ -438,12 +514,14 @@ DWORD WINAPI GuiThread(LPVOID)
 		g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
 		D3DCOLOR clear_col_dx = D3DCOLOR_RGBA((int)(clear_color.x * clear_color.w * 255.0f), (int)(clear_color.y * clear_color.w * 255.0f), (int)(clear_color.z * clear_color.w * 255.0f), (int)(clear_color.w * 255.0f));
 		g_pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, clear_col_dx, 1.0f, 0);
+
 		if (g_pd3dDevice->BeginScene() >= 0)
 		{
 			ImGui::Render();
 			ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 			g_pd3dDevice->EndScene();
 		}
+
 		HRESULT result = g_pd3dDevice->Present(NULL, NULL, NULL, NULL);
 
 		// Handle loss of D3D9 device
