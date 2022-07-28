@@ -159,7 +159,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
             else
             {
                 // static auto MatsAbility = FindObject(_("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
-//GrantGameplayAbility(Pawn, MatsAbility);
+                //GrantGameplayAbility(Pawn, MatsAbility);
 
 
                 static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
@@ -291,6 +291,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     {
     case 0:
     {
+        //S5-6 Fix
         if (Engine_Version == 421) // not the best way to fix it...
         {
             {

@@ -71,6 +71,7 @@ inline void initStuff()
 				auto FNVer = std::stod(FN_Version);
 
 				if (std::floor(FNVer) == 3 || FNVer >= 8.0) {
+					//If This is called on Seasons 4, 6, or 7 then Setting The Playlist Crashes.
 					AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartMatch")), nullptr);
 				}
 				// *AuthGameMode->Member<bool>(_("bAlwaysDBNO")) = true;
@@ -158,7 +159,7 @@ inline void initStuff()
 
 			if (Helper::IsRespawnEnabled())
 			{
-				// Enable glider redeploy
+				// Enable glider redeploy (idk if this works)
 				FString GliderRedeployCmd;
 				GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 1");
 				Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
@@ -352,7 +353,7 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 	return true;
 }
 
-auto GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on github, from raider3.5
+EDeathCause GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on github, from raider3.5
 {
 	static std::map<std::string, EDeathCause> DeathCauses{
 		{ "weapon.ranged.shotgun", EDeathCause::Shotgun },
@@ -863,7 +864,7 @@ void FinishInitializeUHooks()
 	AddHook(_("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
+	//AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
 	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
@@ -977,6 +978,7 @@ void InitializeHooks()
 
 	if (GetPlayerViewpointAddr) //Engine_Version == 423)
 	{
+		//Fixes Flashing
 		MH_CreateHook((PVOID)GetPlayerViewpointAddr, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
 		MH_EnableHook((PVOID)GetPlayerViewpointAddr);
 	}

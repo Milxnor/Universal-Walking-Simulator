@@ -696,7 +696,7 @@ namespace Inventory
 
 	bool CreateOrAdd()
 	{
-
+		return true;
 	}
 
 	void GiveAllAmmo(UObject* Controller)
