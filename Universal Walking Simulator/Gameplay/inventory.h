@@ -2,6 +2,7 @@
 
 #include <UE/structs.h>
 #include <Gameplay/helper.h>
+#include <Gameplay/abilities.h>
 
 static int GetEntrySize()
 {
@@ -120,31 +121,20 @@ namespace Inventory
 
 	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, const FGuid& Guid, int Ammo = 0)
 	{
-		if (Pawn)
+		if (Pawn && Definition)
 		{
-			static auto fn = Definition->Function(_("GetWeaponActorClass"));
-			if (fn)
+			auto FullName = Definition->GetFullName();
+			bool IsAGID = (FullName.contains(_("AthenaGadgetItemDefinition ")) || FullName.contains(_("FortGadgetItemDefinition "))) ? true : false; // TODO: Use IsA
+			if (!IsAGID)
 			{
-				/* // UObject* WeaponClass = nullptr;
-				struct { UObject* WeaponClass; }Params{};
-				Definition->ProcessEvent(fn, &Params);
-				auto WeaponClass = Params.WeaponClass;
-				if (WeaponClass)
-				{
-					auto Weapon = Easy::SpawnActor(WeaponClass);
-				}
-				else
-					std::cout << _("Invalid WeaponClass!\n");
-
-				return WeaponClass; */
-
 				static auto equipFn = Pawn->Function(_("EquipWeaponDefinition"));
 				struct {
 					UObject* Def;
 					FGuid Guid;
 					UObject* Wep;
 				} params{ Definition, Guid };
-				Pawn->ProcessEvent(equipFn, &params);
+				if (equipFn)
+					Pawn->ProcessEvent(equipFn, &params);
 				auto Weapon = params.Wep;
 
 				if (Weapon)
@@ -160,7 +150,40 @@ namespace Inventory
 				return Weapon;
 			}
 			else
-				std::cout << _("Failed to find GetWeaponActorClass!\n");
+			{
+				// std::cout << _("Equipping AGID!\n");
+				static auto GetDecoItemDefinition = Definition->Function(_("GetDecoItemDefinition"));
+
+				UObject* Def = nullptr; // UFortDecoItemDefinition*
+
+				if (GetDecoItemDefinition)
+					Definition->ProcessEvent(GetDecoItemDefinition, &Def);
+
+				if (Def)
+				{
+					// std::cout << "Def Name: " << Def->GetFullName() << '\n';
+					EquipWeaponDefinition(Pawn, Def, Guid, Ammo);
+				}
+				else
+					std::cout << _("Failed to get AGID's Definition!\n");
+
+				/* if (FullName.contains(_("AthenaGadgetItemDefinition "))) // Ability class seems to always be invalid
+				{
+					static auto GetGameplayAbility = Definition->Function(_("GetGameplayAbility"));
+					UObject* GameplayAbilityClass = nullptr;
+
+					if (GetGameplayAbility)
+						Definition->ProcessEvent(GetGameplayAbility, &GameplayAbilityClass);
+
+					if (GameplayAbilityClass)
+					{
+						std::cout << _("Granting ability: ") << GameplayAbilityClass->GetFullName() << '\n';
+						GrantGameplayAbility(Pawn, GameplayAbilityClass);
+					}
+					else
+						std::cout << _("Failed to get GameplayAbilityClass!\n");
+				} */
+			}
 		}
 
 		return nullptr;

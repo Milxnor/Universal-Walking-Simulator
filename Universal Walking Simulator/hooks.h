@@ -672,22 +672,6 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				auto SpawnLocation = *ReceivingActor->Member<FVector>(_("LootSpawnLocation"));
 			}
 
-			else if (ReceivingActorName.contains(_("CampFire_"))) //  Athena_Prop_Recreation_CampFire_4
-			{
-				auto InitCampfireEffects = ReceivingActor->Function(_("InitCampfireEffects")); // INVALID!
-
-				auto Super = (UClass_FTT*)ReceivingActor;
-				for (auto Super = (UClass_FTT*)ReceivingActor; Super; Super = (UClass_FTT*)Super->SuperStruct)
-				{
-					std::cout << _("Campfire SuperStruct: ") << Super->GetFullName() << '\n';
-				}
-
-				if (InitCampfireEffects)
-					ReceivingActor->ProcessEvent(InitCampfireEffects);
-				else
-					std::cout << _("Unable to find InitCampfireEffects!\n");
- 			}
-
 			if (ReceivingActorName.contains(_("Vehicle")))
 			{
 				// Helper::SetRemoteRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);

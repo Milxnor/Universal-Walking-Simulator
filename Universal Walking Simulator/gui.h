@@ -5,333 +5,524 @@
 #include <Windows.h>
 #include <dxgi.h>
 #include <d3d11.h>
-
-#include <Windows.h>
-#include <dxgi.h>
-#include <d3d11.h>
-
-#define VPS
+#include <d3d9.h>
 
 #include <ImGui/imgui.h>
-#include <Kiero/kiero.h>
-#include <filesystem>
-
-#include "Gameplay/helper.h"
-#include "Gameplay/events.h"
-#include <iostream>
-#include <d3d9.h>
 #include <ImGui/imgui_impl_dx9.h>
 
-#ifndef VPS
+#include <string>
+#include <imgui/imgui_impl_win32.h>
+#include <imgui/imgui_stdlib.h>
+#include "fontawesome.h"
+#include <vector>
+#include <format>
+#include <imgui/imgui_internal.h>
+#include <Gameplay/helper.h>
+#include <Gameplay/events.h>
 
-HRESULT(WINAPI* PresentOriginal)(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_t Flags);
+// THE BASE CODE IS FROM IMGUI GITHUB
 
-extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+static LPDIRECT3D9              g_pD3D = NULL;
+static LPDIRECT3DDEVICE9        g_pd3dDevice = NULL;
+static D3DPRESENT_PARAMETERS    g_d3dpp = {};
 
-namespace fs = std::filesystem;
+// Forward declarations of helper functions
+bool CreateDeviceD3D(HWND hWnd);
+void CleanupDeviceD3D();
+void ResetDevice();
+LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-HWND wnd = NULL;
-WNDPROC oWndProc;
-ID3D11Device* pDevice = nullptr;
-ID3D11DeviceContext* pContext = nullptr;
-ID3D11RenderTargetView* mainRenderTargetView;
-
-static bool bHasInit = false;
-static bool bShow = false;
-
-LRESULT __stdcall WndProc(const HWND hWnd, uint32_t message, WPARAM wParam, LPARAM lParam)
+void InitStyle()
 {
-	switch (message)
-	{
-	case WM_KEYUP:
-		if (wParam == VK_F8 || (bShow && wParam == VK_ESCAPE))
-		{
-			bShow = !bShow;
-			ImGui::GetIO().MouseDrawCursor = bShow;
-		}
-		break;
-	case WM_SIZE:
-		if (pDevice && wParam != SIZE_MINIMIZED)
-		{
-
-		}
-		break;
-	case WM_QUIT:
-		if (bShow)
-			ExitProcess(0);
-
-		break;
-	case WM_DESTROY:
-		PostQuitMessage(0);
-	}
-
-	if (bShow)
-	{
-		ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam);
-		return TRUE;
-	}
-
-	return CallWindowProc(oWndProc, hWnd, message, wParam, lParam);
-}
-
-void SetupStyle()
-{
-	// Sorry if there's any errors here, I translated this back by hand.
-	auto& io = ImGui::GetIO();
-	io.Fonts->AddFontFromFileTTF(R"(../vendor/Aller_Bd.ttf)", 15.0f);
-
-	auto& style = ImGui::GetStyle();
-	style.FrameRounding = 4.0f;
-	style.WindowBorderSize = 0.0f;
-	style.PopupBorderSize = 0.0f;
-	style.GrabRounding = 4.0f;
+	ImGui::GetIO().Fonts->AddFontFromFileTTF("Reboot Resources/fonts/ruda-bold.ttf", 17);
+	ImGui::GetStyle().FrameRounding = 4.0f;
+	ImGui::GetStyle().GrabRounding = 4.0f;
 
 	ImVec4* colors = ImGui::GetStyle().Colors;
-	colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-	colors[ImGuiCol_TextDisabled] = ImVec4(0.73f, 0.75f, 0.74f, 1.00f);
-	colors[ImGuiCol_WindowBg] = ImVec4(0.09f, 0.09f, 0.09f, 0.94f);
-	colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	colors[ImGuiCol_Text] = ImVec4(0.95f, 0.96f, 0.98f, 1.00f);
+	colors[ImGuiCol_TextDisabled] = ImVec4(0.36f, 0.42f, 0.47f, 1.00f);
+	colors[ImGuiCol_WindowBg] = ImVec4(0.11f, 0.15f, 0.17f, 1.00f);
+	colors[ImGuiCol_ChildBg] = ImVec4(0.15f, 0.18f, 0.22f, 1.00f);
 	colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
-	colors[ImGuiCol_Border] = ImVec4(0.20f, 0.20f, 0.20f, 0.50f);
+	colors[ImGuiCol_Border] = ImVec4(0.08f, 0.10f, 0.12f, 1.00f);
 	colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-	colors[ImGuiCol_FrameBg] = ImVec4(0.71f, 0.39f, 0.39f, 0.54f);
-	colors[ImGuiCol_FrameBgHovered] = ImVec4(0.84f, 0.66f, 0.66f, 0.40f);
-	colors[ImGuiCol_FrameBgActive] = ImVec4(0.84f, 0.66f, 0.66f, 0.67f);
-	colors[ImGuiCol_TitleBg] = ImVec4(0.47f, 0.22f, 0.22f, 0.67f);
-	colors[ImGuiCol_TitleBgActive] = ImVec4(0.47f, 0.22f, 0.22f, 1.00f);
-	colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.47f, 0.22f, 0.22f, 0.67f);
-	colors[ImGuiCol_MenuBarBg] = ImVec4(0.34f, 0.16f, 0.16f, 1.00f);
-	colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
-	colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
-	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
-	colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
-	colors[ImGuiCol_CheckMark] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-	colors[ImGuiCol_SliderGrab] = ImVec4(0.71f, 0.39f, 0.39f, 1.00f);
-	colors[ImGuiCol_SliderGrabActive] = ImVec4(0.84f, 0.66f, 0.66f, 1.00f);
-	colors[ImGuiCol_Button] = ImVec4(0.47f, 0.22f, 0.22f, 0.65f);
-	colors[ImGuiCol_ButtonHovered] = ImVec4(0.71f, 0.39f, 0.39f, 0.65f);
-	colors[ImGuiCol_ButtonActive] = ImVec4(0.20f, 0.20f, 0.20f, 0.50f);
-	colors[ImGuiCol_Header] = ImVec4(0.71f, 0.39f, 0.39f, 0.54f);
-	colors[ImGuiCol_HeaderHovered] = ImVec4(0.84f, 0.66f, 0.66f, 0.65f);
-	colors[ImGuiCol_HeaderActive] = ImVec4(0.84f, 0.66f, 0.66f, 0.00f);
-	colors[ImGuiCol_Separator] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
-	colors[ImGuiCol_SeparatorHovered] = ImVec4(0.71f, 0.39f, 0.39f, 0.54f);
-	colors[ImGuiCol_SeparatorActive] = ImVec4(0.71f, 0.39f, 0.39f, 0.54f);
-	colors[ImGuiCol_ResizeGrip] = ImVec4(0.71f, 0.39f, 0.39f, 0.54f);
-	colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.84f, 0.66f, 0.66f, 0.66f);
-	colors[ImGuiCol_ResizeGripActive] = ImVec4(0.84f, 0.66f, 0.66f, 0.66f);
-	colors[ImGuiCol_Tab] = ImVec4(0.71f, 0.39f, 0.39f, 0.54f);
-	colors[ImGuiCol_TabHovered] = ImVec4(0.84f, 0.66f, 0.66f, 0.66f);
-	colors[ImGuiCol_TabActive] = ImVec4(0.84f, 0.66f, 0.66f, 0.66f);
-	colors[ImGuiCol_TabUnfocused] = ImVec4(0.07f, 0.10f, 0.15f, 0.97f);
-	colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.14f, 0.26f, 0.42f, 1.00f);
+	colors[ImGuiCol_FrameBg] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_FrameBgHovered] = ImVec4(0.12f, 0.20f, 0.28f, 1.00f);
+	colors[ImGuiCol_FrameBgActive] = ImVec4(0.09f, 0.12f, 0.14f, 1.00f);
+	colors[ImGuiCol_TitleBg] = ImVec4(0.09f, 0.12f, 0.14f, 0.65f);
+	colors[ImGuiCol_TitleBgActive] = ImVec4(0.08f, 0.10f, 0.12f, 1.00f);
+	colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
+	colors[ImGuiCol_MenuBarBg] = ImVec4(0.15f, 0.18f, 0.22f, 1.00f);
+	colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.39f);
+	colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.18f, 0.22f, 0.25f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.09f, 0.21f, 0.31f, 1.00f);
+	colors[ImGuiCol_CheckMark] = ImVec4(0.28f, 0.56f, 1.00f, 1.00f);
+	colors[ImGuiCol_SliderGrab] = ImVec4(0.28f, 0.56f, 1.00f, 1.00f);
+	colors[ImGuiCol_SliderGrabActive] = ImVec4(0.37f, 0.61f, 1.00f, 1.00f);
+	colors[ImGuiCol_Button] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_ButtonHovered] = ImVec4(0.28f, 0.56f, 1.00f, 1.00f);
+	colors[ImGuiCol_ButtonActive] = ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+	colors[ImGuiCol_Header] = ImVec4(0.20f, 0.25f, 0.29f, 0.55f);
+	colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+	colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	colors[ImGuiCol_Separator] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_SeparatorHovered] = ImVec4(0.10f, 0.40f, 0.75f, 0.78f);
+	colors[ImGuiCol_SeparatorActive] = ImVec4(0.10f, 0.40f, 0.75f, 1.00f);
+	colors[ImGuiCol_ResizeGrip] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
+	colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+	colors[ImGuiCol_ResizeGripActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+	colors[ImGuiCol_Tab] = ImVec4(0.11f, 0.15f, 0.17f, 1.00f);
+	colors[ImGuiCol_TabHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+	colors[ImGuiCol_TabActive] = ImVec4(0.20f, 0.25f, 0.29f, 1.00f);
+	colors[ImGuiCol_TabUnfocused] = ImVec4(0.11f, 0.15f, 0.17f, 1.00f);
+	colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.11f, 0.15f, 0.17f, 1.00f);
 	colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
 	colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
 	colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
 	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
 	colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
 	colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
-	colors[ImGuiCol_NavHighlight] = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
+	colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
 	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
 	colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
 	colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 }
 
-HRESULT WINAPI HookPresent(IDXGISwapChain* SwapChain, uint32_t Interval, uint32_t Flags)
+class Playera
 {
-	if (!bHasInit)
-	{
-		auto stat = SUCCEEDED(SwapChain->GetDevice(__uuidof(ID3D11Device), (PVOID*)&pDevice));
-		if (stat)
-		{
-			pDevice->GetImmediateContext(&pContext);
-			DXGI_SWAP_CHAIN_DESC sd;
-			SwapChain->GetDesc(&sd);
-			wnd = sd.OutputWindow;
-			ID3D11Texture2D* pBackBuffer;
-			SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-			pDevice->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
-			pBackBuffer->Release();
-			oWndProc = (WNDPROC)SetWindowLongPtr(wnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
-			ImGui::CreateContext();
-			ImGuiIO& io = ImGui::GetIO();
-			io.ConfigFlags = ImGuiConfigFlags_NoMouseCursorChange;
+public:
+	std::string Name;
+	int Kills = 0;
 
-			ImGui_ImplWin32_Init(wnd);
-			ImGui_ImplDX11_Init(pDevice, pContext);
+	Playera(const std::string& _Name, int _Kills) : Name(_Name), Kills(_Kills) {}
 
-			SetupStyle();
+	Playera() {}
+};
 
-			bHasInit = true;
-		}
+void TextCentered(std::string text, bool bNewLine = true) {
+	if (bNewLine)
+		ImGui::NewLine();
 
-		else return PresentOriginal(SwapChain, Interval, Flags);
+	float win_width = ImGui::GetWindowSize().x;
+	float text_width = ImGui::CalcTextSize(text.c_str()).x;
+
+	// calculate the indentation that centers the text on one line, relative
+	// to window left, regardless of the `ImGuiStyleVar_WindowPadding` value
+	float text_indentation = (win_width - text_width) * 0.5f;
+
+	// if text is too long to be drawn on one line, `text_indentation` can
+	// become too small or even negative, so we check a minimum indentation
+	float min_indentation = 20.0f;
+	if (text_indentation <= min_indentation) {
+		text_indentation = min_indentation;
 	}
 
-	if (bShow) // TODO: Acutaly learn ImGUI and rewrite
-	{
-		ImGui_ImplDX11_NewFrame();
-		ImGui_ImplWin32_NewFrame();
-
-		ImGui::NewFrame();
-		ImGui::SetNextWindowBgAlpha(0.8f);
-		ImGui::SetNextWindowSize(ImVec2(560, 345));
-
-		ImGui::Begin(_("Project Reboot"), 0, ImGuiWindowFlags_NoCollapse);
-
-		// initialize variables used by the user using the gui
-
-		static int Tab = 1;
-		static float currentFOV = 80;
-		static float FOV = 80;
-		static char WID[60] = {};
-		static bool bConsoleIsOpen = false;
-		static char headPath[MAX_PATH] = "";
-		static char bodyPath[MAX_PATH] = "";
-
-		if (ImGui::BeginTabBar("")) {
-			if (ImGui::BeginTabItem(_("Game")))
-			{
-				Tab = 1;
-				ImGui::EndTabItem();
-			}
-			if (ImGui::BeginTabItem(_("Mode")))
-			{
-				Tab = 2;
-				ImGui::EndTabItem();
-			}
-
-			// Add a tab called like POIs and add all POIs
-
-			ImGui::EndTabBar();
-		}
-
-		switch (Tab) // now that we know what tab we can now display what that tab has
-		{
-		case 1:
-			if (Engine_Version < 423) // I do not know how to start the bus on S8+
-			{
-				if (ImGui::Button(_("Start Aircraft")))
-				{
-					FString StartAircraftCmd;
-					StartAircraftCmd.Set(L"startaircraft");
-
-					Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
-
-					std::cout << _("Started aircraft!\n");
-				}
-			}
-			if (Events::HasEvent()) {
-				if (ImGui::Button(_("Start Event"))) {
-					Events::StartEvent();
-				}
-			}
-
-			if (ImGui::Button(_("Enable Glider Redeploy")))
-			{
-				FString GliderRedeployCmd;
-				GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 1");
-				Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
-
-				std::cout << _("Enabled Glider Redeploy!\n");
-			}
-
-			if (ImGui::Button(_("Disable Glider Redeploy")))
-			{
-				FString GliderRedeployCmd;
-				GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 0");
-				Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
-
-				std::cout << _("Disabled Glider Redeploy!\n");
-			}
-
-			break;
-
-		case 2:
-			if (ImGui::Button(_("Change Phase to Aircraft"))) // TODO: Improve phase stuff
-			{
-				auto world = Helper::GetWorld();
-				auto gameState = *world->Member<UObject*>(_("GameState"));
-
-				*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Aircraft;
-
-				struct {
-					EAthenaGamePhase OldPhase;
-				} params2{ EAthenaGamePhase::None };
-
-				static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
-
-				std::cout << _("Changed Phase to Aircraft.");
-			}
-
-			/* if (ImGui::Button(_("Change Phase to SafeZones"))) // Crashes
-			{
-				auto world = Helper::GetWorld();
-				auto gameState = *world->Member<UObject*>(_("GameState"));
-
-				*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::SafeZones;
-
-				struct {
-					EAthenaGamePhase OldPhase;
-				} params2{ EAthenaGamePhase::None };
-
-				static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
-
-				std::cout << _("Changed Phase to SafeZones.");
-			} */
-			/*if (ImGui::Button(_("Spawn Plane at spawn"))) // Crashes
-			{
-
-				auto plane = FindObject(_("Class /Script/FortniteGame.FortAthenaFerretVehicle"));
-
-				Easy::SpawnActor(plane, FVector{ 0, 0, 3000 });
-
-
-
-				std::cout << _("Spawn Plane at spawn");
-			}*/
-			break;
-		}
-
-		ImGui::End();
-		ImGui::Render();
-
-		pContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
-		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-	}
-	return PresentOriginal(SwapChain, Interval, Flags);
+	ImGui::SameLine(text_indentation);
+	ImGui::PushTextWrapPos(win_width - text_indentation);
+	ImGui::TextWrapped(text.c_str());
+	ImGui::PopTextWrapPos();
 }
 
-DWORD WINAPI GuiHook(LPVOID)
-{
-	bool bHooked = false;
-	while (!bHooked)
-	{
-		auto status = kiero::init(kiero::RenderType::D3D11); // Don't do auto because it tries DX9 since that's the first direct thingy it finds
-		if (status == kiero::Status::Success)
-		{
-			kiero::bind(8, (PVOID*)&PresentOriginal, HookPresent);
-			bHooked = true;
-		}
+bool ButtonCentered(std::string text, bool bNewLine = true) {
+	if (bNewLine)
+		ImGui::NewLine();
 
-		Sleep(100);
+	float win_width = ImGui::GetWindowSize().x;
+	float text_width = ImGui::CalcTextSize(text.c_str()).x;
+
+	// calculate the indentation that centers the text on one line, relative
+	// to window left, regardless of the `ImGuiStyleVar_WindowPadding` value
+	float text_indentation = (win_width - text_width) * 0.5f;
+
+	// if text is too long to be drawn on one line, `text_indentation` can
+	// become too small or even negative, so we check a minimum indentation
+	float min_indentation = 20.0f;
+	if (text_indentation <= min_indentation) {
+		text_indentation = min_indentation;
 	}
 
-	std::cout << _("Initialized GUI!\n");
+	ImGui::SameLine(text_indentation);
+	ImGui::PushTextWrapPos(win_width - text_indentation);
+	auto res = ImGui::Button(text.c_str());
+	ImGui::PopTextWrapPos();
+	return res;
+}
+
+static int Width = 640;
+static int Height = 480;
+
+DWORD WINAPI GuiThread(LPVOID)
+{
+	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, L"RebootClass", NULL };
+	::RegisterClassEx(&wc);
+	HWND hwnd = ::CreateWindowExW(0L, wc.lpszClassName, L"Project Reboot", (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX), 100, 100, Width, Height, NULL, NULL, wc.hInstance, NULL);
+
+	HANDLE hIcon = LoadImageW(wc.hInstance, L"Reboot Resources/images/reboot.ico", IMAGE_ICON, 48, 48, LR_LOADFROMFILE);
+	SendMessageW(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+
+	// SetWindowLongPtrW(hwnd, GWL_STYLE, WS_POPUP); // Disables windows title bar at the cost of dragging and some quality
+
+	// Initialize Direct3D
+	if (!CreateDeviceD3D(hwnd))
+	{
+		CleanupDeviceD3D();
+		::UnregisterClass(wc.lpszClassName, wc.hInstance);
+		return 1;
+	}
+
+	// Show the window
+	::ShowWindow(hwnd, SW_SHOWDEFAULT);
+	::UpdateWindow(hwnd);
+
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+	io.IniFilename = NULL; // Disable imgui.ini generation.
+	io.DisplaySize = ImGui::GetMainViewport()->Size;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	// io.Fonts->AddFontFromFileTTF("../vendor/fonts/Aller_Bd.ttf", 17);
+
+	// Setup Dear ImGui style
+	InitStyle();
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplWin32_Init(hwnd);
+	ImGui_ImplDX9_Init(g_pd3dDevice);
+
+	// Our state
+	bool show_demo_window = true;
+	bool show_another_window = false;
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+	ImFontConfig config;
+	config.MergeMode = true;
+	config.GlyphMinAdvanceX = 13.0f; // Use if you want to make the icon monospaced
+	static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+	io.Fonts->AddFontFromFileTTF("Reboot Resources/fonts/fontawesome-webfont.ttf", 13.0f, &config, icon_ranges);
+
+	// Main loop
+	bool done = false;
+	while (!done)
+	{
+		MSG msg;
+		while (::PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
+		{
+			::TranslateMessage(&msg);
+			::DispatchMessage(&msg);
+			if (msg.message == WM_QUIT)
+			{
+				done = true;
+				break;
+			}
+		}
+
+		ImGui_ImplDX9_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+
+		auto WindowSize = ImGui::GetMainViewport()->Size;
+		// ImGui::SetNextWindowPos(ImVec2(WindowSize.x * 0.5f, WindowSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f)); // Center
+		ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(640, 480), ImGuiCond_Always);
+
+		static int Tab = 1;
+		static int PlayerTab = -1;
+		static bool bInformationTab = false;
+
+		if (!ImGui::IsWindowCollapsed())
+		{
+			ImGui::Begin(("Project Reboot"), nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoResize);
+
+			std::vector<std::pair<UObject*, UObject*>> Players; // Pawn, PlayerState
+			
+			auto InitializePlayers = [&Players]() { // TODO: slow
+				auto World = Helper::GetWorld();
+				if (World)
+				{
+					auto NetDriver = *World->Member<UObject*>(_("NetDriver"));
+					if (NetDriver)
+					{
+						auto ClientConnections = NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+
+						if (ClientConnections)
+						{
+							for (int i = 0; i < ClientConnections->Num(); i++)
+							{
+								auto Connection = ClientConnections->At(i);
+
+								if (!Connection)
+									return;
+
+								auto Controller = *Connection->Member<UObject*>(_("PlayerController"));
+
+								if (Controller)
+								{
+									auto PlayerState = *Controller->Member<UObject*>(_("PlayerState"));
+									auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+
+									if (PlayerState && Pawn)
+									{
+										Players.push_back({
+											Pawn,
+											PlayerState
+										});
+									}
+								}
+							}
+						}
+					}
+				}
+			};
+
+			if (ImGui::BeginTabBar(""))
+			{
+				if (ImGui::BeginTabItem(ICON_FA_GAMEPAD " Game"))
+				{
+					Tab = 1;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
+				if (serverStatus == EServerStatus::Up)
+				{
+					if (ImGui::BeginTabItem(ICON_FA_PEOPLE_CARRY " Players"))
+					{
+						Tab = 2;
+						ImGui::EndTabItem();
+					}
+				}
+
+				if (ImGui::BeginTabItem("Credits"))
+				{
+					Tab = 3;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
+				ImGui::EndTabBar();
+			}
+
+			if (PlayerTab == -1)
+			{
+				switch (Tab)
+				{
+				case 1:
+				{
+					if (Engine_Version < 423) // I do not know how to start the bus on S8+
+					{
+						if (ImGui::Button(_("Start Aircraft")))
+						{
+							FString StartAircraftCmd;
+							StartAircraftCmd.Set(L"startaircraft");
+
+							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+
+							std::cout << _("Started aircraft!\n");
+						}
+					}
+					else
+					{
+						if (ImGui::Button(_("Change Phase to Aircraft"))) // TODO: Improve phase stuff
+						{
+							auto world = Helper::GetWorld();
+							auto gameState = *world->Member<UObject*>(_("GameState"));
+
+							*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Aircraft;
+
+							struct {
+								EAthenaGamePhase OldPhase;
+							} params2{ EAthenaGamePhase::None };
+
+							static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
+
+							std::cout << _("Changed Phase to Aircraft.");
+						}
+					}
+
+					if (Events::HasEvent()) {
+						if (ImGui::Button(_("Start Event"))) {
+							Events::StartEvent();
+						}
+					}
+					break;
+				}
+				case 2:
+					InitializePlayers();
+					for (int i = 0; i < Players.size(); i++)
+					{
+						auto& Player = Players[i];
+						auto PlayerState = Player.second;
+						
+						if (!Player.first || !PlayerState)
+							continue;
+
+						if (ImGui::Button(Helper::GetPlayerName(PlayerState).c_str()))
+						{
+							PlayerTab = i;
+						}
+					}
+					break;
+				case 3:
+					TextCentered("Credits:");
+					TextCentered("Milxnor: Made the base, main developer");
+					TextCentered("GD: Added events, cleans up code and adds features.");
+
+					break;
+				}
+			}
+			else
+			{
+				InitializePlayers();
+				if (!bInformationTab)
+				{
+					static std::string WID;
+
+					ImGui::Text(("Player: " + Helper::GetPlayerName(Players[PlayerTab].second)).c_str());
+					if (ImGui::Button("Game Statistics"))
+					{
+						bInformationTab = true;
+					}
+					ImGui::NewLine();
+					if (ImGui::Button(ICON_FA_HAMMER " Ban (COMING SOON)"))
+					{
+
+					}
+					if (ImGui::Button(ICON_FA_CROSSHAIRS " Kill"))
+					{
+
+					}
+
+					ImGui::InputText("WID", &WID);
+					if (ImGui::Button(ICON_FA_HAND_HOLDING_USD " Give Weapon"))
+					{
+						Inventory::CreateAndAddItem(*Players[PlayerTab].first->Member<UObject*>(_("Controller")), FindObject(WID), EFortQuickBars::Primary, 1);
+					}
+
+					ImGui::NewLine();
+
+					if (ImGui::Button(ICON_FA_BACKWARD " Back"))
+					{
+						PlayerTab = -1;
+						Tab = 2;
+						WID = "";
+					}
+				}
+				else
+				{
+					TextCentered(std::format("Kills: {}", *Players[PlayerTab].second->Member<int>(_("KillScore"))));
+					auto PawnLocation = Helper::GetActorLocation(Players[PlayerTab].first);
+					TextCentered(std::format("X: {} Y: {} Z: {}", (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 
+
+					ImGui::NewLine();
+
+					if (ButtonCentered("Exit"))
+					{
+						bInformationTab = false;
+					}
+				}
+			}
+
+			ImGui::End();
+		}
+
+		// Rendering
+		ImGui::EndFrame();
+		g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+		g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+		D3DCOLOR clear_col_dx = D3DCOLOR_RGBA((int)(clear_color.x * clear_color.w * 255.0f), (int)(clear_color.y * clear_color.w * 255.0f), (int)(clear_color.z * clear_color.w * 255.0f), (int)(clear_color.w * 255.0f));
+		g_pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, clear_col_dx, 1.0f, 0);
+		if (g_pd3dDevice->BeginScene() >= 0)
+		{
+			ImGui::Render();
+			ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
+			g_pd3dDevice->EndScene();
+		}
+		HRESULT result = g_pd3dDevice->Present(NULL, NULL, NULL, NULL);
+
+		// Handle loss of D3D9 device
+		if (result == D3DERR_DEVICELOST && g_pd3dDevice->TestCooperativeLevel() == D3DERR_DEVICENOTRESET)
+			ResetDevice();
+	}
+
+	ImGui_ImplDX9_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
+	CleanupDeviceD3D();
+	::DestroyWindow(hwnd);
+	::UnregisterClass(wc.lpszClassName, wc.hInstance);
 
 	return 0;
 }
 
-#else
+// Helper functions
 
+bool CreateDeviceD3D(HWND hWnd)
+{
+	if ((g_pD3D = Direct3DCreate9(D3D_SDK_VERSION)) == NULL)
+		return false;
 
-static LPDIRECT3DDEVICE9        g_pd3dDevice = NULL;
-static D3DPRESENT_PARAMETERS    g_d3dpp;
+	// Create the D3DDevice
+	ZeroMemory(&g_d3dpp, sizeof(g_d3dpp));
+	g_d3dpp.Windowed = TRUE;
+	g_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	g_d3dpp.BackBufferFormat = D3DFMT_UNKNOWN; // Need to use an explicit format with alpha if needing per-pixel alpha composition.
+	g_d3dpp.EnableAutoDepthStencil = TRUE;
+	g_d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
+	g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;           // Present with vsync
+	//g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;   // Present without vsync, maximum unthrottled framerate
+	if (g_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWnd, D3DCREATE_HARDWARE_VERTEXPROCESSING, &g_d3dpp, &g_pd3dDevice) < 0)
+		return false;
 
-extern LRESULT ImGui_ImplDX9_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	return true;
+}
+
+void CleanupDeviceD3D()
+{
+	if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = NULL; }
+	if (g_pD3D) { g_pD3D->Release(); g_pD3D = NULL; }
+}
+
+void ResetDevice()
+{
+	ImGui_ImplDX9_InvalidateDeviceObjects();
+	HRESULT hr = g_pd3dDevice->Reset(&g_d3dpp);
+	if (hr == D3DERR_INVALIDCALL)
+		IM_ASSERT(0);
+	ImGui_ImplDX9_CreateDeviceObjects();
+}
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if (ImGui_ImplDX9_WndProcHandler(hWnd, msg, wParam, lParam))
+	// my implementation of window dragging..
+	/* {
+		static int dababy = 0;
+		if (dababy > 100) // wait until gui is initialized ig?
+		{
+			if (ImGui::IsMouseDragging(ImGuiMouseButton(0)))
+			{
+				// if (LOWORD(lParam) > 255 && HIWORD(lParam) > 255)
+				{
+					POINT p;
+					GetCursorPos(&p);
+
+					SetWindowPos(hWnd, nullptr, p.x, p.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+				}
+			}
+		}
+		dababy++;
+	} */
+
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
 		return true;
 
 	switch (msg)
@@ -339,13 +530,9 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_SIZE:
 		if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
 		{
-			ImGui_ImplDX9_InvalidateDeviceObjects();
 			g_d3dpp.BackBufferWidth = LOWORD(lParam);
 			g_d3dpp.BackBufferHeight = HIWORD(lParam);
-			HRESULT hr = g_pd3dDevice->Reset(&g_d3dpp);
-			if (hr == D3DERR_INVALIDCALL)
-				IM_ASSERT(0);
-			ImGui_ImplDX9_CreateDeviceObjects();
+			ResetDevice();
 		}
 		return 0;
 	case WM_SYSCOMMAND:
@@ -353,247 +540,8 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			return 0;
 		break;
 	case WM_DESTROY:
-		PostQuitMessage(0);
+		::PostQuitMessage(0);
 		return 0;
 	}
-	return DefWindowProc(hWnd, msg, wParam, lParam);
+	return ::DefWindowProc(hWnd, msg, wParam, lParam);
 }
-
-DWORD WINAPI GuiThread(LPVOID)
-{
-	WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, LoadCursor(NULL, IDC_ARROW), NULL, NULL, L"Project_Reboot", NULL };
-	RegisterClassEx(&wc);
-	HWND hwnd = CreateWindowA("Project_Reboot", "Project Reboot UI", WS_POPUP | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX, 10, 10, 600, 400, NULL, NULL, wc.hInstance, NULL);
-
-	// Initialize Direct3D
-	LPDIRECT3D9 pD3D;
-	if ((pD3D = Direct3DCreate9(D3D_SDK_VERSION)) == NULL)
-	{
-		UnregisterClassA("Project_Reboot", wc.hInstance);
-		return 1;
-	}
-
-	ZeroMemory(&g_d3dpp, sizeof(g_d3dpp));
-	g_d3dpp.Windowed = TRUE;
-	g_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	g_d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
-	g_d3dpp.EnableAutoDepthStencil = TRUE;
-	g_d3dpp.AutoDepthStencilFormat = D3DFMT_D16;
-	g_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
-
-	// Create the D3DDevice
-	if (pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hwnd, D3DCREATE_HARDWARE_VERTEXPROCESSING, &g_d3dpp, &g_pd3dDevice) < 0)
-	{
-		pD3D->Release();
-		UnregisterClassA("Project_Reboot", wc.hInstance);
-		return 1;
-	}
-
-	// Setup ImGui binding
-	ImGui_ImplDX9_Init(hwnd, g_pd3dDevice);
-
-	ImGuiIO& io = ImGui::GetIO();
-	io.Fonts->AddFontDefault();
-
-	// Main loop
-	MSG msg;
-	ZeroMemory(&msg, sizeof(msg));
-	ShowWindow(hwnd, SW_SHOWDEFAULT);
-	UpdateWindow(hwnd);
-
-	while (msg.message != WM_QUIT)
-	{
-		if (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-			continue;
-		}
-		ImGui_ImplDX9_NewFrame();
-
-		static int Tab = 1;
-
-		ImGui::Begin("Reboot", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-		{
-
-			if (Engine_Version < 423) // I do not know how to start the bus on S8+
-			{
-				if (ImGui::Button(_("Start Aircraft")))
-				{
-					auto world = Helper::GetWorld();
-					auto gameState = *world->Member<UObject*>(_("GameState"));
-
-					if (gameState)
-					{
-						*gameState->Member<char>(_("bGameModeWillSkipAircraft")) = false;
-						*gameState->Member<float>(_("AircraftStartTime")) = 10.0f;
-						*gameState->Member<float>(_("WarmupCountdownEndTime")) = 5.0f;
-					}
-					std::cout << _("Aircraft will start!\n");
-					/* FString StartAircraftCmd;
-					StartAircraftCmd.Set(L"startaircraft");
-
-					Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
-
-					std::cout << _("Started aircraft!\n"); */
-				}
-			}
-
-			if (ImGui::Button(_("do zipline funny")))
-			{
-				static auto FortAthenaZiplineClass = FindObject(_("Class /Script/FortniteGame.FortAthenaZipline"));
-
-				auto Ziplines = Helper::GetAllActorsOfClass(FortAthenaZiplineClass);
-
-				for (int i = 0; i < Ziplines.Num(); i++)
-				{
-					auto Zipline = Ziplines.At(i);
-
-					if (Zipline)
-					{
-						auto bInitialized = Zipline->Member<bool>(_("bInitialized"));
-
-						static auto Initialize = Zipline->Function(_("Initialize"));
-						
-						std::cout << _("bInitialized: ") << *bInitialized << '\n';
-
-						if (Initialize)
-						{
-							struct
-							{
-								FVector                                     NewStartPosition;                                         // (ConstParm, Parm, ZeroConstructor, ReferenceParm, IsPlainOldData)
-								FVector                                     NewEndPosition;                                           // (ConstParm, Parm, ZeroConstructor, ReferenceParm, IsPlainOldData)
-							} AFortAthenaZipline_Initialize_Params{*Zipline->Member<FVector>(_("StartPosition")), *Zipline->Member<FVector>(_("EndPosition")) };
-
-							Zipline->ProcessEvent(Initialize, &AFortAthenaZipline_Initialize_Params);
-							*bInitialized = true;
-						}
-						else
-							std::cout << _("Failed to find Initialize!\n");
-					}
-				}
-
-				Ziplines.Free();
-			}
-
-			/* if (ImGui::Button(_("Clear all Buildings")))
-			{
-				static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
-
-				auto Buildings = Helper::GetAllActorsOfClass(BuildingSMActorClass);
-
-				for (int i = 0; i < Buildings.Num(); i++)
-				{
-					auto Building = Buildings.At(i);
-
-					if (Building)
-						Helper::DestroyActor(Building);
-				}
-
-				std::cout << _("Destroyed all Buildings!\n");
-			} */
-
-			if (ImGui::Button(_("Fill vending machiees")))
-			{
-				CreateThread(0, 0, Looting::Tables::FillVendingMachines, 0, 0, 0);
-			}
-
-			if (ImGui::Button(_("Spawn FloorLoot")))
-			{
-				CreateThread(0, 0, Looting::Tables::SpawnFloorLoot, 0, 0, 0);
-			}
-
-			if (Events::HasEvent()) {
-				if (ImGui::Button(_("Start Event"))) {
-					Events::StartEvent();
-				}
-			}
-
-			if (ImGui::Button(_("Enable Glider Redeploy")))
-			{
-				FString GliderRedeployCmd;
-				GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 1");
-				Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
-
-				std::cout << _("Enabled Glider Redeploy!\n");
-			}
-
-			if (ImGui::Button(_("Disable Glider Redeploy")))
-			{
-				FString GliderRedeployCmd;
-				GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 0");
-				Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
-
-				std::cout << _("Disabled Glider Redeploy!\n");
-			}
-
-			if (ImGui::Button(_("Change Phase to Aircraft"))) // TODO: Improve phase stuff
-			{
-				auto world = Helper::GetWorld();
-				auto gameState = *world->Member<UObject*>(_("GameState"));
-
-				*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Aircraft;
-
-				struct {
-					EAthenaGamePhase OldPhase;
-				} params2{ EAthenaGamePhase::None };
-
-				static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
-
-				std::cout << _("Changed Phase to Aircraft.");
-			}
-
-			/* if (ImGui::Button(_("Change Phase to SafeZones"))) // Crashes
-			{
-				auto world = Helper::GetWorld();
-				auto gameState = *world->Member<UObject*>(_("GameState"));
-
-				*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::SafeZones;
-
-				struct {
-					EAthenaGamePhase OldPhase;
-				} params2{ EAthenaGamePhase::None };
-
-				static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
-
-				std::cout << _("Changed Phase to SafeZones.");
-			} */
-			/*if (ImGui::Button(_("Spawn Plane at spawn"))) // Crashes
-			{
-
-				auto plane = FindObject(_("Class /Script/FortniteGame.FortAthenaFerretVehicle"));
-
-				Easy::SpawnActor(plane, FVector{ 0, 0, 3000 });
-
-
-
-				std::cout << _("Spawn Plane at spawn");
-			}*/
-
-			if (ImGui::Button("Dump Objects (Objects.txt)")) {
-				Helper::DumpObjects();
-			}
-		}
-
-		// Rendering
-		g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, false);
-		g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, false);
-		g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, false);
-
-		if (g_pd3dDevice->BeginScene() >= 0)
-		{
-			ImGui::Render();
-			g_pd3dDevice->EndScene();
-		}
-		g_pd3dDevice->Present(NULL, NULL, NULL, NULL);
-	}
-
-	ImGui_ImplDX9_Shutdown();
-	if (g_pd3dDevice) g_pd3dDevice->Release();
-	if (pD3D) pD3D->Release();
-	UnregisterClassA("Project_Reboot", wc.hInstance);
-
-	return 0;
-}
-
-#endif

@@ -35,13 +35,25 @@
     <ClCompile Include="..\vendor\ImGui\imgui.cpp">
       <Filter>Vendor\ImGUI</Filter>
     </ClCompile>
-    <ClCompile Include="..\vendor\ImGui\imgui_impl_dx9.cpp">
-      <Filter>Vendor\ImGUI</Filter>
-    </ClCompile>
     <ClCompile Include="..\vendor\Kiero\kiero.cpp">
       <Filter>Vendor</Filter>
     </ClCompile>
     <ClCompile Include="..\vendor\ImGui\imgui_draw.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\imgui\imgui_stdlib.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\imgui\imgui_tables.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\imgui\imgui_widgets.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\imgui\imgui_impl_win32.cpp">
+      <Filter>Vendor\ImGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\vendor\imgui\imgui_impl_dx9.cpp">
       <Filter>Vendor\ImGUI</Filter>
     </ClCompile>
   </ItemGroup>

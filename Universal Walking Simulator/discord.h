@@ -1,7 +1,7 @@
 #pragma once
 
 #define CURL_STATICLIB
-// #define DPP_DISABLED
+#define DPP_DISABLED
 
 // ^ Why? You need all these dlls n stuff in your win64 in order for the dll to actually work witso.
 
@@ -213,6 +213,7 @@ DWORD WINAPI BotThread(LPVOID) {
                 event.reply(_("Unable to tell the status of the server!\n"));
                 break;
             }
+            // Maybe also add like Gamephase stuff
         }
     });
 
