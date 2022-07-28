@@ -152,12 +152,17 @@ namespace Inventory
 			else
 			{
 				// std::cout << _("Equipping AGID!\n");
-				static auto GetDecoItemDefinition = Definition->Function(_("GetDecoItemDefinition"));
+				static auto GetItemDefinition = Definition->Function(_("GetWeaponItemDefinition"));
 
-				UObject* Def = nullptr; // UFortDecoItemDefinition*
+				UObject* Def = nullptr;
 
-				if (GetDecoItemDefinition)
-					Definition->ProcessEvent(GetDecoItemDefinition, &Def);
+				if (GetItemDefinition) {
+					Definition->ProcessEvent(GetItemDefinition, &Def);
+				}
+				else {
+					GetItemDefinition = Definition->Function(_("GetDecoItemDefinition"));
+					Definition->ProcessEvent(GetItemDefinition, &Def);
+				}
 
 				if (Def)
 				{
