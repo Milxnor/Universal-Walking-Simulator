@@ -51,6 +51,29 @@ namespace Easy
 
 namespace Helper
 {
+	//Show Missing POIs. Credit to Ultimanite for most of this.
+	void FixPOIs() {
+		float Version = std::stof(FN_Version);
+		int Season = (int)Version;
+		//Volcano
+		if (Season == 8) {
+			*FindObject("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano")->Member<uint8_t>("DynamicFoundationType") = 0;
+		}
+		//Pleasant
+		if (Season == 7) {
+			*FindObject("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")->Member<uint8_t>("DynamicFoundationType") = 0;
+		}
+		//Marshamello
+		if (Version == 7.30f) {
+			*FindObject("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus")->Member<uint8_t>("DynamicFoundationType") = 0;
+		}
+		//Loot Lake
+		if (Season == 6) {
+			*FindObject("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland")->Member<uint8_t>("DynamicFoundationType") = 0;
+			*FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1")->Member<uint8_t>("DynamicFoundationType") = 0;
+		}
+	}
+
 	void DumpObjects() {
 		std::ofstream file("Objects.txt");
 		for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)

@@ -172,8 +172,10 @@ inline void initStuff()
 
 		std::cout << _("Initialized NetHooks!\n");
 
-		if (Engine_Version >= 420)
+		if (Engine_Version >= 420) {
 			Events::LoadEvents();
+			Helper::FixPOIs();
+		}
 	}
 }
 
