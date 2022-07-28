@@ -410,3 +410,6 @@ struct FGameplayAbilityReplicatedDataContainer
         return TSharedRef<FAbilityReplicatedDataCache>(); // SharedRef;
     }
 };
+
+
+EServerStatus serverStatus = EServerStatus::Down;

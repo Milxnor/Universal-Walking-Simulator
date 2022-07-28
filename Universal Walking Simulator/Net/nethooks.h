@@ -37,35 +37,6 @@ void InitializeNetUHooks()
     AddHook(_("Function /Script/Engine.PlayerController.ServerAcknowledgePossession"), ServerAcknowledgePossessionHook);
 }
 
-UObject* OurReplicationDriver = nullptr;
-
-DWORD WINAPI ReplicationThread(LPVOID)
-{
-    while (1)
-    {
-        static auto NetDriver = *Helper::GetWorld()->Member<UObject*>(_("NetDriver"));
-        static auto ReplicationDriver = Engine_Version == 424 ? OurReplicationDriver : *NetDriver->Member<UObject*>(_("ReplicationDriver"));
-        static auto& ClientConnections = *NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
-
-        if (ClientConnections.Num() > 0)
-        {
-            // if (!*ClientConnections[0]->Member<char>(_("InternalAck")))
-            {
-                if (ReplicationDriver)
-                {
-                    ServerReplicateActors(ReplicationDriver);
-                }
-                else
-                    std::cout << _("No ReplicationDriver!\n");
-            }
-            // else
-                // std::cout << "internalack is true!\n";
-        }
-        Sleep(1000 / 30);
-    }
-    return 0;
-}
-
 void TickFlushDetour(UObject* thisNetDriver, float DeltaSeconds)
 {
     // std::cout << _("TicKFluSh!\n");

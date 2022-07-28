@@ -26,6 +26,14 @@ struct FVector
 	}
 };
 
+enum class EServerStatus : uint8_t
+{
+	Up = 0,
+	Down = 1,
+	Loading = 2,
+	Restarting = 3
+};
+
 enum class EDeathCause : uint8_t
 {
 	OutsideSafeZone = 0,

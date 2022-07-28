@@ -1,7 +1,7 @@
 #pragma once
 
 #define CURL_STATICLIB
-#define DPP_DISABLED
+// #define DPP_DISABLED
 
 // ^ Why? You need all these dlls n stuff in your win64 in order for the dll to actually work witso.
 
@@ -148,7 +148,7 @@ DWORD WINAPI BotThread(LPVOID) {
 
             std::vector<std::string> FullPlayerLists;
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 10; i++) // bro
             {
                 FullPlayerLists.push_back("");
             }
@@ -195,7 +195,24 @@ DWORD WINAPI BotThread(LPVOID) {
             event.reply(std::format("Server is running on version: {}", FN_Version));
         }
         else if (event.command.get_command_name() == "status") {
-            event.reply("Up!");
+            switch (serverStatus)
+            {
+            case EServerStatus::Down:
+                event.reply(_("Servers are starting soon."));
+                break;
+            case EServerStatus::Up:
+                event.reply(_("Servers are up. You can join!"));
+                break;
+            case EServerStatus::Loading:
+                event.reply(_("Servers are loading. You will be able to join soon."));
+                break;
+            case EServerStatus::Restarting:
+                event.reply(_("The servers are restarting. Please wait."));
+                break;
+            default:
+                event.reply(_("Unable to tell the status of the server!\n"));
+                break;
+            }
         }
     });
 
