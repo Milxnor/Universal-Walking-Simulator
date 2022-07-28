@@ -1,9 +1,9 @@
 #pragma once
 
 // #define N_T // S2
- #define T_F // S3-S4
+// #define T_F // S3-S4
 // #define S_F // S5-S6
-// #define S_T // S7+
+#define S_T // S7+
 // #define F_TF // 4.24
 // #define F_FF // UE4.25
 

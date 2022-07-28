@@ -167,9 +167,9 @@
     <ClInclude Include="Gameplay\events.h" />
     <ClInclude Include="Gameplay\helper.h" />
     <ClInclude Include="Gameplay\inventory.h" />
-    <ClInclude Include="gui.h" />
     <ClInclude Include="Gameplay\loot.h" />
     <ClInclude Include="Gameplay\harvesting.h" />
+    <ClInclude Include="gui.h" />
     <ClInclude Include="patterns.h" />
     <ClInclude Include="Net\funcs.h" />
     <ClInclude Include="hooks.h" />

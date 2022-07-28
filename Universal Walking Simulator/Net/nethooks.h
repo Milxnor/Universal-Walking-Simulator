@@ -106,6 +106,26 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (!PlayerController || !PlayerController->IsA(FortPlayerControllerAthenaClass))
         return nullptr;
 
+    auto PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
+
+    if (Helper::Banning::IsBanned(Helper::GetfIP(PlayerState).Data.GetData()))
+    {
+        FString Reason;
+        Reason.Set(L"You are banned!");
+        Helper::KickController(PlayerController, Reason);
+    }
+
+    auto OPlayerName = Helper::GetPlayerName(PlayerState);
+    std::string PlayerName = OPlayerName;
+    std::transform(OPlayerName.begin(), OPlayerName.end(), OPlayerName.begin(), ::tolower);
+
+    if (OPlayerName.contains(_("fuck")) || OPlayerName.contains(_("shit")))
+    {
+        FString Reason;
+        Reason.Set(L"Inappropriate name!");
+        Helper::KickController(PlayerController, Reason);
+    }
+
     *NewPlayer->Member<UObject*>(_("PlayerController")) = PlayerController;
 
     static const auto FnVerDouble = std::stod(FN_Version);

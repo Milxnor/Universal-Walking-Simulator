@@ -19,6 +19,8 @@
 #include <imgui/imgui_internal.h>
 #include <Gameplay/helper.h>
 #include <Gameplay/events.h>
+#include <hooks.h>
+#include "Gameplay/inventory.h"
 
 // THE BASE CODE IS FROM IMGUI GITHUB
 
@@ -238,7 +240,7 @@ DWORD WINAPI GuiThread(LPVOID)
 			ImGui::Begin(("Project Reboot"), nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoResize);
 
 			std::vector<std::pair<UObject*, UObject*>> Players; // Pawn, PlayerState
-			
+
 			auto InitializePlayers = [&Players]() { // TODO: slow
 				auto World = Helper::GetWorld();
 				if (World)
@@ -307,13 +309,22 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 				}
 
-				if (ImGui::BeginTabItem("Credits"))
+				if (ImGui::BeginTabItem("Gamemode"))
 				{
 					Tab = 3;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
 				}
+
+				if (ImGui::BeginTabItem("Credits"))
+				{
+					Tab = 4;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
 
 				ImGui::EndTabBar();
 			}
@@ -324,34 +335,46 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 				case 1:
 				{
-					if (Engine_Version < 423) // I do not know how to start the bus on S8+
+					if (serverStatus == EServerStatus::Down && !bTraveled)
 					{
-						if (ImGui::Button(_("Start Aircraft")))
+						// TODO: Map name
+						if (ImGui::Button(_("Load in the Match")))
 						{
-							FString StartAircraftCmd;
-							StartAircraftCmd.Set(L"startaircraft");
-
-							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
-
-							std::cout << _("Started aircraft!\n");
+							LoadInMatch();
 						}
 					}
-					else
+
+					if (serverStatus == EServerStatus::Up)
 					{
-						if (ImGui::Button(_("Change Phase to Aircraft"))) // TODO: Improve phase stuff
+						if (Engine_Version < 423) // I do not know how to start the bus on S8+
 						{
-							auto world = Helper::GetWorld();
-							auto gameState = *world->Member<UObject*>(_("GameState"));
+							if (ImGui::Button(_("Start Aircraft")))
+							{
+								FString StartAircraftCmd;
+								StartAircraftCmd.Set(L"startaircraft");
 
-							*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Aircraft;
+								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 
-							struct {
-								EAthenaGamePhase OldPhase;
-							} params2{ EAthenaGamePhase::None };
+								std::cout << _("Started aircraft!\n");
+							}
+						}
+						else
+						{
+							if (ImGui::Button(_("Change Phase to Aircraft"))) // TODO: Improve phase stuff
+							{
+								auto world = Helper::GetWorld();
+								auto gameState = *world->Member<UObject*>(_("GameState"));
 
-							static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
+								*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Aircraft;
 
-							std::cout << _("Changed Phase to Aircraft.");
+								struct {
+									EAthenaGamePhase OldPhase;
+								} params2{ EAthenaGamePhase::None };
+
+								static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
+
+								std::cout << _("Changed Phase to Aircraft.");
+							}
 						}
 					}
 
@@ -368,7 +391,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					{
 						auto& Player = Players[i];
 						auto PlayerState = Player.second;
-						
+
 						if (!Player.first || !PlayerState)
 							continue;
 
@@ -379,6 +402,14 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 					break;
 				case 3:
+				{
+					std::string CurrentPlaylist;
+					ImGui::InputText("Playlist", &CurrentPlaylist);
+
+					// TODO: default character parts
+					break;
+				}
+				case 4:
 					TextCentered("Credits:");
 					TextCentered("Milxnor: Made the base, main developer");
 					TextCentered("GD: Added events, cleans up code and adds features.");
@@ -400,15 +431,24 @@ DWORD WINAPI GuiThread(LPVOID)
 							static std::string WID;
 							static int Count = 1;
 
-							ImGui::Text(("Player: " + Helper::GetPlayerName(CurrentPlayer.second)).c_str());
+							auto PlayerName = Helper::GetfPlayerName(CurrentPlayer.second);
+							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), ("Player: " + PlayerName.ToString()).c_str());
 							if (ImGui::Button("Game Statistics"))
 							{
 								bInformationTab = true;
 							}
 							ImGui::NewLine();
-							if (ImGui::Button(ICON_FA_HAMMER " Ban (COMING SOON)"))
+							auto Controller = *CurrentPlayer.first->Member<UObject*>(_("Controller"));
+							/* if (ImGui::Button(ICON_FA_HAMMER " Ban"))
 							{
-
+								auto IP = Helper::GetfIP(CurrentPlayer.second);
+								Helper::Banning::Ban(PlayerName.Data.GetData(), Controller, IP.Data.GetData());
+							}  */
+							if (ImGui::Button(_("Kick (Do not use twice)")))
+							{
+								FString Reason;
+								Reason.Set(L"You have been kicked!");
+								Helper::KickController(Controller, Reason);
 							}
 							if (ImGui::Button(ICON_FA_CROSSHAIRS " Kill"))
 							{
@@ -420,7 +460,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							ImGui::InputInt("Count", &Count);
 							if (ImGui::Button(ICON_FA_HAND_HOLDING_USD " Give Weapon"))
 							{
-								Inventory::CreateAndAddItem(*CurrentPlayer.first->Member<UObject*>(_("Controller")), FindObject(WID), EFortQuickBars::Primary, 1, Count);
+								Inventory::CreateAndAddItem(Controller, FindObject(WID), EFortQuickBars::Primary, 1, Count);
 							}
 
 							ImGui::NewLine();

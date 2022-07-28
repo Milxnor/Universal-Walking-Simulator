@@ -48,6 +48,8 @@ void(__fastcall* SendClientAdjustment)(UObject* controller);
 void(__fastcall* CallPreReplication)(UObject* actor, UObject* driver);
 char (__fastcall* ReplicateActor)(UObject* ActorChannel);
 
+char (*KickPlayer)(UObject* a1, UObject*, FText a3); // session, pc
+
 void(__fastcall* HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 
 UObject* (__fastcall* CreateNetDriver_Local)(__int64 a1, __int64 a2, __int64 a3);
@@ -66,8 +68,6 @@ static void (*RepGraph_ServerReplicateActors)(UObject* ReplicationDriver);
 
 static void (*ReceiveFString)(void* Bunch, FString& Str);
 static void (*ReceiveUniqueIdRepl)(void* Bunch, void* Str);
-
-static char (*KickPlayer)(UObject* a1, UObject*, void* /* FText */a3);
 //static char (*ValidationFailure)(__int64 a1, __int64 a2);
 
 static void (*WelcomePlayer)(UObject* World, UObject* Connection);

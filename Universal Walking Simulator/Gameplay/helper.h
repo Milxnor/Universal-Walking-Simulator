@@ -5,7 +5,9 @@
 #include <fstream>
 #include <UE/structs.h>
 #include <Net/funcs.h>
+#include <dpp/nlohmann/json.hpp>
 
+#include <fstream>
 
 UObject* GetWorldW(bool bReset = false)
 {
@@ -521,7 +523,7 @@ namespace Helper
 			Actor->ProcessEvent(SetActorScaleFn, &params);
 	}
 
-	static std::string GetPlayerName(UObject* PlayerState)
+	static FString GetfPlayerName(UObject* PlayerState)
 	{
 		FString Name; // = *PlayerState->Member<FString>(_("PlayerNamePrivate"));
 
@@ -533,10 +535,16 @@ namespace Helper
 				PlayerState->ProcessEvent(fn, &Name);
 		}
 
-		return Name.Data.GetData() ? Name.ToString() : "INVALID_NAME";
+		return Name;
 	}
 
-	static std::string GetIP(UObject* PlayerState)
+	static std::string GetPlayerName(UObject* PlayerState)
+	{
+		auto name = GetfPlayerName(PlayerState);
+		return name.Data.GetData() ? name.ToString() : "";
+	}
+
+	static FString GetfIP(UObject* PlayerState) // UNSAFE
 	{
 		FString IP;
 
@@ -545,7 +553,13 @@ namespace Helper
 			IP = *PlayerState->Member<FString>(_("SavedNetworkAddress"));
 		}
 
-		return IP.Data.GetData() ? IP.ToString() : "";
+		return IP.Data.GetData() ? IP : FString();
+	}
+
+	static std::string GetIP(UObject* PlayerState)
+	{
+		auto ip = GetfIP(PlayerState);
+		return ip.Data.GetData() ? ip.ToString() : "";
 	}
 
 	static bool IsStructurallySupported(UObject* BuildingActor)
@@ -758,6 +772,34 @@ namespace Helper
 			}
 		}
 
+		FText StringToText(FString String)
+		{
+			static auto KTL = FindObject(_("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
+
+			FText text;
+
+			if (KTL)
+			{
+				static auto fn = KTL->Function(_("Conv_StringToText"));
+
+				struct {
+					FString InText;
+					FText ReturnValue;
+				} params{ String };
+
+				if (fn)
+					KTL->ProcessEvent(fn, &params);
+				else
+					std::cout << _("Unable to find Conv_StringToText!\n");
+
+				text = params.ReturnValue;
+			}
+			else
+				std::cout << _("Unable to find KTL!\n");
+
+			return text;
+		}
+
 		std::string TextToString(FText Text)
 		{
 			static auto KTL = FindObject(_("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
@@ -783,7 +825,7 @@ namespace Helper
 			else
 				std::cout << _("Unable to find KTL!\n");
 
-			return String.Data.GetData() ? String.ToString() : "INVALID_WEAPON";
+			return String.Data.GetData() ? String.ToString() : "INVALID_STRING";
 		}
 	}
 
@@ -900,6 +942,105 @@ namespace Helper
 			}
 			else
 				std::cout << _("Invalid component!\n");
+		}
+	}
+
+	void KickController(UObject* Controller, FString Reason)
+	{
+		if (KickPlayer && Controller && Reason.Data.GetData())
+		{
+			FText text = Conversion::StringToText(Reason);
+			static auto World = Helper::GetWorld();
+			auto GameMode = *World->Member<UObject*>(_("AuthorityGameMode"));
+			auto GameSession = *World->Member<UObject*>(_("GameSession"));
+
+			if (GameSession)
+				KickPlayer(GameSession, Controller, text); // TODO: Use a differentfunction, this crashes after a second try.
+			else
+				std::cout << _("Unable to find GameSession!\n");
+		}
+		else
+		{
+			// std::cout << std::format(("Something is invalid cannot kick player\n\nKickPlayer: {}\nController: {}\nIf none of these are null then it's data!\n\n"), __int64(KickPlayer), Controller); // , Reason.Data.GetData());
+		}
+	}
+
+	namespace Banning
+	{
+		bool Ban(const std::wstring& IP, UObject* Controller, const std::wstring& Username)
+		{
+			std::ofstream stream("banned-ips.json", std::ios::app);
+
+			if (!stream.is_open())
+				return false;
+
+			nlohmann::json j;
+			j["IP"] = IP;
+			j["Username"] = Username;
+
+			stream << j << '\n'; // j.dump(4)
+
+			stream.close();
+
+			FString Reason;
+			Reason.Set(L"You are banned!");
+			Helper::KickController(Controller, Reason);
+
+			return true;
+		}
+
+		bool Unban(const std::wstring& IP) // I think I have SEVERE brain damage, but it works. // IP Or Name
+		{
+			std::ifstream input_file("banned-ips.json");
+
+			if (!input_file.is_open())
+				return false;
+
+			std::vector<std::string> lines;
+			std::string line;
+			int ipToRemove = -1; // the line
+
+			while (std::getline(input_file, line))
+			{
+				lines.push_back(line);
+				if (line.find(std::string(IP.begin(), IP.end())) != std::wstring::npos)
+				{
+					ipToRemove = lines.size();
+				}
+			}
+
+			input_file.close();
+
+			if (ipToRemove != -1)
+			{
+				std::ofstream stream("banned-ips.json", std::ios::ate);
+				for (int i = 0; i < lines.size(); i++)
+				{
+					if (i != ipToRemove - 1)
+						stream << lines[i] << '\n';
+				}
+			}
+
+			return ipToRemove != 1;
+		}
+
+		bool IsBanned(const std::wstring& IP)
+		{
+			std::ifstream input_file("banned-ips.json");
+			std::string line;
+
+			if (!input_file.is_open())
+				return false;
+
+			while (std::getline(input_file, line))
+			{
+				if (std::wstring(line.begin(), line.end()).find(IP) != std::wstring::npos)
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 	}
 }
