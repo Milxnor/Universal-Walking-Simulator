@@ -66,7 +66,9 @@ void InitializePatterns()
 
     TickFlushAddr = FindPattern(Patterns::TickFlush);
 #ifdef T_F
-    TickFlushAddr = FindPattern(Patterns::TickFlush2);
+    if (!TickFlushAddr) {
+        TickFlushAddr = FindPattern(Patterns::TickFlush2);
+    }
 #endif
     if (!TickFlushAddr)
         TickFlushAddr = FindPattern(_("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0"));
@@ -92,7 +94,7 @@ void InitializePatterns()
     if (!CanActivateAbilityAddr)
     {
         CanActivateAbilityAddr = FindPattern(_("48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 49 8B F0 8B DA 48 8B F9 4D 85 C0 0F 84 ? ? ? ? 49 8D 48 10 E8 ? ? ? ? 48 85"));
-        
+
         if (!CanActivateAbilityAddr)
             std::cout << _("[WARNING] Abilities may fail!\n");
     }
@@ -111,7 +113,9 @@ void InitializePatterns()
 
     World_NotifyControlMessageAddr = FindPattern(Patterns::World_NotifyControlMessage);
 #ifdef T_F
-    World_NotifyControlMessageAddr = FindPattern(Patterns::World_NotifyControlMessage2);
+    if (!World_NotifyControlMessageAddr) {
+        World_NotifyControlMessageAddr = FindPattern(Patterns::World_NotifyControlMessage2);
+    }
 #endif
     if (!World_NotifyControlMessageAddr)
         World_NotifyControlMessageAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B D9 89 7C 24 60"));
@@ -120,7 +124,9 @@ void InitializePatterns()
 
     SpawnPlayActorAddr = FindPattern(Patterns::SpawnPlayActor);
 #ifdef T_F
-    SpawnPlayActorAddr = FindPattern(Patterns::SpawnPlayActor2);
+    if (!SpawnPlayActorAddr) {
+        SpawnPlayActorAddr = FindPattern(Patterns::SpawnPlayActor2);
+    }
 #endif
     CheckPattern(_("SpawnPlayActor"), SpawnPlayActorAddr, &SpawnPlayActor);
 
@@ -236,7 +242,9 @@ void InitializePatterns()
 
         Beacon_NotifyControlMessageAddr = FindPattern(Patterns::Beacon_NotifyControlMessage);
 #ifdef T_F
-        Beacon_NotifyControlMessageAddr = FindPattern(Patterns::Beacon_NotifyControlMessage2);
+        if (!Beacon_NotifyControlMessageAddr) {
+            Beacon_NotifyControlMessageAddr = FindPattern(Patterns::Beacon_NotifyControlMessage2);
+        }
 #endif
         if (!Beacon_NotifyControlMessageAddr)
             Beacon_NotifyControlMessageAddr = FindPattern(_("4C 8B DC 49 89 5B 18 49 89 73 20 49 89 4B 08 55 57 41 54 41 56 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B F1"));
@@ -326,6 +334,7 @@ DWORD WINAPI Main(LPVOID)
         return 1;
     }
 #ifdef T_F
+    //For Server Only.
     uintptr_t CrashFix = FindPattern(Patterns::CrashPatch);
     if (CrashFix) {
         printf("Applying 4.5 Fix!\n");

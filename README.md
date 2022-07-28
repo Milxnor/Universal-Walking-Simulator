@@ -1,5 +1,5 @@
 # Project Reboot: Universal Fortnite GameServer
-### FYI: This isn't 100% universal, there are bugs on almost every season and some seasons have no support at all.<br> <a href="https://discord.com/invite/42pXp7Wqtf">Discord Server</a>.
+### FYI: This isn't 100% universal, there are bugs on almost every season and some seasons have no support at all.<br> <a href="https://discord.gg/reboot">Discord Server</a>.
 
 # Supported Versions
 Currently Supported: ~S2-S9<br>
@@ -27,7 +27,8 @@ Give a descriptive summary of what your code does and how its beneficial to the 
 
 ## NOTICE
 Pull Requests WILL NOT be accepted if they do not follow the provided criteria
-
+<br>
+This Project was made for fun and was Open Sourced for Educational Purposes. If you are an Epic Employee and want this project taken down contact me on Discord: GD#8099
 # CREDITS
 
 If you are to use this base for your own project, please credit us and link the repository.<br>
