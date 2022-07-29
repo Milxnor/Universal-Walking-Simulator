@@ -7,7 +7,7 @@
 // #define F_TF // 4.24
 // #define F_FF // UE4.25
 
-// #define BEFORE_SEASONEIGHT
+#define BEFORE_SEASONEIGHT
 
 // 3.5 Patterns are from raider, some patterns are not mine.
 
@@ -182,6 +182,7 @@ namespace Patterns
     constexpr const char* StaticFindObject = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 4E 48 8B 05 ? ? ? ? 48 8D 35 ? ? ? ?";
     constexpr const char* HandleReloadCost = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85";
     constexpr const char* CanActivateAbility = "4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1";
+    constexpr const char* PlayMontage = "40 55 56 41 54 41 56 48 8D 6C 24 D1";
 
     // paddin
 

@@ -40,6 +40,7 @@ uint64_t ReplicateActorAddr = 0;
 uint64_t SendClientAdjustmentAddr = 0;
 uint64_t SetChannelActorAddr = 0;
 uint64_t CreateChannelAddr = 0;
+uint64_t PlayMontageAddr = 0;
 
 void (*SetChannelActor)(UObject* ActorChannel, UObject* InActor);
 UObject* (*CreateChannel)(UObject* Connection, EChannelType Type, bool bOpenedLocally, int32_t ChannelIndex);
@@ -411,5 +412,6 @@ struct FGameplayAbilityReplicatedDataContainer
     }
 };
 
+float (*PlayMontage)(UObject* AbilitySystemComponent, UObject* InAnimatingAbility, FGameplayAbilityActivationInfo ActivationInfo, UObject* NewAnimMontage, float InPlayRate, FName StartSectionName);
 
 EServerStatus serverStatus = EServerStatus::Down;

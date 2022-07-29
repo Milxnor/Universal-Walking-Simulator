@@ -237,7 +237,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 		if (!ImGui::IsWindowCollapsed())
 		{
-			ImGui::Begin(("Project Reboot"), nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoResize);
+			ImGui::Begin(("Project Reboot"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
 
 			std::vector<std::pair<UObject*, UObject*>> Players; // Pawn, PlayerState
 
@@ -383,6 +383,12 @@ DWORD WINAPI GuiThread(LPVOID)
 							Events::StartEvent();
 						}
 					}
+
+					if (ImGui::Button(_("Dump Objects (Win64/Objects.log)")))
+					{
+						CreateThread(0, 0, Helper::DumpObjects, 0, 0, 0);
+					}
+
 					break;
 				}
 				case 2:
@@ -454,6 +460,8 @@ DWORD WINAPI GuiThread(LPVOID)
 							{
 
 							}
+
+							// TODO: Add teleport to location
 
 							ImGui::InputText("WID", &WID);
 							// ImGui::SliderInt("Count", &Count, 1, INT32_MAX);
@@ -532,6 +540,8 @@ DWORD WINAPI GuiThread(LPVOID)
 									}
 								}
 							}
+
+							// TODO: Add health and shield
 
 							ImGui::NewLine();
 

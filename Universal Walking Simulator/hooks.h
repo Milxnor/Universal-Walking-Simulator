@@ -528,14 +528,14 @@ inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Functio
 
 inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
-	auto CurrentPawn = *Controller->Member<UObject*>(_("Pawn"));
+	auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
 
 	struct SPEIParams  { UObject* EmoteAsset; }; // UFortMontageItemDefinitionBase
 	auto EmoteParams = (SPEIParams*)Parameters;
 
 	auto EmoteAsset = EmoteParams->EmoteAsset;
 
-	if (Controller /* && !Controller->IsInAircraft() */ && CurrentPawn && EmoteAsset)
+	if (Controller /* && !Controller->IsInAircraft() */ && Pawn && EmoteAsset)
 	{
 		struct {
 			TEnumAsByte<EFortCustomBodyType> BodyType;
@@ -550,28 +550,30 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 			auto Montage = GAHRParams.AnimMontage;
 			if (Montage)
 			{
-				auto StartSection = FName();
+				std::cout << "Montage Name: " << Montage->GetFullName() << '\n';
 
-				struct {
-					UObject* AnimMontage;
-					float InPlayRate;
-					FName& StartSectionName;
-				} PLAMParams{ Montage, 1.0f, StartSection };
+				auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
+				static auto EmoteClass = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
-				static auto PLAMFn = CurrentPawn->Function(_("PlayLocalAnimMontage"));
-				CurrentPawn->ProcessEvent(PLAMFn, &PLAMParams);
+				auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"));
 
-				struct {
-					UObject* AnimMontage;
-					float InPlayRate;
-					FName& StartSectionName;
-				} PAMParams{Montage, 1.0f, StartSection};
-				
-				static auto PAMFn = CurrentPawn->Function(_("PlayAnimMontage"));
-				CurrentPawn->ProcessEvent(PAMFn, &PAMParams);
-				// CurrentPawn->PlayAnimMontage(Montage, 1.0f, FName(0));
-				CurrentPawn->ProcessEvent(_("OnRep_CharPartAnimMontageInfo"));
-				CurrentPawn->ProcessEvent(_("OnRep_ReplicatedAnimMontage"));
+				UObject* DefaultObject = EmoteClass->CreateDefaultObject();
+
+				for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
+				{
+					auto& CurrentSpec = ActivatableAbilities.Items[i];
+
+					if (CurrentSpec.Ability == DefaultObject)
+					{
+						auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(_("CurrentActivationInfo"));
+
+						Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
+						auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
+						Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
+
+						std::cout << _("Played for: ") << Dura << '\n';
+					}
+				}
 			}
 		}
 	}
@@ -873,7 +875,8 @@ void FinishInitializeUHooks()
 	if (Engine_Version >= 420)
 		AddHook(_("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);
 
-	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
+	if (PlayMontage)
+		AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 
 	if (Engine_Version < 423)
 	{ // ??? Idk why we need the brackets

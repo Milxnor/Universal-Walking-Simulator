@@ -11,6 +11,12 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 		auto InstigatedByOffset = FindOffsetStruct(_("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), _("InstigatedBy"));
 		auto InstigatedBy = *(UObject**)(__int64(Parameters) + InstigatedByOffset);
 
+		auto DamageCauserOffset = FindOffsetStruct(_("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), _("DamageCauser"));
+		auto DamageCauser = *(UObject**)(__int64(Parameters) + DamageCauserOffset);
+
+		auto DamageTagsOffset = FindOffsetStruct(_("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), _("DamageTags"));
+		auto DamageTags = (FGameplayTagContainer*)(__int64(Parameters) + DamageTagsOffset);
+
 		struct Bitfield
 		{
 			unsigned char                                      UnknownData09 : 1;                                        // 0x0544(0x0001)
@@ -28,11 +34,13 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 
 		static auto FortPlayerControllerAthenaClass = FindObject(_("Class /Script/FortniteGame.FortPlayerControllerAthena"));
 
-		if (!bPlayerPlaced && InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass))
-		{
-			// The instigatedby is the controller
+		// if (DamageTags)
+			// std::cout << _("DamageTags: ") << DamageTags->ToStringSimple(false) << '\n';
 
-			// TODO: Not hardcode the pcikaxedef, do like slot 0  or something
+		if (!bPlayerPlaced && InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass) &&
+			DamageCauser->GetFullName().contains("B_Melee_Impact_Pickaxe_Athena_C")) // cursed
+		{
+			// TODO: Not hardcode the PickaxeDef, do like slot 0  or something
 			static auto PickaxeDef = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 			auto CurrentWeapon = *(*InstigatedBy->Member<UObject*>(_("MyFortPawn")))->Member<UObject*>(_("CurrentWeapon"));
 			if (CurrentWeapon && *CurrentWeapon->Member<UObject*>(_("WeaponData")) == PickaxeDef)
@@ -55,9 +63,6 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 
 				static auto ClientReportDamagedResourceBuilding = InstigatedBy->Function(_("ClientReportDamagedResourceBuilding"));
 				InstigatedBy->ProcessEvent(ClientReportDamagedResourceBuilding, &AFortPlayerController_ClientReportDamagedResourceBuilding_Params);
-
-				// 				FortController->ClientReportDamagedResourceBuilding(BuildingActor, BuildingActor->ResourceType, UKismetMathLibrary::RandomIntegerInRange(3, 6), false, false);
-
 			}
 		}
 		else
@@ -80,7 +85,7 @@ inline bool ClientReportDamagedResourceBuildingHook(UObject* Controller, UFuncti
 
 	auto Params = (AFortPlayerController_ClientReportDamagedResourceBuilding_Params*)Parameters;
 
-	if (Controller && Params->BuildingSMActor)
+	if (Controller)
 	{
 		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
 
@@ -98,21 +103,31 @@ inline bool ClientReportDamagedResourceBuildingHook(UObject* Controller, UFuncti
 
 		auto ItemInstance = Inventory::FindItemInInventory(Controller, ItemDef);
 
-		if (ItemInstance)
+		int AmountToGive = Params->PotentialResourceCount;
+
+		if (Params->bJustHitWeakspot)
+		{
+			std::random_device rd; // obtain a random number from hardware
+			std::mt19937 gen(rd()); // seed the generator
+			std::uniform_int_distribution<> distr(2, 4); // define the range
+
+			AmountToGive += distr(gen);
+		}
+
+		if (ItemInstance && Pawn)
 		{
 			auto Entry = ItemInstance->Member<__int64>(_("ItemEntry"));
 
+			// BUG: You lose some mats if you have like 998 or idfk
 			if (*FFortItemEntry::GetCount(Entry) >= 999)
 			{
-				Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, Params->PotentialResourceCount);
+				Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, AmountToGive);
 				return false;
 			}
 		}
 
-		if (!Inventory::IncreaseItemCount(Controller, ItemDef, Params->PotentialResourceCount))
-		{
-			// we have to create it
-		}
+		Inventory::GiveItem(Controller, ItemDef, EFortQuickBars::Secondary, AmountToGive);
+		std::cout << "wtf\n";
 	}
 
 	return false;

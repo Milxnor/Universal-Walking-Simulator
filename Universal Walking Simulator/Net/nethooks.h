@@ -126,6 +126,13 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         Helper::KickController(PlayerController, Reason);
     }
 
+    if (OPlayerName.length() >= 40)
+    {
+        FString Reason;
+        Reason.Set(L"Too long of a name!");
+        Helper::KickController(PlayerController, Reason);
+    }
+
     *NewPlayer->Member<UObject*>(_("PlayerController")) = PlayerController;
 
     static const auto FnVerDouble = std::stod(FN_Version);
@@ -181,7 +188,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 // static auto MatsAbility = FindObject(_("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
                 //GrantGameplayAbility(Pawn, MatsAbility);
 
-
                 static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
                 static auto ReloadAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Reload");
                 static auto JumpAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Jump");
@@ -195,12 +201,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 if (SprintAbility)
                     GrantGameplayAbility(Pawn, SprintAbility); //, true);
                 if (ReloadAbility)
-                {
-                    auto Ability = GrantGameplayAbility(Pawn, ReloadAbility);
-
-                    if (Ability)
-                        *Ability->Member<TEnumAsByte<EGameplayAbilityReplicationPolicy>>(_("ReplicationPolicy")) = EGameplayAbilityReplicationPolicy::ReplicateYes;
-                }
+                    GrantGameplayAbility(Pawn, ReloadAbility);
                 if (JumpAbility)
                     GrantGameplayAbility(Pawn, JumpAbility);
                 if (InteractUseAbility)
@@ -214,13 +215,13 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 if (InVehicleAbility)
                     GrantGameplayAbility(Pawn, InVehicleAbility);
                 if (RangedAbility)
-                {
-                    auto Ability = GrantGameplayAbility(Pawn, RangedAbility);
-
-                    if (Ability)
-                        *Ability->Member<TEnumAsByte<EGameplayAbilityReplicationPolicy>>(_("ReplicationPolicy")) = EGameplayAbilityReplicationPolicy::ReplicateYes;
-                }
+                    GrantGameplayAbility(Pawn, RangedAbility);
             }
+
+            static auto EmoteAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+
+            if (EmoteAbility)
+                GrantGameplayAbility(Pawn, EmoteAbility);
         }
         else
             std::cout << _("Unable to find AbilitySystemComponent!\n");

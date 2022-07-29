@@ -1,13 +1,10 @@
 #pragma once
 
 #include <iostream>
-#include <ostream>
 #include <fstream>
 #include <UE/structs.h>
 #include <Net/funcs.h>
 #include <dpp/nlohmann/json.hpp>
-
-#include <fstream>
 
 UObject* GetWorldW(bool bReset = false)
 {
@@ -95,20 +92,6 @@ namespace Helper
 		if (Season == 6) {
 			*FindObject("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland")->Member<uint8_t>("DynamicFoundationType") = 0;
 			*FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1")->Member<uint8_t>("DynamicFoundationType") = 0;
-		}
-	}
-
-	void DumpObjects() {
-		std::ofstream file("Objects.txt");
-		for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
-		{
-			auto Object = ObjObjects ? ObjObjects->GetObjectById(i) : OldObjects->GetObjectById(i);
-
-			if (!Object) continue;
-
-			auto ObjectName = Object->GetFullName();
-
-			file << ObjectName << "\n";
 		}
 	}
 
@@ -519,6 +502,7 @@ namespace Helper
 	{
 		static auto SetActorScaleFn = Actor->Function(_("SetActorScale3D"));
 		struct { FVector Scale; }params{ Scale };
+
 		if (SetActorScaleFn)
 			Actor->ProcessEvent(SetActorScaleFn, &params);
 	}
@@ -572,6 +556,23 @@ namespace Helper
 		if (fn)
 			BuildingActor->ProcessEvent(fn, &params);
 		return params.Ret;
+	}
+
+	DWORD WINAPI DumpObjects(LPVOID)
+	{
+		std::ofstream objects("Objects.log");
+
+		for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
+		{
+			auto Object = GetByIndex(i);
+
+			if (!Object)
+				continue;
+
+			objects << std::format("[{}] {}\n", Object->InternalIndex, Object->GetFullName()); // TODO: add the offset
+		}
+
+		return 0;
 	}
 
 	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart(), bool bResetTeams = false)
@@ -659,8 +660,26 @@ namespace Helper
 		static auto OnRepHeroType = PlayerState->Function(_("OnRep_HeroType"));
 		PlayerState->ProcessEvent(OnRepHeroType);
 
-		static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-		static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+		/* auto CustomizationAssetLoader = Pawn->Member<UObject*>(_("CustomizationAssetLoader"));
+
+		if (CustomizationAssetLoader && *CustomizationAssetLoader)
+		{
+			void* CurrentAssetsToLoad = (*CustomizationAssetLoader)->Member<void>(_("CurrentAssetsToLoad"));
+
+			static auto CharacterPartsOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortCustomizationAssetsToLoad"), _("CharacterParts"));
+
+			auto CharacterPartsToLoad = (TArray<UObject*>*)(__int64(CurrentAssetsToLoad) + CharacterPartsOffset);
+		}
+		
+		static auto headPart = Engine_Version >= 423 ? FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_TreasureHunterFashion.CP_Head_F_TreasureHunterFashion")) :
+			FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
+		static auto bodyPart = Engine_Version >= 423 ? FindObject(_("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_TreasureHunterFashion.CP_Body_Commando_F_TreasureHunterFashion")) :
+			FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01")); */
+
+		// if (!headPart)
+			static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
+		// else
+			static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
 
 		if (headPart && bodyPart && bResetCharacterParts)
 		{

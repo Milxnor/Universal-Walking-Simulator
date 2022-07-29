@@ -38,11 +38,6 @@ namespace FFortItemEntry
 	}
 }
 
-namespace QuickBars
-{
-
-}
-
 namespace Inventory
 {
 	__int64* GetInventory(UObject* Controller)
@@ -479,7 +474,8 @@ namespace Inventory
 
 		// auto Inventory = GetInventory(Controller);
 
-		*FFortItemEntry::GetCount(FortItem->Member<__int64>(_("ItemEntry"))) = Count;
+		auto ItemEntry = FortItem->Member<__int64>(_("ItemEntry"));
+		*FFortItemEntry::GetCount(ItemEntry) = Count;
 
 		GetItemInstances(Controller)->Add(FortItem);
 
@@ -533,7 +529,7 @@ namespace Inventory
 		else
 			std::cout << _("Could not get ItemEntrySize Struct! Please make a new one for this version using: ") << GetEntrySize() << '\n';
 
-		Inventory::Update(Controller, -1, true);
+		Inventory::Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
 	}
 
 	static void CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1)
@@ -619,6 +615,11 @@ namespace Inventory
 		return ItemDefinition;
 	}
 
+	void TakeItem(UObject* Controller, const FGuid& Guid, int Count = 1) // Use this, this removes from a definition
+	{
+
+	}
+
 	bool IncreaseItemCount(UObject* Controller, UObject* Definition, int Count) // stack
 	{
 		// For now, assume it's a consumable or ammo, and it can go higher than what we currently have.
@@ -694,9 +695,42 @@ namespace Inventory
 		return false;
 	}
 
-	bool CreateOrAdd()
+	static void GiveItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1) // Use this, it stacks if it finds an item, if not, then it adds
 	{
-		return true;
+		if (Controller && Definition)
+		{
+			auto ItemInstance = FindItemInInventory(Controller, Definition);
+
+			int OverStack = 0;
+
+			if (ItemInstance)
+			{
+				auto MaxStackCount = *Definition->Member<int>(_("MaxStackSize"));
+				auto ItemEntry = ItemInstance->Member<__int64>(_("ItemEntry"));
+
+				auto currentCount = FFortItemEntry::GetCount(ItemEntry);
+
+				if (currentCount)
+				{
+					// now we have to increase until we hit the MaxStackCount
+
+					OverStack = *currentCount + Count - MaxStackCount;
+
+					int AmountToStack = MaxStackCount - *currentCount;
+					IncreaseItemCount(Controller, Definition, AmountToStack);
+				}
+			}
+
+			// If someway, the count is bigger than the MaxStackSize, and there is nothing to stack on, then it will not create 2 items.
+
+			if (!ItemInstance || OverStack > 0)
+			{
+				if (OverStack > 0)
+					CreateAndAddItem(Controller, Definition, Bars, Slot, OverStack);
+				else
+					CreateAndAddItem(Controller, Definition, Bars, Slot, Count);
+			}
+		}
 	}
 
 	void GiveAllAmmo(UObject* Controller)
@@ -847,7 +881,6 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 			if (bPickedUp && !*bPickedUp)
 			{
-
 				auto PrimaryPickupItemEntry = Params->Pickup->Member<__int64>(_("PrimaryPickupItemEntry"));
 				static auto ItemDefinitionOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
 				static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
@@ -864,7 +897,7 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 				{
 					if (Definition && *Definition && Count)
 					{
-						static UObject* EffectClass = FindObject("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C");
+						static UObject* EffectClass = FindObject(_("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C"));
 
 						if (EffectClass)
 						{
@@ -910,9 +943,7 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 						else
 							std::cout << _("Could not find Effectclass!\n");
 
-						auto bWasAbleToStack = Inventory::IncreaseItemCount(*Controller, *Definition, *Count);
-						if (!bWasAbleToStack)
-							Inventory::CreateAndAddItem(*Controller, *Definition, EFortQuickBars::Primary, *Count); // TODO: Figure out what quickbars are supposed to be used.
+						Inventory::GiveItem(*Controller, *Definition, EFortQuickBars::Primary, *Count); // TODO: Figure out what quickbars are supposed to be used.
 					}
 					else
 						std::cout << _("Player is trying to pickup an item with a null Definition or null Count!\n");
@@ -984,36 +1015,6 @@ inline bool ServerHandlePickupWithSwapHook(UObject* Pawn, UFunction* Function, v
 	return false;
 }
 
-inline bool ServerSetShouldSwapPickupHook(UObject* Controller, UFunction* Function, void* Parameters)
-{
-	struct parms { bool ba; };
-
-	auto Params = (parms*)Parameters;
-
-	if (Controller && Params)
-	{
-		bool bShouldSwap = Params->ba;
-		std::cout << _("Should Swap: ") << bShouldSwap << '\n';
-	}
-
-	return false;
-}
-
-template <typename EntryStruct>
-void idekatthispoint(UObject* PlayerController, UObject* Def, int AmountToRemove)
-{
-	auto& ReplicatedEntries = Inventory::GetReplicatedEntries<EntryStruct>(PlayerController);
-	for (int i = 0; i < ReplicatedEntries->Num(); i++)
-	{
-		auto& CurrentEntry = ReplicatedEntries->At(i);
-		if (FFortItemEntry::GetItemDefinition((__int64*)(&CurrentEntry)) == Def)
-		{
-			*FFortItemEntry::GetCount(CurrentEntry) -= AmountToRemove;
-			Inventory::Update(PlayerController, false, CurrentEntry);
-		}
-	}
-}
-
 void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // nova go brr
 {
 	if (!Weapon)
@@ -1050,59 +1051,6 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // n
 			}
 		}
 
-		/* static const auto FlooredVer = std::floor(std::stod(FN_Version));
-
-		if (FlooredVer == 3)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
-			return idekatthispoint<ItemEntrySize>(PlayerController, AmountToRemove);
-		}
-		else if (FlooredVer > 4 && std::stod(FN_Version) < 7.40)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
-			return idekatthispoint<ItemEntrySize>(PlayerController, AmountToRemove);
-		}
-		else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
-		{
-			struct ItemEntrySize { unsigned char Unk00[0x120]; };
-			return idekatthispoint<ItemEntrySize>(PlayerController, AmountToRemove);
-		}
-		else if (std::stod(FN_Version) >= 424)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0x150]; };
-			return idekatthispoint<ItemEntrySize>(PlayerController, AmountToRemove);
-		}
-
-		auto ItemInstances = Inventory::GetItemInstances(PlayerController);
-
-		for (int j = 0; j < ItemInstances->Num(); j++)
-		{
-			auto ItemInstance = ItemInstances->At(j);
-
-			if (ItemInstance)
-			{
-				static auto GetItemDefinitionBP = ItemInstance->Function(_("GetItemDefinitionBP"));
-				UObject* CurrentAmmoDef = nullptr;
-				ItemInstance->ProcessEvent(GetItemDefinitionBP, &CurrentAmmoDef);
-
-				if (ItemInstance && CurrentAmmoDef == AmmoDef)
-				{
-					auto ItemEntry = ItemInstance->Member<__int64>(_("ItemEntry")); // Keep as pointer!
-					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
-
-					// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
-					auto NewCount = *CurrentCount - Count;
-					*CurrentCount = NewCount;
-
-					ChangeItemInReplicatedEntries<int>(Controller, Definition, _("Count"), NewCount);
-
-					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
-				}
-					ItemInstances->RemoveAt(j);
-			}
-		}
-		*/
-
 		return HandleReloadCost(Weapon, AmountToRemove);
 	}
 }
@@ -1120,12 +1068,11 @@ void InitializeInventoryHooks()
 	if (std::stod(FN_Version) >= 7.40)
 	{
 		AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupWithSwap"), ServerHandlePickupWithSwapHook);
-		AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerSetShouldSwapPickup"), ServerSetShouldSwapPickupHook)
 	}
 
-	if (HandleReloadCost)
+	/* if (HandleReloadCost)
 	{
 		MH_CreateHook((PVOID)HandleReloadCostAddr, HandleReloadCostDetour, (void**)&HandleReloadCost);
 		MH_EnableHook((PVOID)HandleReloadCostAddr);
-	}
+	} */
 }

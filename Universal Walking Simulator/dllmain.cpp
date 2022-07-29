@@ -232,6 +232,12 @@ void InitializePatterns()
         CheckPattern(_("CreateNetDriver_Local"), CreateNetDriver_LocalAddr, &CreateNetDriver_Local); */
     }
 
+    PlayMontageAddr = FindPattern(Patterns::PlayMontage);
+    if (!PlayMontageAddr)
+        std::cout << _("[WARNING] Emoting will not work!\n");
+    else
+        PlayMontage = decltype(PlayMontage)(PlayMontageAddr);
+
     // if (!CreateNetDriver) // This means we are not using beacons
     {
         PauseBeaconRequestsAddr = FindPattern(Patterns::PauseBeaconRequests);
