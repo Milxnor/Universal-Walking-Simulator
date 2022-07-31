@@ -270,6 +270,73 @@ inline Fn GetVFunction(const void* instance, std::size_t index)
 	return reinterpret_cast<Fn>(vtable[index]);
 }
 
+struct light
+{
+	std::vector<size_t> sizes;
+	void* addr = nullptr;
+	int currentRead = 0;
+	int sizeOfLastType = 0;
+
+	template <typename T> void calcSize(const T& t) {
+		sizes.push_back(sizeof(t));
+	}
+
+	template <typename First, typename... Rest> void calcSize(const First& first, const Rest&... rest) {
+		sizes.push_back(sizeof(first));
+		calcSize(rest...); // recursive call using pack expansion syntax
+	}
+
+	template <typename T> void set(const T& t) { // This function gets called for the last argument.
+		*(T*)(__int64(addr) + currentRead) = t;
+		currentRead += sizeof(T);
+	}
+
+	template <typename First, typename... Rest> void set(const First& first, const Rest&... rest) {
+		if (addr)
+		{
+			std::cout << "First: " << first << " with currentRead as: " << currentRead << " Setting to: " << __int64(&*(First*)(__int64(addr) + (currentRead == 0 ? 0 : currentRead))) << '\n';
+			*(First*)(__int64(addr) + (currentRead == 0 ? 0 : currentRead)) = first;
+			currentRead += sizeof(First);
+			std::cout << "\nPadding: " << (sizeof(First) > sizeOfLastType ? sizeof(First) - sizeOfLastType : sizeOfLastType - sizeof(First)) << "\n\n";
+			sizeOfLastType = sizeof(First);
+			set(rest...); // recursive call using pack expansion 
+		}
+	}
+
+	size_t getSize()
+	{
+		size_t Size = 0;
+
+		for (auto size : sizes)
+			Size += size;
+
+		return Size;
+	}
+
+	template <typename First, typename... Rest> void execute(const std::string& funcName, const First& first, const Rest&... rest) {
+		calcSize(first, rest...);
+		auto finalSize = getSize();
+
+		if (finalSize > 8 : !(((finalSize >> 3) << 3) == finalSize) ? false) // checks if the size is divisible by 8.
+		{
+			std::cout << std::format("Unable to execute {} because it requires padding!\n", funcName);
+			return;
+		}
+
+		addr = malloc(finalSize);
+
+		set(first, rest...);
+
+		return;
+	}
+
+	~light()
+	{
+		if (addr)
+			free(addr);
+	}
+};
+
 struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4c8e09b606f10a09776b4d1f38/Engine/Source/Runtime/CoreUObject/Public/UObject/UObjectBase.h#L20
 {
 	void** VFTable;
@@ -347,6 +414,22 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 		else
 			std::cout << _("Unable to create default object because Index is 0!\n");
 		return nullptr;
+	}
+
+	// TODO: add return types via a template
+	// DO NOT USE, VERY VERY VERY unsafe
+	template <typename strType = std::string, typename First, typename... Rest> void Exec(const strType& FunctionName, const First& first, const Rest&... rest) {
+		static auto fn = this->Function(FunctionName);
+		
+		if (fn)
+		{
+			auto Params = light();
+
+			Params.execute(FunctionName, first, rest...);
+
+			if (Params.addr)
+				this->ProcessEvent(fn, Params.addr);
+		}
 	}
 };
 
@@ -507,21 +590,9 @@ static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, boo
 
 // Here comes the version changing and makes me want to die I need to find a better way to do this
 
-
-
 struct UField : UObject
 {
 	UField* Next;
-};
-class UStruct : public UField
-{
-public:
-	class UStruct* SuperField;                                               // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
-	class UField* Children;                                                 // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
-	int32_t                                            PropertySize;                                             // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
-	int32_t                                            MinAlignment;                                             // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
-	char                                               pad_0048[64];                                             // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
-
 };
 
 struct UFieldPadding : UObject
@@ -644,30 +715,6 @@ struct UClass_FT : public UStruct_FT {}; // >4.20
 struct UClass_FTO : public UStruct_FTO {}; // 4.21
 struct UClass_FTT : public UStruct_FTT {}; // 4.22-4.24
 struct UClass_CT : public UStruct_CT {}; // C2 to before C3
-
-class UClass : public UStruct
-{
-public:
-	unsigned char                                      UnknownData00[0x168];                                     // 0x0098(0x0168) MISSED OFFSET
-
-	//template<typename T>
-	/*inline T* CreateDefaultObject()
-	{
-		return static_cast<T*>(CreateDefaultObject());
-	}*/
-
-	/*static UClass* StaticClass()
-	{
-		static auto ptr = UObject::FindClass("Class CoreUObject.Class");
-		return ptr;
-	}*/
-
-	/*inline UObject* CreateDefaultObject()
-	{
-		return GetVFunction<UObject* (*)(UClass*)>(this, 102)(this);
-	}*/
-
-};
 
 template <typename ClassType, typename PropertyType, typename ReturnValue = PropertyType>
 auto GetMembers(UObject* Object)

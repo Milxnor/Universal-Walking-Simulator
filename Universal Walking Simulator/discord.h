@@ -97,6 +97,8 @@ bool comp(std::pair<std::string, int> a, std::pair<std::string, int> b) {
 DWORD WINAPI BotThread(LPVOID) {
     dpp::cluster bot(BOT_TOKEN, dpp::i_default_intents | dpp::i_message_content);
 
+    // TODO: Check if it successfully started
+
     bot.on_log(dpp::utility::cout_logger());
 
     bot.on_message_create([&](const dpp::message_create_t& event) {

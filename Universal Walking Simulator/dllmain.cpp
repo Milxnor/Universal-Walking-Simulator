@@ -89,7 +89,7 @@ void InitializePatterns()
     WelcomePlayerAddr = FindPattern(Patterns::WelcomePlayer);
 #endif
 
-    /*CanActivateAbilityAddr = FindPattern(Patterns::CanActivateAbility);
+    CanActivateAbilityAddr = FindPattern(Patterns::CanActivateAbility);
 
     if (!CanActivateAbilityAddr)
     {
@@ -99,7 +99,7 @@ void InitializePatterns()
             std::cout << _("[WARNING] Abilities may fail!\n");
     }
     else
-        o_CanActivateAbility = decltype(o_CanActivateAbility)(CanActivateAbilityAddr);*/
+        o_CanActivateAbility = decltype(o_CanActivateAbility)(CanActivateAbilityAddr);
 
     if (!WelcomePlayerAddr) // s6
     {
@@ -232,11 +232,11 @@ void InitializePatterns()
         CheckPattern(_("CreateNetDriver_Local"), CreateNetDriver_LocalAddr, &CreateNetDriver_Local); */
     }
 
-    /*PlayMontageAddr = FindPattern(Patterns::PlayMontage);
+    PlayMontageAddr = FindPattern(Patterns::PlayMontage);
     if (!PlayMontageAddr)
         std::cout << _("[WARNING] Emoting will not work!\n");
     else
-        PlayMontage = decltype(PlayMontage)(PlayMontageAddr);*/
+        PlayMontage = decltype(PlayMontage)(PlayMontageAddr);
 
     // if (!CreateNetDriver) // This means we are not using beacons
     {
@@ -258,14 +258,11 @@ void InitializePatterns()
         CheckPattern(_("Beacon_NotifyControlMessage"), Beacon_NotifyControlMessageAddr, &Beacon_NotifyControlMessage);
     }
 
-    // NetDebugAddr = FindPattern(Patterns::NetDebug);
-    // CheckPattern(_("NetDebug"), NetDebugAddr, &NetDebug);
-
-    /*HandleReloadCostAddr = FindPattern(Patterns::HandleReloadCost);
+    HandleReloadCostAddr = FindPattern(Patterns::HandleReloadCost);
     if (!HandleReloadCostAddr)
         std::cout << _("[WARNING] Unable to find HandleReloadCost! Will not be able to deplete ammo.\n");
     else
-        HandleReloadCost = decltype(HandleReloadCost)(HandleReloadCostAddr);*/
+        HandleReloadCost = decltype(HandleReloadCost)(HandleReloadCostAddr);
 
     if (Engine_Version != 424)
     {
@@ -276,12 +273,17 @@ void InitializePatterns()
 #ifdef N_T
     CreateChannelAddr = FindPattern(Patterns::CreateChannel);
     CheckPattern(_("CreateChannel"), CreateChannelAddr, &CreateChannel);
-
+#endif
+#if defined(F_TF)
+    CreateChannelAddr = FindPattern(Patterns::CreateChannelByName);
+    CheckPattern(_("CreateChannelByName"), CreateChannelAddr, &CreateChannelByName);
+#endif
+#if defined(N_T) || defined(F_TF)
     ReplicateActorAddr = FindPattern(Patterns::ReplicateActor);
     CheckPattern(_("ReplicateActor"), ReplicateActorAddr, &ReplicateActor);
 
-    SendClientAdjustmentAddr = FindPattern(Patterns::SendClientAdjustment);
-    CheckPattern(_("SendClientAdjustment"), SendClientAdjustmentAddr, &SendClientAdjustment);
+    /* SendClientAdjustmentAddr = FindPattern(Patterns::SendClientAdjustment);
+    CheckPattern(_("SendClientAdjustment"), SendClientAdjustmentAddr, &SendClientAdjustment); */
 
     SetChannelActorAddr = FindPattern(Patterns::SetChannelActor);
     CheckPattern(_("SetChannelActor"), SetChannelActorAddr, &SetChannelActor);

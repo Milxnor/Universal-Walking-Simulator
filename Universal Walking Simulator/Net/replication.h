@@ -90,6 +90,21 @@ UObject* FindChannel(UObject* Actor, UObject* Connection)
     return nullptr;
 }
 
+TArray<UObject*>* GetAllActors(UObject* World)
+{
+    if (!World) return nullptr;
+
+    auto Level = World->Member<UObject*>(_("PersistentLevel"));
+
+    if (!*Level || !Level) return nullptr;
+
+    auto OwningWorld = (*Level)->Member<UObject*>(_("OwningWorld"));
+
+    if (!*OwningWorld || !OwningWorld) return nullptr;
+
+    return (TArray<UObject*>*)(&*OwningWorld - 2);
+}
+
 void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderList)
 {
     static auto World = *NetDriver->Member<UObject*>(_("World"));
@@ -97,21 +112,19 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
     if (!World || !&OutConsiderList || !NetDriver)
         return;
 
-    auto& List = ObjectList;
+    // auto& List = ObjectList;
 
-    for (auto& Object : List)
+    TArray<UObject*>* Actors = GetAllActors(World);
+
+    for (int j = 0; j < Actors->Num(); j++)
     {
-        auto Actor = Object;
+        auto Actor = Actors->At(j);
 
         if (!Actor || *Actor->Member<ENetRole>(_("RemoteRole")) == ENetRole::ROLE_None) // || Actor->bActorIsBeingDestroyed)
             continue;
 
         if (*Actor->Member<ENetDormancy>(_("NetDormancy")) == ENetDormancy::DORM_Initial && *Actor->Member<char>(_("bNetStartup")))
             continue;
-
-        //if (!GetRelevancy(Actor))
-            // continue;
-
 
         // if (Actor->Name.ComparisonIndex != 0)
         {
@@ -124,7 +137,7 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
 
 int32_t ServerReplicateActors(UObject* NetDriver)
 {
-#ifndef N_T
+#if !defined(N_T) && !defined(F_TF)
 	// Supports replicationgraph
 
 	auto ReplicationDriver = NetDriver->Member<UObject*>(_("ReplicationDriver"));
@@ -140,7 +153,12 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 
 	return 0;
 #endif
+#ifdef N_T
     ++*(int32_t*)(NetDriver + 0x2C8);
+#endif
+#ifdef F_TF
+    ++*(int32_t*)(NetDriver + 0x410);
+#endif
 
     auto NumClientsToTick = PrepConnections(NetDriver);
 
@@ -150,6 +168,8 @@ int32_t ServerReplicateActors(UObject* NetDriver)
     std::vector<UObject*> ConsiderList;
     ConsiderList.reserve(ObjectList.size());
     BuildConsiderList(NetDriver, ConsiderList);
+
+    std::cout << _("Considering: ") << ConsiderList.size() << '\n';
 
     auto ClientConnections = NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
 
@@ -181,7 +201,7 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 
             auto PlayerController = *Connection->Member<UObject*>(_("PlayerController"));
 
-            if (PlayerController)
+            if (SendClientAdjustment && PlayerController)
                 SendClientAdjustment(PlayerController); // Sending adjustments to children is for splitscreen
 
             for (auto Actor : ConsiderList)
@@ -203,8 +223,22 @@ int32_t ServerReplicateActors(UObject* NetDriver)
                     }
                     */
 
+#ifdef N_T
                     Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
-                    SetChannelActor(Channel, Actor);
+#else
+                    FName ACTOR_NAME;
+                    ACTOR_NAME.ComparisonIndex = 102;
+                    Channel = CreateChannelByName(Connection, ACTOR_NAME, EChannelCreateFlags::OpenedLocally, -1);
+#endif
+                    if (Channel)
+                    {
+                        SetChannelActor(Channel, Actor);
+                        std::cout << _("Created Channel for Actor => ") << Actor->GetFullName() << '\n';
+                    }
+                    else
+                    {
+                        std::cout << _("Unable to Create Channel!\n");
+                    }
                 }
 
                 if (Channel)

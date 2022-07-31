@@ -600,12 +600,9 @@ namespace Helper
 			return nullptr;
 
 		static auto SetReplicateMovementFn = Pawn->Function(_("SetReplicateMovement"));
-		struct {
-			bool b;
-		} bruh{true};
+		struct { bool b; } bruh{true};
 		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh);
 
-		// stupidBitField[0] = 1;
 		static auto Rep_ReplicateMovement = Pawn->Function(_("OnRep_ReplicateMovement"));
 		Pawn->ProcessEvent(Rep_ReplicateMovement);
 
@@ -615,27 +612,19 @@ namespace Helper
 		static auto Rep_ReplicatedBasedMovement = Pawn->Function(_("OnRep_ReplicatedBasedMovement"));
 		Pawn->ProcessEvent(Rep_ReplicateMovement);
 
-		if (Pawn)
+		static auto PossessFn = PC->Function(_("Possess"));
+
+		if (PossessFn)
 		{
-			auto PossessFn = PC->Function(_("Possess"));
-			if (PossessFn)
-			{
-				struct {
-					UObject* InPawn;
-				} params{ Pawn }; // idk man
-				PC->ProcessEvent(PossessFn, &params);
-			}
-			else
-				std::cout << _("Could not find Possess!\n");
+			struct {
+				UObject* InPawn;
+			} params{ Pawn }; // idk man
+			PC->ProcessEvent(PossessFn, &params);
 		}
 		else
-			std::cout << _("No Pawn!\n");
+			std::cout << _("Could not find Possess!\n");
 
-		/* *Pawn->Member<char>(_("bCanBeDamaged")) = false;
-		*Pawn->Member<char>(_("bAlwaysRelevant")) = true;
-		*Pawn->Member<char>(_("bReplicates")) = true;
-		*Pawn->Member<char>(_("bOnlyRelevantToOwner")) = false; */
-		Helper::SetOwner(Pawn, PC);
+		Helper::SetOwner(Pawn, PC); // prob not needed
 
 		*PC->Member<char>(_("bReadyToStartMatch")) = true;
 		*PC->Member<char>(_("bClientPawnIsLoaded")) = true;
@@ -780,26 +769,6 @@ namespace Helper
 
 			if (fn)
 				KSLClass->ProcessEvent(fn, &Object);
-
-			return params.ReturnValue;
-		}
-		UClass* SoftClassToClass(TSoftClassPtr* SoftClass)
-		{
-			// Function /Script/Engine.KismetSystemLibrary.Conv_SoftObjectReferenceToObject
-
-			static auto KSLClass = FindObject(_("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
-
-			static auto fn = KSLClass->Function(_("Conv_SoftClassReferenceToClass"));
-
-			UClass* Class;
-
-			struct {
-				TSoftClassPtr* SoftClass;
-				UClass* ReturnValue;
-			} params{ SoftClass };
-
-			if (fn)
-				KSLClass->ProcessEvent(fn, &Class);
 
 			return params.ReturnValue;
 		}

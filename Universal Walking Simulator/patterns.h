@@ -2,9 +2,9 @@
 
 // #define N_T // S2
 // #define T_F // S3-S4
-//#define S_F // S5-S6
-//#define S_T // S7+
-#define F_TF // 4.24
+// #define S_F // S5-S6
+#define S_T // S7+
+// #define F_TF // 4.24
 // #define F_FF // UE4.25
 
 //#define BEFORE_SEASONEIGHT
@@ -213,11 +213,15 @@ namespace Patterns
     constexpr const char* SetWorld = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97 ? ? ? ? 48 8D 8B ? ? ? ? E8 ? ? ? ? 48 8B 97";
     constexpr const char* StaticFindObject = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 4E 48 8B 05 ? ? ? ? 48 8D 35 ? ? ? ? 41 B9 ? ? ? ?";
     constexpr const char* GetPlayerViewpoint = "48 89 5C 24 ? 55 56 41 56 48 8B EC 48 83 EC 40 48 8B F2 48 8B D9 BA ? ? ? ? 48 8D 4D 38 4D 8B F0 E8 ? ? ? ? 48 8B CB 48 8B 10 E8 ? ? ? ? 84 C0 74 53";
-    constexpr const char* ReplicateActors = "48 8B C4 48 89 48 08 55 53 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 33 F6 40 38 35 ? ? ? ? 48 89 78 E0 4C 89 60 D8 4C 8B E1 4C 89 70 C8 48";
+    constexpr const char* ReplicateActor = "48 8B C4 48 89 48 08 55 53 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 33 F6 40 38 35 ? ? ? ? 48 89 78 E0 4C 89 60 D8 4C 8B E1 4C 89 70 C8 48";
     constexpr const char* SetChannelActor = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 45 33 ED 4C 8D 35 ? ? ? ? 44 89 AD ? ? ? ? 48 8B F9 48 8B 41 28 45 8B E0";
     constexpr const char* CreateChannelByName = "40 55 53 56 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 48 8B 01 41 8B D9 45 8B F8 4C 8B E2 48 8B F9 FF 90 ? ? ? ? 33 F6";
+
     // paddin (aka patterns which arent right but we ned them to build)
 
+    constexpr const char* HandleReloadCost = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85";
+    constexpr const char* CanActivateAbility = "4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1";
+    constexpr const char* PlayMontage = "40 55 56 41 54 41 56 48 8D 6C 24 D1";
     constexpr const char* GetNetMode = "48 89 5C 24 08 57 48 83 EC ? 48 8B 01 48 8B D9 FF 90 40 01 00 00 4C 8B 83 10 01 00 00";//
     constexpr const char* Realloc = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D";//
     constexpr const char* NoReserve = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 81 EC ? ? ? ? 48 8B 01 49 8B D9 45 0F B6 F0 48 8B F2 48 8B F9 45 32 FF FF 90 ? ? ? ? 48 8B 0D ? ? ? ?";
@@ -254,6 +258,9 @@ namespace Patterns
 
     // paddin (aka patterns which arent right but we ned them to build)
 
+    constexpr const char* HandleReloadCost = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85";
+    constexpr const char* CanActivateAbility = "4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1";
+    constexpr const char* PlayMontage = "40 55 56 41 54 41 56 48 8D 6C 24 D1";
     constexpr const char* GetNetMode = "48 89 5C 24 08 57 48 83 EC ? 48 8B 01 48 8B D9 FF 90 40 01 00 00 4C 8B 83 10 01 00 00";//
     constexpr const char* Realloc = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D";//
     constexpr const char* NoReserve = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 81 EC ? ? ? ? 48 8B 01 49 8B D9 45 0F B6 F0 48 8B F2 48 8B F9 45 32 FF FF 90 ? ? ? ? 48 8B 0D ? ? ? ?";

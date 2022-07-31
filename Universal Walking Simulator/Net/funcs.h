@@ -42,6 +42,7 @@ uint64_t SetChannelActorAddr = 0;
 uint64_t CreateChannelAddr = 0;
 uint64_t PlayMontageAddr = 0;
 
+UObject* (*CreateChannelByName)(UObject* Connection, FName& ChName, EChannelCreateFlags CreateFlags, int32_t ChannelIndex); // = -1);
 void (*SetChannelActor)(UObject* ActorChannel, UObject* InActor);
 UObject* (*CreateChannel)(UObject* Connection, EChannelType Type, bool bOpenedLocally, int32_t ChannelIndex);
 
