@@ -167,22 +167,53 @@ namespace Inventory
 				else
 					std::cout << _("Failed to get AGID's Definition!\n");
 
-				/* if (FullName.contains(_("AthenaGadgetItemDefinition "))) // Ability class seems to always be invalid
+				if (FullName.contains(_("AthenaGadgetItemDefinition "))) // Ability class seems to always be invalid
 				{
+					std::cout << _("Trying to get gameplay ability of class.\n");
 					static auto GetGameplayAbility = Definition->Function(_("GetGameplayAbility"));
-					UObject* GameplayAbilityClass = nullptr;
+					std::cout << _("Found GetGameplayAbility function.\n");
+					//UObject* GameplayAbility = nullptr;
+					//FindObject<TSoftClassPtr>("SoftClassProperty /Script/FortniteGame.FortGadgetItemDefinition.GameplayAbility");
 
-					if (GetGameplayAbility)
-						Definition->ProcessEvent(GetGameplayAbility, &GameplayAbilityClass);
+					//UClass* GameplayAbility = Helper::Conversion::SoftClassToClass(Definition->Member<TSoftClassPtr>("GameplayAbility"));
+					std::cout << _("Trying to convert to class.\n");
+					static auto KSLClass = FindObject(_("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
 
-					if (GameplayAbilityClass)
+					static auto fn = KSLClass->Function(_("Conv_SoftClassReferenceToClass"));
+
+					/*auto Class = FindObject<TSoftClassPtr>("SoftClassProperty /Script/FortniteGame.FortGadgetItemDefinition.GameplayAbility");
+					auto gameplayclass = Helper::Conversion::SoftClassToClass(Class);*/
+					/*std::cout << _("Found Class");
+					struct {
+						//TSoftClassPtr* SoftClass;
+						UClass* ReturnValue;
+					} params{nullptr};
+
+					if (fn)
 					{
-						std::cout << _("Granting ability: ") << GameplayAbilityClass->GetFullName() << '\n';
-						GrantGameplayAbility(Pawn, GameplayAbilityClass);
+						std::cout << _("Trying to process Conversion");
+						KSLClass->ProcessEvent(fn, &Class);
+						std::cout << _("Processed Conversion");
+					}
+						
+					//UClass* GameplayAbility = params.ReturnValue;
+					std::cout << _("Got return value.\n");*/
+					/*if (GetGameplayAbility)
+					{
+						Definition->ProcessEvent(GetGameplayAbility, &GameplayAbility);
+						std::cout << _("Processing GetGameplayAbility");
 					}
 					else
-						std::cout << _("Failed to get GameplayAbilityClass!\n");
-				} */
+						std::cout << _("Get Gameplay Ability Failed!\n");*/
+					/*if (gameplayclass)
+					{
+						//std::cout << _("Granting ability: ") << GameplayAbility->GetFullName() << '\n';
+						std::cout << _("Granting ability: ");
+						GrantGameplayAbility(Pawn, gameplayclass);
+					}
+					else
+						std::cout << _("Failed to get GameplayAbilityClass!\n");*/
+				} 
 			}
 		}
 

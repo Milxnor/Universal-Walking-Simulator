@@ -339,6 +339,18 @@ namespace Helper
 
 		return nullptr;
 	}
+	static void SpawnMilo(UObject* Pawn)
+	{
+		auto def = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_AshtonPack_Milo.WID_AshtonPack_Milo"));
+		auto Location = GetActorLocation(Pawn);
+		SummonPickup(Pawn, def, Location, EFortPickupSourceTypeFlag::Tossed, EFortPickupSpawnSource::Chest, 1, true);
+	}
+	static void SpawnAshton(UObject* Pawn)
+	{
+		auto def = FindObject(_("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/Ashton/AGID_AshtonPack.AGID_AshtonPack"));
+		auto Location = GetActorLocation(Pawn);
+		SummonPickup(Pawn, def, Location, EFortPickupSourceTypeFlag::Tossed, EFortPickupSpawnSource::Chest, 1, true);
+	}
 
 	bool TeleportTo(UObject* Actor, FVector Location, FRotator Rot = FRotator())
 	{
@@ -639,7 +651,7 @@ namespace Helper
 		// *Pawn->Member<float>(_("NetUpdateFrequency")) = 200;
 
 		static auto setMaxHealthFn = Pawn->Function(_("SetMaxHealth"));
-		struct { float NewHealthVal; }healthParams{ 100 };
+		struct { float NewHealthVal; }healthParams{ 200 };
 
 		if (setMaxHealthFn)
 			Pawn->ProcessEvent(setMaxHealthFn, &healthParams);
@@ -647,7 +659,7 @@ namespace Helper
 			std::cout << _("Unable to find setMaxHealthFn!\n");
 
 		static auto setMaxShieldFn = Pawn->Function(_("SetMaxShield"));
-		struct { float NewValue; }shieldParams{ 100 };
+		struct { float NewValue; }shieldParams{ 300 };
 
 		if (setMaxShieldFn)
 			Pawn->ProcessEvent(setMaxShieldFn, &shieldParams);
@@ -659,6 +671,12 @@ namespace Helper
 		*PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
 		static auto OnRepHeroType = PlayerState->Function(_("OnRep_HeroType"));
 		PlayerState->ProcessEvent(OnRepHeroType);
+
+		/*static auto FortCustomizationAssetLoader = FindObject(_("FortCustomizationAssetLoader /Script/FortniteGame.Default__FortCustomizationAssetLoader"));
+		auto PawnCustomizationAssetLoader = Pawn->Member<UObject*>("CustomizationAssetLoader");
+		auto LocalPawnCustomizationAssetLoader = PC->Member<UObject*>("LocalPawnCustomizationAssetLoader");
+		*PawnCustomizationAssetLoader = FortCustomizationAssetLoader;
+		*LocalPawnCustomizationAssetLoader = FortCustomizationAssetLoader;*/
 
 		/* auto CustomizationAssetLoader = Pawn->Member<UObject*>(_("CustomizationAssetLoader"));
 
@@ -762,6 +780,26 @@ namespace Helper
 
 			if (fn)
 				KSLClass->ProcessEvent(fn, &Object);
+
+			return params.ReturnValue;
+		}
+		UClass* SoftClassToClass(TSoftClassPtr* SoftClass)
+		{
+			// Function /Script/Engine.KismetSystemLibrary.Conv_SoftObjectReferenceToObject
+
+			static auto KSLClass = FindObject(_("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+
+			static auto fn = KSLClass->Function(_("Conv_SoftClassReferenceToClass"));
+
+			UClass* Class;
+
+			struct {
+				TSoftClassPtr* SoftClass;
+				UClass* ReturnValue;
+			} params{ SoftClass };
+
+			if (fn)
+				KSLClass->ProcessEvent(fn, &Class);
 
 			return params.ReturnValue;
 		}

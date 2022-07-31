@@ -375,6 +375,30 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								std::cout << _("Changed Phase to Aircraft.");
 							}
+							if (ImGui::Button(_("SpawnMilo"))) // TODO: Improve phase stuff
+							{
+								auto World = Helper::GetWorld();
+								auto NetDriver = *World->Member<UObject*>(_("NetDriver"));
+								auto ClientConnections = NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+								int i = 0;
+								auto Connection = ClientConnections->At(i);
+								auto Controller = *Connection->Member<UObject*>(_("PlayerController"));
+								auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+
+								Helper::SpawnMilo(Pawn);
+							}
+							if (ImGui::Button(_("SpawnAshton"))) // TODO: Improve phase stuff
+							{
+								auto World = Helper::GetWorld();
+								auto NetDriver = *World->Member<UObject*>(_("NetDriver"));
+								auto ClientConnections = NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+								int i = 0;
+								auto Connection = ClientConnections->At(i);
+								auto Controller = *Connection->Member<UObject*>(_("PlayerController"));
+								auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+
+								Helper::SpawnAshton(Pawn);
+							}
 						}
 					}
 

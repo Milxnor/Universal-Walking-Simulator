@@ -852,3 +852,8 @@ enum class EFortBuildingType : uint8_t
 	None = 12,
 	EFortBuildingType_MAX = 13
 };
+enum class EChannelCreateFlags : uint32_t
+{
+	None = (1 << 0),
+	OpenedLocally = (1 << 1)
+};

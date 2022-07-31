@@ -350,6 +350,8 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	}
 };
 
+	
+
 struct UFunction : UObject {}; // TODO: Add acutal stuff to this
 
 struct FUObjectItem // https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Source/Runtime/CoreUObject/Public/UObject/UObjectArray.h#L26
@@ -505,9 +507,21 @@ static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, boo
 
 // Here comes the version changing and makes me want to die I need to find a better way to do this
 
+
+
 struct UField : UObject
 {
 	UField* Next;
+};
+class UStruct : public UField
+{
+public:
+	class UStruct* SuperField;                                               // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
+	class UField* Children;                                                 // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
+	int32_t                                            PropertySize;                                             // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
+	int32_t                                            MinAlignment;                                             // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
+	char                                               pad_0048[64];                                             // 0x0000(0x0000) NOT AUTO-GENERATED PROPERTY
+
 };
 
 struct UFieldPadding : UObject
@@ -630,6 +644,30 @@ struct UClass_FT : public UStruct_FT {}; // >4.20
 struct UClass_FTO : public UStruct_FTO {}; // 4.21
 struct UClass_FTT : public UStruct_FTT {}; // 4.22-4.24
 struct UClass_CT : public UStruct_CT {}; // C2 to before C3
+
+class UClass : public UStruct
+{
+public:
+	unsigned char                                      UnknownData00[0x168];                                     // 0x0098(0x0168) MISSED OFFSET
+
+	//template<typename T>
+	/*inline T* CreateDefaultObject()
+	{
+		return static_cast<T*>(CreateDefaultObject());
+	}*/
+
+	/*static UClass* StaticClass()
+	{
+		static auto ptr = UObject::FindClass("Class CoreUObject.Class");
+		return ptr;
+	}*/
+
+	/*inline UObject* CreateDefaultObject()
+	{
+		return GetVFunction<UObject* (*)(UClass*)>(this, 102)(this);
+	}*/
+
+};
 
 template <typename ClassType, typename PropertyType, typename ReturnValue = PropertyType>
 auto GetMembers(UObject* Object)
@@ -1337,6 +1375,10 @@ class FSoftObjectPtr : public TPersistentObjectPtr<FSoftObjectPath>
 };
 
 class TSoftObjectPtr : FSoftObjectPtr
+{
+
+};
+class TSoftClassPtr : FSoftObjectPtr
 {
 
 };
