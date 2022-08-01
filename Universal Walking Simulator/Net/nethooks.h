@@ -71,16 +71,11 @@ char KickPlayerDetour(__int64 a1, __int64 a2, __int64 a3)
     return 0;
 }
 
-char(__fastcall* ValidationFailure)(__int64* a1, __int64 a2);
-
 char __fastcall ValidationFailureDetour(__int64* a1, __int64 a2)
 {
     std::cout << "Validation!\n";
     return 0;
 }
-
-static void (*SendChallenge)(UObject* a1, UObject* a2); // World, NetConnection
-static __int64(__fastcall* Idkf)(__int64 a1, __int64 a2, int a3); // tbh we can just paste pseudo code
 
 bool bMyPawn = false; // UObject*
 
@@ -218,10 +213,14 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                     GrantGameplayAbility(Pawn, RangedAbility);
             }
 
-            static auto EmoteAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+            // if (FnVerDouble < 9)
+            {
+                static auto EmoteAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
-            if (EmoteAbility)
-                GrantGameplayAbility(Pawn, EmoteAbility);
+                if (EmoteAbility)
+                    GrantGameplayAbility(Pawn, EmoteAbility);
+            }
+            std::cout << _("Granted Abilities!\n");
         }
         else
             std::cout << _("Unable to find AbilitySystemComponent!\n");
@@ -229,17 +228,17 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     else
         std::cout << _("Unable to grant abilities due to no GiveAbility!\n");
 
-    if (Engine_Version < 424)
+    if (FnVerDouble < 9)
     {
-        static auto Def = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+        static auto PickaxeDef = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
         static auto Minis = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
         static auto SlurpJuice = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff"));
-        static auto MiloAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_AshtonPack_Milo.WID_AshtonPack_Milo"));
+        static auto GoldAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"));
 
-        Inventory::CreateAndAddItem(PlayerController, Def, EFortQuickBars::Primary, 0, 1);
-        Inventory::CreateAndAddItem(PlayerController, MiloAR, EFortQuickBars::Primary, 1, 1);
+        Inventory::CreateAndAddItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0, 1); // s9 crashes here
+        Inventory::CreateAndAddItem(PlayerController, GoldAR, EFortQuickBars::Primary, 1, 1);
 
-        if (FnVerDouble < 9.40)
+        if (FnVerDouble < 9.10)
         {
             static auto GoldPump = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_SR_Ore_T03.WID_Shotgun_Standard_Athena_SR_Ore_T03"));
             static auto HeavySniper = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Sniper_Heavy_Athena_SR_Ore_T03.WID_Sniper_Heavy_Athena_SR_Ore_T03"));

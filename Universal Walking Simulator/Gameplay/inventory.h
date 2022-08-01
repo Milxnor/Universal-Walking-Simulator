@@ -353,12 +353,24 @@ namespace Inventory
 		// static auto OnRep_QuickBar = Controller->Function(_("OnRep_QuickBar"));
 		// Controller->ProcessEvent(OnRep_QuickBar, nullptr);
 
-		if ((bRemovedItem || Idx != -1) && Inventory)
-			((FFastArraySerializer*)Inventory)->MarkArrayDirty();
+		if (Engine_Version <= 422)
+		{
+			if ((bRemovedItem || Idx != -1) && Inventory)
+				((FFastArraySerializerOL*)Inventory)->MarkArrayDirty();
 
-		// if (Idx != -1)
-		if (ModifiedItem)
-			((FFastArraySerializer*)Inventory)->MarkItemDirty(ModifiedItem);
+			// if (Idx != -1)
+			if (ModifiedItem)
+				((FFastArraySerializerOL*)Inventory)->MarkItemDirty(ModifiedItem);
+		}
+		else
+		{
+			if ((bRemovedItem || Idx != -1) && Inventory)
+				((FFastArraySerializerSE*)Inventory)->MarkArrayDirty();
+
+			// if (Idx != -1)
+			if (ModifiedItem)
+				((FFastArraySerializerSE*)Inventory)->MarkItemDirty(ModifiedItem);
+		}
 	}
 
 	UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count = 1)
@@ -433,7 +445,11 @@ namespace Inventory
 				*(Type*)(__int64(&ItemEntry) + Offset) = NewVal;
 				bSuccessful = true;
 				auto Inventory = GetInventory(Controller);
-				((FFastArraySerializer*)Inventory)->MarkItemDirty((FFastArraySerializerItem*)&ItemEntry);
+
+				if (Engine_Version <= 422)
+					((FFastArraySerializerOL*)Inventory)->MarkItemDirty((FFastArraySerializerItem*)&ItemEntry);
+				else
+					((FFastArraySerializerSE*)Inventory)->MarkItemDirty((FFastArraySerializerItem*)&ItemEntry);
 				// break;
 			}
 		}

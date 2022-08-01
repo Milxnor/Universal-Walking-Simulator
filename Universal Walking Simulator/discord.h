@@ -1,7 +1,7 @@
 #pragma once
 
 #define CURL_STATICLIB
-// #define DPP_DISABLED
+#define DPP_DISABLED
 
 // ^ Why? You need all these dlls n stuff in your win64 in order for the dll to actually work witso.
 
@@ -93,6 +93,8 @@ const std::string PREFIX = "!";
 bool comp(std::pair<std::string, int> a, std::pair<std::string, int> b) {
     return a.second > b.second;
 }
+
+static bool bIsBotRunning = false;
 
 DWORD WINAPI BotThread(LPVOID) {
     dpp::cluster bot(BOT_TOKEN, dpp::i_default_intents | dpp::i_message_content);
@@ -229,6 +231,8 @@ DWORD WINAPI BotThread(LPVOID) {
             );
         }
         });
+
+    bIsBotRunning = true; // we probably dont need a bool for this..
 
     bot.start(dpp::st_wait);
 

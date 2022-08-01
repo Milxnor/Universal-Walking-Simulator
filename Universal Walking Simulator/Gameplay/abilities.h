@@ -6,7 +6,12 @@
 
 FGameplayAbilitySpec* FindAbilitySpecFromHandle(UObject* ASC, FGameplayAbilitySpecHandle Handle)
 {
-    auto Specs = (*ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))).Items;
+    TArray<FGameplayAbilitySpec> Specs;
+
+    if (Engine_Version <= 422)
+        Specs = (*ASC->Member<FGameplayAbilitySpecContainerOL>(_("ActivatableAbilities"))).Items;
+    else
+        Specs = (*ASC->Member<FGameplayAbilitySpecContainerSE>(_("ActivatableAbilities"))).Items;
 
     for (int i = 0; i < Specs.Num(); i++)
     {
@@ -21,7 +26,7 @@ FGameplayAbilitySpec* FindAbilitySpecFromHandle(UObject* ASC, FGameplayAbilitySp
     return nullptr;
 }
 
-static FAbilityReplicatedDataCache* FindReplicatedTargetData(UObject* AbilitySystemComponent, FGameplayAbilitySpecHandle Handle, FPredictionKey PredictionKey)
+/* static FAbilityReplicatedDataCache* FindReplicatedTargetData(UObject* AbilitySystemComponent, FGameplayAbilitySpecHandle Handle, FPredictionKey PredictionKey)
 {
     FAbilityReplicatedDataCache OutData;
     auto ReplicatedDataContainer = (FGameplayAbilityReplicatedDataContainer*)(__int64(AbilitySystemComponent) + 1312); // Found at uhm serverseetreplicaqteddata
@@ -41,7 +46,7 @@ void ConsumeAllReplicatedData(UObject* AbilitySystemComponent, FGameplayAbilityS
     {
         CachedData->Reset();
     }
-}
+} */
 
 // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1754
 
@@ -88,7 +93,10 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
         std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed: {}\n", Spec->Ability->GetName(), InternalTryActivateAbilityFailureTags->ToStringSimple(true));
         Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, PredictionKey.Current);
         Spec->InputPressed = false;
-        ASC->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"))->MarkItemDirty(Spec);
+        if (Engine_Version <= 422)
+            ASC->Member<FGameplayAbilitySpecContainerOL>(_("ActivatableAbilities"))->MarkItemDirty(Spec);
+        else
+            ASC->Member<FGameplayAbilitySpecContainerSE>(_("ActivatableAbilities"))->MarkItemDirty(Spec);
     }
 }
 
@@ -101,8 +109,6 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     if (!AbilitySystemComponent)
         return nullptr;
-
-    auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"));
 
     UObject* DefaultObject = GameplayAbilityClass->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
 
@@ -118,12 +124,29 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     auto Spec = GenerateNewSpec();
 
-    for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
+    if (Engine_Version <= 422)
     {
-        auto& CurrentSpec = ActivatableAbilities.Items[i];
+        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(_("ActivatableAbilities"));
 
-        if (CurrentSpec.Ability == Spec.Ability)
-            return nullptr;
+        for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
+        {
+            auto& CurrentSpec = ActivatableAbilities.Items[i];
+
+            if (CurrentSpec.Ability == Spec.Ability)
+                return nullptr;
+        }
+    }
+    else
+    {
+        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(_("ActivatableAbilities"));
+
+        for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
+        {
+            auto& CurrentSpec = ActivatableAbilities.Items[i];
+
+            if (CurrentSpec.Ability == Spec.Ability)
+                return nullptr;
+        }
     }
 
     // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232
@@ -150,26 +173,53 @@ inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunct
 
 inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
 {
-    struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
-        FServerAbilityRPCBatch                      BatchInfo;                                                // (Parm)
-    };
-
-    auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
-
-    auto BatchInfo = Params->BatchInfo;
-
-    InternalServerTryActivateAbility(AbilitySystemComponent, Params->BatchInfo.AbilitySpecHandle, Params->BatchInfo.InputPressed, Params->BatchInfo.PredictionKey, nullptr);
-    // PrintExplicitTags(AbilitySystemComponent);
-
-    Helper::Abilities::ServerSetReplicatedTargetData(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.PredictionKey, BatchInfo.TargetData, FGameplayTag(), BatchInfo.PredictionKey);
-
-    if (BatchInfo.Ended)
+    if (Engine_Version <= 422)
     {
-        // This FakeInfo is probably bogus for the general case but should work for the limited use of batched RPCs
-        FGameplayAbilityActivationInfo FakeInfo;
-        // FakeInfo.ServerSetActivationPredictionKey(BatchInfo.PredictionKey);
-        FakeInfo.PredictionKeyWhenActivated = BatchInfo.PredictionKey;
-        Helper::Abilities::ServerEndAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, FakeInfo, BatchInfo.PredictionKey);
+        struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
+            FServerAbilityRPCBatchOL                      BatchInfo;                                                // (Parm)
+        };
+
+        auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
+
+        auto& BatchInfo = Params->BatchInfo;
+
+        InternalServerTryActivateAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.InputPressed, BatchInfo.PredictionKey, nullptr);
+        // PrintExplicitTags(AbilitySystemComponent);
+
+        Helper::Abilities::ServerSetReplicatedTargetData(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.PredictionKey, BatchInfo.TargetData, FGameplayTag(), BatchInfo.PredictionKey);
+
+        if (BatchInfo.Ended)
+        {
+            // This FakeInfo is probably bogus for the general case but should work for the limited use of batched RPCs
+            FGameplayAbilityActivationInfo FakeInfo;
+            // FakeInfo.ServerSetActivationPredictionKey(BatchInfo.PredictionKey);
+            FakeInfo.PredictionKeyWhenActivated = BatchInfo.PredictionKey;
+            Helper::Abilities::ServerEndAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, FakeInfo, BatchInfo.PredictionKey);
+        }
+    }
+    else
+    {
+        struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
+            FServerAbilityRPCBatchSE                      BatchInfo;                                                // (Parm)
+        };
+
+        auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
+
+        auto& BatchInfo = Params->BatchInfo;
+
+        InternalServerTryActivateAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.InputPressed, BatchInfo.PredictionKey, nullptr);
+        // PrintExplicitTags(AbilitySystemComponent);
+
+        Helper::Abilities::ServerSetReplicatedTargetData(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.PredictionKey, BatchInfo.TargetData, FGameplayTag(), BatchInfo.PredictionKey);
+
+        if (BatchInfo.Ended)
+        {
+            // This FakeInfo is probably bogus for the general case but should work for the limited use of batched RPCs
+            FGameplayAbilityActivationInfo FakeInfo;
+            // FakeInfo.ServerSetActivationPredictionKey(BatchInfo.PredictionKey);
+            FakeInfo.PredictionKeyWhenActivated = BatchInfo.PredictionKey;
+            Helper::Abilities::ServerEndAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, FakeInfo, BatchInfo.PredictionKey);
+        }
     }
 
     return false;
@@ -233,12 +283,12 @@ void TestAbilitySizeDifference()
 {
     /* auto PredictionKeyDiff = SizeOfPredictionKey >= sizeof(FPredictionKey) ? SizeOfPredictionKey - sizeof(FPredictionKey) : sizeof(FPredictionKey) - SizeOfPredictionKey; */
 
-    AHH<FPredictionKey>(_("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
+    /* AHH<FPredictionKey>(_("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
     AHH<FGameplayAbilitySpecHandle>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecHandle"));
     AHH<FGameplayAbilitySpec>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec"));
     AHH<FGameplayAbilitySpecContainer>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
     AHH<FGameplayAbilityTargetDataHandle>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
     AHH<FServerAbilityRPCBatch>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
     AHH<FGameplayEventData>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
-    AHH<FFastArraySerializer>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
+    AHH<FFastArraySerializer>(_("ScriptStruct /Script/Engine.FastArraySerializer")); */
 }

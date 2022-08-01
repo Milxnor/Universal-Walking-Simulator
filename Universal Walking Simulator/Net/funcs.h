@@ -41,26 +41,35 @@ uint64_t SendClientAdjustmentAddr = 0;
 uint64_t SetChannelActorAddr = 0;
 uint64_t CreateChannelAddr = 0;
 uint64_t PlayMontageAddr = 0;
+uint64_t ValidENameAddr = 0;
+uint64_t ReplicationGraph_EnableAddr = 0;
 
-UObject* (*CreateChannelByName)(UObject* Connection, FName& ChName, EChannelCreateFlags CreateFlags, int32_t ChannelIndex); // = -1);
-void (*SetChannelActor)(UObject* ActorChannel, UObject* InActor);
-UObject* (*CreateChannel)(UObject* Connection, EChannelType Type, bool bOpenedLocally, int32_t ChannelIndex);
+static char(__fastcall* ValidationFailure)(__int64* a1, __int64 a2);
 
-void(__fastcall* SendClientAdjustment)(UObject* controller);
-void(__fastcall* CallPreReplication)(UObject* actor, UObject* driver);
-char (__fastcall* ReplicateActor)(UObject* ActorChannel);
+static void (*SendChallenge)(UObject* a1, UObject* a2); // World, NetConnection
+static __int64(__fastcall* Idkf)(__int64 a1, __int64 a2, int a3); // tbh we can just paste pseudo code
 
-char (*KickPlayer)(UObject* a1, UObject*, FText a3); // session, pc
+static UObject* (__fastcall* ReplicationGraph_Enable)(UObject* NetDriver, UObject* World);
 
-void(__fastcall* HandleReloadCost)(UObject* Weapon, int AmountToRemove);
+static UObject* (*CreateChannelByName)(UObject* Connection, FName* ChName, EChannelCreateFlags CreateFlags, int32_t ChannelIndex); // = -1);
+static void (*SetChannelActor)(UObject* ActorChannel, UObject* InActor);
+static UObject* (*CreateChannel)(UObject* Connection, EChannelType Type, bool bOpenedLocally, int32_t ChannelIndex);
 
-UObject* (__fastcall* CreateNetDriver_Local)(__int64 a1, __int64 a2, __int64 a3);
+static void (__fastcall* SendClientAdjustment)(UObject* controller);
+static void (__fastcall* CallPreReplication)(UObject* actor, UObject* driver);
+static char (__fastcall* ReplicateActor)(UObject* ActorChannel);
+
+static char (*KickPlayer)(UObject* a1, UObject*, FText a3); // session, pc
+
+static void (__fastcall* HandleReloadCost)(UObject* Weapon, int AmountToRemove);
+
+static UObject* (__fastcall* CreateNetDriver_Local)(__int64 a1, __int64 a2, __int64 a3);
 
 static __int64 (*GetNetMode)(__int64* a1);
-bool (*LP_SpawnPlayActor)(UObject* Player, const FString& URL, FString& OutError, UObject* World); // LocalPlayer
-__int64 (*CollectGarbage)(__int64 a1);
+static bool (*LP_SpawnPlayActor)(UObject* Player, const FString& URL, FString& OutError, UObject* World); // LocalPlayer
+static __int64 (*CollectGarbage)(__int64 a1);
 
-void(__fastcall* GetPlayerViewPoint)(UObject* pc, FVector* a2, FRotator* a3);
+static void(__fastcall* GetPlayerViewPoint)(UObject* pc, FVector* a2, FRotator* a3);
 
 static void* (*SetWorld)(UObject* NetDriver, UObject* World);
 static bool (*InitListen)(UObject* Driver, void* InNotify, FURL& LocalURL, bool bReuseAddressAndPort, FString& Error);
@@ -179,27 +188,24 @@ struct FGameplayTagContainer
     }
 };
 
-// TODO: Just change the contents of the struct.
-
-#ifdef BEFORE_SEASONEIGHT
-struct FGameplayAbilityTargetDataHandle
+struct FGameplayAbilityTargetDataHandleOL
 {
     unsigned char                                      UnknownData00[0x20];                                      // 0x0000(0x0020) MISSED OFFSET
 };
 
-struct FServerAbilityRPCBatch
+struct FServerAbilityRPCBatchOL
 {
     FGameplayAbilitySpecHandle                  AbilitySpecHandle;                                        // 0x0000(0x0004)
     unsigned char                                      UnknownData00[0x4];                                       // 0x0004(0x0004) MISSED OFFSET
     FPredictionKey                              PredictionKey;                                            // 0x0008(0x0018)
-    FGameplayAbilityTargetDataHandle            TargetData;                                               // 0x0020(0x0020)
+    FGameplayAbilityTargetDataHandleOL            TargetData;                                               // 0x0020(0x0020)
     bool                                               InputPressed;                                             // 0x0040(0x0001) (ZeroConstructor, IsPlainOldData)
     bool                                               Ended;                                                    // 0x0041(0x0001) (ZeroConstructor, IsPlainOldData)
     bool                                               Started;                                                  // 0x0042(0x0001) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
     unsigned char                                      UnknownData01[0x5];                                       // 0x0043(0x0005) MISSED OFFSET
 };
 
-struct FGameplayEventData
+struct FGameplayEventDataOL
 {
     FGameplayTag                                EventTag;                                                 // 0x0000(0x0008) (Edit, BlueprintVisible)
     UObject* Instigator;                                               // 0x0008(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
@@ -211,28 +217,28 @@ struct FGameplayEventData
     FGameplayTagContainer                       TargetTags;                                               // 0x0060(0x0020) (Edit, BlueprintVisible)
     float                                              EventMagnitude;                                           // 0x0080(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
     unsigned char                                      UnknownData00[0x4];                                       // 0x0084(0x0004) MISSED OFFSET
-    FGameplayAbilityTargetDataHandle TargetData;                                               // 0x0088(0x0020) (Edit, BlueprintVisible)
+    FGameplayAbilityTargetDataHandleOL TargetData;                                               // 0x0088(0x0020) (Edit, BlueprintVisible)
 };
-#else
-struct FGameplayAbilityTargetDataHandle // S8+
+
+struct FGameplayAbilityTargetDataHandleSE
 {
     unsigned char                                      UnknownData00[0x28];                                      // 0x0000(0x0028) MISSED OFFSET
     // unsigned char                                      UnknownData00[0x20];                                      // 0x0000(0x0020) MISSED OFFSET // 8.20..
 };
 
-struct FServerAbilityRPCBatch
+struct FServerAbilityRPCBatchSE
 {
     FGameplayAbilitySpecHandle                  AbilitySpecHandle;                                        // 0x0000(0x0004)
     unsigned char                                      UnknownData00[0x4];                                       // 0x0004(0x0004) MISSED OFFSET
     FPredictionKey                              PredictionKey;                                            // 0x0008(0x0018)
-    FGameplayAbilityTargetDataHandle           TargetData;                                               // 0x0020(0x0020)
+    FGameplayAbilityTargetDataHandleSE           TargetData;                                               // 0x0020(0x0020)
     bool                                               InputPressed;                                             // 0x0040(0x0001) (ZeroConstructor, IsPlainOldData)
     bool                                               Ended;                                                    // 0x0041(0x0001) (ZeroConstructor, IsPlainOldData)
     bool                                               Started;                                                  // 0x0042(0x0001) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
     unsigned char                                      UnknownData01[0x5];                                       // 0x0043(0x0005) MISSED OFFSET
 };
 
-struct FGameplayEventData
+struct FGameplayEventDataSE
 {
     FGameplayTag                                EventTag;                                                 // 0x0000(0x0008) (Edit, BlueprintVisible)
     UObject* Instigator;                                               // 0x0008(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
@@ -244,9 +250,8 @@ struct FGameplayEventData
     FGameplayTagContainer                       TargetTags;                                               // 0x0060(0x0020) (Edit, BlueprintVisible)
     float                                              EventMagnitude;                                           // 0x0080(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
     unsigned char                                      UnknownData00[0x4];                                       // 0x0084(0x0004) MISSED OFFSET
-    FGameplayAbilityTargetDataHandle TargetData;                                               // 0x0088(0x0020) (Edit, BlueprintVisible)
+    FGameplayAbilityTargetDataHandleSE TargetData;                                               // 0x0088(0x0020) (Edit, BlueprintVisible)
 };
-#endif
 
 enum class EGameplayAbilityActivationMode : uint8_t
 {
@@ -297,7 +302,13 @@ struct FGameplayAbilitySpec : public FFastArraySerializerItem
     unsigned char                                      UnknownData01[0x50];                                      // 0x0078(0x0050) MISSED OFFSET
 };
 
-struct FGameplayAbilitySpecContainer : public FFastArraySerializer
+struct FGameplayAbilitySpecContainerSE : public FFastArraySerializerSE
+{
+    TArray<FGameplayAbilitySpec>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
+    UObject* Owner; // ASC* // 0x0118
+};
+
+struct FGameplayAbilitySpecContainerOL : public FFastArraySerializerOL
 {
     TArray<FGameplayAbilitySpec>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
     UObject* Owner; // ASC* // 0x0118
@@ -353,65 +364,6 @@ template<typename T, typename U> constexpr size_t offsetOf(U T::* member)
 {
     return (char*)&((T*)nullptr->*member) - (char*)nullptr;
 }
-
-/** Struct defining the cached data for a specific gameplay ability. This data is generally synchronized client->server in a network game. */
-struct FAbilityReplicatedDataCache
-{
-    FGameplayAbilityTargetDataHandle TargetData;
-
-    FGameplayTag ApplicationTag;
-
-    bool bTargetConfirmed;
-
-    bool bTargetCancelled;
-
-    unsigned char Pad[48];
-
-    FAbilityReplicatedData GenericEvents[(int)EAbilityGenericReplicatedEvent::MAX];
-
-    FPredictionKey PredictionKey;
-
-    void Reset()
-    {
-        bTargetConfirmed = bTargetCancelled = false;
-        TargetData = FGameplayAbilityTargetDataHandle();
-        ApplicationTag = FGameplayTag();
-        PredictionKey = FPredictionKey();
-        for (int i = 0; i < (int)EAbilityGenericReplicatedEvent::MAX; ++i)
-        {
-            GenericEvents[i].bTriggered = false;
-            GenericEvents[i].VectorPayload = { 0,0,0 };
-        }
-    }
-};
-
-struct FGameplayAbilityReplicatedDataContainer
-{
-    typedef TPair<FGameplayAbilitySpecHandleAndPredictionKey, TSharedRef<FAbilityReplicatedDataCache>> FKeyDataPair;
-
-    TArray<FKeyDataPair> InUseData;
-    TArray<void*> FreeData;
-
-    TSharedRef<FAbilityReplicatedDataCache> Find(const FGameplayAbilitySpecHandleAndPredictionKey& Key)
-    {
-        for (int i = 0; i < InUseData.Num(); i++)
-        {
-            {
-                if (InUseData[i].Key().AbilityHandle.Handle == Key.AbilityHandle.Handle && InUseData[i].Key().PredictionKeyAtCreation == Key.PredictionKeyAtCreation)
-                {
-                    return InUseData[i].Value();
-                }
-            }
-        }
-
-        /* auto SharedPtr = TSharedPtr<FAbilityReplicatedDataCache>(new FAbilityReplicatedDataCache());
-        TSharedRef<FAbilityReplicatedDataCache> SharedRef = SharedPtr.ToSharedRef();
-        FKeyDataPair pair = FKeyDataPair(Key, SharedRef);
-        InUseData.Add(pair); */
-
-        return TSharedRef<FAbilityReplicatedDataCache>(); // SharedRef;
-    }
-};
 
 float (*PlayMontage)(UObject* AbilitySystemComponent, UObject* InAnimatingAbility, FGameplayAbilityActivationInfo ActivationInfo, UObject* NewAnimMontage, float InPlayRate, FName StartSectionName);
 

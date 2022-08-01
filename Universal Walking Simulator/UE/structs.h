@@ -13,7 +13,6 @@
 #include "other.h"
 #include "xorstr.hpp" 
 #include <regex>
-#include "patterns.h" // we need this for the #ifndef BEFORE_SEASONEIGHT
 
 using namespace std::chrono;
 
@@ -241,10 +240,25 @@ public:
 	// Ill add setting and stuff soon, check out argon's FString if you need.
 };
 
+#define NAME_NO_NUMBER_INTERNAL 0
+#define NAME_None 0
+
+struct FNameEntryId (*FromValidEName)(EName Ename);
+
+struct FNameEntryId
+{
+	FORCEINLINE static FNameEntryId FromEName(EName Ename)
+	{
+		return Ename == NAME_None ? FNameEntryId() : FromValidEName(Ename);
+	}
+
+	int32_t Value;
+};
+
 struct FName // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4c8e09b606f10a09776b4d1f38/Engine/Source/Runtime/Core/Public/UObject/NameTypes.h#L403
 {
 	uint32_t ComparisonIndex;
-	uint32_t Number;
+	uint32_t Number = NAME_NO_NUMBER_INTERNAL;
 
 	INL std::string ToString()
 	{
@@ -261,6 +275,22 @@ struct FName // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4c8
 
 		return Str;
 	}
+
+	bool operator==(const FName& other)
+	{
+		return (other.ComparisonIndex == this->ComparisonIndex);
+	}
+
+	FORCEINLINE FName(EName Ename) : FName(Ename, NAME_NO_NUMBER_INTERNAL) {}
+
+	FORCEINLINE FName(EName Ename, int32_t InNumber)
+		: ComparisonIndex(FNameEntryId::FromEName(Ename).Value)
+		, Number(InNumber)
+	{
+	}
+
+	FName() {}
+	FName(int _ComparisonIndex) : ComparisonIndex(_ComparisonIndex) {}
 };
 
 template <typename Fn>
@@ -317,7 +347,7 @@ struct light
 		calcSize(first, rest...);
 		auto finalSize = getSize();
 
-		if (finalSize > 8 : !(((finalSize >> 3) << 3) == finalSize) ? false) // checks if the size is divisible by 8.
+		// if (finalSize > 8 : !(((finalSize >> 3) << 3) == finalSize) ? false) // checks if the size is divisible by 8.
 		{
 			std::cout << std::format("Unable to execute {} because it requires padding!\n", funcName);
 			return;
@@ -671,12 +701,12 @@ struct FField
 	void* Owner;
 	void* pad;
 	FField* Next;
-	FName Name;
+	FName NamePrivate;
 	EObjectFlags FlagsPrivate;
 
 	std::string GetName()
 	{
-		return Name.ToString();
+		return NamePrivate.ToString();
 	}
 };
 
@@ -850,16 +880,36 @@ UFunction* FindFunction(const std::string& Name, UObject* Object) // might as we
 	return nullptr;
 }
 
+static FName StringToName(const std::string& MemberName)
+{
+	static auto fn = FindObject(_("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
+	static auto KSL = FindObject(_("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
+
+	FString str;
+	auto nameWide = std::wstring(MemberName.begin(), MemberName.end()).c_str();
+	str.Set(nameWide);
+
+	struct {
+		FString InString;
+		FName ReturnValue;
+	} params{str};
+
+	return params.ReturnValue;
+}
+
 template <typename ClassType, typename PropertyType>
 int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int offset = 0)
 {
 	// We loop through the whole class hierarchy to find the offset.
+
+	// auto MemberFName = StringToName(MemberName);
 
 	for (auto Member : GetMembers<ClassType, PropertyType>(Object))
 	{
 		if (Member)
 		{
 			if (Member->GetName() == MemberName)
+			// if (Member->NamePrivate == MemberFName)
 			{
 				if (!offset)
 					return ((PropertyType*)Member)->Offset_Internal;
@@ -1289,10 +1339,8 @@ struct FFastArraySerializerItem
 	int                                                MostRecentArrayReplicationKey;                            // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
 };
 
-struct FFastArraySerializer
+struct FFastArraySerializerSE
 {
-#ifndef BEFORE_SEASONEIGHT
-	
 	char ItemMap[0x50];
 
 	int32_t IDCounter;
@@ -1305,8 +1353,44 @@ struct FFastArraySerializer
 	int32_t CachedNumItemsToConsiderForWriting;
 	EFastArraySerializerDeltaFlags DeltaFlags;
 
-#else
+	void MarkItemDirty(FFastArraySerializerItem* Item)
+	{
+		if (Item->ReplicationID == -1)
+		{
+			Item->ReplicationID = ++IDCounter;
+			if (IDCounter == -1)
+				IDCounter++;
+		}
 
+		Item->ReplicationKey++;
+		MarkArrayDirty();
+	}
+
+	void MarkAllItemsDirty() // This is my function, not ue.
+	{
+
+	}
+
+	void MarkArrayDirty()
+	{
+		// ItemMap.Reset();		// This allows to clients to add predictive elements to arrays without affecting replication.
+		IncrementArrayReplicationKey();
+
+		// Invalidate the cached item counts so that they're recomputed during the next write
+		CachedNumItems = -1;
+		CachedNumItemsToConsiderForWriting = -1;
+	}
+
+	void IncrementArrayReplicationKey()
+	{
+		ArrayReplicationKey++;
+		if (ArrayReplicationKey == -1)
+			ArrayReplicationKey++;
+	}
+};
+
+struct FFastArraySerializerOL
+{	
 	// TMap<int32_t, int32_t> ItemMap;
 	char ItemMap[0x50];
 	int32_t IDCounter;
@@ -1316,7 +1400,6 @@ struct FFastArraySerializer
 
 	int32_t CachedNumItems;
 	int32_t CachedNumItemsToConsiderForWriting;
-#endif
 
 	void MarkItemDirty(FFastArraySerializerItem* Item)
 	{

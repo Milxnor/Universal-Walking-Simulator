@@ -603,6 +603,8 @@ namespace Helper
 		struct { bool b; } bruh{true};
 		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh);
 
+		// prob not needed here from
+
 		static auto Rep_ReplicateMovement = Pawn->Function(_("OnRep_ReplicateMovement"));
 		Pawn->ProcessEvent(Rep_ReplicateMovement);
 
@@ -611,6 +613,8 @@ namespace Helper
 
 		static auto Rep_ReplicatedBasedMovement = Pawn->Function(_("OnRep_ReplicatedBasedMovement"));
 		Pawn->ProcessEvent(Rep_ReplicateMovement);
+
+		// here
 
 		static auto PossessFn = PC->Function(_("Possess"));
 
@@ -640,7 +644,7 @@ namespace Helper
 		// *Pawn->Member<float>(_("NetUpdateFrequency")) = 200;
 
 		static auto setMaxHealthFn = Pawn->Function(_("SetMaxHealth"));
-		struct { float NewHealthVal; }healthParams{ 200 };
+		struct { float NewHealthVal; }healthParams{ 100 };
 
 		if (setMaxHealthFn)
 			Pawn->ProcessEvent(setMaxHealthFn, &healthParams);
@@ -648,7 +652,7 @@ namespace Helper
 			std::cout << _("Unable to find setMaxHealthFn!\n");
 
 		static auto setMaxShieldFn = Pawn->Function(_("SetMaxShield"));
-		struct { float NewValue; }shieldParams{ 300 };
+		struct { float NewValue; }shieldParams{ 100 };
 
 		if (setMaxShieldFn)
 			Pawn->ProcessEvent(setMaxShieldFn, &shieldParams);
@@ -946,13 +950,37 @@ namespace Helper
 				std::cout << _("Invalid component!\n");
 		}
 
-		void ServerSetReplicatedTargetData(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityHandle, const FPredictionKey& AbilityOriginalPredictionKey, const FGameplayAbilityTargetDataHandle& ReplicatedTargetDataHandle, const FGameplayTag& ApplicationTag, const FPredictionKey& CurrentPredictionKey)
+		void ServerSetReplicatedTargetData(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityHandle, const FPredictionKey& AbilityOriginalPredictionKey, const FGameplayAbilityTargetDataHandleOL& ReplicatedTargetDataHandle, const FGameplayTag& ApplicationTag, const FPredictionKey& CurrentPredictionKey)
 		{
 			struct
 			{
 				FGameplayAbilitySpecHandle AbilityHandle;
 				FPredictionKey AbilityOriginalPredictionKey;
-				FGameplayAbilityTargetDataHandle ReplicatedTargetDataHandle;
+				FGameplayAbilityTargetDataHandleOL ReplicatedTargetDataHandle;
+				FGameplayTag ApplicationTag;
+				FPredictionKey CurrentPredictionKey;
+			} UAbilitySystemComponent_ServerSetReplicatedTargetData_Params{ AbilityHandle, AbilityOriginalPredictionKey, ReplicatedTargetDataHandle, ApplicationTag, CurrentPredictionKey };
+
+			if (ASC)
+			{
+				static auto fn = ASC->Function(_("ServerSetReplicatedTargetData"));
+
+				if (fn)
+					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ServerSetReplicatedTargetData_Params);
+				else
+					std::cout << _("Could not find ServerEndAbility!\n");
+			}
+			else
+				std::cout << _("Invalid component!\n");
+		}
+
+		void ServerSetReplicatedTargetData(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityHandle, const FPredictionKey& AbilityOriginalPredictionKey, const FGameplayAbilityTargetDataHandleSE& ReplicatedTargetDataHandle, const FGameplayTag& ApplicationTag, const FPredictionKey& CurrentPredictionKey)
+		{
+			struct
+			{
+				FGameplayAbilitySpecHandle AbilityHandle;
+				FPredictionKey AbilityOriginalPredictionKey;
+				FGameplayAbilityTargetDataHandleSE ReplicatedTargetDataHandle;
 				FGameplayTag ApplicationTag;
 				FPredictionKey CurrentPredictionKey;
 			} UAbilitySystemComponent_ServerSetReplicatedTargetData_Params{ AbilityHandle, AbilityOriginalPredictionKey, ReplicatedTargetDataHandle, ApplicationTag, CurrentPredictionKey };

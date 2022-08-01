@@ -90,9 +90,9 @@ UObject* FindChannel(UObject* Actor, UObject* Connection)
     return nullptr;
 }
 
-TArray<UObject*>* GetAllActors(UObject* World)
+TArray<UObject*> GetAllActors(UObject* World)
 {
-    if (!World) return nullptr;
+    /* if (!World) return nullptr;
 
     auto Level = World->Member<UObject*>(_("PersistentLevel"));
 
@@ -102,7 +102,11 @@ TArray<UObject*>* GetAllActors(UObject* World)
 
     if (!*OwningWorld || !OwningWorld) return nullptr;
 
-    return (TArray<UObject*>*)(&*OwningWorld - 2);
+    return (TArray<UObject*>*)(&*OwningWorld - 2); */
+
+    static auto ActorsClass = FindObject(_("Class /Script/Engine.Actor"));
+    auto AllActors = Helper::GetAllActorsOfClass(ActorsClass);
+    return AllActors;
 }
 
 void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderList)
@@ -114,15 +118,18 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
 
     // auto& List = ObjectList;
 
-    TArray<UObject*>* Actors = GetAllActors(World);
+    TArray<UObject*> Actors = GetAllActors(World);
 
-    for (int j = 0; j < Actors->Num(); j++)
+    std::cout << _("NumActors: ") << Actors.Num() << '\n';
+
+    for (int j = 0; j < Actors.Num(); j++)
     {
-        auto Actor = Actors->At(j);
+        auto Actor = Actors.At(j);
 
         if (!Actor || *Actor->Member<ENetRole>(_("RemoteRole")) == ENetRole::ROLE_None) // || Actor->bActorIsBeingDestroyed)
             continue;
 
+        // TODO: Fix because bitfields makes it replicate A LOT of actors that should NOT be replicated
         if (*Actor->Member<ENetDormancy>(_("NetDormancy")) == ENetDormancy::DORM_Initial && *Actor->Member<char>(_("bNetStartup")))
             continue;
 
@@ -137,7 +144,7 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
 
 int32_t ServerReplicateActors(UObject* NetDriver)
 {
-#if !defined(N_T) && !defined(F_TF)
+#if !defined(N_T) // && !defined(F_TF)
 	// Supports replicationgraph
 
 	auto ReplicationDriver = NetDriver->Member<UObject*>(_("ReplicationDriver"));
@@ -153,6 +160,7 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 
 	return 0;
 #endif
+    // ReplicationFrame
 #ifdef N_T
     ++*(int32_t*)(NetDriver + 0x2C8);
 #endif
@@ -166,7 +174,7 @@ int32_t ServerReplicateActors(UObject* NetDriver)
         return NumClientsToTick;
 
     std::vector<UObject*> ConsiderList;
-    ConsiderList.reserve(ObjectList.size());
+    // ConsiderList.reserve(ObjectList.size());
     BuildConsiderList(NetDriver, ConsiderList);
 
     std::cout << _("Considering: ") << ConsiderList.size() << '\n';
@@ -226,9 +234,16 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 #ifdef N_T
                     Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
 #else
-                    FName ACTOR_NAME;
-                    ACTOR_NAME.ComparisonIndex = 102;
-                    Channel = CreateChannelByName(Connection, ACTOR_NAME, EChannelCreateFlags::OpenedLocally, -1);
+                    EName ActorEName = EName::Actor;
+
+                    // FNameEntryId ActorEntryId = FromValidEName(ActorEName);
+
+                    FName ActorName = FName(ActorEName);
+
+                    std::cout << _("Comparison Index: ") << ActorName.ComparisonIndex << '\n';
+                    std::cout << _("Number: ") << ActorName.Number << '\n';
+
+                    Channel = CreateChannelByName(Connection, &ActorName, EChannelCreateFlags::OpenedLocally, -1);
 #endif
                     if (Channel)
                     {

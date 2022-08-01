@@ -98,22 +98,42 @@ inline void initStuff()
 					static auto BasePlaylistOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("BasePlaylist"));
 					static auto PlaylistReplicationKeyOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("PlaylistReplicationKey"));
 
-					static auto PlaylistInfo = gameState->Member<FFastArraySerializer>(_("CurrentPlaylistInfo"));
-
 					if (BasePlaylistOffset && OnRepPlaylist && Playlist)
 					{
-						auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(_("CurrentPlaylistInfo"))->Member<UObject*>(_("BasePlaylist"), true);
-						auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
-
-						if (BasePlaylist)
+						if (Engine_Version <= 422)
 						{
-							*BasePlaylist = Playlist;
-							(*PlaylistReplicationKey)++;
-							((FFastArraySerializer*)PlaylistInfo)->MarkArrayDirty();
-							std::cout << _("Set playlist to: ") << Playlist->GetFullName() << '\n';
+							static auto PlaylistInfo = gameState->Member<FFastArraySerializerOL>(_("CurrentPlaylistInfo"));
+
+							auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(_("CurrentPlaylistInfo"))->Member<UObject*>(_("BasePlaylist"), true);
+							auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
+
+							if (BasePlaylist)
+							{
+								*BasePlaylist = Playlist;
+								(*PlaylistReplicationKey)++;
+								PlaylistInfo->MarkArrayDirty();
+								std::cout << _("Set playlist to: ") << Playlist->GetFullName() << '\n';
+							}
+							else
+								std::cout << _("Base Playlist is null!\n");
 						}
 						else
-							std::cout << _("Base Playlist is null!\n");
+						{
+							static auto PlaylistInfo = gameState->Member<FFastArraySerializerSE>(_("CurrentPlaylistInfo"));
+
+							auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(_("CurrentPlaylistInfo"))->Member<UObject*>(_("BasePlaylist"), true);
+							auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
+
+							if (BasePlaylist)
+							{
+								*BasePlaylist = Playlist;
+								(*PlaylistReplicationKey)++;
+								PlaylistInfo->MarkArrayDirty();
+								std::cout << _("Set playlist to: ") << Playlist->GetFullName() << '\n';
+							}
+							else
+								std::cout << _("Base Playlist is null!\n");
+						}
 					}
 					else
 					{
@@ -555,21 +575,26 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
 				static auto EmoteClass = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
-				auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainer>(_("ActivatableAbilities"));
+				TArray<FGameplayAbilitySpec> Specs;
+
+				if (Engine_Version <= 422)
+					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(_("ActivatableAbilities"))).Items;
+				else
+					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(_("ActivatableAbilities"))).Items;
 
 				UObject* DefaultObject = EmoteClass->CreateDefaultObject();
 
-				for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
+				for (int i = 0; i < Specs.Num(); i++)
 				{
-					auto& CurrentSpec = ActivatableAbilities.Items[i];
+					auto& CurrentSpec = Specs[i];
 
 					if (CurrentSpec.Ability == DefaultObject)
 					{
 						auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(_("CurrentActivationInfo"));
 
-						Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
+						// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
 						auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
-						Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
+						// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
 
 						std::cout << _("Played for: ") << Dura << '\n';
 					}
@@ -858,6 +883,21 @@ inline bool AircraftExitedDropZoneHook(UObject* GameMode, UFunction* Function, v
 	return true;
 }
 
+inline bool ServerChoosePartHook(UObject* Pawn, UFunction* Function, void* Parameters)
+{
+	struct SCP_Params {
+		TEnumAsByte<EFortCustomPartType> Part;
+		UObject* ChosenCharacterPart;
+	};
+
+	auto Params = (SCP_Params*)Parameters;
+
+	if (Params && (!Params->ChosenCharacterPart && Params->Part.Get() != EFortCustomPartType::Backpack))
+		return true;
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
@@ -886,6 +926,8 @@ void FinishInitializeUHooks()
 		AddHook(_("Function /Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract"), ServerAttemptInteractHook);
 
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ServerAttemptExitVehicle"), ServerAttemptExitVehicleHook);
+
+	AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerChoosePart"), ServerChoosePartHook);
 
 	for (auto& Func : FunctionsToHook)
 	{

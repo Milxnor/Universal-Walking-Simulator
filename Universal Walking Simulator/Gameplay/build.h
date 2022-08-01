@@ -69,7 +69,9 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 		bool bSuccessful = false;
 		UObject* MatDefinition = nullptr;
 
-#ifndef BEFORE_SEASONEIGHT
+		static const auto FnVerDouble = std::stod(FN_Version);
+
+		if (FnVerDouble > 8)
 		{
 			struct FCreateBuildingActorData
 			{
@@ -160,7 +162,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				}
 			}
 		}
-#else
+		else
 		{
 			struct FBuildingClassData {
 				UObject* BuildingClass;
@@ -236,7 +238,6 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 			}
 		}
 
-#endif
 		if (bSuccessful)
 		{
 			// TEnumAsByte<EFortResourceType>                     ResourceType;

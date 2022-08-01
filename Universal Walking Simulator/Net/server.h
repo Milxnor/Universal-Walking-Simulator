@@ -8,7 +8,28 @@ static bool bListening = false;
 
 static UObject* BeaconHost = nullptr;
 
-DWORD WINAPI MapLoadThread(LPVOID)
+void AllowConnections()
+{
+    static const auto World = Helper::GetWorld();
+
+    if (BeaconHost)
+    {
+        PauseBeaconRequests(BeaconHost, false);
+        auto NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
+
+        if (NetDriver)
+        {
+            *NetDriver->Member<UObject*>(_("World")) = World;
+
+            if (SetWorld)
+                SetWorld(NetDriver, World);
+            else
+                std::cout << _("Invalid SetWorld!\n");
+        }
+    }
+}
+
+DWORD WINAPI MapLoadThread(LPVOID) // DOES NOT WORK
 {
     serverStatus = EServerStatus::Loading;
 
@@ -28,7 +49,8 @@ DWORD WINAPI MapLoadThread(LPVOID)
         static auto IsLevelLoaded = StreamingLevel->Function(_("IsLevelLoaded"));
         bool bIsLevelLoaded = false;
 
-        StreamingLevel->ProcessEvent(IsLevelLoaded, &bIsLevelLoaded);
+        if (IsLevelLoaded)
+            StreamingLevel->ProcessEvent(IsLevelLoaded, &bIsLevelLoaded);
 
         if (bIsLevelLoaded)
             continue;
@@ -40,16 +62,16 @@ DWORD WINAPI MapLoadThread(LPVOID)
 
     if (BeaconHost)
     {
-        PauseBeaconRequests(BeaconHost, false);
-        auto NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
-        *NetDriver->Member<UObject*>(_("World")) = World;
-
-        if (SetWorld && NetDriver)
-            SetWorld(NetDriver, World);
+        AllowConnections();
 
         std::cout << _("Players can now join!\n");
         serverStatus = EServerStatus::Up;
-        SendDiscordStart();
+
+#ifndef DPP_DISABLED
+        while (!bIsBotRunning) {}
+        if (bIsBotRunning)
+            SendDiscordStart();
+#endif
     }
 
     return 0;
@@ -57,7 +79,7 @@ DWORD WINAPI MapLoadThread(LPVOID)
 
 void Listen(int Port = 7777)
 {
-    bool bUseBeacons = true;//(Engine_Version >= 425) ? false : true; // CreateNetDriver ? false : true;
+    bool bUseBeacons = true; //(Engine_Version >= 425) ? false : true; // CreateNetDriver ? false : true;
 
     if (!bUseBeacons)
         bUseBeacons = (CreateNetDriver ? false : true);
@@ -120,7 +142,7 @@ void Listen(int Port = 7777)
         NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
         *NetDriver->Member<FName>(_("NetDriverName")) = FName(282); // REGISTER_NAME(282,GameNetDriver)
 
-        InitListen(NetDriver, Helper::GetWorld(), InURL, true, Error);
+        InitListen(NetDriver, World, InURL, true, Error);
         *NetDriver->Member<UObject*>(_("World")) = World;
         PauseBeaconRequests(BeaconHost, true);
         *NetDriver->Member<UObject*>(_("World")) = World;
@@ -134,42 +156,71 @@ void Listen(int Port = 7777)
     }
 
     *NetDriver->Member<int>(_("MaxClientRate")) = *NetDriver->Member<int>(_("MaxInternetClientRate"));
-    UObject* ReplicationDriver = nullptr;
+    UObject** ReplicationDriver = nullptr;
 
     if (NetDriver)
     {
+        ReplicationDriver = NetDriver->Member<UObject*>(_("ReplicationDriver"));
         // if (!bUseBeacons)
         if (Engine_Version >= 424)
         {
             if (SetReplicationDriver)
             {
-                static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
+                if (!(*ReplicationDriver))
+                {
+                    if (ReplicationGraph_Enable)
+                    {
+                        auto res = ReplicationGraph_Enable(NetDriver, World);
 
-                struct {
-                    UObject* ObjectClass;
-                    UObject* Outer;
-                    UObject* ReturnValue;
-                } params{ ReplicationDriverClass , NetDriver };
+                        std::cout << "RES: " << res << '\n';
+                        
+                        auto v7 = *(__int64*)(__int64(World) + 296);
 
-                static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
-                static auto fn = GSC->Function(_("SpawnObject"));
-                // static auto fn = FindObject(_("Function /Script/Engine.GameplayStatics.SpawnObject"));
-                std::cout << "Creating graph\n";
-                GSC->ProcessEvent(fn, &params);
-                std::cout << "new rep graph: " << params.ReturnValue << '\n';
-                SetReplicationDriver(NetDriver, params.ReturnValue);
+                        std::cout << _("V7: ") << v7 << '\n';
+
+                        auto idk = (char*)(v7 + 929);
+
+                        std::cout << "IDK: " << idk << '\n';
+
+                        if (idk)
+                            std::cout << _("IDK deref as int: ") << (int)(*idk) << '\n';
+
+                        if (res)
+                        {
+                            std::cout << _("RES NAME: ") << res->GetFullName() << '\n';
+                        }
+
+                        static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
+
+                        struct {
+                            UObject* ObjectClass;
+                            UObject* Outer;
+                            UObject* ReturnValue;
+                        } params{ ReplicationDriverClass , NetDriver };
+
+                        static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+                        static auto fn = GSC->Function(_("SpawnObject"));
+                        // static auto fn = FindObject(_("Function /Script/Engine.GameplayStatics.SpawnObject"));
+                        std::cout << "Creating graph\n";
+                        GSC->ProcessEvent(fn, &params);
+                        std::cout << "new rep graph: " << params.ReturnValue << '\n';
+                        SetReplicationDriver(NetDriver, params.ReturnValue);
+                    }
+                    else
+                        std::cout << _("No ReplicationGraph_Enable\n");
+                }
+                else
+                    std::cout << dye::red(_("\n\n[WARNING] ReplicationDriver is valid, but we are trying to create it. (This is VERY good)\n\n\n"));
             }
             else
                 std::cout << _("No SetReplicationDriver!\n");
         }
-
-        ReplicationDriver = *NetDriver->Member<UObject*>(_("ReplicationDriver"));
     }
     else
         std::cout << _("No NetDriver!\n");
 
-    if (ReplicationDriver)
-        RepGraph_ServerReplicateActors = decltype(RepGraph_ServerReplicateActors)(ReplicationDriver->VFTable[ServerReplicateActorsOffset]);
+    if (ReplicationDriver && *ReplicationDriver)
+        RepGraph_ServerReplicateActors = decltype(RepGraph_ServerReplicateActors)((*ReplicationDriver)->VFTable[ServerReplicateActorsOffset]);
     else
         std::cout << dye::red(_("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
 
@@ -182,8 +233,18 @@ void Listen(int Port = 7777)
         LevelCollections->At(1).NetDriver = NetDriver;
     }
 
-    // GetWorld()->AuthorityGameMode->GameSession->MaxPlayers = 100;
     bListening = true;
     std::cout << std::format(("Listening for connections on port {}!\n"), std::to_string(Port));
+#if 0
     CreateThread(0, 0, MapLoadThread, 0, 0, 0);
-}
+#else
+    AllowConnections();
+
+    serverStatus = EServerStatus::Up;
+
+#ifndef DPP_DISABLED
+    if (bIsBotRunning)
+        SendDiscordStart();
+#endif
+#endif
+ }
