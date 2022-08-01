@@ -359,6 +359,13 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 
 			auto Team = *Params->BuildingActorToEdit->Member<TEnumAsByte<uint8_t>>(_("Team"));
 
+			/* float BuildingHealth = 0;
+
+			static auto GetHealth = Params->BuildingActorToEdit->Function(_("GetHealth"));
+
+			if (GetHealth)
+				Params->BuildingActorToEdit->ProcessEvent(GetHealth, &BuildingHealth); */
+
 			Helper::SilentDie(Params->BuildingActorToEdit);
 
 			auto EditedActor = Easy::SpawnActor(Params->NewBuildingClass, Location, Rotation);
@@ -374,8 +381,16 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 					struct { bool bMirrored; }mirroredParams{ Params->bMirrored };
 					EditedActor->ProcessEvent(SetMirroredFn, &mirroredParams);
 
-					*EditedActor->Member<TEnumAsByte<uint8_t>>(_("Team")) = Team;
 					Helper::InitializeBuildingActor(Controller, EditedActor);
+
+					*EditedActor->Member<TEnumAsByte<uint8_t>>(_("Team")) = Team;
+
+					// TODO: Check bIsInitiallyBuilding
+
+					/* static auto ForceBuildingHealth = EditedActor->Function(_("ForceBuildingHealth"));
+
+					if (ForceBuildingHealth)
+						EditedActor->ProcessEvent(ForceBuildingHealth, &BuildingHealth); */
 				}
 				else
 				{
@@ -395,36 +410,44 @@ inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Fu
 	{
 		// TODO: Check if the controller is in aircraft, if they edit on spawn island, it will make them end on the battle bus, which will not go well.
 
+		struct Parms {
+			UObject* BuildingActorToStopEditing;
+		};
+
+		auto Params = (Parms*)Parameters;
+
 		auto Pawn = Controller->Member<UObject*>(_("Pawn"));
 
 		if (Pawn && *Pawn)
 		{
-			// auto EditTool = (*Pawn)->Member<UObject*>(_("CurrentWeapon"));
-			static UObject* EditToolDefinition = FindObject(_("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
-			auto EditToolInstance = Inventory::FindItemInInventory(Controller, EditToolDefinition);
-			auto EditTool = Inventory::EquipWeaponDefinition(*Pawn, EditToolDefinition, Inventory::GetItemGuid(EditToolInstance));
+			auto CurrentWep = (*Pawn)->Member<UObject*>(_("CurrentWeapon"));
 
-			if (EditTool && Parameters)
+			if (CurrentWep && *CurrentWep)
 			{
-				struct Parms {
-					UObject* BuildingActorToStopEditing;
-				};
-				
-				auto Params = (Parms*)Parameters;
+				auto CurrentWepItemDef = *(*CurrentWep)->Member<UObject*>(_("WeaponData"));
+				static UObject* EditToolDefinition = FindObject(_("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
 
-				if (Params->BuildingActorToStopEditing)
+				if (CurrentWepItemDef == EditToolDefinition) // Player CONFIRMED the edit
 				{
-					*Params->BuildingActorToStopEditing->Member<UObject*>(_("EditingPlayer")) = nullptr;
-					static auto OnRep_EditingPlayer = Params->BuildingActorToStopEditing->Function(_("OnRep_EditingPlayer"));
-					Params->BuildingActorToStopEditing->ProcessEvent(OnRep_EditingPlayer);
+					// auto EditToolInstance = Inventory::FindItemInInventory(Controller, EditToolDefinition);
+					auto EditTool = *CurrentWep;// Inventory::EquipWeaponDefinition(*Pawn, EditToolDefinition, Inventory::GetItemGuid(EditToolInstance));
 
 					*EditTool->Member<bool>(_("bEditConfirmed")) = true;
 					*EditTool->Member<UObject*>(_("EditActor")) = nullptr;
-					static auto OnRep_EditActorFn = EditTool->Function(_("OnRep_EditActor")); // We make it static so then it doesn't have to be found again.
+					static auto OnRep_EditActorFn = EditTool->Function(_("OnRep_EditActor"));
 
 					if (OnRep_EditActorFn)
 						EditTool->ProcessEvent(OnRep_EditActorFn);
 				}
+			}
+
+			if (Params->BuildingActorToStopEditing)
+			{
+				*Params->BuildingActorToStopEditing->Member<UObject*>(_("EditingPlayer")) = nullptr;
+				static auto OnRep_EditingPlayer = Params->BuildingActorToStopEditing->Function(_("OnRep_EditingPlayer"));
+
+				if (OnRep_EditingPlayer)
+					Params->BuildingActorToStopEditing->ProcessEvent(OnRep_EditingPlayer);
 			}
 		}
 	}
