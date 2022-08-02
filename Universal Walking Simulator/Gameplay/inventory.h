@@ -1064,7 +1064,7 @@ inline bool ServerHandlePickupWithSwapHook(UObject* Pawn, UFunction* Function, v
 
 void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // nova go brr
 {
-	if (!Weapon)
+	if (!Weapon || bIsPlayground)
 		return;
 
 	static auto GetOwner = Weapon->Function(_("GetOwner"));

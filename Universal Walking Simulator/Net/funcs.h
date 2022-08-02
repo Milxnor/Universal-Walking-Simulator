@@ -368,3 +368,4 @@ template<typename T, typename U> constexpr size_t offsetOf(U T::* member)
 float (*PlayMontage)(UObject* AbilitySystemComponent, UObject* InAnimatingAbility, FGameplayAbilityActivationInfo ActivationInfo, UObject* NewAnimMontage, float InPlayRate, FName StartSectionName);
 
 EServerStatus serverStatus = EServerStatus::Down;
+static bool bIsPlayground = false;

@@ -309,7 +309,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 				}
 
-				if (ImGui::BeginTabItem("Gamemode"))
+				if (ImGui::BeginTabItem(_("Gamemode")))
 				{
 					Tab = 3;
 					PlayerTab = -1;
@@ -317,7 +317,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem("Credits"))
+				if (ImGui::BeginTabItem(_("Credits")))
 				{
 					Tab = 4;
 					PlayerTab = -1;
@@ -410,15 +410,16 @@ DWORD WINAPI GuiThread(LPVOID)
 				case 3:
 				{
 					static std::string CurrentPlaylist;
-					ImGui::InputText("Playlist", &CurrentPlaylist);
+					ImGui::InputText(_("Playlist"), &CurrentPlaylist);
+					ImGui::Checkbox(_("Playground"), &bIsPlayground);
 
 					// TODO: default character parts
 					break;
 				}
 				case 4:
-					TextCentered("Credits:");
-					TextCentered("Milxnor: Made the base, main developer");
-					TextCentered("GD: Added events, cleans up code and adds features.");
+					TextCentered(_("Credits:"));
+					TextCentered(_("Milxnor: Made the base, main developer"));
+					TextCentered(_("GD: Added events, cleans up code and adds features."));
 
 					break;
 				}
@@ -438,8 +439,8 @@ DWORD WINAPI GuiThread(LPVOID)
 							static int Count = 1;
 
 							auto PlayerName = Helper::GetfPlayerName(CurrentPlayer.second);
-							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), ("Player: " + PlayerName.ToString()).c_str());
-							if (ImGui::Button("Game Statistics"))
+							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (_("Player: ") + PlayerName.ToString()).c_str());
+							if (ImGui::Button(_("Game Statistics")))
 							{
 								bInformationTab = true;
 							}
@@ -463,12 +464,17 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							// TODO: Add teleport to location
 
-							ImGui::InputText("WID", &WID);
-							// ImGui::SliderInt("Count", &Count, 1, INT32_MAX);
-							ImGui::InputInt("Count", &Count);
+							ImGui::InputText(_("WID"), &WID);
+							ImGui::InputInt(_("Count"), &Count);
+
 							if (ImGui::Button(ICON_FA_HAND_HOLDING_USD " Give Weapon"))
 							{
-								Inventory::CreateAndAddItem(Controller, FindObject(WID), EFortQuickBars::Primary, 1, Count);
+								auto wID = FindObject(WID);
+
+								if (wID)
+									Inventory::CreateAndAddItem(Controller, wID, EFortQuickBars::Primary, 1, Count);
+								else
+									std::cout << _("Invalid WID! Please make sure it's a valid object.\n");
 							}
 
 							ImGui::NewLine();
@@ -483,9 +489,9 @@ DWORD WINAPI GuiThread(LPVOID)
 						else
 						{
 							auto Pawn = CurrentPlayer.first;
-							TextCentered(std::format("Kills: {}", *CurrentPlayer.second->Member<int>(_("KillScore"))));
+							TextCentered(std::format(_("Kills: {}"), *CurrentPlayer.second->Member<int>(_("KillScore"))));
 							auto PawnLocation = Helper::GetActorLocation(Pawn);
-							TextCentered(std::format("X: {} Y: {} Z: {}", (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 
+							TextCentered(std::format(_("X: {} Y: {} Z: {}"), (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 
 
 							auto CurrentWeapon = *Pawn->Member<UObject*>(_("CurrentWeapon"));
 
@@ -545,7 +551,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							ImGui::NewLine();
 
-							if (ButtonCentered("Exit"))
+							if (ButtonCentered(_("Exit")))
 							{
 								bInformationTab = false;
 							}

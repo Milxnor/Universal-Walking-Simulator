@@ -85,7 +85,7 @@ inline bool ClientReportDamagedResourceBuildingHook(UObject* Controller, UFuncti
 
 	auto Params = (AFortPlayerController_ClientReportDamagedResourceBuilding_Params*)Parameters;
 
-	if (Controller)
+	if (Controller && Params)
 	{
 		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
 
@@ -104,15 +104,6 @@ inline bool ClientReportDamagedResourceBuildingHook(UObject* Controller, UFuncti
 		auto ItemInstance = Inventory::FindItemInInventory(Controller, ItemDef);
 
 		int AmountToGive = Params->PotentialResourceCount;
-
-		if (Params->bJustHitWeakspot)
-		{
-			std::random_device rd; // obtain a random number from hardware
-			std::mt19937 gen(rd()); // seed the generator
-			std::uniform_int_distribution<> distr(2, 4); // define the range
-
-			AmountToGive += distr(gen);
-		}
 
 		if (ItemInstance && Pawn)
 		{

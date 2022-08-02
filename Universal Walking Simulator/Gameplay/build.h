@@ -238,7 +238,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 			}
 		}
 
-		if (bSuccessful)
+		if (bSuccessful && !bIsPlayground)
 		{
 			// TEnumAsByte<EFortResourceType>                     ResourceType;
 			// auto ResourceType = *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(_("ResourceType"));
