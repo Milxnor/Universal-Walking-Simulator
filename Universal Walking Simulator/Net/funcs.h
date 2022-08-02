@@ -115,6 +115,7 @@ const wchar_t* GetMapName()
 		return L"Apollo_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
 	else if (Engine_Version < 424)
 		return L"Athena_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+    return L"";
 }
 
 

@@ -431,41 +431,46 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			if (Engine_Version >= 423) // wrong
 			{
 				auto Chip = Helper::SpawnChip(DeadPC);
-				// 0x0018
-				struct FFortResurrectionData
-				{
-					bool                                               bResurrectionChipAvailable;                               // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData)
-					unsigned char                                      UnknownData00[0x3];                                       // 0x0001(0x0003) MISSED OFFSET
-					float                                              ResurrectionExpirationTime;                               // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData)
-					float                                              ResurrectionExpirationLength;                             // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData)
-					struct FVector                                     WorldLocation;                                            // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
-				};
 
-				auto PlayerState = *DeadPawn->Member<UObject*>(_("PlayerState"));
-				auto FortResurrectionData = PlayerState->Member<FFortResurrectionData>(_("ResurrectionChipAvailable"));
-
-				if (FortResurrectionData)
+				if (Chip)
 				{
-					std::cout << _("FortResurrectionData valid!\n");
-					std::cout << _("FortResurrectionData Location X: ") << FortResurrectionData->WorldLocation.X << '\n';
+					// 0x0018
+					struct FFortResurrectionData
+					{
+						bool                                               bResurrectionChipAvailable;                               // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData)
+						unsigned char                                      UnknownData00[0x3];                                       // 0x0001(0x0003) MISSED OFFSET
+						float                                              ResurrectionExpirationTime;                               // 0x0004(0x0004) (ZeroConstructor, IsPlainOldData)
+						float                                              ResurrectionExpirationLength;                             // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData)
+						struct FVector                                     WorldLocation;                                            // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
+					};
+
+					auto PlayerState = *DeadPawn->Member<UObject*>(_("PlayerState"));
+					auto FortResurrectionData = PlayerState->Member<FFortResurrectionData>(_("ResurrectionChipAvailable"));
+
+					if (FortResurrectionData)
+					{
+						std::cout << _("FortResurrectionData valid!\n");
+						std::cout << _("FortResurrectionData Location X: ") << FortResurrectionData->WorldLocation.X << '\n';
+					}
+					else
+						std::cout << _("No FortResurrectionData!\n");
+
+					auto ResurrectionData = FFortResurrectionData{};
+					ResurrectionData.bResurrectionChipAvailable = true;
+					ResurrectionData.ResurrectionExpirationLength = 99999.f;
+					ResurrectionData.ResurrectionExpirationTime = 99999.f;
+					ResurrectionData.WorldLocation = Helper::GetActorLocation(Chip);
+
+					if (FortResurrectionData)
+						*FortResurrectionData = ResurrectionData;
+
+					std::cout << _("Spawned Chip!\n");
 				}
-				else
-					std::cout << _("No FortResurrectionData!\n");
-
-				auto ResurrectionData = FFortResurrectionData{};
-				ResurrectionData.bResurrectionChipAvailable = true;
-				ResurrectionData.ResurrectionExpirationLength = 99999.f;
-				ResurrectionData.ResurrectionExpirationTime = 99999.f;
-				ResurrectionData.WorldLocation = Helper::GetActorLocation(Chip);
-
-				if (FortResurrectionData)
-					*FortResurrectionData = ResurrectionData;
-				std::cout << _("Spawned Chip!\n");
 			}
 		}
 
-		auto KillerPawnOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), _("KillerPawn"));
-		auto KillerPlayerStateOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), _("KillerPlayerState"));
+		static auto KillerPawnOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), _("KillerPawn"));
+		static auto KillerPlayerStateOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), _("KillerPlayerState"));
 
 		auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
 		auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
@@ -475,7 +480,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		if (KillerPawn)
 			KillerController = *KillerPawn->Member<UObject*>(_("Controller"));
 
-		if (KillerPlayerState)
+		if (KillerPlayerState && KillerPlayerState != DeadPlayerState)
 		{
 			if (KillerController)
 			{
@@ -493,10 +498,10 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			auto DeathInfo = DeadPlayerState->Member<__int64>(_("DeathInfo"));
 
-			auto TagsOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("Tags"));
-			auto DeathCauseOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("DeathCause"));
-			auto FinisherOrDownerOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("FinisherOrDowner"));
-			auto bDBNOOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("bDBNO"));
+			static auto TagsOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("Tags"));
+			static auto DeathCauseOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("DeathCause"));
+			static auto FinisherOrDownerOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("FinisherOrDowner"));
+			static auto bDBNOOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("bDBNO"));
 
 			auto Tags = (FGameplayTagContainer*)(__int64(&*DeathInfo) + TagsOffset);
 
@@ -516,10 +521,12 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			static auto ClientReportKill = KillerPlayerState->Function(_("ClientReportKill"));
 			struct { UObject* PlayerState; }ClientReportKill_Params{DeadPlayerState};
-			KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
+			if (ClientReportKill)
+				KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
 
 			static auto OnRep_Kills = KillerPlayerState->Function(_("OnRep_Kills"));
-			KillerPlayerState->ProcessEvent(OnRep_Kills);
+			if (OnRep_Kills)
+				KillerPlayerState->ProcessEvent(OnRep_Kills);
 		}
 	}
 	
@@ -570,7 +577,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 			auto Montage = GAHRParams.AnimMontage;
 			if (Montage)
 			{
-				std::cout << "Montage Name: " << Montage->GetFullName() << '\n';
+				std::cout << _("Playing Montage: ") << Montage->GetFullName() << '\n';
 
 				auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
 				static auto EmoteClass = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
@@ -630,6 +637,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 	{
 		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
 		auto ReceivingActor = Params->ReceivingActor;
+
 		if (ReceivingActor)
 		{
 			auto ReceivingActorName = ReceivingActor->GetName(); // There has to be a better way, right?
@@ -655,32 +663,13 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				if (AlreadySearchedFn)
 				{
 					ReceivingActor->ProcessEvent(AlreadySearchedFn);
-
-					if (ReceivingActorName.contains(_("Chest")))
-					{
-						/* static auto BlueAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03"));
-						
-						if (BlueAR)
-							Helper::SummonPickup(Pawn, BlueAR, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Chest, 1); */
-						Looting::Tables::HandleSearch(ReceivingActor);
-					}
-					else if (ReceivingActorName.contains(_("Ammo")))
-					{
-						if (Engine_Version < 423)
-						{
-							static UObject* AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
-							if (AthenaAmmoDataRockets)
-								Helper::SummonPickup(Pawn, AthenaAmmoDataRockets, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::AmmoBox, 1);
-						}
-						else
-						{
-							static UObject* AthenaAmmoDataRockets = FindObject(_("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
-							
-							if (AthenaAmmoDataRockets)
-								Helper::SummonPickup(Pawn, AthenaAmmoDataRockets, Helper::GetActorLocation(ReceivingActor), EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::AmmoBox, 1);
-						}
-					}
+					Looting::Tables::HandleSearch(ReceivingActor);
 				}
+			}
+
+			if (ReceivingActorName.contains(_("SupplyDrop")))
+			{
+				Looting::Tables::HandleSearch(ReceivingActor);
 			}
 
 			if (ReceivingActorName.contains(_("B_Athena_VendingMachine")))

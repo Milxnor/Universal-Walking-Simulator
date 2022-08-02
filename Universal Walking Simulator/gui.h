@@ -237,7 +237,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 		if (!ImGui::IsWindowCollapsed())
 		{
-			ImGui::Begin(("Project Reboot"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
+			ImGui::Begin(_("Project Reboot"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
 
 			std::vector<std::pair<UObject*, UObject*>> Players; // Pawn, PlayerState
 
@@ -376,13 +376,22 @@ DWORD WINAPI GuiThread(LPVOID)
 								std::cout << _("Changed Phase to Aircraft.");
 							}
 						}
+
+						if (ImGui::Button(_("Summon Llamas")))
+						{
+							CreateThread(0, 0, Looting::Tables::SpawnLlamas, 0, 0, 0);
+						}
 					}
 
 					if (Events::HasEvent()) {
-						if (ImGui::Button(_("Start Event"))) {
+						if (ImGui::Button(_("Start Event")))
 							Events::StartEvent();
-						}
 					}
+
+					/* if (ImGui::Button(_("Summon FloorLoot")))
+					{
+						CreateThread(0, 0, Looting::Tables::SpawnFloorLoot, 0, 0, 0);
+					} */
 
 					if (ImGui::Button(_("Dump Objects (Win64/Objects.log)")))
 					{
@@ -392,6 +401,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 				}
 				case 2:
+					// ImGui::Text("Players Connected: ")
 					InitializePlayers();
 					for (int i = 0; i < Players.size(); i++)
 					{
@@ -489,9 +499,9 @@ DWORD WINAPI GuiThread(LPVOID)
 						else
 						{
 							auto Pawn = CurrentPlayer.first;
-							TextCentered(std::format(_("Kills: {}"), *CurrentPlayer.second->Member<int>(_("KillScore"))));
+							TextCentered(std::format(("Kills: {}"), *CurrentPlayer.second->Member<int>(_("KillScore"))));
 							auto PawnLocation = Helper::GetActorLocation(Pawn);
-							TextCentered(std::format(_("X: {} Y: {} Z: {}"), (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 
+							TextCentered(std::format(("X: {} Y: {} Z: {}"), (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 
 
 							auto CurrentWeapon = *Pawn->Member<UObject*>(_("CurrentWeapon"));
 

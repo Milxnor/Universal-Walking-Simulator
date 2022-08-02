@@ -1,7 +1,7 @@
 #pragma once
 #include <UE/structs.h>
 namespace Events {
-	bool HasEvent() {
+	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
 		return (Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
 	}
@@ -12,30 +12,30 @@ namespace Events {
 			std::cout << _("Loading Event!\n");
 			if (Version == 10.40f) {
 				//The End C1
-				UObject* NN = FindObject("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2");
-				UObject* Func = NN->Function("LoadNightNightLevel");
+				UObject* NN = FindObject(_("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2"));
+				UObject* Func = NN->Function(_("LoadNightNightLevel"));
 				bool Condition = true;
 				NN->ProcessEvent(Func, &Condition);
 			}
 			if (Version == 9.40f) {
 				//The Final Showdown
-				UObject* CD = FindObject("BP_CattusDoggus_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_CattusDoggus_Scripting_2");
-				UObject* Func = CD->Function("LoadCattusLevel");
+				UObject* CD = FindObject(_("BP_CattusDoggus_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_CattusDoggus_Scripting_2"));
+				UObject* Func = CD->Function(_("LoadCattusLevel"));
 				bool Condition = true;
 				CD->ProcessEvent(Func, &Condition);
 			}
 			if (Version == 7.20f) {
 				//Ice King
-				UObject* ML = FindObject("BP_MooneyLoader_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_MooneyLoader_2");
-				UObject* Func = ML->Function("LoadSequence");
-				UObject* Func2 = ML->Function("LoadMap");
+				UObject* ML = FindObject(_("BP_MooneyLoader_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_MooneyLoader_2"));
+				UObject* Func = ML->Function(_("LoadSequence"));
+				UObject* Func2 = ML->Function(_("LoadMap"));
 				ML->ProcessEvent(Func2);
 				ML->ProcessEvent(Func);
 			}
 			if (Version == 6.21f) {
 				//Butterfly
-				UObject* BF = FindObject("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4");
-				UObject* Func = BF->Function("LoadButterflySublevel");
+				UObject* BF = FindObject(_("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
+				UObject* Func = BF->Function(_("LoadButterflySublevel"));
 				BF->ProcessEvent(Func);
 			}
 		}
@@ -47,10 +47,10 @@ namespace Events {
 			std::cout << _("Starting Event!\n");
 			if (Version == 10.40f) {
 				//The End C1 (Crashes)
-				UObject* NN = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer");
+				UObject* NN = FindObject(_("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));
 				if (NN)
 				{
-					UObject* Func = NN->Function("Play");
+					UObject* Func = NN->Function(_("Play"));
 					if (Func)
 						NN->ProcessEvent(Func);
 					else
@@ -61,8 +61,8 @@ namespace Events {
 			}
 			else if (Version == 9.40f) {
 				//Final Showdown
-				UObject* CD = FindObject("BP_CattusDoggus_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_CattusDoggus_Scripting_2");
-				UObject* Func = CD->Function("startevent");
+				UObject* CD = FindObject(_("BP_CattusDoggus_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_CattusDoggus_Scripting_2"));
+				UObject* Func = CD->Function(_("startevent"));
 				CD->ProcessEvent(Func);
 			}
 			else if (Version == 8.51f) {
@@ -71,7 +71,7 @@ namespace Events {
 
 				if (SS)
 				{
-					UObject* Func = SS->Function("Play");
+					UObject* Func = SS->Function(_("Play"));
 					if (Func)
 					{
 						SS->ProcessEvent(Func);
@@ -84,32 +84,32 @@ namespace Events {
 				else
 					std::cout << _("No Player!\n");
 
-				//(TODO: GD) Find a way to auto destroy death barrier and load the Map for all players when the screen goes white (Map Name: Next2)
-				// (MILXNOR) ^ ClientTravel?
+					//(TODO: GD) Find a way to auto destroy death barrier and load the Map for all players when the screen goes white (Map Name: Next2)
+					// (MILXNOR) ^ ClientTravel?
 			}
 			else if (Version == 7.30f) {
 				//Marshmello
-				UObject* FS = FindObject(".PersistentLevel.FestivusSequence_01_2.AnimationPlayer2");
-				UObject* Func = FS->Function("Play");
+				UObject* FS = FindObject(_(".PersistentLevel.FestivusSequence_01_2.AnimationPlayer2"));
+				UObject* Func = FS->Function(_("Play"));
 				FS->ProcessEvent(Func);
 			}
 			else if (Version == 7.20f) {
 				//Ice King
-				UObject* MS = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/S7/MooneySequenceMap.MooneySequenceMap.PersistentLevel.MooneySequence.AnimationPlayer");
-				UObject* Func = MS->Function("Play");
+				UObject* MS = FindObject(_("LevelSequencePlayer /Game/Athena/Maps/Test/S7/MooneySequenceMap.MooneySequenceMap.PersistentLevel.MooneySequence.AnimationPlayer"));
+				UObject* Func = MS->Function(_("Play"));
 				MS->ProcessEvent(Func);
 			}
 			else if (Version == 6.21f) {
 				//Butterfly
-				UObject* BF = FindObject("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4");
-				UObject* Func = BF->Function("ButterflySequence");
+				UObject* BF = FindObject(_("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
+				UObject* Func = BF->Function(_("ButterflySequence"));
 				BF->ProcessEvent(Func);
 				//(TODO) Fix screen going white when cube explodes (Im guessing its similar to the Map loading issue on 8.51 Event)
 			}
 			else if (Version == 4.5f) {
 				//Rocket
-				UObject* LR = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/Events/Athena_Gameplay_Geode.Athena_Gameplay_Geode.PersistentLevel.LevelSequence_LaunchRocket.AnimationPlayer");
-				UObject* Func = LR->Function("Play");
+				UObject* LR = FindObject(_("LevelSequencePlayer /Game/Athena/Maps/Test/Events/Athena_Gameplay_Geode.Athena_Gameplay_Geode.PersistentLevel.LevelSequence_LaunchRocket.AnimationPlayer"));
+				UObject* Func = LR->Function(_("Play"));
 				if (Func)
 					LR->ProcessEvent(Func);
 			}

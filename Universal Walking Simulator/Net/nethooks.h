@@ -73,7 +73,7 @@ char KickPlayerDetour(__int64 a1, __int64 a2, __int64 a3)
 
 char __fastcall ValidationFailureDetour(__int64* a1, __int64 a2)
 {
-    std::cout << "Validation!\n";
+    std::cout << _("Validation!\n");
     return 0;
 }
 
@@ -183,10 +183,10 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 // static auto MatsAbility = FindObject(_("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
                 //GrantGameplayAbility(Pawn, MatsAbility);
 
-                static auto SprintAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Sprint");
-                static auto ReloadAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Reload");
-                static auto JumpAbility = FindObject("Class /Script/FortniteGame.FortGameplayAbility_Jump");
-                static auto InteractUseAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C");
+                static auto SprintAbility = FindObject(_("Class /Script/FortniteGame.FortGameplayAbility_Sprint"));
+                static auto ReloadAbility = FindObject(_("Class /Script/FortniteGame.FortGameplayAbility_Reload"));
+                static auto JumpAbility = FindObject(_("Class /Script/FortniteGame.FortGameplayAbility_Jump"));
+                static auto InteractUseAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C"));
                 static auto InteractSearchAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.GA_DefaultPlayer_InteractSearch_C");
                 static auto EnterVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.GA_AthenaEnterVehicle_C"));
                 static auto ExitVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.GA_AthenaExitVehicle_C"));
@@ -276,7 +276,7 @@ static bool __fastcall HasClientLoadedCurrentWorldDetour(UObject* pc)
 
 void* NetDebugDetour(UObject* idk)
 {
-    std::cout << "NetDebug!\n";
+    // std::cout << "NetDebug!\n";
     return nullptr;
 }
 
@@ -302,7 +302,7 @@ char __fastcall malformedDetour(__int64 a1, __int64 a2)
 
 void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8_t MessageType, __int64* Bunch)
 {
-    printf("Recieved control message %i\n", MessageType);
+    std::cout << _("Receieved control message: ") + MessageType << '\n';
 
     static const auto FnVerDouble = std::stod(FN_Version);
 
@@ -340,14 +340,14 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
                 // if (*((char*)Bunch + 40) < 0)
                     // do stuff
 
-                std::cout << "EncryptionToken: " << __int64(EncryptionToken.Data.GetData()) << '\n';
+                std::cout << _("EncryptionToken: ") << __int64(EncryptionToken.Data.GetData()) << '\n';
 
                 if (EncryptionToken.Data.GetData())
-                    std::cout << "EncryptionToken Str: " << EncryptionToken.ToString() << '\n';
+                    std::cout << _("EncryptionToken Str: ") << EncryptionToken.ToString() << '\n';
 
-                std::cout << "Sending challenge!\n";
+                std::cout << _("Sending challenge!\n");
                 SendChallenge(World, Connection);
-                std::cout << "Sent challenge!\n";
+                std::cout << _("Sent challenge!\n");
                 // World_NotifyControlMessage(World, Connection, MessageType, (void*)Bunch);
                 // std::cout << "IDK: " << *((char*)Bunch + 40) << '\n';
                 return;
@@ -388,15 +388,15 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
             }
 
             ReceiveUniqueIdRepl(Bunch, Connection->Member<__int64>(_("PlayerID")));
-            std::cout << "Got PlayerID!\n";
+            std::cout << _("Got PlayerID!\n");
             // std::cout << "PlayerID => " + *Connection->Member<__int64>(_("PlayerID")) << '\n';
             // std::cout << "PlayerID => " + std::to_string(*UniqueId) << '\n';
             ReceiveFString(Bunch, OnlinePlatformName);
 
-            std::cout << "Got OnlinePlatformName!\n";
+            std::cout << _("Got OnlinePlatformName!\n");
 
             if (OnlinePlatformName.Data.GetData())
-                std::cout << "OnlinePlatformName => " << OnlinePlatformName.ToString() << '\n';
+                std::cout << _("OnlinePlatformName => ") << OnlinePlatformName.ToString() << '\n';
 
             Bunch[7] -= (16 * 1024 * 1024);
 
@@ -433,13 +433,13 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 
                 if (!*ConnectionPC)
                 {
-                    std::cout << "Failed to spawn PlayerController! Error Msg: " << ErrorMsg.ToString() << "\n";
+                    std::cout << _("Failed to spawn PlayerController! Error Msg: ") << ErrorMsg.ToString() << "\n";
                     // TODO: Send NMT_Failure and FlushNet
                     return;
                 }
                 else
                 {
-                    std::cout << "Join succeeded!\n";
+                    std::cout << _("Join succeeded!\n");
                     FString LevelName;
                     const bool bSeamless = true; // If this is true and crashes the client then u didn't remake NMT_Hello or NMT_Join correctly.
 
@@ -451,13 +451,11 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
                         FGuid MapPackageGuid;
                     } paramsTravel{ LevelName, ETravelType::TRAVEL_Relative, bSeamless, FGuid() };
 
-                    std::cout << "Calling ClientTravel..\n";
-
                     // ClientTravel(*ConnectionPC, LevelName, ETravelType::TRAVEL_Relative, bSeamless, FGuid());
 
                     (*ConnectionPC)->ProcessEvent(_("ClientTravel"), &paramsTravel);
 
-                    std::cout << "Called ClientTravel..\n";
+                    std::cout << _("Traveled client.\n");
 
                     *(int32_t*)(__int64(&*Connection->Member<int>(_("LastReceiveTime"))) + (sizeof(double) * 4) + (sizeof(int32_t) * 2)) = 0; // QueuedBits
                 }

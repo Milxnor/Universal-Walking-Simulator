@@ -688,7 +688,7 @@ namespace Inventory
 					auto ItemEntry = ItemInstance->Member<__int64>(_("ItemEntry")); // Keep as pointer!
 					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
 					
-					std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
+					// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
 					auto NewCount = *CurrentCount + Count;
 					*CurrentCount = NewCount;
 

@@ -78,20 +78,20 @@ namespace Helper
 		int Season = (int)Version;
 		//Volcano
 		if (Season == 8) {
-			*FindObject("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano")->Member<uint8_t>("DynamicFoundationType") = 0;
+			*FindObject(_("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
 		}
 		//Pleasant
 		if (Season == 7) {
-			*FindObject("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")->Member<uint8_t>("DynamicFoundationType") = 0;
+			*FindObject(_("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
 		}
 		//Marshamello
 		if (Version == 7.30f) {
-			*FindObject("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus")->Member<uint8_t>("DynamicFoundationType") = 0;
+			*FindObject(_("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
 		}
 		//Loot Lake
 		if (Season == 6) {
-			*FindObject("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland")->Member<uint8_t>("DynamicFoundationType") = 0;
-			*FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1")->Member<uint8_t>("DynamicFoundationType") = 0;
+			*FindObject(_("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
+			*FindObject(_("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
 		}
 	}
 
@@ -163,7 +163,7 @@ namespace Helper
 
 	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true)
 	{
-		static UObject* EffectClass = FindObject("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C");
+		static UObject* EffectClass = FindObject(_("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C"));
 		static UObject* PickupClass = FindObject(_("Class /Script/FortniteGame.FortPickupAthena"));
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location);
@@ -198,6 +198,16 @@ namespace Helper
 
 					if (TossPickupFn)
 						Pickup->ProcessEvent(TossPickupFn, &TPParams);
+				}
+
+				if (SpawnSource == EFortPickupSpawnSource::Chest)
+				{
+					*Pickup->Member<bool>(_("bTossedFromContainer")) = true;
+
+					static auto OnRep_TossedFromContainer = Pickup->Function(_("OnRep_TossedFromContainer"));
+
+					if (OnRep_TossedFromContainer)
+						Pickup->ProcessEvent(OnRep_TossedFromContainer);
 				}
 			}
 		}
@@ -1023,7 +1033,7 @@ namespace Helper
 	{
 		bool Ban(const std::wstring& IP, UObject* Controller, const std::wstring& Username)
 		{
-			std::ofstream stream("banned-ips.json", std::ios::app);
+			std::ofstream stream(_("banned-ips.json"), std::ios::app);
 
 			if (!stream.is_open())
 				return false;
@@ -1045,7 +1055,7 @@ namespace Helper
 
 		bool Unban(const std::wstring& IP) // I think I have SEVERE brain damage, but it works. // IP Or Name
 		{
-			std::ifstream input_file("banned-ips.json");
+			std::ifstream input_file(_("banned-ips.json"));
 
 			if (!input_file.is_open())
 				return false;
@@ -1080,7 +1090,7 @@ namespace Helper
 
 		bool IsBanned(const std::wstring& IP)
 		{
-			std::ifstream input_file("banned-ips.json");
+			std::ifstream input_file(_("banned-ips.json"));
 			std::string line;
 
 			if (!input_file.is_open())

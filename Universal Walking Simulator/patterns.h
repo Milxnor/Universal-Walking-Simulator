@@ -374,43 +374,43 @@ void InitializePatterns()
 
     else if (Engine_Version >= 422 && Engine_Version < 424)
     {
-        ReallocSig = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D";
-        TickFlushSig = "4C 8B DC 55 49 8D AB 78 FE FF FF 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 00 01 00 00 49 89 5B 18";
-        InitListenSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";
-        WelcomePlayerSig = "48 8B C4 55 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 58 18 48 8B 59 30 48 89 78 E8 48 8B FA 4C 89 68 D8";
-        World_NotifyControlMessageSig = "48 89 5C 24 10 48 89 74 24 18 48 89 7C 24 20 48 89 4C 24 08 55 41 54 41 55 41 56 41 57 48 8D AC 24 D0 F9 FF FF";
-        SpawnPlayActorSig = "48 8B C4 4C 89 48 20 44 89 40 18 48 89 50 10 48 89 48 08 55 56";
-        ReceiveUniqueIdReplSig = "48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9 0F 84 ? ? ? ? F6 41 2B 02";
-        ReceiveFStringSig = "48 89 5C 24 18 55 56 57 41 56 41 57 48 8D 6C 24 C9 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 0F B6 41 28";
-        KickPlayerSig = "48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2";
-        GetNetModeSig = "48 89 5C 24 08 57 48 83 EC ? 48 8B 01 48 8B D9 FF 90 40 01 00 00 4C 8B 83 10 01 00 00";
-        LocalPlayerSpawnPlayActorSig = "48 89 5C 24 08 48 89 74 24 10 48 89 7C 24 18 55 41 56 41 57 48 8D 6C 24 F0 48 81 EC ? ? ? ? 48 8B D9";
-        Beacon_NotifyControlMessageSig = "4C 8B DC 49 89 5B 18 49 89 7B 20 49 89 4B 08";
-        InitHostSig = "48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?";
-        PauseBeaconRequestsSig = "40 53 48 83 EC 30 48 8B D9 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 41 B9 ? ? ? ?";
-        SetWorldSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97 ? ? ? ? 48 8D 8B ? ? ? ? E8 ? ? ? ?";
-        NoReserveSig = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 81 EC ? ? ? ? 48 8B 01 49 8B D9 45 0F B6 F0 48 8B F2 48 8B F9 45 32 FF FF 90 ? ? ? ? 48 8B 0D ? ? ? ?";
-        ValidationFailureSig = "40 53 41 56 48 81 EC ? ? ? ? 48 8B 01 48 8B DA 4C 8B F1 FF 90 ? ? ? ? 48 8B 0D ? ? ? ? 48 8B D0 E8 ? ? ? ? 85 C0 0F 84 ? ? ? ? 48 85 DB 74 75 48 8B 83 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9";
-        ClientTravelSig = "48 83 EC 48 45 84 C9 74 0D 41 83 F8 02 75 07 66 FF 81 ? ? ? ? 48 8B 44 24 ? 0F 10 00";
-        CreateNetDriverSig = "48 89 5C 24 08 57 48 83 EC ? 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0";
-        HasClientLoadedCurrentWorldSig = "48 89 5C 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F9 48 85 DB 74 23 E8 ? ? ? ? 48 8B 53 10 4C 8D 40 30 48 63 40 38 3B 42 38 7F 0D 48 8B C8 48 8B 42 30 4C 39 04 C8 74 17 48 8B 1D ? ? ? ? 48 85 DB";
-        malformedSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 40 32 F6 0F 29 7C 24 ? 48 8B FA 44 0F 29 44 24 ? 48 8B D9 40 38 72 28 7C 51 4C 8B 92 ? ? ? ? 4C 3B 92 ? ? ? ? 7C 0F";
-        GiveAbilitySig = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 56 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01 89 87 ? ? ? ? 3B 87 ? ? ? ? 7E";
-        InternalTryActivateAbilitySig = "4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56 57 41 54";
-        MarkAbilitySpecDirtySig = "48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 D8 4C 8B F2 48 8B F9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 46 10 48 89 6C 24 ?";
-        GetPlayerViewpointSig = "48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 40 48 8B 81 ? ? ? ? 4D 8B F0 48 8B F2 48 8B F9 48 85 C0 0F 84 ? ? ? ? F6 80 ? ? ? ? ? 0F 84 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9 74 23 0F 10 89 ? ? ? ? 0F 28 C1";
-        CollectGarbageSig = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 30 48 8B 35"; // THIS IS DIFFERENT!
-        StaticFindObjectSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 4E 48 8B 05 ? ? ? ? 48 8D 35 ? ? ? ?";
-        HandleReloadCostSig = "89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85";
-        CanActivateAbilitySig = "4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1";
-        PlayMontageSig = "40 55 56 41 54 41 56 48 8D 6C 24 D1";
+        ReallocSig = _("48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D");
+        TickFlushSig = _("4C 8B DC 55 49 8D AB 78 FE FF FF 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 00 01 00 00 49 89 5B 18");
+        InitListenSig = _("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0");
+        WelcomePlayerSig = _("48 8B C4 55 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 58 18 48 8B 59 30 48 89 78 E8 48 8B FA 4C 89 68 D8");
+        World_NotifyControlMessageSig = _("48 89 5C 24 10 48 89 74 24 18 48 89 7C 24 20 48 89 4C 24 08 55 41 54 41 55 41 56 41 57 48 8D AC 24 D0 F9 FF FF");
+        SpawnPlayActorSig = _("48 8B C4 4C 89 48 20 44 89 40 18 48 89 50 10 48 89 48 08 55 56");
+        ReceiveUniqueIdReplSig = _("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9 0F 84 ? ? ? ? F6 41 2B 02");
+        ReceiveFStringSig = _("48 89 5C 24 18 55 56 57 41 56 41 57 48 8D 6C 24 C9 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 0F B6 41 28");
+        KickPlayerSig = _("48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 49 8B F0 48 8B DA 48 85 D2");
+        GetNetModeSig = _("48 89 5C 24 08 57 48 83 EC ? 48 8B 01 48 8B D9 FF 90 40 01 00 00 4C 8B 83 10 01 00 00");
+        LocalPlayerSpawnPlayActorSig = _("48 89 5C 24 08 48 89 74 24 10 48 89 7C 24 18 55 41 56 41 57 48 8D 6C 24 F0 48 81 EC ? ? ? ? 48 8B D9");
+        Beacon_NotifyControlMessageSig = _("4C 8B DC 49 89 5B 18 49 89 7B 20 49 89 4B 08");
+        InitHostSig = _("48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?");
+        PauseBeaconRequestsSig = _("40 53 48 83 EC 30 48 8B D9 84 D2 74 68 80 3D ? ? ? ? ? 72 2C 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 41 B9 ? ? ? ?");
+        SetWorldSig = _("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97 ? ? ? ? 48 8D 8B ? ? ? ? E8 ? ? ? ?");
+        NoReserveSig = _("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 81 EC ? ? ? ? 48 8B 01 49 8B D9 45 0F B6 F0 48 8B F2 48 8B F9 45 32 FF FF 90 ? ? ? ? 48 8B 0D ? ? ? ?");
+        ValidationFailureSig = _("40 53 41 56 48 81 EC ? ? ? ? 48 8B 01 48 8B DA 4C 8B F1 FF 90 ? ? ? ? 48 8B 0D ? ? ? ? 48 8B D0 E8 ? ? ? ? 85 C0 0F 84 ? ? ? ? 48 85 DB 74 75 48 8B 83 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9");
+        ClientTravelSig = _("48 83 EC 48 45 84 C9 74 0D 41 83 F8 02 75 07 66 FF 81 ? ? ? ? 48 8B 44 24 ? 0F 10 00");
+        CreateNetDriverSig = _("48 89 5C 24 08 57 48 83 EC ? 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0");
+        HasClientLoadedCurrentWorldSig = _("48 89 5C 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F9 48 85 DB 74 23 E8 ? ? ? ? 48 8B 53 10 4C 8D 40 30 48 63 40 38 3B 42 38 7F 0D 48 8B C8 48 8B 42 30 4C 39 04 C8 74 17 48 8B 1D ? ? ? ? 48 85 DB");
+        malformedSig = _("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 40 32 F6 0F 29 7C 24 ? 48 8B FA 44 0F 29 44 24 ? 48 8B D9 40 38 72 28 7C 51 4C 8B 92 ? ? ? ? 4C 3B 92 ? ? ? ? 7C 0F");
+        GiveAbilitySig = _("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 56 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01 89 87 ? ? ? ? 3B 87 ? ? ? ? 7E");
+        InternalTryActivateAbilitySig = _("4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56 57 41 54");
+        MarkAbilitySpecDirtySig = _("48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 D8 4C 8B F2 48 8B F9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 46 10 48 89 6C 24 ?");
+        GetPlayerViewpointSig = _("48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 40 48 8B 81 ? ? ? ? 4D 8B F0 48 8B F2 48 8B F9 48 85 C0 0F 84 ? ? ? ? F6 80 ? ? ? ? ? 0F 84 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9 74 23 0F 10 89 ? ? ? ? 0F 28 C1");
+        CollectGarbageSig = _("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 83 EC 30 48 8B 35");
+        StaticFindObjectSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 4E 48 8B 05 ? ? ? ? 48 8D 35 ? ? ? ?");
+        HandleReloadCostSig = _("89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85");
+        CanActivateAbilitySig = _("4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1");
+        PlayMontageSig = _("40 55 56 41 54 41 56 48 8D 6C 24 D1");
 
         // paddin
 
-        NetDebugSig = "40 55 56 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 01";
-        FixCrashSig = "40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 8B 41 0C 45 33 F6";
-        SetReplicationDriverSig = "40 55 41 57 48 83 EC 28 48 8B E9 4C 8B FA 48 8B 89 ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 8B 01 48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 4C 89 64 24 ? 4C 89 74 24 ? FF 90";
-        CreateNetDriver_LocalSig = "4C 89 44 24 ? 53 56 57 41 56 41 57 48 83 EC 70 48 8B B9 ? ? ? ? 48 8D 1D ? ? ? ? 48 63 81 ? ? ? ? 45 33 FF 4C 8B F2 48 8D 0C 40 4C 8D 0C CF 49 3B F9 74 22 44 8B 94 24 ? ? ? ? 44 39 57 04 0F 94 C1 44 39 07 0F 94 C0";
+        NetDebugSig = _("40 55 56 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 01");
+        FixCrashSig = _("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 8B 41 0C 45 33 F6");
+        SetReplicationDriverSig = _("40 55 41 57 48 83 EC 28 48 8B E9 4C 8B FA 48 8B 89 ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 8B 01 48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 4C 89 64 24 ? 4C 89 74 24 ? FF 90");
+        CreateNetDriver_LocalSig = _("4C 89 44 24 ? 53 56 57 41 56 41 57 48 83 EC 70 48 8B B9 ? ? ? ? 48 8D 1D ? ? ? ? 48 63 81 ? ? ? ? 45 33 FF 4C 8B F2 48 8D 0C 40 4C 8D 0C CF 49 3B F9 74 22 44 8B 94 24 ? ? ? ? 44 39 57 04 0F 94 C1 44 39 07 0F 94 C0");
     }
 
     else if (Engine_Version == 424)

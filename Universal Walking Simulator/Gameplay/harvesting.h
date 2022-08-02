@@ -65,8 +65,8 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 				InstigatedBy->ProcessEvent(ClientReportDamagedResourceBuilding, &AFortPlayerController_ClientReportDamagedResourceBuilding_Params);
 			}
 		}
-		else
-			std::cout << _("AAAAAAAAAAAA");
+		// else
+			// std::cout << _("AAAAAAAAAAAA");
 ;	}
 
 	return false;
