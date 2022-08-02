@@ -417,7 +417,7 @@ namespace Looting
 			{
 				auto BuildingContainerName = BuildingContainer->GetName();
 
-				if (BuildingContainerName.contains(_("Tiered_Chest")))
+				if (BuildingContainerName.contains(_("Tiered_Chest"))) //  LCD_ToolBox
 				{
 					auto WeaponDef = Tables::GetWeaponDef();
 					if (WeaponDef)
@@ -436,18 +436,47 @@ namespace Looting
 
 								// TODO: Rotation...
 
-								std::cout << _("Pitch: ") << Rotation.Yaw << '\n';
+								std::cout << _("Yaw: ") << Rotation.Yaw << '\n';
 
 								Location.Z += 50;
 
-								/* if (Rotation.Pitch < 0 && Rotation.Pitch <= -90)
+								/*
+								forward (N) (0) = Y + 170
+								backwards (S) (180) = Y - 170
+
+								left (270) = X - 170
+								right (90) = X + 170
+
+								if (Yaw == 30)
+									Y += Rotation.Yaw * 4
+									X -= 10
+
+								*/
+
+								if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
+								{
 									Location.X -= 170;
-								else if (Rotation.Pitch > 0 && Rotation.Pitch <= 90)
+									std::cout << _("Removed 170 from the X!\n");
+								}
+								else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
+								{
+									Location.Y -= 170;
+									std::cout << _("Removed 170 from the Y!\n");
+								}
+								else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < 0 && Rotation.Yaw >= -90)
+								{
+									Location.Y += 170;
+									std::cout << _("Added 170 to the Y!\n");
+								}
+								else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
+								{
 									Location.X += 170;
-								else if (Location.Y < 0)
-									Location.Y -= 170; // ((Rotation.Yaw / 5) / 2);
+									std::cout << _("Added 170 to the X!\n");
+								}
 								else
-									Location.Y += 170; */
+								{
+									std::cout << _("Unhandled rotation!\n");
+								}
 
 								// Location.X += ((Rotation.Yaw / 5) / 2);
 

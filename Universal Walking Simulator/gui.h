@@ -335,6 +335,8 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 				case 1:
 				{
+					ImGui::Checkbox(_("Log RPCS"), &bIsPlayground);
+
 					if (serverStatus == EServerStatus::Down && !bTraveled)
 					{
 						// TODO: Map name

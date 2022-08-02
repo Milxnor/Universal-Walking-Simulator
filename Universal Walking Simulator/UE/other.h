@@ -931,6 +931,26 @@ enum ENetMode
 	NM_MAX,
 };
 
+enum class EDynamicFoundationType : uint8_t
+{
+	Static = 0,
+	StartEnabled_Stationary = 1,
+	StartEnabled_Dynamic = 2,
+	StartDisabled = 3,
+	EDynamicFoundationType_MAX = 4
+};
+
+// the nam e changes for EGBuildingFoundtaainon Type the varibles but no size
+
+enum class EBuildingFoundationType : uint8_t
+{
+	BFT = 0,
+	BFT01 = 1,
+	BFT02 = 2,
+	BFT_None = 3,
+	BFT_MAX = 4
+};
+
 enum class EFortCustomPartType : uint8_t
 {
 	Head = 0,

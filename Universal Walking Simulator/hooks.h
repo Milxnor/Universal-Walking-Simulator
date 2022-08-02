@@ -19,6 +19,7 @@
 // HEAVILY INSPIRED BY KEMOS UFUNCTION HOOKING
 
 static bool bStarted = false;
+static bool bLogRpcs = false;
 
 inline void initStuff()
 {
@@ -663,13 +664,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				if (AlreadySearchedFn)
 				{
 					ReceivingActor->ProcessEvent(AlreadySearchedFn);
-					Looting::Tables::HandleSearch(ReceivingActor);
 				}
-			}
-
-			if (ReceivingActorName.contains(_("SupplyDrop")))
-			{
-				Looting::Tables::HandleSearch(ReceivingActor);
 			}
 
 			if (ReceivingActorName.contains(_("B_Athena_VendingMachine")))
@@ -695,6 +690,8 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				// Helper::SetLocalRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);
 				// Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
 			}
+
+			Looting::Tables::HandleSearch(ReceivingActor);
 		}
 	}
 
@@ -931,8 +928,7 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 {
 	if (Object && Function)
 	{
-#ifdef LOGGING
-		if (bStarted && bListening)
+		if (bStarted && bListening && bLogRpcs)
 		{
 			auto FunctionName = Function->GetName();
 			// if (Function->FunctionFlags & 0x00200000 || Function->FunctionFlags & 0x01000000) // && FunctionName.find("Ack") == -1 && FunctionName.find("AdjustPos") == -1))
@@ -946,7 +942,6 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 				}
 			}
 		}
-#endif
 
 		for (auto& Func : FunctionsToHook)
 		{

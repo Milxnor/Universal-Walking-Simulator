@@ -78,7 +78,16 @@ namespace Helper
 		int Season = (int)Version;
 		//Volcano
 		if (Season == 8) {
-			*FindObject(_("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
+			static auto Volcano = FindObject(_("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
+			
+			*Volcano->Member<uint8_t>(_("DynamicFoundationType")) = 0;
+
+			static auto OnRep_ServerStreamedInLevel = Volcano->Function(_("OnRep_ServerStreamedInLevel"));
+		
+			if (OnRep_ServerStreamedInLevel)
+				Volcano->ProcessEvent(OnRep_ServerStreamedInLevel);
+			else
+				std::cout << _("Unable to find OnRep_ServerStreamedInLevel!\n");
 		}
 		//Pleasant
 		if (Season == 7) {
