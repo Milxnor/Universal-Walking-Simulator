@@ -144,6 +144,9 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
 
 int32_t ServerReplicateActors(UObject* NetDriver)
 {
+    if (!NetDriver)
+        return -1;
+
 #if !defined(N_T) // && !defined(F_TF)
 	// Supports replicationgraph
 
@@ -234,11 +237,13 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 #ifdef N_T
                     Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
 #else
-                    EName ActorEName = EName::Actor;
+                    // EName ActorEName = EName::Actor;
 
                     // FNameEntryId ActorEntryId = FromValidEName(ActorEName);
 
-                    FName ActorName = FName(ActorEName);
+                   //  FName ActorName = FName(ActorEName);
+
+                    FName ActorName(102);
 
                     std::cout << _("Comparison Index: ") << ActorName.ComparisonIndex << '\n';
                     std::cout << _("Number: ") << ActorName.Number << '\n';

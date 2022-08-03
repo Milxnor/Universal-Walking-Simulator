@@ -142,6 +142,11 @@ void Listen(int Port = 7777)
         NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
         *NetDriver->Member<FName>(_("NetDriverName")) = FName(282); // REGISTER_NAME(282,GameNetDriver)
 
+        if (SetWorld)
+            SetWorld(NetDriver, World);
+        else
+            std::cout << _("No SetWorld!\n");
+
         InitListen(NetDriver, World, InURL, true, Error);
         *NetDriver->Member<UObject*>(_("World")) = World;
         PauseBeaconRequests(BeaconHost, true);
@@ -166,6 +171,12 @@ void Listen(int Port = 7777)
         {
             if (SetReplicationDriver)
             {
+                auto idk2 = (int32_t*)(NetDriver + 404);;
+                std::cout << _("IDK: ") << idk2 << '\n';
+
+                if (idk2)
+                    std::cout << _("IDK VAL: ") << idk2 << '\n';
+
                 if (!(*ReplicationDriver))
                 {
                     if (ReplicationGraph_Enable)
