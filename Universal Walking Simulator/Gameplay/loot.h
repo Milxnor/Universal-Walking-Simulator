@@ -463,7 +463,7 @@ namespace Looting
 									Location.Y -= 170;
 									std::cout << _("Removed 170 from the Y!\n");
 								}
-								else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < 0 && Rotation.Yaw >= -90)
+								else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
 								{
 									Location.Y += 170;
 									std::cout << _("Added 170 to the Y!\n");
@@ -518,7 +518,7 @@ namespace Looting
 					std::cout << _("LLAMA BALLS!\n");
 				}
 
-				else
+				else if (!BuildingContainerName.contains(_("Door")) && !BuildingContainerName.contains(_("Wall")))
 				{
 					std::cout << _("Unhandled container: ") << BuildingContainerName << "!\n";
 				}

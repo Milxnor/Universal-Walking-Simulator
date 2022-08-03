@@ -335,7 +335,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 				case 1:
 				{
-					ImGui::Checkbox(_("Log RPCS"), &bIsPlayground);
+					ImGui::Checkbox(_("Log RPCS"), &bLogRpcs);
 
 					if (serverStatus == EServerStatus::Down && !bTraveled)
 					{
@@ -484,7 +484,7 @@ DWORD WINAPI GuiThread(LPVOID)
 								auto wID = FindObject(WID);
 
 								if (wID)
-									Inventory::CreateAndAddItem(Controller, wID, EFortQuickBars::Primary, 1, Count);
+									Inventory::GiveItem(Controller, wID, EFortQuickBars::Primary, 1, Count);
 								else
 									std::cout << _("Invalid WID! Please make sure it's a valid object.\n");
 							}

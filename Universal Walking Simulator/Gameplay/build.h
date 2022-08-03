@@ -8,8 +8,6 @@
 
 // Includes building and editing..
 
-std::vector<UObject*> ExistingBuildings;
-
 struct IsDestroyedBitField {
 	unsigned char                                      bSurpressHealthBar : 1;                                   // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
 	unsigned char                                      bCreateVerboseHealthLogs : 1;                             // 0x0541(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
@@ -23,14 +21,14 @@ struct IsDestroyedBitField {
 
 bool CanBuild(UObject* BuildingActor)
 {
-	return true;
+	// return true;
 
 	if (!BuildingActor)
 		return false;
 
 	bool bCanBuild = true;
 
-	for (int i = 0; i < ExistingBuildings.size(); i++)// (const auto Building : ExistingBuildings)
+	for (int i = 0; i < ExistingBuildings.size(); i++) // (const auto Building : ExistingBuildings)
 	{
 		auto Building = ExistingBuildings[i];
 
@@ -38,8 +36,9 @@ bool CanBuild(UObject* BuildingActor)
 			continue;
 
 		// TODO: Test the code below!
-		if (Building->Member<IsDestroyedBitField>(_("bDestroyed"))->bDestroyed)
-			ExistingBuildings.erase(ExistingBuildings.begin() + i);
+
+		// if (Building->Member<IsDestroyedBitField>(_("bDestroyed"))->bDestroyed)
+			// sExistingBuildings.erase(ExistingBuildings.begin() + i);
 
 		if ((Helper::GetActorLocation(Building) == Helper::GetActorLocation(BuildingActor)) &&
 			(*Building->Member<EFortBuildingType>(_("BuildingType")) == *BuildingActor->Member<EFortBuildingType>(_("BuildingType"))))
@@ -85,6 +84,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				// struct FBuildingClassData                          BuildingClassData;                                        // 0x0028(0x0010) (Transient)
 				char pad[0x10];
 			};
+
 			struct SCBAParams { FCreateBuildingActorData CreateBuildingData; };
 			auto Params = (SCBAParams*)Parameters;
 			{
@@ -147,11 +147,24 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 								if (BuildingActor)
 								{
-									Helper::InitializeBuildingActor(Controller, BuildingActor, true);
-									bSuccessful = true;
+									if (CanBuild(BuildingActor))
+									{
+										Helper::InitializeBuildingActor(Controller, BuildingActor, true);
+
+										bSuccessful = true;
+
+										if (!Helper::IsStructurallySupported(BuildingActor))
+											bSuccessful = false;
+									}
+									else
+										bSuccessful = false;
+
+									if (!bSuccessful)
+									{
+										Helper::SetActorScale3D(BuildingActor, {});
+										Helper::SilentDie(BuildingActor);
+									}
 								}
-								else
-									std::cout << _("Unable to summon the building!\n");
 							}
 						}
 						else
@@ -218,12 +231,19 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 						if (BuildingActor)
 						{
-							if (CanBuild(BuildingActor)) // && Helper::IsStructurallySupported(BuildingActor))
+							if (CanBuild(BuildingActor))
 							{
 								Helper::InitializeBuildingActor(Controller, BuildingActor, true);
+
 								bSuccessful = true;
+
+								// if (!Helper::IsStructurallySupported(BuildingActor))
+									// bSuccessful = false;
 							}
 							else
+								bSuccessful = false;
+
+							if (!bSuccessful)
 							{
 								Helper::SetActorScale3D(BuildingActor, {});
 								Helper::SilentDie(BuildingActor);
@@ -248,8 +268,8 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 			else
 				std::cout << _("Is bro using permanite!?!?!?");
 		}
-		else
-			std::cout << _("failed to build!\n");
+		// else
+			// std::cout << _("failed to build!\n");
 	}
 
 	return false;
@@ -275,11 +295,15 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 			auto PlayerState = *Controller->Member<UObject*>(_("PlayerState"));
 			*BuildingToEdit->Member<UObject*>(_("EditingPlayer")) = PlayerState;
 			static auto OnRep_EditingPlayer = BuildingToEdit->Function(_("OnRep_EditingPlayer"));
-			BuildingToEdit->ProcessEvent(OnRep_EditingPlayer);
+
+			if (OnRep_EditingPlayer)
+				BuildingToEdit->ProcessEvent(OnRep_EditingPlayer);
 
 			*EditTool->Member<UObject*>(_("EditActor")) = BuildingToEdit;
 			static auto OnRep_EditActor = EditTool->Function(_("OnRep_EditActor"));
-			EditTool->ProcessEvent(OnRep_EditActor);
+
+			if (OnRep_EditActor)
+				EditTool->ProcessEvent(OnRep_EditActor);
 		}
 	}
 

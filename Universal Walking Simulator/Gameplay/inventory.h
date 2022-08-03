@@ -15,6 +15,9 @@ namespace FFortItemEntry
 {
 	int* GetCount(__int64* Entry)
 	{
+		if (!Entry)
+			return nullptr;
+
 		static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
 		auto Count = (int*)(__int64(&*Entry) + CountOffset);
 
@@ -427,7 +430,7 @@ namespace Inventory
 	}
 
 	template <typename EntryStruct, typename Type>
-	bool ChangeItemInReplicatedEntriesWithEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal)
+	bool ChangeItemInReplicatedEntriesWithEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal, int Count = -1)
 	{
 		if (!Controller || !Definition)
 			return false;
@@ -439,7 +442,7 @@ namespace Inventory
 		{
 			auto& ItemEntry = ReplicatedEntries->At(x);
 
-			if (FFortItemEntry::GetItemDefinition((__int64*)&ItemEntry) == Definition)
+			if (FFortItemEntry::GetItemDefinition((__int64*)&ItemEntry) == Definition && (Count == -1 ? true : *FFortItemEntry::GetCount((__int64*)&ItemEntry) == Count))
 			{
 				static auto Offset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), Name);
 				*(Type*)(__int64(&ItemEntry) + Offset) = NewVal;
@@ -450,7 +453,7 @@ namespace Inventory
 					((FFastArraySerializerOL*)Inventory)->MarkItemDirty((FFastArraySerializerItem*)&ItemEntry);
 				else
 					((FFastArraySerializerSE*)Inventory)->MarkItemDirty((FFastArraySerializerItem*)&ItemEntry);
-				// break;
+				break;
 			}
 		}
 
@@ -458,29 +461,29 @@ namespace Inventory
 	}
 
 	template <typename Type>
-	bool ChangeItemInReplicatedEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal)
+	bool ChangeItemInReplicatedEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal, int Count = -1)
 	{
 		static const auto FlooredVer = std::floor(std::stod(FN_Version));
 
 		if (FlooredVer == 3)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
-			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
+			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
 		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
-			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
 		else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
-			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
 		else if (std::stod(FN_Version) >= 424)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
-			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal);
+			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
 
 		return false;
@@ -667,6 +670,30 @@ namespace Inventory
 
 	}
 
+	bool IncreaseItemCountInstance(UObject* Controller, UObject* Instance, int Count) // stack
+	{
+		// For now, assume it's a consumable or ammo, and it can go higher than what we currently have.
+
+		if (Controller && Instance)
+		{
+			auto ItemEntry = Instance->Member<__int64>(_("ItemEntry")); // Keep as pointer!
+			auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
+
+			// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
+			auto NewCount = *CurrentCount + Count;
+			auto OldCount = *CurrentCount;
+			*CurrentCount = NewCount;
+
+			ChangeItemInReplicatedEntries<int>(Controller, GetItemDefinition(Instance), _("Count"), NewCount, OldCount);
+
+			Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
+
+			return true;
+		}
+
+		return false;
+	}
+
 	bool IncreaseItemCount(UObject* Controller, UObject* Definition, int Count) // stack
 	{
 		// For now, assume it's a consumable or ammo, and it can go higher than what we currently have.
@@ -685,18 +712,7 @@ namespace Inventory
 
 				if (CurrentDefinition == Definition)
 				{
-					auto ItemEntry = ItemInstance->Member<__int64>(_("ItemEntry")); // Keep as pointer!
-					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
-					
-					// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
-					auto NewCount = *CurrentCount + Count;
-					*CurrentCount = NewCount;
-
-					ChangeItemInReplicatedEntries<int>(Controller, Definition, _("Count"), NewCount);
-
-					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
-
-					return true;
+					IncreaseItemCountInstance(Controller, ItemInstance, Count);
 				}
 			}
 		}
@@ -746,27 +762,77 @@ namespace Inventory
 	{
 		if (Controller && Definition)
 		{
-			auto ItemInstance = FindItemInInventory(Controller, Definition);
+			auto ItemInstances = GetItemInstances(Controller);
+			auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
 
+
+			UObject* ItemInstance = nullptr;
 			int OverStack = 0;
 
-			if (ItemInstance)
+			if (ItemInstances)
 			{
-				auto MaxStackCount = *Definition->Member<int>(_("MaxStackSize"));
-				auto ItemEntry = ItemInstance->Member<__int64>(_("ItemEntry"));
+				std::vector<UObject*> InstancesOfItem;
 
-				auto currentCount = FFortItemEntry::GetCount(ItemEntry);
-
-				if (currentCount)
+				for (int i = 0; i < ItemInstances->Num(); i++)
 				{
-					// now we have to increase until we hit the MaxStackCount
+					auto CurrentItemInstance = ItemInstances->At(i);
 
-					OverStack = *currentCount + Count - MaxStackCount;
+					if (CurrentItemInstance && GetItemDefinition(CurrentItemInstance) == Definition)
+					{
+						InstancesOfItem.push_back(CurrentItemInstance);
+					}
+				}
 
-					int AmountToStack = MaxStackCount - *currentCount;
-					IncreaseItemCount(Controller, Definition, AmountToStack);
+				if (InstancesOfItem.size() > 0)
+				{
+					auto MaxStackCount = *Definition->Member<int>(_("MaxStackSize"));
+
+					for (auto InstanceOfItem : InstancesOfItem) // we need this because if we have 2 stacks and lets say a half and pickup another half it'll make another stack and a half
+					{
+						if (InstanceOfItem)
+						{
+							auto ItemEntry = InstanceOfItem->Member<__int64>(_("ItemEntry"));
+
+							if (ItemEntry)
+							{
+								auto currentCount = FFortItemEntry::GetCount(ItemEntry);
+
+								if (currentCount && *currentCount < MaxStackCount)
+								{
+									ItemInstance = InstanceOfItem;
+									break;
+								}
+							}
+						}
+					}
+
+					if (ItemInstance)
+					{
+						auto ItemEntry = ItemInstance->Member<__int64>(_("ItemEntry"));
+
+						if (ItemEntry)
+						{
+							auto currentCount = FFortItemEntry::GetCount(ItemEntry);
+
+							if (currentCount)
+							{
+								OverStack = *currentCount + Count - MaxStackCount;
+
+								int AmountToStack = OverStack > 0 ? Count - OverStack : Count;
+
+								std::cout << _("MaxStackCount: ") << MaxStackCount << '\n';
+								std::cout << _("AmountToStack: ") << AmountToStack << '\n';
+								std::cout << _("currentCount: ") << *currentCount << '\n';
+
+								IncreaseItemCountInstance(Controller, ItemInstance, AmountToStack);
+							}
+						}
+					}
 				}
 			}
+
+			std::cout << _("count: ") << Count << '\n';
+			std::cout << _("OverStack: ") << OverStack << '\n';
 
 			// If someway, the count is bigger than the MaxStackSize, and there is nothing to stack on, then it will not create 2 items.
 
@@ -990,7 +1056,7 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 						else
 							std::cout << _("Could not find Effectclass!\n");
 
-						Inventory::GiveItem(*Controller, *Definition, EFortQuickBars::Primary, *Count); // TODO: Figure out what quickbars are supposed to be used.
+						Inventory::GiveItem(*Controller, *Definition, EFortQuickBars::Primary, 1, *Count); // TODO: Figure out what quickbars are supposed to be used.
 					}
 					else
 						std::cout << _("Player is trying to pickup an item with a null Definition or null Count!\n");

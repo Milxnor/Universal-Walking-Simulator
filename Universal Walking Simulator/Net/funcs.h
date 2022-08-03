@@ -370,3 +370,7 @@ float (*PlayMontage)(UObject* AbilitySystemComponent, UObject* InAnimatingAbilit
 
 EServerStatus serverStatus = EServerStatus::Down;
 static bool bIsPlayground = false;
+
+static bool bDoubleBuildFix1 = false;
+
+static std::vector<UObject*> ExistingBuildings;

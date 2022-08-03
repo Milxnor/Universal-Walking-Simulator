@@ -884,11 +884,38 @@ inline bool ServerChoosePartHook(UObject* Pawn, UFunction* Function, void* Param
 	return false;
 }
 
+inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void* Parameters) // credits: Pro100kat
+{
+	if (BuildingActor)
+	{
+		static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
+		if (BuildingActor->IsA(BuildingSMActorClass))
+		{
+			for (int i = 0; i < ExistingBuildings.size(); i++)
+			{
+				auto Building = ExistingBuildings[i];
+
+				if (!Building)
+					continue;
+
+				if (Building == BuildingActor)
+				{
+					ExistingBuildings.erase(ExistingBuildings.begin() + i);
+					break;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
 		AddHook(_("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
+	AddHook(_("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(_("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.

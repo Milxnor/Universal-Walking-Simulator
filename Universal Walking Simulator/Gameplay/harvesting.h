@@ -6,7 +6,7 @@
 inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void* Parameters)
 {
 	static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
-	if (BuildingActor->IsA(BuildingSMActorClass))
+	if (BuildingActor->IsA(BuildingSMActorClass)) // || BuildingActor->GetFullName().contains(_("Car_")))
 	{
 		auto InstigatedByOffset = FindOffsetStruct(_("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), _("InstigatedBy"));
 		auto InstigatedBy = *(UObject**)(__int64(Parameters) + InstigatedByOffset);
@@ -62,71 +62,58 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 					 distr(gen), false, false };
 
 				static auto ClientReportDamagedResourceBuilding = InstigatedBy->Function(_("ClientReportDamagedResourceBuilding"));
-				InstigatedBy->ProcessEvent(ClientReportDamagedResourceBuilding, &AFortPlayerController_ClientReportDamagedResourceBuilding_Params);
+
+				if (ClientReportDamagedResourceBuilding)
+				{
+					auto Params = &AFortPlayerController_ClientReportDamagedResourceBuilding_Params;
+
+					InstigatedBy->ProcessEvent(ClientReportDamagedResourceBuilding, &AFortPlayerController_ClientReportDamagedResourceBuilding_Params);
+
+					// idk y hook no work
+
+					auto Pawn = *InstigatedBy->Member<UObject*>(_("Pawn"));
+
+					static auto WoodItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+					static auto StoneItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+					static auto MetalItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+					UObject* ItemDef = WoodItemData;
+
+					if (Params->PotentialResourceType.Get() == EFortResourceType::Stone)
+						ItemDef = StoneItemData;
+
+					if (Params->PotentialResourceType.Get() == EFortResourceType::Metal)
+						ItemDef = MetalItemData;
+
+					auto ItemInstance = Inventory::FindItemInInventory(InstigatedBy, ItemDef);
+
+					int AmountToGive = Params->PotentialResourceCount;
+
+					if (ItemInstance && Pawn)
+					{
+						auto Entry = ItemInstance->Member<__int64>(_("ItemEntry"));
+
+						// BUG: You lose some mats if you have like 998 or idfk
+						if (*FFortItemEntry::GetCount(Entry) >= 999)
+						{
+							Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, AmountToGive);
+							return false;
+						}
+					}
+
+					Inventory::GiveItem(InstigatedBy, ItemDef, EFortQuickBars::Secondary, 1, AmountToGive);
+				}
 			}
 		}
-		// else
-			// std::cout << _("AAAAAAAAAAAA");
+		else
+			std::cout << _("WTF1\n");
 ;	}
 
 	return false;
 }
 
-inline bool ClientReportDamagedResourceBuildingHook(UObject* Controller, UFunction* Function, void* Parameters)
-{
-	struct AFortPlayerController_ClientReportDamagedResourceBuilding_Params
-	{
-		UObject* BuildingSMActor;                                          // (Parm, ZeroConstructor, IsPlainOldData)
-		TEnumAsByte<EFortResourceType>                     PotentialResourceType;                                    // (Parm, ZeroConstructor, IsPlainOldData)
-		int                                                PotentialResourceCount;                                   // (Parm, ZeroConstructor, IsPlainOldData)
-		bool                                               bDestroyed;                                               // (Parm, ZeroConstructor, IsPlainOldData)
-		bool                                               bJustHitWeakspot;                                         // (Parm, ZeroConstructor, IsPlainOldData)
-	};
-
-	auto Params = (AFortPlayerController_ClientReportDamagedResourceBuilding_Params*)Parameters;
-
-	if (Controller && Params)
-	{
-		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
-
-		static auto WoodItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
-		static auto StoneItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
-		static auto MetalItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
-
-		UObject* ItemDef = WoodItemData;
-
-		if (Params->PotentialResourceType.Get() == EFortResourceType::Stone)
-			ItemDef = StoneItemData;
-
-		if (Params->PotentialResourceType.Get() == EFortResourceType::Metal)
-			ItemDef = MetalItemData;
-
-		auto ItemInstance = Inventory::FindItemInInventory(Controller, ItemDef);
-
-		int AmountToGive = Params->PotentialResourceCount;
-
-		if (ItemInstance && Pawn)
-		{
-			auto Entry = ItemInstance->Member<__int64>(_("ItemEntry"));
-
-			// BUG: You lose some mats if you have like 998 or idfk
-			if (*FFortItemEntry::GetCount(Entry) >= 999)
-			{
-				Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, AmountToGive);
-				return false;
-			}
-		}
-
-		Inventory::GiveItem(Controller, ItemDef, EFortQuickBars::Secondary, AmountToGive);
-		std::cout << "wtf\n";
-	}
-
-	return false;
-}
-
-
 void InitializeHarvestingHooks()
 {
 	AddHook(_("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), OnDamageServerHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ClientReportDamagedResourceBuilding"), ClientReportDamagedResourceBuildingHook);
+	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ClientReportDamagedResourceBuilding"), ClientReportDamagedResourceBuildingHook);
 }
