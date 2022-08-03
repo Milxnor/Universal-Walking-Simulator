@@ -140,12 +140,9 @@ void Listen(int Port = 7777)
 
         *BeaconHost->Member<FName>(_("NetDriverName")) = FName(282); // REGISTER_NAME(282,GameNetDriver)
         NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
+        static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
+        *NetDriver->Member<UObject*>(_("ReplicationDriverClass")) = ReplicationDriverClass;
         *NetDriver->Member<FName>(_("NetDriverName")) = FName(282); // REGISTER_NAME(282,GameNetDriver)
-
-        if (SetWorld)
-            SetWorld(NetDriver, World);
-        else
-            std::cout << _("No SetWorld!\n");
 
         InitListen(NetDriver, World, InURL, true, Error);
         *NetDriver->Member<UObject*>(_("World")) = World;
@@ -166,66 +163,6 @@ void Listen(int Port = 7777)
     if (NetDriver)
     {
         ReplicationDriver = NetDriver->Member<UObject*>(_("ReplicationDriver"));
-        // if (!bUseBeacons)
-        if (Engine_Version >= 424)
-        {
-            if (SetReplicationDriver)
-            {
-                auto idk2 = (int32_t*)(NetDriver + 404);;
-                std::cout << _("IDK: ") << idk2 << '\n';
-
-                if (idk2)
-                    std::cout << _("IDK VAL: ") << idk2 << '\n';
-
-                if (!(*ReplicationDriver))
-                {
-                    if (ReplicationGraph_Enable)
-                    {
-                        auto res = ReplicationGraph_Enable(NetDriver, World);
-
-                        std::cout << "RES: " << res << '\n';
-                        
-                        auto v7 = *(__int64*)(__int64(World) + 296);
-
-                        std::cout << _("V7: ") << v7 << '\n';
-
-                        auto idk = (char*)(v7 + 929);
-
-                        std::cout << "IDK: " << idk << '\n';
-
-                        if (idk)
-                            std::cout << _("IDK deref as int: ") << (int)(*idk) << '\n';
-
-                        if (res)
-                        {
-                            std::cout << _("RES NAME: ") << res->GetFullName() << '\n';
-                        }
-
-                        static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
-
-                        struct {
-                            UObject* ObjectClass;
-                            UObject* Outer;
-                            UObject* ReturnValue;
-                        } params{ ReplicationDriverClass , NetDriver };
-
-                        static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
-                        static auto fn = GSC->Function(_("SpawnObject"));
-                        // static auto fn = FindObject(_("Function /Script/Engine.GameplayStatics.SpawnObject"));
-                        std::cout << "Creating graph\n";
-                        GSC->ProcessEvent(fn, &params);
-                        std::cout << "new rep graph: " << params.ReturnValue << '\n';
-                        SetReplicationDriver(NetDriver, params.ReturnValue);
-                    }
-                    else
-                        std::cout << _("No ReplicationGraph_Enable\n");
-                }
-                else
-                    std::cout << dye::red(_("\n\n[WARNING] ReplicationDriver is valid, but we are trying to create it. (This is VERY good)\n\n\n"));
-            }
-            else
-                std::cout << _("No SetReplicationDriver!\n");
-        }
     }
     else
         std::cout << _("No NetDriver!\n");

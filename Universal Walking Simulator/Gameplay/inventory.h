@@ -444,7 +444,7 @@ namespace Inventory
 
 			if (FFortItemEntry::GetItemDefinition((__int64*)&ItemEntry) == Definition && (Count == -1 ? true : *FFortItemEntry::GetCount((__int64*)&ItemEntry) == Count))
 			{
-				static auto Offset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), Name);
+				auto Offset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), Name);
 				*(Type*)(__int64(&ItemEntry) + Offset) = NewVal;
 				bSuccessful = true;
 				auto Inventory = GetInventory(Controller);

@@ -912,7 +912,34 @@ inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void*
 
 static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UObject* World)
 {
-	if (NetDriver && World)
+	World = Helper::GetWorld();
+
+	auto res = ReplicationGraph_Enable(NetDriver, World);
+
+	std::cout << _("ReplicationGraph_Enable called!\n");
+	std::cout << _("NetDriver: ") << NetDriver->GetFullName() << '\n';
+	std::cout << _("World: ") << World->GetFullName() << '\n';
+	std::cout << _("res: ") << res << '\n';
+
+	static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
+
+	struct {
+		UObject* ObjectClass;
+		UObject* Outer;
+		UObject* ReturnValue;
+	} params{ ReplicationDriverClass , NetDriver };
+
+	static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+	static auto fn = GSC->Function(_("SpawnObject"));
+
+	// static auto fn = FindObject(_("Function /Script/Engine.GameplayStatics.SpawnObject"));
+
+	std::cout << "Creating graph\n";
+	GSC->ProcessEvent(fn, &params);
+	std::cout << "new rep graph: " << params.ReturnValue << '\n';
+	return params.ReturnValue;
+
+	/* if (NetDriver && World)
 	{
 		std::cout << _("ReplicationGraph_Enable called!\n");
 		std::cout << _("NetDriver: ") << NetDriver->GetFullName() << '\n';
@@ -946,7 +973,7 @@ static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UOb
 			return ReplicationGraph_EnableDetour(NetDriver, World);
 		else
 			return ReplicationGraph_Enable(NetDriver, World);
-	}
+	} */
 }
 
 void FinishInitializeUHooks()
