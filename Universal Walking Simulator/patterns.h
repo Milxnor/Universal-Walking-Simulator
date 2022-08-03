@@ -452,6 +452,15 @@ void InitializePatterns()
     {
 
     }
+    else if (Engine_Version == 426)
+    {
+        TickFlushSig = _("48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B F9 48 89 4D 38 48 8D 4D 40 0F 28 F1 48 8D 15 ? ? ? ?");
+        World_NotifyControlMessageSig = _("48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89 6D 80 49 8B D9 48 8B 41 10 48 8B FA 4C 8B F9 4C 39 A8 ? ? ? ? 0F 84 ? ? ? ? 41 8B D6 83 EA 06 0F 84 ? ? ? ? 83 EA 0B 0F 84 ? ? ? ? 83 FA 01 0F 85 ? ? ? ? 4C 8D 44 24 ? 44 89 AD ? ? ? ? 48 8D 95 ? ? ? ? 4C 89 6C 24 ? 48 8B CB 4C 89 6C 24 ?");
+        SpawnPlayActorSig = _("48 8B C4 48 89 58 20 44 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8D 68 B9 48 81 EC ? ? ? ? 33 DB 4C 8D 35 ? ? ? ? 89 5D 4F 49 8B F9 48 8B 75 77 4C 8B E9 4C 39 36 74 24 8B 46 0C 8B CB 89 5E 08 85 C0 74 10 33 D2 48 8B CE");
+        LocalPlayerSpawnPlayActorSig = _("48 8B C4 48 89 58 20 44 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8D 68 B9 48 81 EC ? ? ? ? 33 DB 4C 8D 35 ? ? ? ? 89 5D 4F 49 8B F9 48 8B 75 77 4C 8B E9 4C 39 36 74 24 8B 46 0C 8B CB 89 5E 08 85 C0 74 10 33 D2 48 8B CE");
+        InitHostSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B F1 4C 8D 05 ? ? ? ? 48 8D 4D D7 45 33 C9 33 D2");
+        InitListenSig = _("4C 8B DC 49 89 5B 08 49 89 73 10 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0 48 8B 01 48 8B D9 49 89 7B D0 45 88 4B C8 4D 8B C8 4C 8B C2 33 D2");
+    }
 
     static const auto FnVerDouble = std::stod(FN_Version);
 
@@ -714,6 +723,11 @@ void InitializePatterns()
     {
         ReplicationGraph_EnableAddr = FindPattern(ReplicationGraph_EnableSig);
         CheckPattern(_("ReplicationGraph_Enable"), ReplicationGraph_EnableAddr, &ReplicationGraph_Enable);
+    }
+
+    if (Engine_Version == 426)
+    {
+
     }
 
 #if 0
