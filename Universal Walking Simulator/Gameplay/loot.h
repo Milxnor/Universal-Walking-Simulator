@@ -87,6 +87,8 @@ namespace Looting
 				WeaponTable.push_back(std::vector<UObject*>());
 			}
 
+			// WeaponTable.reserve(5);
+
 			WeaponTable[0].push_back(FindObject(_("/Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_C_Ore_T02.WID_Assault_Auto_Athena_C_Ore_T02")));
 			WeaponTable[0].push_back(FindObject(_("/Game/Athena/Items/Weapons/WID_Assault_SemiAuto_Athena_C_Ore_T02.WID_Assault_SemiAuto_Athena_C_Ore_T02")));
 			WeaponTable[0].push_back(FindObject(_("/Game/Athena/Items/Weapons/WID_Shotgun_SemiAuto_Athena_UC_Ore_T03.WID_Shotgun_SemiAuto_Athena_UC_Ore_T03")));
@@ -315,14 +317,19 @@ namespace Looting
 				for (int i = 0; i < 3; i++)
 				{
 					FVector RandLocation;
+
+					// CHAPTER 1
+
+					// SKUNKED VERY
+
 					std::random_device rd; // obtain a random number from hardware
 					std::mt19937 gen(rd()); // seed the generator
 
 					// CHAPTER 1
 
 					std::uniform_int_distribution<> Xdistr(-40000, 128000);
-					std::uniform_int_distribution<> Ydistr(10000, 20000); // doesnt matter because llamas has physics that just teleports them down until it hits collision
-					std::uniform_int_distribution<> Zdistr(-40000, 30000);
+					std::uniform_int_distribution<> Ydistr(-90000, 70000);
+					std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter because llamas has physics that just teleports them down until it hits collision
 
 					RandLocation.X = Xdistr(gen);
 					RandLocation.Y = Ydistr(gen);
@@ -331,6 +338,7 @@ namespace Looting
 					std::cout << std::format("Spawning Llama at X: {} Y: {} Z: {}\n", RandLocation.X, RandLocation.Y, RandLocation.Z);
 
 					FRotator RandRotation;
+					// RandRotation.Yaw = RandomBetween(0, 360);
 
 					Easy::SpawnActor(LlamaClass, RandLocation, RandRotation);
 				}
@@ -342,7 +350,7 @@ namespace Looting
 		static DWORD WINAPI SpawnFloorLoot(LPVOID)
 		{
 			Init(nullptr);
-			// static UObject* BuildingContainerClass = FindObject(_("Class /Script/FortniteGame.BuildingContainer"));
+
 			static auto FloorLootClass = FindObject(_("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"));
 
 			if (FloorLootClass)
@@ -505,7 +513,38 @@ namespace Looting
 					if (AmmoDef)
 					{
 						auto Location = Helper::GetActorLocation(BuildingContainer);
+						auto Rotation = Helper::GetActorRotation(BuildingContainer);
+
+						// TODO: Rotation...
+
+						std::cout << _("Yaw: ") << Rotation.Yaw << '\n';
+
 						Location.Z += 50;
+
+						if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
+						{
+							Location.X -= 170;
+							std::cout << _("Removed 170 from the X!\n");
+						}
+						else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
+						{
+							Location.Y -= 170;
+							std::cout << _("Removed 170 from the Y!\n");
+						}
+						else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
+						{
+							Location.Y += 170;
+							std::cout << _("Added 170 to the Y!\n");
+						}
+						else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
+						{
+							Location.X += 170;
+							std::cout << _("Added 170 to the X!\n");
+						}
+						else
+						{
+							std::cout << _("Unhandled rotation!\n");
+						}
 
 						// DROPCOUNT IS VERY WRONG
 						auto DropCount = *AmmoDef->Member<int>(_("DropCount"));
@@ -515,7 +554,52 @@ namespace Looting
 
 				else if (BuildingContainerName.contains(_("AthenaSupplyDrop_Llama_C")))
 				{
-					std::cout << _("LLAMA BALLS!\n");
+					static auto WoodItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+					static auto StoneItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+					static auto MetalItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+					auto Location = Helper::GetActorLocation(BuildingContainer);
+					auto Rotation = Helper::GetActorRotation(BuildingContainer);
+
+					// TODO: Rotation...
+
+					std::cout << _("Yaw: ") << Rotation.Yaw << '\n';
+
+					Location.Z += 50;
+
+					if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
+					{
+						Location.X -= 170;
+						std::cout << _("Removed 170 from the X!\n");
+					}
+					else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
+					{
+						Location.Y -= 170;
+						std::cout << _("Removed 170 from the Y!\n");
+					}
+					else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
+					{
+						Location.Y += 170;
+						std::cout << _("Added 170 to the Y!\n");
+					}
+					else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
+					{
+						Location.X += 170;
+						std::cout << _("Added 170 to the X!\n");
+					}
+					else
+					{
+						std::cout << _("Unhandled rotation!\n");
+					}
+
+					{
+						static auto Minis = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
+
+						Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
+						Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
+						Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
+						Helper::SummonPickup(nullptr, Minis, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 6);
+					}
 				}
 
 				else if (!BuildingContainerName.contains(_("Door")) && !BuildingContainerName.contains(_("Wall")))

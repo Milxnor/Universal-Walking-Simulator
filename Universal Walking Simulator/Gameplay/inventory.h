@@ -41,6 +41,44 @@ namespace FFortItemEntry
 	}
 }
 
+namespace QuickBars
+{
+	UObject* GetInstanceInSlot(UObject* Controller, EFortQuickBars Bars, int Slot)
+	{
+		if (!Controller)
+			return nullptr;
+
+		static const auto FnVerDouble = std::stod(FN_Version);
+
+		{
+			static auto GetItemInQuickbarSlotfn = Controller->Function(_("GetItemInQuickbarSlot"));
+
+			struct {
+				EFortQuickBars QuickBarType;
+				int SlotIndex;
+				UObject* Ret;
+			} GetItemInQuickbarSlot_params{Bars, Slot};
+
+			if (GetItemInQuickbarSlotfn)
+				Controller->ProcessEvent(GetItemInQuickbarSlotfn, &GetItemInQuickbarSlot_params);
+
+			return GetItemInQuickbarSlot_params.Ret;
+		}
+
+		return nullptr;
+	}
+
+	EFortQuickBars WhatQuickBars(UObject* Definition) // returns the quickbar the item should go in
+	{
+		static auto FortWeaponItemDefinitionClass = FindObject(_("Class /Script/FortniteGame.FortWeaponItemDefinition"));
+
+		if (Definition->IsA(FortWeaponItemDefinitionClass))
+			return EFortQuickBars::Primary;
+		else
+			return EFortQuickBars::Secondary;
+	}
+}
+
 namespace Inventory
 {
 	__int64* GetInventory(UObject* Controller)
@@ -257,7 +295,7 @@ namespace Inventory
 		return parms.Ret;
 	}
 
-	inline UObject* EquipInventoryItem(UObject* Controller, FGuid& Guid)
+	inline UObject* EquipInventoryItem(UObject* Controller, const FGuid& Guid)
 	{
 		auto ItemInstances = GetItemInstances(Controller);
 		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
@@ -582,7 +620,7 @@ namespace Inventory
 		Inventory::Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
 	}
 
-	static void CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1)
+	static UObject* CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1)
 	{
 		if (Controller && Definition)
 		{
@@ -592,7 +630,11 @@ namespace Inventory
 				AddItem(Controller, Instance, Bars, Slot, Count);
 			else
 				std::cout << _("Failed to create ItemInstance!\n");
+
+			return Instance;
 		}
+
+		return nullptr;
 	}
 
 	// Returns a item instance
@@ -758,13 +800,17 @@ namespace Inventory
 		return false;
 	}
 
-	static void GiveItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1) // Use this, it stacks if it finds an item, if not, then it adds
+	static UObject* GiveItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1, bool bDontCreateNewStack = false) // Use this, it stacks if it finds an item, if not, then it adds
 	{
 		if (Controller && Definition)
 		{
+			static auto FortResourceItemDefinition = FindObject(_("Class /Script/FortniteGame.FortResourceItemDefinition"));
+
+			if (Definition->IsA(FortResourceItemDefinition))
+				bDontCreateNewStack = true;
+
 			auto ItemInstances = GetItemInstances(Controller);
 			auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
-
 
 			UObject* ItemInstance = nullptr;
 			int OverStack = 0;
@@ -825,25 +871,30 @@ namespace Inventory
 								std::cout << _("currentCount: ") << *currentCount << '\n';
 
 								IncreaseItemCountInstance(Controller, ItemInstance, AmountToStack);
+
+								if (!(OverStack > 0))
+									return ItemInstance;
 							}
 						}
 					}
 				}
 			}
 
-			std::cout << _("count: ") << Count << '\n';
-			std::cout << _("OverStack: ") << OverStack << '\n';
+			// std::cout << _("count: ") << Count << '\n';
+			// std::cout << _("OverStack: ") << OverStack << '\n';
 
 			// If someway, the count is bigger than the MaxStackSize, and there is nothing to stack on, then it will not create 2 items.
 
-			if (!ItemInstance || OverStack > 0)
+			if (!ItemInstance || (OverStack > 0 && !bDontCreateNewStack))
 			{
 				if (OverStack > 0)
-					CreateAndAddItem(Controller, Definition, Bars, Slot, OverStack);
+					return CreateAndAddItem(Controller, Definition, Bars, Slot, OverStack);
 				else
-					CreateAndAddItem(Controller, Definition, Bars, Slot, Count);
+					return CreateAndAddItem(Controller, Definition, Bars, Slot, Count);
 			}
 		}
+
+		return nullptr;
 	}
 
 	void GiveAllAmmo(UObject* Controller)
@@ -988,89 +1039,92 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 		auto Params = (AFortPlayerPawn_ServerHandlePickup_Params*)Parameters;
 
-		if (Params->Pickup)
+		if (Params->Pickup && Pawn)
 		{
 			bool* bPickedUp = Params->Pickup->Member<bool>(_("bPickedUp"));
+			auto Controller = *Pawn->Member<UObject*>(_("Controller"));
 
-			if (bPickedUp && !*bPickedUp)
+			if (bPickedUp && !*bPickedUp && Controller)
 			{
 				auto PrimaryPickupItemEntry = Params->Pickup->Member<__int64>(_("PrimaryPickupItemEntry"));
 				static auto ItemDefinitionOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
 				static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
-				auto Controller = Pawn->Member<UObject*>(_("Controller"));
 
 				// auto SwappinDef = *(*Controller)->Member<UObject*>(_("SwappingItemDefinition")); // This is the same tihng as the pickup
 
 				auto Definition = (UObject**)(__int64(&*PrimaryPickupItemEntry) + ItemDefinitionOffset);
 				auto Count = (int*)(__int64(&*PrimaryPickupItemEntry) + CountOffset);
 
-				UObject* Effect = nullptr;
+				auto ItemInstances = Inventory::GetItemInstances(Controller);
 
-				if (Controller && *Controller)
+				// kms (TODO: Check GetNumQuickBarSlots)
+				
+				bool shouldGoInSecondaryBar = QuickBars::WhatQuickBars(*Definition) == EFortQuickBars::Secondary;
+
+				bool bShouldSwap = false;
+ 
+				if (!shouldGoInSecondaryBar)
+				{
+					int PrimaryQuickBarSlotsFilled = 0;
+
+					for (int i = 0; i < ItemInstances->Num(); i++)
+					{
+						auto ItemInstance = ItemInstances->At(i);
+
+						if (!ItemInstance)
+							break;
+
+						auto Definition = Inventory::GetItemDefinition(ItemInstance);
+
+						if (QuickBars::WhatQuickBars(Definition) == EFortQuickBars::Primary)
+							PrimaryQuickBarSlotsFilled++;
+					}
+
+					bShouldSwap = (PrimaryQuickBarSlotsFilled -= 6) >= 5;
+				}
+
+				// std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
+
+				bool bSucceededSwap = true;
+
+				if (bShouldSwap)
+				{
+					auto CurrentWeapon = (*Pawn->Member<UObject*>(_("CurrentWeapon")));
+					auto ItemToDropDef = *CurrentWeapon->Member<UObject*>(_("WeaponData"));
+
+					static auto PickaxeDef = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+
+					if (ItemToDropDef != PickaxeDef) // ahh
+					{
+						Inventory::RemoveItem(Controller, *CurrentWeapon->Member<FGuid>(_("ItemEntryGuid")));
+						auto loc = Helper::GetActorLocation(Pawn);
+
+						auto DroppedPickup = Helper::SummonPickup(Pawn, ItemToDropDef, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, 1);
+					}
+					else
+						bSucceededSwap = false;
+				}
+
+				if (bSucceededSwap)
 				{
 					if (Definition && *Definition && Count)
 					{
-						static UObject* EffectClass = FindObject(_("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C"));
+						auto NewInstance = Inventory::GiveItem(Controller, *Definition, EFortQuickBars::Primary, 1, *Count); // TODO: Figure out what quickbars are supposed to be used.
 
-						if (EffectClass)
+						if (bShouldSwap)
 						{
-							Effect = Easy::SpawnActor(EffectClass, Helper::GetActorLocation(Pawn));
-
-							if (Effect)
-							{
-								*Effect->Member<UObject*>(_("ItemDefinition")) = *Definition;
-
-								auto PEBP = Params->Pickup->Member<TWeakObjectPtr<UObject>>("PickupEffectBlueprint");
-								PEBP->ObjectIndex = Effect->InternalIndex;
-								PEBP->ObjectSerialNumber = GetSerialNumber(Effect);
-
-								// PEBP = Effect;
-
-								// static auto OnPickup = Effect->Function(_("OnPickup"));
-								static auto OnPickup = Effect->Function(_("OnPickedUp"));
-								static auto OnAboutToEnterBackpack = Effect->Function(_("OnAboutToEnterBackpack"));
-
-								struct { UObject* PickupTarget; }effparams{Pawn}; // AFortPawn
-
-								/*
-
-								void OnTossed();
-								void OnPickedUp();
-
-								*/
-
-								if (OnPickup)
-									Effect->ProcessEvent(OnPickup);
-								else
-									std::cout << _("Failed to find OnPickup!\n");
-
-
-								if (OnAboutToEnterBackpack)
-									Effect->ProcessEvent(OnAboutToEnterBackpack, &effparams);
-								else
-									std::cout << _("Failed to find OnAboutToEnterBackpack!\n");
-							}
-							else
-								std::cout << _("Failed to spawn effect!\n");
+							// Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(NewInstance));
 						}
-						else
-							std::cout << _("Could not find Effectclass!\n");
-
-						Inventory::GiveItem(*Controller, *Definition, EFortQuickBars::Primary, 1, *Count); // TODO: Figure out what quickbars are supposed to be used.
 					}
-					else
-						std::cout << _("Player is trying to pickup an item with a null Definition or null Count!\n");
+
+					Helper::DestroyActor(Params->Pickup);
+					*bPickedUp = true;
+
+					static auto bPickedUpFn = Params->Pickup->Function(_("OnRep_bPickedUp"));
+
+					if (bPickedUpFn)
+						Params->Pickup->ProcessEvent(bPickedUpFn);
 				}
-				else
-					std::cout << _("Invalid Controller: ") << Controller << '\n';
-
-				Helper::DestroyActor(Params->Pickup);
-				*bPickedUp = true;
-				static auto bPickedUpFn = Params->Pickup->Function(_("OnRep_bPickedUp"));
-				Params->Pickup->ProcessEvent(bPickedUpFn);
-
-				if (Effect)
-					Helper::DestroyActor(Effect);
 			}
 		}
 	}
@@ -1146,8 +1200,10 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // n
 	{
 		auto WeaponData = *Weapon->Member<UObject*>(_("WeaponData"));
 		static auto GetAmmoWorldItemDefinition_BP = WeaponData->Function(_("GetAmmoWorldItemDefinition_BP"));
-		UObject* AmmoDef;
-		WeaponData->ProcessEvent(GetAmmoWorldItemDefinition_BP, &AmmoDef);
+		UObject* AmmoDef = nullptr;
+
+		if (GetAmmoWorldItemDefinition_BP)
+			WeaponData->ProcessEvent(GetAmmoWorldItemDefinition_BP, &AmmoDef);
 
 		if (!AmmoDef || WeaponData->GetName().contains("TID"))
 			AmmoDef = WeaponData;

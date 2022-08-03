@@ -336,6 +336,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				case 1:
 				{
 					ImGui::Checkbox(_("Log RPCS"), &bLogRpcs);
+					ImGui::Checkbox(_("Log ProcessEvent"), &bLogProcessEvent);
 
 					if (serverStatus == EServerStatus::Down && !bTraveled)
 					{
@@ -358,9 +359,17 @@ DWORD WINAPI GuiThread(LPVOID)
 								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 
 								std::cout << _("Started aircraft!\n");
+
+								// TODO: Hook a func for this
+
+								static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
+
+								// Helper::DestroyAll(BuildingSMActorClass);
+
+								ExistingBuildings.clear();
 							}
 						}
-						else
+						// else
 						{
 							if (ImGui::Button(_("Change Phase to Aircraft"))) // TODO: Improve phase stuff
 							{
@@ -376,6 +385,14 @@ DWORD WINAPI GuiThread(LPVOID)
 								static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
 
 								std::cout << _("Changed Phase to Aircraft.");
+
+								// TODO: Hook a func for this
+
+								static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
+
+								// Helper::DestroyAll(BuildingSMActorClass);
+
+								ExistingBuildings.clear();
 							}
 						}
 

@@ -21,7 +21,7 @@ struct IsDestroyedBitField {
 
 bool CanBuild(UObject* BuildingActor)
 {
-	// return true;
+	return true;
 
 	if (!BuildingActor)
 		return false;

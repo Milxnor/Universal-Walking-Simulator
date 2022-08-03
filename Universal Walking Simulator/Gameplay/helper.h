@@ -103,7 +103,7 @@ namespace Helper
 			*FindObject(_("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
 		}
 	}
-
+	
 	UObject* GetWorld()
 	{
 		return GetWorldW();
@@ -209,7 +209,7 @@ namespace Helper
 						Pickup->ProcessEvent(TossPickupFn, &TPParams);
 				}
 
-				if (SpawnSource == EFortPickupSpawnSource::Chest)
+				if (PickupSource == EFortPickupSourceTypeFlag::Container)
 				{
 					*Pickup->Member<bool>(_("bTossedFromContainer")) = true;
 
@@ -428,6 +428,7 @@ namespace Helper
 
 		return SpawnTransform.Translation;
 	}
+
 	void LaunchPlayer(UObject* Pawn, FVector LaunchVelocity, bool bXYOverride, bool bZOverride, bool bIgnoreFallDamage, bool bPlayFeedbackEvent)
 	{
 		struct {
@@ -439,6 +440,28 @@ namespace Helper
 		} LCJParans {LaunchVelocity, bXYOverride, bZOverride, bIgnoreFallDamage, bPlayFeedbackEvent };
 		auto LaunchPlayerFn = Pawn->Function("LaunchCharacterJump");
 		Pawn->ProcessEvent(LaunchPlayerFn, &LCJParans);
+	}
+
+	int DestroyAll(UObject* ClassToDestroy)
+	{
+		if (!ClassToDestroy)
+			return -1;
+
+		auto AllActors = Helper::GetAllActorsOfClass(ClassToDestroy);
+
+		for (int i = 0; i < AllActors.Num(); i++)
+		{
+			auto Actor = AllActors.At(i);
+
+			if (Actor)
+				Helper::DestroyActor(Actor);
+		}
+
+		auto ActorsNum = AllActors.Num();
+
+		AllActors.Free();
+
+		return ActorsNum;
 	}
 
 	namespace Console

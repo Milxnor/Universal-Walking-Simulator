@@ -125,6 +125,26 @@ static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)
 
 struct FQuat;
 
+float UE_Fmod(float X, float Y)
+{
+	const float AbsY = fabs(Y);
+	if (AbsY <= 1.e-8f)
+	{
+		// FmodReportError(X, Y);
+		return 0.0;
+	}
+
+	// Convert to double for better precision, since intermediate rounding can lose enough precision to skew the result.
+	const double DX = double(X);
+	const double DY = double(Y);
+
+	const double Div = (DX / DY);
+	const double IntPortion = DY * trunc(Div);
+	const double Result = DX - IntPortion;
+	// Convert back to float. This is safe because the result will by definition not exceed the X input.
+	return float(Result);
+}
+
 struct FRotator
 {
 	float Pitch;
@@ -136,7 +156,7 @@ struct FRotator
 	static __forceinline float ClampAxis(float Angle)
 	{
 		// returns Angle in the range (-360,360)
-		Angle = fmod(Angle, 360.f);
+		Angle = UE_Fmod(Angle, 360.f);
 
 		if (Angle < 0.f)
 		{
@@ -386,8 +406,81 @@ enum EName
 	// pragma = (pop_macro("TRUE")) pragma(pop_macro("FALSE")) # 18 "D:/DocSource/Engine/Source/Runtime/Core/Public/UObject/UnrealNames.h" 2 MaxHardcodedNameIndex,
 };
 
+#define FASTASIN_HALF_PI (1.5707963050f)
+/**
+* Computes the ASin of a scalar value.
+*
+* @param Value  input angle
+* @return ASin of Value
+*/
+static FORCEINLINE float FastAsin(float Value)
+{
+	// Clamp input to [-1,1].
+	bool nonnegative = (Value >= 0.0f);
+	float x = fabsf(Value);
+	float omx = 1.0f - x;
+	if (omx < 0.0f)
+	{
+		omx = 0.0f;
+	}
+	float root = sqrtf(omx);
+	// 7-degree minimax approximation
+	float result = ((((((-0.0012624911f * x + 0.0066700901f) * x - 0.0170881256f) * x + 0.0308918810f) * x - 0.0501743046f) * x + 0.0889789874f) * x - 0.2145988016f) * x + FASTASIN_HALF_PI;
+	result *= root;  // acos(|x|)
+	// acos(x) = pi - acos(-x) when x < 0, asin(x) = pi/2 - acos(x)
+	return (nonnegative ? FASTASIN_HALF_PI - result : result - FASTASIN_HALF_PI);
+}
+#undef FASTASIN_HALF_PI
+
+float UE_Atan2(float Y, float X)
+{
+	//return atan2f(Y,X);
+	// atan2f occasionally returns NaN with perfectly valid input (possibly due to a compiler or library bug).
+	// We are replacing it with a minimax approximation with a max relative error of 7.15255737e-007 compared to the C library function.
+	// On PC this has been measured to be 2x faster than the std C version.
+
+	const float absX = fabsf(X);
+	const float absY = fabsf(Y);
+	const bool yAbsBigger = (absY > absX);
+	float t0 = yAbsBigger ? absY : absX; // Max(absY, absX)
+	float t1 = yAbsBigger ? absX : absY; // Min(absX, absY)
+
+	if (t0 == 0.f)
+		return 0.f;
+
+	float t3 = t1 / t0;
+	float t4 = t3 * t3;
+
+	static const float c[7] = {
+		+7.2128853633444123e-03f,
+		-3.5059680836411644e-02f,
+		+8.1675882859940430e-02f,
+		-1.3374657325451267e-01f,
+		+1.9856563505717162e-01f,
+		-3.3324998579202170e-01f,
+		+1.0f
+	};
+
+	t0 = c[0];
+	t0 = t0 * t4 + c[1];
+	t0 = t0 * t4 + c[2];
+	t0 = t0 * t4 + c[3];
+	t0 = t0 * t4 + c[4];
+	t0 = t0 * t4 + c[5];
+	t0 = t0 * t4 + c[6];
+	t3 = t0 * t3;
+
+	t3 = yAbsBigger ? (0.5f * M_PI) - t3 : t3;
+	t3 = (X < 0.0f) ? M_PI - t3 : t3;
+	t3 = (Y < 0.0f) ? -t3 : t3;
+
+	return t3;
+}
+
+// alignas(16)
 struct FQuat
 {
+	// float W;
 	float X;
 	float Y;
 	float Z;
@@ -406,28 +499,29 @@ struct FQuat
 
 		// this value was found from experience, the above websites recommend different values
 		// but that isn't the case for us, so I went through different testing, and finally found the case 
-		// where both of world lives happily. 
+		// where both of world lives happily.
+
 		const float SINGULARITY_THRESHOLD = 0.4999995f;
 		const float RAD_TO_DEG = (180.f) / M_PI;
-		FRotator RotatorFromQuat;
+		FRotator RotatorFromQuat = FRotator();
 
 		if (SingularityTest < -SINGULARITY_THRESHOLD)
 		{
 			RotatorFromQuat.Pitch = -90.f;
-			RotatorFromQuat.Yaw = atan2(YawY, YawX) * RAD_TO_DEG;
-			RotatorFromQuat.Roll = FRotator::NormalizeAxis(-RotatorFromQuat.Yaw - (2.f * atan2(X, W) * RAD_TO_DEG));
+			RotatorFromQuat.Yaw = UE_Atan2(YawY, YawX) * RAD_TO_DEG;
+			RotatorFromQuat.Roll = FRotator::NormalizeAxis(-RotatorFromQuat.Yaw - (2.f * UE_Atan2(X, W) * RAD_TO_DEG));
 		}
 		else if (SingularityTest > SINGULARITY_THRESHOLD)
 		{
 			RotatorFromQuat.Pitch = 90.f;
-			RotatorFromQuat.Yaw = atan2(YawY, YawX) * RAD_TO_DEG;
-			RotatorFromQuat.Roll = FRotator::NormalizeAxis(RotatorFromQuat.Yaw - (2.f * atan2(X, W) * RAD_TO_DEG));
+			RotatorFromQuat.Yaw = UE_Atan2(YawY, YawX) * RAD_TO_DEG;
+			RotatorFromQuat.Roll = FRotator::NormalizeAxis(RotatorFromQuat.Yaw - (2.f * UE_Atan2(X, W) * RAD_TO_DEG));
 		}
 		else
 		{
-			RotatorFromQuat.Pitch = asin(2.f * (SingularityTest)) * RAD_TO_DEG;
-			RotatorFromQuat.Yaw = atan2(YawY, YawX) * RAD_TO_DEG;
-			RotatorFromQuat.Roll = atan2(-2.f * (W * X + Y * Z), (1.f - 2.f * ((X * X) + (Y * Y)))) * RAD_TO_DEG;
+			RotatorFromQuat.Pitch = FastAsin(2.f * (SingularityTest)) * RAD_TO_DEG;
+			RotatorFromQuat.Yaw = UE_Atan2(YawY, YawX) * RAD_TO_DEG;
+			RotatorFromQuat.Roll = UE_Atan2(-2.f * (W * X + Y * Z), (1.f - 2.f * ((X * X) + (Y * Y)))) * RAD_TO_DEG;
 		}
 
 		return RotatorFromQuat;

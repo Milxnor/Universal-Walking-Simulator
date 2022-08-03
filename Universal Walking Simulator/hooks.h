@@ -20,6 +20,7 @@
 
 static bool bStarted = false;
 static bool bLogRpcs = false;
+static bool bLogProcessEvent = false;
 
 inline void initStuff()
 {
@@ -213,15 +214,15 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 {
 	if (Vehicle && Parameters)
 	{
-		/* struct parms { __int64 InState; };
+		struct parms { __int64 InState; };
 		auto Params = (parms*)Parameters;
 
-		auto TranslationOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), _("Translation"));
+		static auto TranslationOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), _("Translation"));
 		auto Translation = (FVector*)(__int64(&Params->InState) + TranslationOffset);
 
 		std::cout << _("TranslationOffset: ") << TranslationOffset << '\n';
 
-		auto RotationOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), _("Rotation"));
+		static auto RotationOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), _("Rotation"));
 		auto Rotation = (FQuat*)(__int64(&Params->InState) + RotationOffset);
 
 		if (Translation && Rotation)
@@ -232,8 +233,17 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 
 			// Helper::SetActorLocation(Vehicle, *Translation);
 			auto rot = Rotation->Rotator();
+
+			// rot.Pitch = 0;
+
+			std::cout << _("Pitch: ") << rot.Pitch << '\n';
+			std::cout << _("Yaw: ") << rot.Yaw << '\n';
+			std::cout << _("Roll: ") << rot.Roll << '\n';
+
 			Helper::SetActorLocationAndRotation(Vehicle, *Translation, rot);
-		} */
+
+			return true;
+		}
 	}
 
 	return false;
@@ -686,7 +696,8 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 			if (ReceivingActorName.contains(_("Vehicle")))
 			{
-				// Helper::SetRemoteRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);
+				Helper::SetLocalRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_Authority);
+				Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_Authority);
 				// Helper::SetLocalRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);
 				// Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
 			}
@@ -905,6 +916,13 @@ inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void*
 				}
 			}
 		}
+
+		static auto BuildingContainerClass = FindObject(_("Class /Script/FortniteGame.BuildingContainer"));
+
+		if (BuildingActor->IsA(BuildingContainerClass))
+		{
+			Looting::Tables::HandleSearch(BuildingActor);
+		}
 	}
 
 	return false;
@@ -976,6 +994,34 @@ static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UOb
 	} */
 }
 
+bool ServerUpdateVehicleInputStateUnreliableHook(UObject* Pawn, UFunction* Function, void* Parameters) // FortAthenaVehicle
+{
+	struct parms { __int64 InState; float TimeStamp; };
+	auto Params = (parms*)Parameters;
+
+	static auto PitchAlphaOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortAthenaVehicleInputStateUnreliable"), _("PitchAlpha"));
+	auto PitchAlpha = (float*)(__int64(&Params->InState) + PitchAlphaOffset);
+
+	if (Pawn && Params && PitchAlpha)
+	{
+		auto Vehicle = Helper::GetVehicle(Pawn);
+
+		if (Vehicle)
+		{
+			auto Rotation = Helper::GetActorRotation(Vehicle);
+			auto Location = Helper::GetActorLocation(Vehicle);
+
+			std::cout << _("Pitch Alpha: ") << *PitchAlpha << '\n';
+
+			auto newRotation = FRotator{ *PitchAlpha, Rotation.Yaw, Rotation.Roll };
+
+			Helper::SetActorLocationAndRotation(Vehicle, Location, newRotation);
+		}
+	}
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
@@ -990,6 +1036,7 @@ void FinishInitializeUHooks()
 	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
 	AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
+	// AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateUnreliable"), ServerUpdateVehicleInputStateUnreliableHook)
 
 	if (Engine_Version >= 420)
 		AddHook(_("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);
@@ -1021,17 +1068,58 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 {
 	if (Object && Function)
 	{
-		if (bStarted && bListening && bLogRpcs)
+		if (bStarted && bListening && (bLogRpcs || bLogProcessEvent))
 		{
 			auto FunctionName = Function->GetName();
 			// if (Function->FunctionFlags & 0x00200000 || Function->FunctionFlags & 0x01000000) // && FunctionName.find("Ack") == -1 && FunctionName.find("AdjustPos") == -1))
-			if (FunctionName.starts_with(_("Server")) || FunctionName.starts_with(_("Client")) || FunctionName.starts_with(_("OnRep_")))
+			if (bLogRpcs && (FunctionName.starts_with(_("Server")) || FunctionName.starts_with(_("Client")) || FunctionName.starts_with(_("OnRep_"))))
 			{
 				if (!FunctionName.contains("ServerUpdateCamera") && !FunctionName.contains("ServerMove")
 					&& !FunctionName.contains(_("ServerUpdateLevelVisibility"))
 					&& !FunctionName.contains(_("AckGoodMove")))
 				{
-					std::cout << "RPC Called: " << FunctionName << '\n';
+					std::cout << _("RPC Called: ") << FunctionName << '\n';
+				}
+			}
+
+			if (bLogProcessEvent)
+			{
+				if (!strstr(FunctionName.c_str(), _("EvaluateGraphExposedInputs")) &&
+					!strstr(FunctionName.c_str(), _("Tick")) &&
+					!strstr(FunctionName.c_str(), _("OnSubmixEnvelope")) &&
+					!strstr(FunctionName.c_str(), _("OnSubmixSpectralAnalysis")) &&
+					!strstr(FunctionName.c_str(), _("OnMouse")) &&
+					!strstr(FunctionName.c_str(), _("Pulse")) &&
+					!strstr(FunctionName.c_str(), _("BlueprintUpdateAnimation")) &&
+					!strstr(FunctionName.c_str(), _("BlueprintPostEvaluateAnimation")) &&
+					!strstr(FunctionName.c_str(), _("BlueprintModifyCamera")) &&
+					!strstr(FunctionName.c_str(), _("BlueprintModifyPostProcess")) &&
+					!strstr(FunctionName.c_str(), _("Loop Animation Curve")) &&
+					!strstr(FunctionName.c_str(), _("UpdateTime")) &&
+					!strstr(FunctionName.c_str(), _("GetMutatorByClass")) &&
+					!strstr(FunctionName.c_str(), _("UpdatePreviousPositionAndVelocity")) &&
+					!strstr(FunctionName.c_str(), _("IsCachedIsProjectileWeapon")) &&
+					!strstr(FunctionName.c_str(), _("LockOn")) &&
+					!strstr(FunctionName.c_str(), _("GetAbilityTargetingLevel")) &&
+					!strstr(FunctionName.c_str(), _("ReadyToEndMatch")) &&
+					!strstr(FunctionName.c_str(), _("ReceiveDrawHUD")) &&
+					!strstr(FunctionName.c_str(), _("OnUpdateDirectionalLightForTimeOfDay")) &&
+					!strstr(FunctionName.c_str(), _("GetSubtitleVisibility")) &&
+					!strstr(FunctionName.c_str(), _("GetValue")) &&
+					!strstr(FunctionName.c_str(), _("InputAxisKeyEvent")) &&
+					!strstr(FunctionName.c_str(), _("ServerTouchActiveTime")) &&
+					!strstr(FunctionName.c_str(), _("SM_IceCube_Blueprint_C")) &&
+					!strstr(FunctionName.c_str(), _("OnHovered")) &&
+					!strstr(FunctionName.c_str(), _("OnCurrentTextStyleChanged")) &&
+					!strstr(FunctionName.c_str(), _("OnButtonHovered")) &&
+					!strstr(FunctionName.c_str(), _("ExecuteUbergraph_ThreatPostProcessManagerAndParticleBlueprint")) &&
+					!strstr(FunctionName.c_str(), _("UpdateCamera")) &&
+					!strstr(FunctionName.c_str(), _("GetMutatorContext")) &&
+					!strstr(FunctionName.c_str(), _("CanJumpInternal")) && 
+					!strstr(FunctionName.c_str(), _("OnDayPhaseChanged")) &&
+					!strstr(FunctionName.c_str(), _("Chime")))
+				{
+					std::cout << _("Function called: ") << FunctionName << '\n';
 				}
 			}
 		}

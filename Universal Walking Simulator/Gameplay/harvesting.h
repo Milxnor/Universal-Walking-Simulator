@@ -105,8 +105,6 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 				}
 			}
 		}
-		else
-			std::cout << _("WTF1\n");
 ;	}
 
 	return false;
