@@ -63,8 +63,6 @@ static char (*KickPlayer)(UObject* a1, UObject*, FText a3); // session, pc
 
 static void (__fastcall* HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 
-static UObject* (__fastcall* CreateNetDriver_Local)(__int64 a1, __int64 a2, __int64 a3);
-
 static __int64 (*GetNetMode)(__int64* a1);
 static bool (*LP_SpawnPlayActor)(UObject* Player, const FString& URL, FString& OutError, UObject* World); // LocalPlayer
 static __int64 (*CollectGarbage)(__int64 a1);
@@ -360,6 +358,10 @@ static void (*MarkAbilitySpecDirtyOld)(UObject* comp, FGameplayAbilitySpec& Spec
 uint64_t GiveAbilityAddr = 0;
 uint64_t InternalTryActivateAbilityAddr = 0;
 uint64_t MarkAbilitySpecDirtyAddr = 0;
+
+uint64_t CreateNamedNetDriverAddr = 0; // CreateNetDriver_Local
+
+UObject* (*CreateNetDriver_Local)(UObject* Engine, UObject* InWorld, FName NetDriverDefinition);
 
 template<typename T, typename U> constexpr size_t offsetOf(U T::* member)
 {

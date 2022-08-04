@@ -81,8 +81,8 @@ void Listen(int Port = 7777)
 {
     bool bUseBeacons = true; //(Engine_Version >= 425) ? false : true; // CreateNetDriver ? false : true;
 
-    if (!bUseBeacons)
-        bUseBeacons = (CreateNetDriver ? false : true);
+    // if (!bUseBeacons)
+        // bUseBeacons = (CreateNetDriver ? false : true);
 
     static const auto World = Helper::GetWorld();
 
@@ -138,11 +138,11 @@ void Listen(int Port = 7777)
 
         std::cout << _("Initialized Beacon!\n");
 
-        *BeaconHost->Member<FName>(_("NetDriverName")) = FName(282); // REGISTER_NAME(282,GameNetDriver)
+        *BeaconHost->Member<FName>(_("NetDriverName")) = FName(282);
         NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
         static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
         *NetDriver->Member<UObject*>(_("ReplicationDriverClass")) = ReplicationDriverClass;
-        *NetDriver->Member<FName>(_("NetDriverName")) = FName(282); // REGISTER_NAME(282,GameNetDriver)
+        *NetDriver->Member<FName>(_("NetDriverName")) = FName(282);
 
         InitListen(NetDriver, World, InURL, true, Error);
         *NetDriver->Member<UObject*>(_("World")) = World;
@@ -151,10 +151,30 @@ void Listen(int Port = 7777)
     }
     else
     {
-        NetDriver = CreateNetDriver(GetEngine(), World, FName(282));
-        std::cout << _("Created NetDriver!\n");
-        InitListen(NetDriver, World, InURL, true, Error);
-        std::cout << _("Called InitListen on the NetDriver!\n");
+        // NetDriver = CreateNetDriver_Local(GetEngine(), World, FName(282));
+        // std::cout << _("Created NetDriver: ") << NetDriver << '\n';
+        //static auto IpNetDriverClass = FindObject(_("Class /Script/OnlineSubsystemUtils.IpNetDriver"));
+        //static auto dababy = FindObject(_("Package /Engine/Transient"));
+        //NetDriver = Easy::SpawnObject(IpNetDriverClass, dababy);
+
+        FString string;
+        string.Set(L"GameNetDriver");
+        auto GameNetDriverName = Helper::StringToName(string);
+        NetDriver = CreateNetDriver(GetEngine(), World, GameNetDriverName);
+
+        std::cout << _("Created NetDriver: ") << NetDriver << '\n';
+
+        if (NetDriver)
+        {
+            std::cout << _("Driver Name: ") << NetDriver->GetFullName() << '\n';
+            FString string;
+            string.Set(L"GameNetDriver");
+            *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
+            InitListen(NetDriver, World, InURL, true, Error);
+            std::cout << _("Called InitListen on the NetDriver!\n");
+        }
+        else
+            std::cout << _("Failed to create netdriver!\n");
     }
 
     *NetDriver->Member<int>(_("MaxClientRate")) = *NetDriver->Member<int>(_("MaxInternetClientRate"));
@@ -163,6 +183,30 @@ void Listen(int Port = 7777)
     if (NetDriver)
     {
         ReplicationDriver = NetDriver->Member<UObject*>(_("ReplicationDriver"));
+
+        if (Engine_Version >= 424)
+        {
+            if (SetReplicationDriver)
+            {
+                if (!(*ReplicationDriver))
+                {
+                    if (ReplicationGraph_Enable)
+                    {
+                        static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
+
+                        auto Ret = Easy::SpawnObject(ReplicationDriverClass, NetDriver);
+                        std::cout << "new rep graph: " << Ret << '\n';
+                        SetReplicationDriver(NetDriver, Ret);
+                    }
+                    else
+                        std::cout << _("No ReplicationGraph_Enable\n");
+                }
+                else
+                    std::cout << dye::red(_("\n\n[WARNING] ReplicationDriver is valid, but we are trying to create it. (This is VERY good)\n\n\n"));
+            }
+            else
+                std::cout << _("No SetReplicationDriver!\n");
+        }
     }
     else
         std::cout << _("No NetDriver!\n");
@@ -195,4 +239,4 @@ void Listen(int Port = 7777)
         SendDiscordStart();
 #endif
 #endif
- }
+}

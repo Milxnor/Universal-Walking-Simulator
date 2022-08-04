@@ -384,7 +384,7 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 	return true;
 }
 
-EDeathCause GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on github, from raider3.5
+uint8_t GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on github, from raider3.5
 {
 	static std::map<std::string, EDeathCause> DeathCauses{
 		{ "weapon.ranged.shotgun", EDeathCause::Shotgun },
@@ -403,6 +403,13 @@ EDeathCause GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on gi
 		{ "Weapon.Melee.Impact.Pickaxe", EDeathCause::Melee }
 	};
 
+	static auto DeathEnum = FindObject(_("Enum /Script/FortniteGame.EDeathCause"));
+	static uint8_t SMGnum = GetEnumValue(DeathEnum, _("SMG"));
+
+	std::cout << "SMGnum: " << SMGnum << '\n';
+
+	return SMGnum;
+
 	for (int i = 0; i < Tags.GameplayTags.Num(); i++)
 	{
 		auto TagName = Tags.GameplayTags.At(i).TagName;
@@ -412,14 +419,14 @@ EDeathCause GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on gi
 
 		for (auto& Map : DeathCauses)
 		{
-			if (TagName.ToString() == Map.first) return Map.second;
+			if (TagName.ToString() == Map.first) return (uint8_t)Map.second;
 			else continue;
 		}
 	}
 
 	std::cout << std::format("Unspecified Death: {}\n", Tags.ToStringSimple(false));
 
-	return EDeathCause::Unspecified;
+	return (uint8_t)EDeathCause::Unspecified;
 }
 
 inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Parameters)
@@ -491,22 +498,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		if (KillerPawn)
 			KillerController = *KillerPawn->Member<UObject*>(_("Controller"));
 
-		if (KillerPlayerState && KillerPlayerState != DeadPlayerState)
+		if (KillerPlayerState)
 		{
-			if (KillerController)
-			{
-				static auto ClientReceiveKillNotification = KillerController->Function(_("ClientReceiveKillNotification"));
-
-				struct {
-					// Both playerstates
-					UObject* Killer;
-					UObject* Killed;
-				} ClientReceiveKillNotification_Params{KillerPlayerState, DeadPlayerState};
-
-				if (ClientReceiveKillNotification)
-					KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
-			}
-
 			auto DeathInfo = DeadPlayerState->Member<__int64>(_("DeathInfo"));
 
 			static auto TagsOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("Tags"));
@@ -516,7 +509,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			auto Tags = (FGameplayTagContainer*)(__int64(&*DeathInfo) + TagsOffset);
 
-			*(EDeathCause*)(__int64(&*DeathInfo) + DeathCauseOffset) = EDeathCause::Cube; // Tags ? GetDeathCause(*Tags) : EDeathCause::Unspecified;
+			*(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) = Tags ? GetDeathCause(*Tags) : (uint8_t)EDeathCause::Cube;
 			*(UObject**)(__int64(&*DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
 			*(bool*)(__int64(&*DeathInfo) + bDBNOOffset) = false;
 
@@ -525,19 +518,36 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			if (OnRep_DeathInfo)
 				DeadPlayerState->ProcessEvent(OnRep_DeathInfo);
 
-			// *DeadPlayerState->Member<__int64>(_("DeathInfo")) = *(__int64*)malloc(GetSizeOfStruct(FindObject(_("ScriptStruct /Script/FortniteGame.DeathInfo"))));
+			if (KillerPlayerState != DeadPlayerState)
+			{
+				if (KillerController)
+				{
+					static auto ClientReceiveKillNotification = KillerController->Function(_("ClientReceiveKillNotification"));
 
-			(*KillerPlayerState->Member<int>(_("KillScore")))++;
-			(*KillerPlayerState->Member<int>(_("TeamKillScore")))++;
+					struct {
+						// Both playerstates
+						UObject* Killer;
+						UObject* Killed;
+					} ClientReceiveKillNotification_Params{ KillerPlayerState, DeadPlayerState };
 
-			static auto ClientReportKill = KillerPlayerState->Function(_("ClientReportKill"));
-			struct { UObject* PlayerState; }ClientReportKill_Params{DeadPlayerState};
-			if (ClientReportKill)
-				KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
+					if (ClientReceiveKillNotification)
+						KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
+				}
 
-			static auto OnRep_Kills = KillerPlayerState->Function(_("OnRep_Kills"));
-			if (OnRep_Kills)
-				KillerPlayerState->ProcessEvent(OnRep_Kills);
+				// *DeadPlayerState->Member<__int64>(_("DeathInfo")) = *(__int64*)malloc(GetSizeOfStruct(FindObject(_("ScriptStruct /Script/FortniteGame.DeathInfo"))));
+
+				(*KillerPlayerState->Member<int>(_("KillScore")))++;
+				(*KillerPlayerState->Member<int>(_("TeamKillScore")))++;
+
+				static auto ClientReportKill = KillerPlayerState->Function(_("ClientReportKill"));
+				struct { UObject* PlayerState; }ClientReportKill_Params{ DeadPlayerState };
+				if (ClientReportKill)
+					KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
+
+				static auto OnRep_Kills = KillerPlayerState->Function(_("OnRep_Kills"));
+				if (OnRep_Kills)
+					KillerPlayerState->ProcessEvent(OnRep_Kills);
+			}
 		}
 	}
 	
@@ -930,34 +940,7 @@ inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void*
 
 static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UObject* World)
 {
-	World = Helper::GetWorld();
-
-	auto res = ReplicationGraph_Enable(NetDriver, World);
-
-	std::cout << _("ReplicationGraph_Enable called!\n");
-	std::cout << _("NetDriver: ") << NetDriver->GetFullName() << '\n';
-	std::cout << _("World: ") << World->GetFullName() << '\n';
-	std::cout << _("res: ") << res << '\n';
-
-	static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
-
-	struct {
-		UObject* ObjectClass;
-		UObject* Outer;
-		UObject* ReturnValue;
-	} params{ ReplicationDriverClass , NetDriver };
-
-	static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
-	static auto fn = GSC->Function(_("SpawnObject"));
-
-	// static auto fn = FindObject(_("Function /Script/Engine.GameplayStatics.SpawnObject"));
-
-	std::cout << "Creating graph\n";
-	GSC->ProcessEvent(fn, &params);
-	std::cout << "new rep graph: " << params.ReturnValue << '\n';
-	return params.ReturnValue;
-
-	/* if (NetDriver && World)
+	if (NetDriver && World)
 	{
 		std::cout << _("ReplicationGraph_Enable called!\n");
 		std::cout << _("NetDriver: ") << NetDriver->GetFullName() << '\n';
@@ -991,7 +974,7 @@ static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UOb
 			return ReplicationGraph_EnableDetour(NetDriver, World);
 		else
 			return ReplicationGraph_Enable(NetDriver, World);
-	} */
+	}
 }
 
 bool ServerUpdateVehicleInputStateUnreliableHook(UObject* Pawn, UFunction* Function, void* Parameters) // FortAthenaVehicle
@@ -1175,6 +1158,14 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 	return GetPlayerViewPoint(pc, a2, a3);
 }
 
+__int64(__fastcall* idkbroke)(UObject* a1);
+
+__int64 idkbrokeDetour(UObject* a1)
+{
+	std::cout << _("Idk\n");
+	return 0;
+}
+
 void InitializeHooks()
 {
 	MH_CreateHook((PVOID)ProcessEventAddr, ProcessEventDetour, (void**)&ProcessEventO);
@@ -1182,8 +1173,15 @@ void InitializeHooks()
 
 	if (Engine_Version >= 424)
 	{
-		MH_CreateHook((PVOID)ReplicationGraph_EnableAddr, ReplicationGraph_EnableDetour, (void**)&ReplicationGraph_Enable);
-		MH_EnableHook((PVOID)ReplicationGraph_EnableAddr);
+		// MH_CreateHook((PVOID)ReplicationGraph_EnableAddr, ReplicationGraph_EnableDetour, (void**)&ReplicationGraph_Enable);
+		// MH_EnableHook((PVOID)ReplicationGraph_EnableAddr);
+
+		auto PainAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 BA ? ? ? ?"));
+
+		std::cout << _("Pain Addr: ") << PainAddr << '\n';
+
+		MH_CreateHook((PVOID)PainAddr, idkbrokeDetour, (void**)&idkbroke);
+		MH_EnableHook((PVOID)PainAddr);
 	}
 
 	if (Engine_Version >= 423)

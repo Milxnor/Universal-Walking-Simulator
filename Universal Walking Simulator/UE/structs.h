@@ -880,23 +880,6 @@ UFunction* FindFunction(const std::string& Name, UObject* Object) // might as we
 	return nullptr;
 }
 
-static FName StringToName(const std::string& MemberName)
-{
-	static auto fn = FindObject(_("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
-	static auto KSL = FindObject(_("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
-
-	FString str;
-	auto nameWide = std::wstring(MemberName.begin(), MemberName.end()).c_str();
-	str.Set(nameWide);
-
-	struct {
-		FString InString;
-		FName ReturnValue;
-	} params{str};
-
-	return params.ReturnValue;
-}
-
 template <typename ClassType, typename PropertyType>
 int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int offset = 0)
 {
@@ -1649,3 +1632,20 @@ struct FAbilityReplicatedData
 	FVector VectorPayload;
 	unsigned char Pad[24];
 };
+
+int GetEnumValue(UObject* Enum, const std::string& EnumMemberName)
+{
+	auto Names = (TArray<TPair<FName, __int64>>*)(__int64(Enum) + sizeof(UField) + sizeof(FString));
+	
+	for (int i = 0; i < Names->Num(); i++)
+	{
+		auto& Pair = Names->At(i);
+		auto& Name = Pair.Key();
+		auto Value = Pair.Value();
+
+		if (Name.ToString().contains(EnumMemberName))
+			return Value;
+	}
+
+	return 0;
+}

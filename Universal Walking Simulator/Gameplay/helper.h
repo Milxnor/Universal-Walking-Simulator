@@ -927,6 +927,19 @@ namespace Helper
 		return parms.ReturnValue;
 	}
 
+	static FName StringToName(FString Str)
+	{
+		static auto fn = FindObject(_("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
+		static auto KSL = FindObject(_("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
+
+		struct {
+			FString InString;
+			FName ReturnValue;
+		} params{ Str };
+
+		return params.ReturnValue;
+	}
+
 	bool SetActorLocationAndRotation(UObject* Actor, FVector& Location, FRotator& Rotation)
 	{
 		static auto fn = Actor->Function(_("K2_SetActorLocationAndRotation"));

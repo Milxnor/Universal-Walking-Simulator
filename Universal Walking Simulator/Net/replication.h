@@ -126,14 +126,12 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
     {
         auto Actor = Actors.At(j);
 
-        if (!Actor || *Actor->Member<ENetRole>(_("RemoteRole")) == ENetRole::ROLE_None) // || Actor->bActorIsBeingDestroyed)
+        if (!Actor || *Actor->Member<ENetRole>(_("RemoteRole")) == ENetRole::ROLE_None)
             continue;
 
         // TODO: Fix because bitfields makes it replicate A LOT of actors that should NOT be replicated
         if (*Actor->Member<ENetDormancy>(_("NetDormancy")) == ENetDormancy::DORM_Initial && *Actor->Member<char>(_("bNetStartup")))
             continue;
-
-        // if (Actor->Name.ComparisonIndex != 0)
         {
             CallPreReplication(Actor, NetDriver);
             OutConsiderList.push_back(Actor);

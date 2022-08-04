@@ -297,6 +297,7 @@ void InitializePatterns()
 
         // paddin
 
+        std::string CreateNamedNetDriverSig = _("");
         std::string HandleReloadCostSig = _("89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85");
         std::string CanActivateAbilitySig = _("4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1");
         std::string StaticFindObjectSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 4E 48 8B 05 ? ? ? ? 48 8D 35 ? ? ? ?");
@@ -319,6 +320,7 @@ void InitializePatterns()
         std::string World_NotifyAcceptingConnectionSig = "";
         std::string PostRenderSig = "";
         std::string ReplicationGraph_EnableSig = "";
+        std::string ValidENameSig = "";
     // }
 
     if (Engine_Version == 420)
@@ -430,21 +432,22 @@ void InitializePatterns()
         SetReplicationDriverSig = _("40 55 41 57 48 83 EC 28 48 8B E9 4C 8B FA 48 8B 89 ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 8B 01 48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 4C 89 64 24 ? 4C 89 74 24 ? FF 90 ? ? ? ? 48 63");
         ValidationFailureSig = _("40 55 53 56 41 54 41 55 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 F6 48 8B DA 89 B5 ? ? ? ? 4C 8B E1 E8 ? ? ? ? 49 8B 04 24 49 8B CC FF 90 ? ? ? ? 48 8B 0D ? ? ? ? 48 8B D0 4C 8B E8 E8 ? ? ?");
         InitListenSig = _("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0");
-        CreateNetDriverSig = _("48 89 5C 24 08 57 48 83 EC ? 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0");
+        CreateNetDriverSig = _("48 89 5C 24 ? 57 48 83 EC 20 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0 4C 8B C3 48 8B CF 48 8B 5C 24 ? 48 83 C4 20 5F E9 ? ? ? ?");
         SetWorldSig = _("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97 ? ? ? ? 48 8D 8B ? ? ? ? E8 ? ? ? ? 48 8B 97");
         StaticFindObjectSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 4E 48 8B 05 ? ? ? ? 48 8D 35 ? ? ? ? 41 B9 ? ? ? ?");
         GetPlayerViewpointSig = _("48 89 5C 24 ? 55 56 41 56 48 8B EC 48 83 EC 40 48 8B F2 48 8B D9 BA ? ? ? ? 48 8D 4D 38 4D 8B F0 E8 ? ? ? ? 48 8B CB 48 8B 10 E8 ? ? ? ? 84 C0 74 53");
-        
+        CreateNamedNetDriverSig = _("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 49 8B D9 49 8B F8 48 8B F1 E8 ? ? ? ? 48 8B D0 4C 8B CB 4C 8B C7 48 8B CE 48 8B 5C 24 ? 48 8B 74 24 ? 48 83 C4 20 5F E9 ? ? ? ?");
+
         /*
 
         ReplicateActorSig = _("48 8B C4 48 89 48 08 55 53 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 33 F6 40 38 35 ? ? ? ? 48 89 78 E0 4C 89 60 D8 4C 8B E1 4C 89 70 C8 48");
         SetChannelActorSig = _("48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 45 33 ED 4C 8D 35 ? ? ? ? 44 89 AD ? ? ? ? 48 8B F9 48 8B 41 28 45 8B E0");
         CreateChannelByNameSig = _("40 55 53 56 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 48 8B 01 41 8B D9 45 8B F8 4C 8B E2 48 8B F9 FF 90 ? ? ? ? 33 F6");
         CallPreReplicationSig = _("48 85 D2 0F 84 ? ? ? ? 53 55 48 83 EC 38 48 8B EA 48 89 74 24 ? 48 89 7C 24 ? 48 8D 54 24 ? 48 8B D9 4C 89 74 24 ? 4C 8B C1 4C 89 7C 24 ? 48 8B CD E8 ? ? ? ?");
-        ValidENameSig = _("48 89 5C 24 ? 57 48 83 EC 20 80 3D ? ? ? ? ? 48 8B D9 48 8D 0D ? ? ? ? 48 63 FA 75 0F E8 ? ? ? ? 48 8B C8 C6 05 ? ? ? ? ? 8B 8C B9 ? ? ? ? 48 8B C3 89 0B C7 43 ? ? ? ? ? 48 8B 5C 24 ? 48 83 C4 20 5F C3");
         
         */
         
+        ValidENameSig = _("48 89 5C 24 ? 57 48 83 EC 20 80 3D ? ? ? ? ? 48 8B D9 48 8D 0D ? ? ? ? 48 63 FA 75 0F E8 ? ? ? ? 48 8B C8 C6 05 ? ? ? ? ? 8B 8C B9 ? ? ? ? 48 8B C3 89 0B C7 43 ? ? ? ? ? 48 8B 5C 24 ? 48 83 C4 20 5F C3");
         ReplicationGraph_EnableSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 70 8B 99 ? ? ? ? 48 8B F2 4C 8B F1 BA ? ? ? ? 8B 89 ? ? ? ? E8 ? ? ? ? 85 DB 41");
     }
 
@@ -525,8 +528,12 @@ void InitializePatterns()
 
     if (Engine_Version >= 420)
     {
-        ReceiveFStringAddr = FindPattern(ReceiveFStringSig);
-        CheckPattern(_("ReceiveFString"), ReceiveFStringAddr, &ReceiveFString);
+        /* ReceiveFStringAddr = FindPattern(ReceiveFStringSig);
+        
+        if (!ReceiveFStringAddr)
+            ReceiveFStringAddr = FindPattern(_("48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 F6 41 28 01 48 8B F2 48 8B F9 0F 84 ? ? ? ? 48 8B 49"));
+
+        CheckPattern(_("ReceiveFString"), ReceiveFStringAddr, &ReceiveFString); */
 
         ReceiveUniqueIdReplAddr = FindPattern(ReceiveUniqueIdReplSig);
 
@@ -572,9 +579,8 @@ void InitializePatterns()
 
     SpawnPlayActorAddr = FindPattern(SpawnPlayActorSig);
 
-    if (!SpawnPlayActorAddr) {
+    if (!SpawnPlayActorAddr)
         SpawnPlayActorAddr = FindPattern(_("48 8B C4 44 89 40 18 48 89 50 10 48 89 48 08 55 56 48 8D 68 B9 48 81 EC ? ? ? ?"));
-    }
 
     CheckPattern(_("SpawnPlayActor"), SpawnPlayActorAddr, &SpawnPlayActor);
 
@@ -650,6 +656,9 @@ void InitializePatterns()
     {
         SetReplicationDriverAddr = FindPattern(SetReplicationDriverSig);
         CheckPattern(_("SetReplicationDriver"), SetReplicationDriverAddr, &SetReplicationDriver);
+
+        CreateNamedNetDriverAddr = FindPattern(CreateNamedNetDriverSig);
+        CheckPattern(_("CreateNetDriver_Local"), CreateNamedNetDriverAddr, &CreateNetDriver_Local);
     }
 
     if (Engine_Version >= 424 || Engine_Version < 420 || Engine_Version == 421)
@@ -723,6 +732,9 @@ void InitializePatterns()
     {
         ReplicationGraph_EnableAddr = FindPattern(ReplicationGraph_EnableSig);
         CheckPattern(_("ReplicationGraph_Enable"), ReplicationGraph_EnableAddr, &ReplicationGraph_Enable);
+
+        ValidENameAddr = FindPattern(ValidENameSig);
+        CheckPattern(_("FromValidEName"), ValidENameAddr, &FromValidEName);
     }
 
     if (Engine_Version == 426)
@@ -756,9 +768,6 @@ void InitializePatterns()
 
         CallPreReplicationAddr = FindPattern(CallPreReplicationSig);
         CheckPattern(_("CallPreReplication"), CallPreReplicationAddr, &CallPreReplication);
-
-        ValidENameAddr = FindPattern(ValidENameSig);
-        CheckPattern(_("FromValidEName"), ValidENameAddr, &FromValidEName);
     }
 #endif
 }
