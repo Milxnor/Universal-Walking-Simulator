@@ -11,6 +11,51 @@ static int GetEntrySize()
 	return GetSizeOfStruct(FortItemEntryClass);
 }
 
+namespace Items {
+	void HandleCarmine(UObject* Controller) {
+		UObject* Pawn = *Controller->Member<UObject*>("Pawn");
+		Helper::ChoosePart(Pawn, EFortCustomPartType::Body, FindObject("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/Dev_TestAsset_Body_M_XL.Dev_TestAsset_Body_M_XL"));
+		Helper::ChoosePart(Pawn, EFortCustomPartType::Head, FindObject("CustomCharacterPart /Game/Athena/Heroes/Meshes/Heads/Dev_TestAsset_Head_M_XL.Dev_TestAsset_Head_M_XL"));
+		*Pawn->Member<UObject*>("AnimBPOverride") = FindObject("AnimBlueprintGeneratedClass /Game/Characters/Player/Male/Male_Avg_Base/Gauntlet_Player_AnimBlueprint.Gauntlet_Player_AnimBlueprint_C");
+		UObject* AS = FindObject("FortAbilitySet /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AS_CarminePack.AS_CarminePack");
+		auto GrantedAbilities = AS->Member<TArray<UObject*>>("GameplayAbilities");
+		for (int i = 0; i < GrantedAbilities->Num(); i++) {
+			GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
+		}
+		UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
+		if (Montage)
+		{
+			auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
+			static auto EmoteClass = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+
+			TArray<FGameplayAbilitySpec> Specs;
+
+			if (Engine_Version <= 422)
+				Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(_("ActivatableAbilities"))).Items;
+			else
+				Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(_("ActivatableAbilities"))).Items;
+
+			UObject* DefaultObject = EmoteClass->CreateDefaultObject();
+
+			for (int i = 0; i < Specs.Num(); i++)
+			{
+				auto& CurrentSpec = Specs[i];
+
+				if (CurrentSpec.Ability == DefaultObject)
+				{
+					auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(_("CurrentActivationInfo"));
+
+					// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
+					auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
+					// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
+
+					std::cout << _("Played for: ") << Dura << '\n';
+				}
+			}
+		}
+	}
+}
+
 namespace FFortItemEntry
 {
 	int* GetCount(__int64* Entry)
@@ -319,6 +364,10 @@ namespace Inventory
 					}
 				}*/
 				EquipWeaponDefinition(Pawn, Def, Guid);
+				std::string FullName = Def->GetFullName();
+				if (FullName.contains("CarminePack") || FullName.contains("AshtonPack.")) {
+					Items::HandleCarmine(*Pawn->Member<UObject*>("Controller"));
+				}
 			}
 		}
 

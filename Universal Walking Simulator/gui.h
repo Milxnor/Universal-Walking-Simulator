@@ -317,6 +317,14 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
+				if (ImGui::BeginTabItem(_("Thanos")))
+				{
+					Tab = 5;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
 				if (ImGui::BeginTabItem(_("Credits")))
 				{
 					Tab = 4;
@@ -324,7 +332,6 @@ DWORD WINAPI GuiThread(LPVOID)
 					bInformationTab = false;
 					ImGui::EndTabItem();
 				}
-
 
 				ImGui::EndTabBar();
 			}
@@ -451,6 +458,118 @@ DWORD WINAPI GuiThread(LPVOID)
 					TextCentered(_("Milxnor: Made the base, main developer"));
 					TextCentered(_("GD: Added events, cleans up code and adds features."));
 
+					break;
+
+				case 5:
+					if(ImGui::Button(_("Spawn Mind Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_Y.AshtonRockItemDef_Y"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+					}
+					if (ImGui::Button(_("Spawn Reality Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						RandLocation = { 1250, 1818, 3284 };
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_R.AshtonRockItemDef_R"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_R.AshtonRockItemDef_R"), RandLocation, {});
+					}
+					if (ImGui::Button(_("Spawn Power Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_P.AshtonRockItemDef_P"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_P.AshtonRockItemDef_P"), RandLocation, {});
+					}
+					if (ImGui::Button(_("Spawn Soul Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_O.AshtonRockItemDef_O"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_O.AshtonRockItemDef_O"), RandLocation, {});
+					}
+					if (ImGui::Button(_("Spawn Time Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_G.AshtonRockItemDef_G"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_G.AshtonRockItemDef_G"), RandLocation, {});
+					}
+					if (ImGui::Button(_("Spawn Space Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_B.AshtonRockItemDef_B"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_B.AshtonRockItemDef_B"), RandLocation, {});
+					}
 					break;
 				}
 			}

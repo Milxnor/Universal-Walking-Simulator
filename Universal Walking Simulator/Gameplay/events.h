@@ -24,6 +24,10 @@ namespace Events {
 				bool Condition = true;
 				CD->ProcessEvent(Func, &Condition);
 			}
+			/*if (Version == 8.51f) {
+				UObject* SS = FindObject("");
+				UObject* Func = SS->Function("FinalSequence");
+			}*/
 			if (Version == 7.20f) {
 				//Ice King
 				UObject* ML = FindObject(_("BP_MooneyLoader_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_MooneyLoader_2"));
@@ -67,7 +71,7 @@ namespace Events {
 			}
 			else if (Version == 8.51f) {
 				//Unvaulting
-				UObject* SS = FindObject(_("LevelSequencePlayer /Temp/Game/Athena/Maps/POI/Athena_POI_Lake_004c_e347d57e.Athena_POI_Lake_004c.PersistentLevel.SnowSequence_2.AnimationPlayer"));
+				/*UObject* SS = FindObject(_("LevelSequencePlayer /Temp/Game/Athena/Maps/POI/Athena_POI_Lake_004c_e347d57e.Athena_POI_Lake_004c.PersistentLevel.SnowSequence_2.AnimationPlayer"));
 
 				if (SS)
 				{
@@ -82,7 +86,11 @@ namespace Events {
 						std::cout << _("No play func!\n");
 				}
 				else
-					std::cout << _("No Player!\n");
+					std::cout << _("No Player!\n");*/
+
+				UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
+				UObject* Func = BSS->Function("FinalSequence");
+				BSS->ProcessEvent(Func);
 
 					//(TODO: GD) Find a way to auto destroy death barrier and load the Map for all players when the screen goes white (Map Name: Next2)
 					// (MILXNOR) ^ ClientTravel?
