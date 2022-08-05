@@ -1180,8 +1180,8 @@ void InitializeHooks()
 
 		std::cout << _("Pain Addr: ") << PainAddr << '\n';
 
-		MH_CreateHook((PVOID)PainAddr, idkbrokeDetour, (void**)&idkbroke);
-		MH_EnableHook((PVOID)PainAddr);
+		// MH_CreateHook((PVOID)PainAddr, idkbrokeDetour, (void**)&idkbroke);
+		// MH_EnableHook((PVOID)PainAddr);
 	}
 
 	if (Engine_Version >= 423)

@@ -70,9 +70,6 @@
     <ClInclude Include="hooks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Net\funcs.h">
-      <Filter>Header Files\Net</Filter>
-    </ClInclude>
     <ClInclude Include="Net\server.h">
       <Filter>Header Files\Net</Filter>
     </ClInclude>
@@ -123,6 +120,9 @@
     </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\funcs.h">
+      <Filter>Header Files\Net</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

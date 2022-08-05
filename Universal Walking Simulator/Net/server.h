@@ -79,11 +79,6 @@ DWORD WINAPI MapLoadThread(LPVOID) // DOES NOT WORK
 
 void Listen(int Port = 7777)
 {
-    bool bUseBeacons = true; //(Engine_Version >= 425) ? false : true; // CreateNetDriver ? false : true;
-
-    // if (!bUseBeacons)
-        // bUseBeacons = (CreateNetDriver ? false : true);
-
     static const auto World = Helper::GetWorld();
 
     UObject* NetDriver = nullptr;
@@ -143,11 +138,14 @@ void Listen(int Port = 7777)
         static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
         *NetDriver->Member<UObject*>(_("ReplicationDriverClass")) = ReplicationDriverClass;
         *NetDriver->Member<FName>(_("NetDriverName")) = FName(282);
-
+        FString string;
+        string.Set(L"GameNetDriver");
+        auto GameNetDriverName = Helper::StringToName(string);
         InitListen(NetDriver, World, InURL, true, Error);
         *NetDriver->Member<UObject*>(_("World")) = World;
         PauseBeaconRequests(BeaconHost, true);
         *NetDriver->Member<UObject*>(_("World")) = World;
+        *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
     }
     else
     {
@@ -160,6 +158,18 @@ void Listen(int Port = 7777)
         FString string;
         string.Set(L"GameNetDriver");
         auto GameNetDriverName = Helper::StringToName(string);
+
+        /* for (int k = 1000; k < 702 * 7; k += 7)
+        {
+            FName Name;
+            Name.ComparisonIndex = k;
+            std::cout << std::format("[{}] {}\n", k, Name.ToString());
+
+        } */
+        GameNetDriverName.ComparisonIndex = 282;
+        std::cout << _("GameNetDriverName Name: ") << GameNetDriverName.ToString() << '\n';
+        std::cout << _("GameNetDriverName Name Comp: ") << GameNetDriverName.ComparisonIndex << '\n';
+        std::cout << _("GameNetDriverName Name Num: ") << GameNetDriverName.Number << '\n';
         NetDriver = CreateNetDriver(GetEngine(), World, GameNetDriverName);
 
         std::cout << _("Created NetDriver: ") << NetDriver << '\n';
@@ -171,6 +181,7 @@ void Listen(int Port = 7777)
             string.Set(L"GameNetDriver");
             *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
             InitListen(NetDriver, World, InURL, true, Error);
+            *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
             std::cout << _("Called InitListen on the NetDriver!\n");
         }
         else
@@ -233,6 +244,10 @@ void Listen(int Port = 7777)
     AllowConnections();
 
     serverStatus = EServerStatus::Up;
+
+    std::cout << _("Netdriver Name: ") << NetDriver->Member<FName>(_("NetDriverName"))->ToString() << '\n';
+    std::cout << _("Netdriver Name Comp: ") << NetDriver->Member<FName>(_("NetDriverName"))->ComparisonIndex << '\n';
+    std::cout << _("Netdriver Name Num: ") << NetDriver->Member<FName>(_("NetDriverName"))->Number << '\n';
 
 #ifndef DPP_DISABLED
     if (bIsBotRunning)

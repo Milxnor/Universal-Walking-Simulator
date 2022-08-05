@@ -376,3 +376,5 @@ static bool bIsPlayground = false;
 static bool bDoubleBuildFix1 = false;
 
 static std::vector<UObject*> ExistingBuildings;
+
+static bool bUseBeacons = true;
