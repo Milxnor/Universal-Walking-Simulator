@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClInclude Include="anticheat.h" />
     <ClInclude Include="discord.h" />
+    <ClInclude Include="finder.h" />
     <ClInclude Include="fontawesome.h" />
     <ClInclude Include="Gameplay\build.h" />
     <ClInclude Include="Gameplay\abilities.h" />

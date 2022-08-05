@@ -113,7 +113,7 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
 {
     static auto World = *NetDriver->Member<UObject*>(_("World"));
 
-    if (!World || !&OutConsiderList || !NetDriver)
+    if (!World || !NetDriver)
         return;
 
     // auto& List = ObjectList;

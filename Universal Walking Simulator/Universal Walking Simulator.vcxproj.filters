@@ -124,5 +124,8 @@
     <ClInclude Include="Net\funcs.h">
       <Filter>Header Files\Net</Filter>
     </ClInclude>
+    <ClInclude Include="finder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

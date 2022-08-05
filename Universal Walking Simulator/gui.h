@@ -344,7 +344,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					ImGui::Checkbox(_("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(_("Log ProcessEvent"), &bLogProcessEvent);
-					ImGui::Checkbox(_("Use beacons"), &bUseBeacons);
+					ImGui::Checkbox(_("Use Beacons"), &bUseBeacons);
 
 					if (serverStatus == EServerStatus::Down && !bTraveled)
 					{

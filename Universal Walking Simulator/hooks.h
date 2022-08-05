@@ -27,7 +27,7 @@ inline void initStuff()
 	if (!bStarted && bTraveled)
 	{
 		bStarted = true;
-		auto FNVer = std::stod(FN_Version);
+
 		CreateThread(0, 0, Helper::Console::Setup, 0, 0, 0);
 
 		auto world = Helper::GetWorld();
@@ -37,7 +37,7 @@ inline void initStuff()
 		{
 			auto AuthGameMode = *world->Member<UObject*>(_("AuthorityGameMode"));
 
-			*(*AuthGameMode->Member<UObject*>(_("GameSession")))->Member<int>(_("MaxPlayers")) = 100;
+			*(*AuthGameMode->Member<UObject*>(_("GameSession")))->Member<int>(_("MaxPlayers")) = 100; // GameState->GetMaxPlaylistPlayers()
 
 			if (std::stod(FN_Version) >= 8 && AuthGameMode)
 			{
@@ -52,7 +52,7 @@ inline void initStuff()
 
 			*gameState->Member<EFriendlyFireType>(_("FriendlyFireType")) = EFriendlyFireType::On;
 
-			if (std::floor(FNVer) != 3 && FNVer < 8.0)
+			if (Engine_Version >= 420)
 			{
 				*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Warmup;
 
@@ -69,6 +69,8 @@ inline void initStuff()
 			if (AuthGameMode)
 			{
 				AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartPlay")), nullptr);
+
+				auto FNVer = std::stod(FN_Version);
 
 				if (std::floor(FNVer) == 3 || FNVer >= 8.0) {
 					//If This is called on Seasons 4, 6, or 7 then Setting The Playlist Crashes.
@@ -87,15 +89,8 @@ inline void initStuff()
 				
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
-				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad");
-				UObject* Playlist = nullptr;
-				UObject* ThanosPL = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Ashton/Playlist_Ashton_Lg.Playlist_Ashton_Lg"));
-				if (ThanosPL != nullptr) {
-					Playlist = ThanosPL;
-				}
-				else {
-					Playlist = FindObject("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground");
-				}
+				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
+				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
 				// static auto Playlist = FindObject(_("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
 				 
 				if (std::stod(FN_Version) >= 7.00)
@@ -1105,7 +1100,9 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), _("GetMutatorContext")) &&
 					!strstr(FunctionName.c_str(), _("CanJumpInternal")) && 
 					!strstr(FunctionName.c_str(), _("OnDayPhaseChanged")) &&
-					!strstr(FunctionName.c_str(), _("Chime")))
+					!strstr(FunctionName.c_str(), _("Chime")) && 
+					!strstr(FunctionName.c_str(), _("ServerMove")) &&
+					!strstr(FunctionName.c_str(), _("OnVisibilitySetEvent")))
 				{
 					std::cout << _("Function called: ") << FunctionName << '\n';
 				}
@@ -1116,7 +1113,7 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 		{
 			if (Function == Func.first)
 			{
-				if (Func.second(Object, Function, Parameters)) // If the fuynction returned true, then cancel execution.
+				if (Func.second(Object, Function, Parameters)) // If the function returned true, then cancel default execution.
 				{
 					return 0;
 				}

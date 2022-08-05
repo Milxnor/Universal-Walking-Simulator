@@ -421,6 +421,38 @@ namespace Looting
 
 		static void HandleSearch(UObject* BuildingContainer)
 		{
+			auto GetCorrectLocation = [BuildingContainer]() -> FVector {
+				auto Location = Helper::GetActorLocation(BuildingContainer);
+				auto Rotation = Helper::GetActorRotation(BuildingContainer);
+
+				if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
+				{
+					Location.X -= 170;
+					std::cout << _("Removed 170 from the X!\n");
+				}
+				else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
+				{
+					Location.Y -= 170;
+					std::cout << _("Removed 170 from the Y!\n");
+				}
+				else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
+				{
+					Location.Y += 170;
+					std::cout << _("Added 170 to the Y!\n");
+				}
+				else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
+				{
+					Location.X += 170;
+					std::cout << _("Added 170 to the X!\n");
+				}
+				else
+				{
+					std::cout << _("Unhandled rotation!\n");
+				}
+
+				return Location;
+			};
+
 			if (BuildingContainer)
 			{
 				auto BuildingContainerName = BuildingContainer->GetName();
@@ -439,54 +471,7 @@ namespace Looting
 
 							// if (AmmoDef)
 							{
-								auto Location = Helper::GetActorLocation(BuildingContainer);
-								auto Rotation = Helper::GetActorRotation(BuildingContainer);
-
-								// TODO: Rotation...
-
-								std::cout << _("Yaw: ") << Rotation.Yaw << '\n';
-
-								Location.Z += 50;
-
-								/*
-								forward (N) (0) = Y + 170
-								backwards (S) (180) = Y - 170
-
-								left (270) = X - 170
-								right (90) = X + 170
-
-								if (Yaw == 30)
-									Y += Rotation.Yaw * 4
-									X -= 10
-
-								*/
-
-								if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
-								{
-									Location.X -= 170;
-									std::cout << _("Removed 170 from the X!\n");
-								}
-								else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
-								{
-									Location.Y -= 170;
-									std::cout << _("Removed 170 from the Y!\n");
-								}
-								else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
-								{
-									Location.Y += 170;
-									std::cout << _("Added 170 to the Y!\n");
-								}
-								else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
-								{
-									Location.X += 170;
-									std::cout << _("Added 170 to the X!\n");
-								}
-								else
-								{
-									std::cout << _("Unhandled rotation!\n");
-								}
-
-								// Location.X += ((Rotation.Yaw / 5) / 2);
+								auto Location = GetCorrectLocation();
 
 								if (WeaponDef)
 									Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, 1);
@@ -512,39 +497,7 @@ namespace Looting
 
 					if (AmmoDef)
 					{
-						auto Location = Helper::GetActorLocation(BuildingContainer);
-						auto Rotation = Helper::GetActorRotation(BuildingContainer);
-
-						// TODO: Rotation...
-
-						std::cout << _("Yaw: ") << Rotation.Yaw << '\n';
-
-						Location.Z += 50;
-
-						if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
-						{
-							Location.X -= 170;
-							std::cout << _("Removed 170 from the X!\n");
-						}
-						else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
-						{
-							Location.Y -= 170;
-							std::cout << _("Removed 170 from the Y!\n");
-						}
-						else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
-						{
-							Location.Y += 170;
-							std::cout << _("Added 170 to the Y!\n");
-						}
-						else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
-						{
-							Location.X += 170;
-							std::cout << _("Added 170 to the X!\n");
-						}
-						else
-						{
-							std::cout << _("Unhandled rotation!\n");
-						}
+						auto Location = GetCorrectLocation();
 
 						// DROPCOUNT IS VERY WRONG
 						auto DropCount = *AmmoDef->Member<int>(_("DropCount"));
@@ -558,39 +511,7 @@ namespace Looting
 					static auto StoneItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
 					static auto MetalItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
-					auto Location = Helper::GetActorLocation(BuildingContainer);
-					auto Rotation = Helper::GetActorRotation(BuildingContainer);
-
-					// TODO: Rotation...
-
-					std::cout << _("Yaw: ") << Rotation.Yaw << '\n';
-
-					Location.Z += 50;
-
-					if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
-					{
-						Location.X -= 170;
-						std::cout << _("Removed 170 from the X!\n");
-					}
-					else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
-					{
-						Location.Y -= 170;
-						std::cout << _("Removed 170 from the Y!\n");
-					}
-					else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
-					{
-						Location.Y += 170;
-						std::cout << _("Added 170 to the Y!\n");
-					}
-					else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
-					{
-						Location.X += 170;
-						std::cout << _("Added 170 to the X!\n");
-					}
-					else
-					{
-						std::cout << _("Unhandled rotation!\n");
-					}
+					auto Location = GetCorrectLocation();
 
 					{
 						static auto Minis = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
