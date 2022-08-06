@@ -562,15 +562,15 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
-		else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
+		else if (std::stod(FN_Version) >= 7.40 && Engine_Version <= 424)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
-		else if (std::stod(FN_Version) >= 424)
+		else if (Engine_Version >= 425)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
-			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
 
 		return false;
@@ -643,30 +643,33 @@ namespace Inventory
 			}
 		}
 
+		int Idx = -1;
+
 		if (FlooredVer == 3)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
-			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
 		else if (std::stof(FN_Version) < 7.40f)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
-			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
+		else if (std::stod(FN_Version) >= 7.40 && Engine_Version <= 424)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
-			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (std::stod(FN_Version) >= 424)
+		else if (Engine_Version >= 425)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
-			AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
 		else
 			std::cout << _("Could not get ItemEntrySize Struct! Please make a new one for this version using: ") << GetEntrySize() << '\n';
 
-		Inventory::Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
+		if (Idx != -1)
+			Inventory::Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
 	}
 
 	static UObject* CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1)
@@ -730,28 +733,31 @@ namespace Inventory
 
 		static const auto FlooredVer = std::floor(std::stod(FN_Version));
 
+		bool bFortnite = false;
+
 		if (FlooredVer == 3)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
-			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
-			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (std::stod(FN_Version) >= 7.40 && Engine_Version < 424) // not right idc
+		else if (std::stod(FN_Version) >= 7.40 && Engine_Version <= 424)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
-			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (std::stod(FN_Version) >= 424)
+		else if (Engine_Version >= 425)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
-			RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 
-		Update(Controller, -1, true);
+		if (bFortnite)
+			Update(Controller, -1, true);
 
 		return ItemDefinition;
 	}

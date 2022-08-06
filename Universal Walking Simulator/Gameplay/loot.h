@@ -255,14 +255,14 @@ namespace Looting
 					{
 						struct FCollectorUnitInfo
 						{
-							class UFortWorldItemDefinition* InputItem;                                                // 0x0000(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+							UObject* InputItem;                                                // 0x0000(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
 							char pad[0x0028];
 							UObject* OverrideInputItemTexture;                                 // 0x0028(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
 							unsigned char                                      bUseDefinedOutputItem : 1;                                // 0x0030(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
 							unsigned char                                      UnknownData00[0x7];                                       // 0x0031(0x0007) MISSED OFFSET
 							UObject* OutputItem;                                               // 0x0038(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
 							TArray<__int64>                      OutputItemEntry;                                          // 0x0040(0x0010) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, Transient)
-							struct FName                                       OverrideOutputItemLootTierGroupName;                      // 0x0050(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+							FName                                       OverrideOutputItemLootTierGroupName;                      // 0x0050(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
 							char pad1[0xA8];
 							UObject* OverrideOutputItemTexture;                                // 0x0100(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
 						};

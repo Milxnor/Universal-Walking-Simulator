@@ -729,10 +729,14 @@ namespace Helper
 		static auto bodyPart = Engine_Version >= 423 ? FindObject(_("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_TreasureHunterFashion.CP_Body_Commando_F_TreasureHunterFashion")) :
 			FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01")); */
 
-		// if (!headPart)
-			static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-		// else
-			static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+		static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
+		static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+
+		if (!headPart)
+			headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA"));
+
+		if (!bodyPart)
+			bodyPart = FindObject(_("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.CP_Body_Commando_F_RebirthDefaultA"));
 
 		if (headPart && bodyPart && bResetCharacterParts)
 		{
@@ -743,6 +747,8 @@ namespace Helper
 			if (OnRep_Parts)
 				PlayerState->ProcessEvent(OnRep_Parts, nullptr);
 		}
+		else
+			std::cout << _("Unable to find Head and Body!\n");
 
 		if (false && std::stod(FN_Version) >= 7.40)
 		{
@@ -936,6 +942,8 @@ namespace Helper
 			FString InString;
 			FName ReturnValue;
 		} params{ Str };
+
+		KSL->ProcessEvent(fn, &params);
 
 		return params.ReturnValue;
 	}

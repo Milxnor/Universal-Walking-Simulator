@@ -278,6 +278,7 @@ void TestAbilitySizeDifference()
     AHH<FGameplayAbilitySpecContainer>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
     AHH<FGameplayAbilityTargetDataHandle>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
     AHH<FServerAbilityRPCBatch>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
-    AHH<FGameplayEventData>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
-    AHH<FFastArraySerializer>(_("ScriptStruct /Script/Engine.FastArraySerializer")); */
+    AHH<FGameplayEventData>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData")); */
+    AHH<FFastArraySerializerSE>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
+    AHH<FFastArraySerializerOL>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
 }

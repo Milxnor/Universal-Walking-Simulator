@@ -92,12 +92,7 @@ void Listen(int Port = 7777)
 
     if (bUseBeacons)
     {
-        static UObject* BeaconHostClass = nullptr;
-
-        if (Engine_Version >= 420)
-            BeaconHostClass = FindObject("Class /Script/FortniteGame.FortOnlineBeaconHost");
-        else
-            BeaconHostClass = FindObjectOld("Class /Script/OnlineSubsystemUtils.OnlineBeaconHost", true);
+        static UObject* BeaconHostClass = FindObject(_("Class /Script/OnlineSubsystemUtils.OnlineBeaconHost"));
 
         if (!BeaconHostClass)
         {
@@ -139,7 +134,9 @@ void Listen(int Port = 7777)
 
         std::cout << _("Initialized Beacon!\n");
         
-        FName GameNetDriverName = FName(282);
+        NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
+
+        /* FName GameNetDriverName = FName(282);
 
         *BeaconHost->Member<FName>(_("NetDriverName")) = GameNetDriverName;
         NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
@@ -154,75 +151,29 @@ void Listen(int Port = 7777)
         *NetDriver->Member<UObject*>(_("World")) = World;
         PauseBeaconRequests(BeaconHost, true);
         *NetDriver->Member<UObject*>(_("World")) = World;
-        *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
-    }
-    else
-    {
-        FName GameNetDriverName = FName();
-        GameNetDriverName.ComparisonIndex = 282;
-
-        NetDriver = CreateNetDriver(GetEngine(), World, GameNetDriverName);
-
-        // static auto IpNetDriverClass = FindObject(_("Class /Script/OnlineSubsystemUtils.IpNetDriver"));
-        // static auto dababy = FindObject(_("Package /Engine/Transient"));
-        // NetDriver = Easy::SpawnObject(IpNetDriverClass, dababy);
-        
-        std::cout << "NetDriver Address: " << NetDriver << '\n';
-
-        if (NetDriver)
-        {
-            std::cout << "NetDriver Name: " << NetDriver->GetFullName() << '\n';
-
-            *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
-            *NetDriver->Member<UObject*>(_("World")) = World;
-            InitListen(NetDriver, World, InURL, true, Error);
-            *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
-        }
-
-        /* NetDriver = CreateNetDriver_Local(GetEngine(), World, FName(282));
-        // std::cout << _("Created NetDriver: ") << NetDriver << '\n';
-        //static auto IpNetDriverClass = FindObject(_("Class /Script/OnlineSubsystemUtils.IpNetDriver"));
-        //static auto dababy = FindObject(_("Package /Engine/Transient"));
-        //NetDriver = Easy::SpawnObject(IpNetDriverClass, dababy);
-
-        FString string;
-        string.Set(L"GameNetDriver");
-        auto GameNetDriverName = Helper::StringToName(string);
-
-        for (int k = 1000; k < 702 * 7; k += 7)
-        {
-            FName Name;
-            Name.ComparisonIndex = k;
-            std::cout << std::format("[{}] {}\n", k, Name.ToString());
-
-        } */
-
-        /* GameNetDriverName.ComparisonIndex = 282;
-        std::cout << _("GameNetDriverName Name: ") << GameNetDriverName.ToString() << '\n';
-        std::cout << _("GameNetDriverName Name Comp: ") << GameNetDriverName.ComparisonIndex << '\n';
-        std::cout << _("GameNetDriverName Name Num: ") << GameNetDriverName.Number << '\n';
-        NetDriver = CreateNetDriver(GetEngine(), World, GameNetDriverName);
-
-        std::cout << _("Created NetDriver: ") << NetDriver << '\n';
-
-        if (NetDriver)
-        {
-            std::cout << _("Driver Name: ") << NetDriver->GetFullName() << '\n';
-            FString string;
-            string.Set(L"GameNetDriver");
-            *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
-            InitListen(NetDriver, World, InURL, true, Error);
-            *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
-            std::cout << _("Called InitListen on the NetDriver!\n");
-        }
-        else
-            std::cout << _("Failed to create netdriver!\n"); */
+        *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName; */
     }
 
     if (!NetDriver)
     {
         std::cout << _("Failed to create NetDriver!\n");
         return;
+    }
+    else
+    {
+        FString string;
+        string.Set(L"GameNetDriver");
+        auto GameNetDriverName = Helper::StringToName(string);
+        *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
+        *NetDriver->Member<UObject*>(_("World")) = World;
+        *World->Member<UObject*>(_("NetDriver")) = NetDriver;
+
+        FString Error;
+        auto InURL = FURL();
+        InURL.Port = 7777;
+
+        std::cout << "InitListen: " << InitListen(NetDriver, World, InURL, false, Error) << '\n';
+        SetWorld(NetDriver, World);
     }
 
     *NetDriver->Member<int>(_("MaxClientRate")) = *NetDriver->Member<int>(_("MaxInternetClientRate"));
@@ -268,7 +219,6 @@ void Listen(int Port = 7777)
     else
         std::cout << dye::red(_("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
 
-    *World->Member<UObject*>(_("NetDriver")) = NetDriver;
     auto LevelCollections = World->Member<TArray<FLevelCollection>>(_("LevelCollections"));
 
     if (LevelCollections)

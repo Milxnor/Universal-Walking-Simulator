@@ -72,7 +72,8 @@ inline void initStuff()
 
 				auto FNVer = std::stod(FN_Version);
 
-				if (std::floor(FNVer) == 3 || FNVer >= 8.0) {
+				if (std::floor(FNVer) == 3 || FNVer >= 8.0) 
+				{
 					//If This is called on Seasons 4, 6, or 7 then Setting The Playlist Crashes.
 					AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartMatch")), nullptr);
 				}
@@ -87,10 +88,10 @@ inline void initStuff()
 				
 				auto SSVFn = *AuthGameMode->Member<bool>(_("ShouldSpawnVehicle")) = true;*/
 				
-				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
+				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
 				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
-				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
+				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
 				// static auto Playlist = FindObject(_("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
 				 
 				if (std::stod(FN_Version) >= 7.00)
@@ -583,7 +584,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 	auto EmoteAsset = EmoteParams->EmoteAsset;
 
-	if (Controller /* && !Controller->IsInAircraft() */ && Pawn && EmoteAsset)
+	if (Controller /* && !Controller->IsInAircraft() */ && Pawn && EmoteAsset && Engine_Version < 424)
 	{
 		struct {
 			TEnumAsByte<EFortCustomBodyType> BodyType;
@@ -621,10 +622,13 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 						auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(_("CurrentActivationInfo"));
 
 						// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
-						auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
-						// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
+						if (PlayMontage)
+						{
+							auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
+							// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
 
-						std::cout << _("Played for: ") << Dura << '\n';
+							std::cout << _("Played for: ") << Dura << '\n';
+						}
 					}
 				}
 			}
