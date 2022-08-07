@@ -1011,47 +1011,5 @@ namespace Memcury
             }
             return ExceptionHandler != nullptr;
         }
-
-        bool AddHook(void* Target, void* Detour)
-        {
-            if (ExceptionHandler == nullptr)
-            {
-                return false;
-            }
-
-            if (Util::IsSamePage(Target, Detour))
-            {
-                return false;
-            }
-
-            if (!VirtualProtect(Target, 1, PAGE_EXECUTE_READ | PAGE_GUARD, &HookProtections.emplace_back()))
-            {
-                HookProtections.pop_back();
-                return false;
-            }
-
-            Hooks.emplace_back(Target, Detour);
-            return true;
-        }
-
-        bool RemoveHook(void* Original)
-        {
-            auto Itr = std::find_if(Hooks.begin(), Hooks.end(), [Original](const HOOK_INFO& Hook)
-                                    { return Hook.Original == Original; });
-
-            if (Itr == Hooks.end())
-            {
-                return false;
-            }
-
-            const auto ProtItr = HookProtections.begin() + std::distance(Hooks.begin(), Itr);
-            Hooks.erase(Itr);
-
-            DWORD dwOldProtect;
-            bool Ret = VirtualProtect(Original, 1, *ProtItr, &dwOldProtect);
-            HookProtections.erase(ProtItr);
-
-            return false;
-        }
     }
 }

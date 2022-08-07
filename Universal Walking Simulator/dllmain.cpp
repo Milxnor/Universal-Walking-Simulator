@@ -80,6 +80,27 @@ DWORD WINAPI Main(LPVOID)
         return 1;
     }
 
+    if (Engine_Version >= 425)
+    {
+        RequestExitWSAddr = FindPattern(RequestExitWSSig);
+
+        if (!RequestExitWSAddr)
+        {
+            if (Engine_Version >= 426)
+                std::cout << _("[WARNING] Could not find RequestExitWithStatus, game will probably close!\n");
+        }
+        else
+        {
+            CheckPattern(_("RequestExitWithStatus"), RequestExitWSAddr, &RequestExitWithStatus);
+
+            if (RequestExitWSAddr)
+            {
+                MH_CreateHook((PVOID)RequestExitWSAddr, RequestExitWithStatusHook, (void**)&RequestExitWithStatus);
+                MH_EnableHook((PVOID)RequestExitWSAddr);
+            }
+        }
+    }
+
     InitializePatterns();
 
     std::cout << _("Initialized Patterns!\n");

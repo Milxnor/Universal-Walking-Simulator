@@ -1000,6 +1000,9 @@ bool Setup(/* void* ProcessEventHookAddr */)
 	auto SpawnActorAddr = FindPattern(_("40 53 56 57 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B B4 24 ? ? ? ? 0F 28 CB"));
 
 	if (!SpawnActorAddr)
+		SpawnActorAddr = FindPattern(_("40 53 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B 9C 24 ? ? ? ? 0F 28 CB 0F 54 1D ? ? ? ? 0F 57"));
+
+	if (!SpawnActorAddr)
 	{
 		MessageBoxA(0, _("Failed to find SpawnActor function."), _("Universal Walking Simulator"), MB_OK);
 		return 0;
@@ -1131,8 +1134,10 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ServerReplicateActorsOffset = 0x57;
 	if (Engine_Version == 424)
 		ServerReplicateActorsOffset = 0x5A;
-	else if (Engine_Version >= 425)
+	else if (Engine_Version == 425)
 		ServerReplicateActorsOffset = 0x5D;
+	else if (Engine_Version >= 426)
+		ServerReplicateActorsOffset = 0x5F;
 
 	if (FnVerDouble >= 5)
 	{

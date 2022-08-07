@@ -3,13 +3,22 @@
 namespace Events {
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
+		return (Version == 12.41f || Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
 		float Version = std::stof(FN_Version);
 		if (HasEvent()) {
 			std::cout << _("Loading Event!\n");
+			if (Version == 12.41f) {
+				static auto JL = FindObject(_("BP_Jerky_Loader_C /CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2"));
+
+				static auto JerkyLoadLevel = FindObject(_("Function /CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.LoadJerkyLevel"));
+
+				bool CO = true;
+
+				JL->ProcessEvent(JerkyLoadLevel, &CO);
+			}
 			if (Version == 10.40f) {
 				//The End C1
 				UObject* NN = FindObject(_("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2"));
@@ -49,7 +58,14 @@ namespace Events {
 		float Version = std::stof(FN_Version);
 		if (HasEvent()) {
 			std::cout << _("Starting Event!\n");
-			if (Version == 10.40f) {
+			if (Version == 12.41f) {
+				static auto JL = FindObject(_("BP_Jerky_Loader_C /CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2"));
+
+				static auto Function = FindObject(_("Function /CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.CallStartEventOnScripting"));
+				JL->ProcessEvent(Function);
+				// static auto JS = FindObject(_("LevelSequencePlayer /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.Jerky.AnimationPlayer"));
+			}
+			else if (Version == 10.40f) {
 				//The End C1 (Crashes)
 				UObject* NN = FindObject(_("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));
 				if (NN)

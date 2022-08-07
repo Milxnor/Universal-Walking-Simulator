@@ -988,13 +988,17 @@ enum class ENetRole : uint8_t
 	ROLE_MAX = 4
 };
 
+// #define PATTERN_TESTING // Never use this unless you know what this is for
+
 template <typename T>
 void CheckPattern(const std::string& Name, uint64_t Pattern, T** Delegate)
 {
 	if (!Pattern)
 	{
 		MessageBoxA(0, ("Failed to find: " + Name).c_str(), ("Universal Walking Simulator"), MB_ICONERROR);
+#ifndef PATTERN_TESTING
 		FreeLibraryAndExitThread(GetModuleHandle(0), 0);
+#endif
 	}
 
 	else

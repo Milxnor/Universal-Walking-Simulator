@@ -407,7 +407,7 @@ uint8_t GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on github
 	static auto DeathEnum = FindObject(_("Enum /Script/FortniteGame.EDeathCause"));
 	static uint8_t SMGnum = GetEnumValue(DeathEnum, _("SMG"));
 
-	std::cout << "SMGnum: " << SMGnum << '\n';
+	std::cout << "SMGnum: " << (int)SMGnum << '\n';
 
 	return SMGnum;
 
@@ -428,6 +428,12 @@ uint8_t GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on github
 	std::cout << std::format("Unspecified Death: {}\n", Tags.ToStringSimple(false));
 
 	return (uint8_t)EDeathCause::Unspecified;
+}
+
+void RequestExitWithStatusHook(bool Force, uint8_t ReturnCode)
+{
+	std::cout << std::format("Force: {} ReturnCode: {}", Force, std::to_string((int)ReturnCode));
+	return;
 }
 
 inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Parameters)
@@ -1150,10 +1156,18 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 		if (TheViewTarget)
 		{
 			if (a2)
-				*a2 = Helper::GetActorLocation(TheViewTarget);
+			{
+				auto Loc = Helper::GetActorLocation(TheViewTarget);
+				*a2 = Loc;
+
+				// if (bTraveled)
+					// std::cout << std::format("X: {} Y: {} Z {}\n", Loc.X, Loc.Y, Loc.Z);
+			}
 			if (a3)
-				*a3 = Helper::GetActorRotation(TheViewTarget);
-			// std::cout << _("Did the ViewPoint!\n");
+			{
+				auto Rot = Helper::GetActorRotation(TheViewTarget);
+				*a3 = Rot;
+			}
 
 			return;
 		}

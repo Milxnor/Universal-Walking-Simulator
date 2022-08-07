@@ -220,6 +220,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 if (EmoteAbility)
                     GrantGameplayAbility(Pawn, EmoteAbility);
             }
+
             std::cout << _("Granted Abilities!\n");
         }
         else
@@ -302,7 +303,7 @@ char __fastcall malformedDetour(__int64 a1, __int64 a2)
 
 void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8_t MessageType, __int64* Bunch)
 {
-    std::cout << _("Receieved control message: ") + MessageType << '\n';
+    std::cout << _("Receieved control message: ") << std::to_string((int)MessageType) << '\n';
 
     static const auto FnVerDouble = std::stod(FN_Version);
 

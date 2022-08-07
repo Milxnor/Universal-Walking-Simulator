@@ -272,13 +272,24 @@ void TestAbilitySizeDifference()
 {
     /* auto PredictionKeyDiff = SizeOfPredictionKey >= sizeof(FPredictionKey) ? SizeOfPredictionKey - sizeof(FPredictionKey) : sizeof(FPredictionKey) - SizeOfPredictionKey; */
 
-    /* AHH<FPredictionKey>(_("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
+    AHH<FPredictionKey>(_("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
     AHH<FGameplayAbilitySpecHandle>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecHandle"));
     AHH<FGameplayAbilitySpec>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec"));
-    AHH<FGameplayAbilitySpecContainer>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
-    AHH<FGameplayAbilityTargetDataHandle>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
-    AHH<FServerAbilityRPCBatch>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
-    AHH<FGameplayEventData>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData")); */
-    AHH<FFastArraySerializerSE>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
-    AHH<FFastArraySerializerOL>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
+
+    if (Engine_Version <= 422)
+    {
+        AHH<FGameplayAbilitySpecContainerOL>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
+        AHH<FGameplayAbilityTargetDataHandleOL>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
+        AHH<FServerAbilityRPCBatchOL>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
+        AHH<FGameplayEventDataOL>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
+        AHH<FFastArraySerializerOL>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
+    }
+    else
+    {
+        AHH<FGameplayAbilitySpecContainerSE>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
+        AHH<FGameplayAbilityTargetDataHandleSE>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
+        AHH<FServerAbilityRPCBatchSE>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
+        AHH<FGameplayEventDataSE>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
+        AHH<FFastArraySerializerSE>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
+    }
 }

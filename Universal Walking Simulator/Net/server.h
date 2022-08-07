@@ -161,6 +161,9 @@ void Listen(int Port = 7777)
     }
     else
     {
+        if (BeaconHost)
+            *BeaconHost->Member<int>(_("ListenPort")) = Port;
+
         FString string;
         string.Set(L"GameNetDriver");
         auto GameNetDriverName = Helper::StringToName(string);
@@ -170,10 +173,27 @@ void Listen(int Port = 7777)
 
         FString Error;
         auto InURL = FURL();
-        InURL.Port = 7777;
+        InURL.Port = Port;
 
         std::cout << "InitListen: " << InitListen(NetDriver, World, InURL, false, Error) << '\n';
-        SetWorld(NetDriver, World);
+        if (Engine_Version < 426)
+        {
+            if (SetWorld)
+                SetWorld(NetDriver, World);
+        }
+        else
+        {
+            // index = 0x72
+
+            auto SetWorldAAddr = NetDriver->VFTable[0x72];
+            SetWorld = decltype(SetWorld)(SetWorldAAddr);
+            std::cout << "SetWorld Sig: " << GetBytes(__int64(SetWorldAAddr), 50) << '\n';
+            SetWorld(NetDriver, World);
+
+            /* std::cout << "Calling!\n";
+            (*(void(__fastcall**)(__int64, UObject*))(**(__int64**)(BeaconHost + 560) + 912))(*(__int64*)(NetDriver + 560), World);
+            std::cout << "Called!\n"; */
+        }
     }
 
     *NetDriver->Member<int>(_("MaxClientRate")) = *NetDriver->Member<int>(_("MaxInternetClientRate"));

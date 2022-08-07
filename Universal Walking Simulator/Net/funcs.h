@@ -43,6 +43,9 @@ uint64_t CreateChannelAddr = 0;
 uint64_t PlayMontageAddr = 0;
 uint64_t ValidENameAddr = 0;
 uint64_t ReplicationGraph_EnableAddr = 0;
+uint64_t RequestExitWSAddr = 0;
+
+static void (*RequestExitWithStatus)(bool Force, uint8_t ReturnCode);
 
 static char(__fastcall* ValidationFailure)(__int64* a1, __int64 a2);
 

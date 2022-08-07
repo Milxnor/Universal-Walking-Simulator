@@ -64,3 +64,91 @@ std::string GetBytes(uintptr_t Address, int count = 10) { // generates a sig
 	return Bytes;
 }
 
+uintptr_t FindBytes(Memcury::Scanner& Scanner, std::vector<uint8_t>& Bytes, int Count = 255, int SkipBytes = 0, bool bGoUp = false, int Skip = 0, const bool bPrint = false)
+{
+	for (int i = 0 + SkipBytes; i < Count + SkipBytes; i++) // we should subtract from skip if goup
+	{
+		auto CurrentByte = *(Memcury::ASM::MNEMONIC*)(bGoUp ? Scanner.Get() - i : Scanner.Get() + i);
+
+		if (bPrint)
+			std::cout << "CurrentByte: " << std::hex << (int)CurrentByte << '\n';
+
+		if (CurrentByte == Bytes[0])
+		{
+			bool Found = true;
+			for (int j = 1; j < Bytes.size(); j++)
+			{
+				if (*(Memcury::ASM::MNEMONIC*)(bGoUp ? Scanner.Get() - i + j : Scanner.Get() + i + j) != Bytes[j])
+				{
+					Found = false;
+					break;
+				}
+			}
+			if (Found)
+			{
+				if (Skip > 0)
+				{
+					Skip--;
+					continue;
+				}
+
+				return bGoUp ? Scanner.Get() - i : Scanner.Get() + i;
+			}
+		}
+
+		// std::cout << std::format("CurrentByte: 0x{:x}\n", (uint8_t)CurrentByte);
+	}
+
+	return -1;// Scanner.Get();
+}
+
+namespace Finder
+{
+	namespace Functions
+	{
+		std::string GetBeaconNotifyControlMessage(int length = 35, uintptr_t* Addr = nullptr)
+		{
+			auto Ref = Memcury::Scanner::FindStringRef(L"%s[%s] Host received: %s");
+
+			if (Ref.Get())
+			{
+				std::vector<uint8_t> BytesToFind = { 0x4C, 0x8B, 0xDC };
+
+				auto Beginning = FindBytes(Ref, BytesToFind, 600, 10, true);
+
+				if (Beginning)
+				{
+					if (Addr)
+						*Addr = Beginning;
+
+					return GetBytes(Beginning, length);
+				}
+				else
+					std::cout << "Unable to find Beginning of NCM_Beacon";
+			}
+		}
+
+		std::string GetTickFlush(int length = 35, uintptr_t* Addr = nullptr)
+		{
+			auto Ref = Memcury::Scanner::FindStringRef(L"STAT_NetTickFlush");
+
+			if (Ref.Get())
+			{
+				std::vector<uint8_t> BytesToFind = { 0x4C, 0x8B, 0xDC };
+
+				auto Beginning = FindBytes(Ref, BytesToFind, 600, 0, true);
+
+				if (Beginning)
+				{
+					if (Addr)
+						*Addr = Beginning;
+
+					return GetBytes(Beginning, length);
+				}
+				else
+					std::cout << "Unable to find Beginning of TickFlush";
+			}
+		}
+
+	}
+}

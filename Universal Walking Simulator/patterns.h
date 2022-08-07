@@ -3,6 +3,7 @@
 // 3.5 Patterns are from raider, some patterns are not mine.
 
 #include "Net/funcs.h"
+#include "finder.h"
 
 namespace Patterns
 {
@@ -270,6 +271,8 @@ namespace Patterns
 #endif
 }
 
+std::string RequestExitWSSig = "48 89 5C 24 ? 57 48 83 EC 40 41 B9 ? ? ? ? 0F B6 F9 44 38 0D ? ? ? ? 0F B6 DA 72 24 89 5C 24 30 48 8D 05 ? ? ? ? 89 7C 24 28 4C 8D 05 ? ? ? ? 33 D2 48 89 44 24 ?  33 C9 E8";
+
 void InitializePatterns()
 {
     // { // 4.21 patterns by default
@@ -454,7 +457,7 @@ void InitializePatterns()
         ReplicationGraph_EnableSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 70 8B 99 ? ? ? ? 48 8B F2 4C 8B F1 BA ? ? ? ? 8B 89 ? ? ? ? E8 ? ? ? ? 85 DB 41");
     }
 
-    else if (Engine_Version == 425)
+    else if (Engine_Version >= 425)
     {
         TickFlushSig = _("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 49 89 7B E8 48 8B F9");
         World_NotifyControlMessageSig = _("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 45 0F B6 E0 89 7C 24 74");
@@ -472,37 +475,27 @@ void InitializePatterns()
         SetReplicationDriverSig = _("40 56 41 56 48 83 EC 28 48 8B F1 4C 8B F2 48 8B 89 ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 8B 01 48 89 5C 24 ? 48 89 6C 24 ? 4C 89 7C 24 ? FF 90 ? ? ? ? 48 8B 9E ? ? ? ? 45 33 FF");
         ValidationFailureSig = _("48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 DB 48 8B F2");
         CreateNetDriver_LocalSig = _("4C 89 44 24 ? 53 56 57 41 56 41 57 48 83 EC 70 48 8B B9 ? ? ? ? 48 8D 1D ? ? ? ? 48 63 81 ? ? ? ? 45 33 FF 4C 8B F2 48 8D 0C 40 4C 8D 0C CF 49 3B F9 74 22 44 8B 94 24 ? ? ? ? 44 39 57 04 0F 94 C1 44 39 07 0F 94 C0");
-        InitListenSig = _("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0");
         CreateNetDriverSig = _("48 89 5C 24 08 57 48 83 EC ? 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0");
         SetWorldSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 30 48 8B 99 ? ? ? ? 45 33 F6 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97 ? ? ? ? 48 8D 8B ? ? ? ? E8 ? ? ? ? 48 8B 97 ? ? ? ? 48 8D 8B ? ? ? ? E8 ? ? ? ? 48 8B 97 ? ? ? ?");
         StaticFindObjectSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 2F 48 8D 05 ? ? ? ? 41 B9 ? ? ? ? 4C 8D 05 ? ? ? ? 48 89 44 24 ? BA ? ? ? ? 48 8D 0D");
         GetPlayerViewpointSig = _("40 55 56 57 41 57 48 8B EC 48 83 EC 48 48 8B 81 ? ? ? ? 4D 8B F8 48 8B F2 48 8B F9 48 85 C0 0F 84 ? ? ? ? F6 80 ? ? ? ? ? 0F 84 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9 74 23 0F 10 89 ? ? ? ? 0F 28 C1 F3 0F 11 4D ? 0F C6 C1 55 0F C6 C9 AA");
-
-        // paddin (aka patterns which arent right but we ned them to build)
-
-        HandleReloadCostSig = _("89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85");
-        CanActivateAbilitySig = _("4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1");
-        PlayMontageSig = _("40 55 56 41 54 41 56 48 8D 6C 24 D1");
-        GetNetModeSig = _("48 89 5C 24 08 57 48 83 EC ? 48 8B 01 48 8B D9 FF 90 40 01 00 00 4C 8B 83 10 01 00 00");
-        ReallocSig = _("48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D");
-        NoReserveSig = _("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 41 56 41 57 48 81 EC ? ? ? ? 48 8B 01 49 8B D9 45 0F B6 F0 48 8B F2 48 8B F9 45 32 FF FF 90 ? ? ? ? 48 8B 0D ? ? ? ?");
-        ClientTravelSig = _("48 83 EC 48 45 84 C9 74 0D 41 83 F8 02 75 07 66 FF 81 ? ? ? ? 48 8B 44 24 ? 0F 10 00");
-        HasClientLoadedCurrentWorldSig = _("48 89 5C 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F9 48 85 DB 74 23 E8 ? ? ? ? 48 8B 53 10 4C 8D 40 30 48 63 40 38 3B 42 38 7F 0D 48 8B C8 48 8B 42 30 4C 39 04 C8 74 17 48 8B 1D ? ? ? ? 48 85 DB");
-        malformedSig = _("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 40 32 F6 0F 29 7C 24 ? 48 8B FA 44 0F 29 44 24 ? 48 8B D9 40 38 72 28 7C 51 4C 8B 92 ? ? ? ? 4C 3B 92 ? ? ? ? 7C 0F");
-        GiveAbilitySig = _("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 56 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01 89 87 ? ? ? ? 3B 87 ? ? ? ? 7E");
-        InternalTryActivateAbilitySig = _("4C 89 4C 24 20 4C 89 44 24 18 89 54 24 10 55 53 56 57 41 54");
-        MarkAbilitySpecDirtySig = _("48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 D8 4C 8B F2 48 8B F9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 46 10 48 89 6C 24 ?");
-        CollectGarbageSig = _("48 89 5C 24 08 48 89 6C 24 10 56 57 41 56 48 81 EC ? ? ? ? 4C 8B 05");
     }
 
-    else if (Engine_Version == 426)
+    if (Engine_Version == 426)
     {
-        TickFlushSig = _("48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B F9 48 89 4D 38 48 8D 4D 40 0F 28 F1 48 8D 15 ? ? ? ?");
-        World_NotifyControlMessageSig = _("48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89 6D 80 49 8B D9 48 8B 41 10 48 8B FA 4C 8B F9 4C 39 A8 ? ? ? ? 0F 84 ? ? ? ? 41 8B D6 83 EA 06 0F 84 ? ? ? ? 83 EA 0B 0F 84 ? ? ? ? 83 FA 01 0F 85 ? ? ? ? 4C 8D 44 24 ? 44 89 AD ? ? ? ? 48 8D 95 ? ? ? ? 4C 89 6C 24 ? 48 8B CB 4C 89 6C 24 ?");
-        SpawnPlayActorSig = _("48 8B C4 48 89 58 20 44 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8D 68 B9 48 81 EC ? ? ? ? 33 DB 4C 8D 35 ? ? ? ? 89 5D 4F 49 8B F9 48 8B 75 77 4C 8B E9 4C 39 36 74 24 8B 46 0C 8B CB 89 5E 08 85 C0 74 10 33 D2 48 8B CE");
-        LocalPlayerSpawnPlayActorSig = _("48 8B C4 48 89 58 20 44 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8D 68 B9 48 81 EC ? ? ? ? 33 DB 4C 8D 35 ? ? ? ? 89 5D 4F 49 8B F9 48 8B 75 77 4C 8B E9 4C 39 36 74 24 8B 46 0C 8B CB 89 5E 08 85 C0 74 10 33 D2 48 8B CE");
-        InitHostSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B F1 4C 8D 05 ? ? ? ? 48 8D 4D D7 45 33 C9 33 D2");
-        InitListenSig = _("4C 8B DC 49 89 5B 08 49 89 73 10 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0 48 8B 01 48 8B D9 49 89 7B D0 45 88 4B C8 4D 8B C8 4C 8B C2 33 D2");
+        TickFlushSig = _("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 7B C8");
+        World_NotifyControlMessageSig = _("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 45 0F B6 E0");
+        SpawnPlayActorSig = _("48 8B C4 44 89 40 18 48 89 50 10 48 89 48 08 55 57 48 8D 68 B9 48 81 EC ? ? ? ? 48 89 70 E0 33 FF 4C 89 60 D8 49 8B F1 4C 89 68 D0 4C 8D 25 ? ? ? ? 4C 89 70 C8 45 8B E8 4C");
+        // LocalPlayerSpawnPlayActorSig = _("48 8B C4 48 89 58 20 44 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8D 68 B9 48 81 EC ? ? ? ? 33 DB 4C 8D 35 ? ? ? ? 89 5D 4F 49 8B F9 48 8B 75 77 4C 8B E9 4C 39 36 74 24 8B 46 0C 8B CB 89 5E 08 85 C0 74 10 33 D2 48 8B CE");
+        InitHostSig = _("48 8B C4 48 81 EC ? ? ? ? 48 89 58 10 4C 8D 05 ? ? ? ?");
+        InitListenSig = _("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0 48 8B 01 48 8B D9 48 89 7C 24 ? 44 88 4C 24 ? 4D 8B C8 4C 8B C2 33 D2 FF 90 ? ? ? ? 84 C0 0F 85 ? ? ? ? 80 3D ? ? ? ? ? 72 69");
+        GiveAbilitySig = _("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 8B 81 ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 85 C0 7E 54 48 63 9F ? ? ? ? 48");
+        InternalTryActivateAbilitySig = _("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 8B DA 4C 8B F1 E8 ? ? ? ? 4D");
+        MarkAbilitySpecDirtySig = _("48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 F8 4C 8B F2 48 8B D9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49");
+        GetPlayerViewpointSig = _("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2");
+        CreateNetDriverSig = _("48 89 5C 24 ? 57 48 83 EC 20 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0 4C 8B C3 48 8B CF 48 8B 5C 24 ? 48 83 C4 20 5F E9 ? ? ? ?");
+        PauseBeaconRequestsSig = _("40 57 48 83 EC 30 48 8B F9 84 D2 74 62 80 3D ? ? ? ? ? 72 22 48 8D 05 ? ? ? ? 41 B9 ? ? ? ? 4C 8D 05 ? ? ? ? 48 89 44 24 ? 33 D2");
+        Beacon_NotifyControlMessageSig = _("4C 8B DC 49 89 5B 18 49 89 73 20 55 57 41 54 41 55 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 F6 49 8B D9 89 74 24 44 41 0F B6 F8 48 8B 41 10");
     }
 
     static const auto FnVerDouble = std::stod(FN_Version);
@@ -553,16 +546,22 @@ void InitializePatterns()
         CollectGarbage = decltype(CollectGarbage)(CollectGarbageAddr);
 
     InitListenAddr = FindPattern(InitListenSig);
+
+    if (!InitListenAddr)
+        InitListenAddr = FindPattern(_("4C 8B DC 49 89 5B 08 49 89 73 10 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0"));
+
     CheckPattern(_("InitListen"), InitListenAddr, &InitListen);
 
     TickFlushAddr = FindPattern(TickFlushSig);
 
-    if (!TickFlushAddr) {
+    if (!TickFlushAddr)
         TickFlushAddr = FindPattern(_("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 48 8D 05 ? ? ? ? 49 89 73 F0 33 F6 40 38 35 ? ? ? ? 49 89 7B E8 48 8B F9 48 0F 45 C6"));
-    }
 
     if (!TickFlushAddr)
         TickFlushAddr = FindPattern(_("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0"));
+
+    if (!TickFlushAddr)
+        Finder::Functions::GetTickFlush(35, &TickFlushAddr);
 
     CheckPattern(_("TickFlush"), TickFlushAddr, &TickFlush);
 
@@ -639,13 +638,20 @@ void InitializePatterns()
                 GiveAbilityAddr = FindPattern(_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 51 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01"));
         }
 
-        CheckPattern(_("GiveAbility"), GiveAbilityAddr, &GiveAbility);
+        if (!GiveAbilityAddr)
+        {
+            std::cout << _("[WARNING] Failed to find GiveAbility, abilities will be disabled!\n");
+        }
+        else
+        {
+            CheckPattern(_("GiveAbility"), GiveAbilityAddr, &GiveAbility);
 
-        InternalTryActivateAbilityAddr = FindPattern(InternalTryActivateAbilitySig);
-        CheckPattern(_("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbility);
+            InternalTryActivateAbilityAddr = FindPattern(InternalTryActivateAbilitySig);
+            CheckPattern(_("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbility);
 
-        MarkAbilitySpecDirtyAddr = FindPattern(MarkAbilitySpecDirtySig);
-        CheckPattern(_("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyNew);
+            MarkAbilitySpecDirtyAddr = FindPattern(MarkAbilitySpecDirtySig);
+            CheckPattern(_("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyNew);
+        }
 
         GetPlayerViewpointAddr = FindPattern(GetPlayerViewpointSig);
 
@@ -692,14 +698,14 @@ void InitializePatterns()
         } */
     }
 
-    if (Engine_Version >= 424) // /* || Engine_Version == 421 */ || Engine_Version == 422)
+    /* if (Engine_Version >= 424)
     {
         SetReplicationDriverAddr = FindPattern(SetReplicationDriverSig);
         CheckPattern(_("SetReplicationDriver"), SetReplicationDriverAddr, &SetReplicationDriver);
 
         CreateNamedNetDriverAddr = FindPattern(CreateNamedNetDriverSig);
         CheckPattern(_("CreateNetDriver_Local"), CreateNamedNetDriverAddr, &CreateNetDriver_Local);
-    }
+    } */
 
     if (Engine_Version >= 424 || Engine_Version < 420 || Engine_Version == 421)
     {
@@ -710,21 +716,24 @@ void InitializePatterns()
 
         // CheckPattern(_("ValidationFailure"), ValidationFailureAddr, &ValidationFailure);
 
-        SetWorldAddr = FindPattern(SetWorldSig);
+        if (Engine_Version < 426) // it becomes virtual bruh
+        {
+            SetWorldAddr = FindPattern(SetWorldSig);
 
-        if (!SetWorldAddr)
-            SetWorldAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
+            if (!SetWorldAddr)
+                SetWorldAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
 
-        CheckPattern(_("SetWorld"), SetWorldAddr, &SetWorld);
-
-        CreateNetDriverAddr = FindPattern(CreateNetDriverSig);
+            CheckPattern(_("SetWorld"), SetWorldAddr, &SetWorld);
+        }
+        
+        /* CreateNetDriverAddr = FindPattern(CreateNetDriverSig);
 
         if (!CreateNetDriverAddr)
             CreateNetDriverAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 30 48 8B 81 ? ? ? ? 49 8B D8 4C 63 81 ? ? ? ?"));
 
         CheckPattern(_("CreateNetDriver"), CreateNetDriverAddr, &CreateNetDriver);
 
-        /* CreateNetDriver_LocalAddr = FindPattern(CreateNetDriver_Local);
+        CreateNetDriver_LocalAddr = FindPattern(CreateNetDriver_Local);
 
         CheckPattern(_("CreateNetDriver_Local"), CreateNetDriver_LocalAddr, &CreateNetDriver_Local); */
     }
@@ -747,10 +756,17 @@ void InitializePatterns()
 
         if (!Beacon_NotifyControlMessageAddr)
             Beacon_NotifyControlMessageAddr = FindPattern(_("40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 48 89 4C 24 ?"));
-        
 
         if (!Beacon_NotifyControlMessageAddr)
             Beacon_NotifyControlMessageAddr = FindPattern(_("4C 8B DC 49 89 5B 18 49 89 73 20 49 89 4B 08 55 57 41 54 41 56 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B F1"));
+
+        if (!Beacon_NotifyControlMessageAddr)
+            Beacon_NotifyControlMessageAddr = FindPattern(_("4C 8B DC 49 89 5B 18 49 89 73 20 55 57 41 54 41 55 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 F6 49 8B F9 8B DE 45 0F B6 E0 89 5C 24 68"));
+
+        if (!Beacon_NotifyControlMessageAddr)
+        {
+            auto NCMSig = Finder::Functions::GetBeaconNotifyControlMessage(35, &Beacon_NotifyControlMessageAddr);
+        }
 
         CheckPattern(_("Beacon_NotifyControlMessage"), Beacon_NotifyControlMessageAddr, &Beacon_NotifyControlMessage);
     }
@@ -762,25 +778,20 @@ void InitializePatterns()
     else
         HandleReloadCost = decltype(HandleReloadCost)(HandleReloadCostAddr);
 
-    if (Engine_Version != 424)
+    /* if (Engine_Version != 424)
     {
         KickPlayerAddr = FindPattern(KickPlayerSig);
         CheckPattern(_("KickPlayer"), KickPlayerAddr, &KickPlayer);
-    }
+    } */
 
-    if (Engine_Version >= 424)
+    /* if (Engine_Version >= 424)
     {
         ReplicationGraph_EnableAddr = FindPattern(ReplicationGraph_EnableSig);
         CheckPattern(_("ReplicationGraph_Enable"), ReplicationGraph_EnableAddr, &ReplicationGraph_Enable);
 
         ValidENameAddr = FindPattern(ValidENameSig);
         CheckPattern(_("FromValidEName"), ValidENameAddr, &FromValidEName);
-    }
-
-    if (Engine_Version == 426)
-    {
-
-    }
+    } */
 
 #if 0
     if (Engine_Version < 420)

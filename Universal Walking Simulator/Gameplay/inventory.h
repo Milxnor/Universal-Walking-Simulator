@@ -23,7 +23,7 @@ namespace Items {
 			GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
 		}
 		UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
-		if (Montage)
+		if (Montage && PlayMontage)
 		{
 			auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
 			static auto EmoteClass = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));

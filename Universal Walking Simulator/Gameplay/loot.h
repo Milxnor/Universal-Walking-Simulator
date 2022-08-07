@@ -266,6 +266,7 @@ namespace Looting
 							char pad1[0xA8];
 							UObject* OverrideOutputItemTexture;                                // 0x0100(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
 						};
+
 						TArray<FCollectorUnitInfo>* ItemCollections = Actor->Member<TArray<FCollectorUnitInfo>>(_("ItemCollections")); // CollectorUnitInfo
 
 						if (ItemCollections)
