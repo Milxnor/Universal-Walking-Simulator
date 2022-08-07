@@ -49,7 +49,7 @@ struct Timer
 		dura = end - start;
 
 		float ns = dura.count() * 10000.0f;
-		std::cout << _("Took ") << ns << _("ns \n");
+		std::cout << ("Took ") << ns << ("ns \n");
 	}
 
 	// You would do "Timer* t = new Timer;" and then delete at the end of the function.
@@ -93,7 +93,7 @@ public:
 	{
 		/* if (!FMemory::Realloc)
 		{
-			MessageBoxA(0, _("How are you expecting to reserve with no Realloc?"), _("Universal Walking Simulator"), MB_ICONERROR);
+			MessageBoxA(0, ("How are you expecting to reserve with no Realloc?"), ("Universal Walking Simulator"), MB_ICONERROR);
 			return;
 		} */
 
@@ -114,7 +114,7 @@ public:
 			++ArrayNum;
 			return ArrayNum; // - 1;
 		}
-		std::cout << _("Invalid Data when adding!\n");
+		std::cout << ("Invalid Data when adding!\n");
 
 		/*
 		
@@ -415,7 +415,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 		auto fn = this->Function(FuncName); // static?
 		if (!fn)
 		{
-			std::cout << _("[ERROR] Unable to find ") << FuncName << '\n';
+			std::cout << ("[ERROR] Unable to find ") << FuncName << '\n';
 			return nullptr;
 		}
 		return ProcessEvent((UObject*)fn, Params);
@@ -436,13 +436,13 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 			else if (FnVerDouble >= 7.40)
 				Index = 103; // VERIFIED FOR 7.40T
 			else
-				std::cout << _("Unable to determine CreateDefaultObject Index!\n");
+				std::cout << ("Unable to determine CreateDefaultObject Index!\n");
 		}
 
 		if (Index != 0)
 			return GetVFunction<UObject* (*)(UObject*)>(this, Index)(this);
 		else
-			std::cout << _("Unable to create default object because Index is 0!\n");
+			std::cout << ("Unable to create default object because Index is 0!\n");
 		return nullptr;
 	}
 
@@ -606,10 +606,10 @@ static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, boo
 		auto Object = StaticFindObject<ReturnType>(str.substr(str.find(" ") + 1));
 		if (Object)
 		{
-			// std::cout << _("Found SFO!\n");
+			// std::cout << ("Found SFO!\n");
 			return Object;
 		}
-		// std::cout << _("[WARNING] Failed to find object with SFO named: ") << str << " (if you're game doesn't crash soon, it means it's fine)\n";
+		// std::cout << ("[WARNING] Failed to find object with SFO named: ") << str << " (if you're game doesn't crash soon, it means it's fine)\n";
 
 		if (bSkipIfSFOFails)
 			return nullptr;
@@ -907,7 +907,7 @@ int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int
 
 static int GetOffset(UObject* Object, const std::string& MemberName)
 {
-	if (Object && !MemberName.contains(_(" ")))
+	if (Object && !MemberName.contains((" ")))
 	{
 		if (Engine_Version <= 420)
 			return LoopMembersAndFindOffset<UClass_FT, UProperty_UE>(Object, MemberName);
@@ -926,7 +926,7 @@ static int GetOffset(UObject* Object, const std::string& MemberName)
 	}
 	else
 	{
-		// std::cout << std::format(_("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, __int64(Object));
+		// std::cout << std::format(("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, __int64(Object));
 	}
 
 	return 0;
@@ -997,14 +997,14 @@ static int ServerReplicateActorsOffset = 0x53; // UE4.20
 
 bool Setup(/* void* ProcessEventHookAddr */)
 {
-	auto SpawnActorAddr = FindPattern(_("40 53 56 57 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B B4 24 ? ? ? ? 0F 28 CB"));
+	auto SpawnActorAddr = FindPattern(("40 53 56 57 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B B4 24 ? ? ? ? 0F 28 CB"));
 
 	if (!SpawnActorAddr)
-		SpawnActorAddr = FindPattern(_("40 53 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B 9C 24 ? ? ? ? 0F 28 CB 0F 54 1D ? ? ? ? 0F 57"));
+		SpawnActorAddr = FindPattern(("40 53 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B 9C 24 ? ? ? ? 0F 28 CB 0F 54 1D ? ? ? ? 0F 57"));
 
 	if (!SpawnActorAddr)
 	{
-		MessageBoxA(0, _("Failed to find SpawnActor function."), _("Universal Walking Simulator"), MB_OK);
+		MessageBoxA(0, ("Failed to find SpawnActor function."), ("Universal Walking Simulator"), MB_OK);
 		return 0;
 	}
 
@@ -1012,18 +1012,18 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 	bool bOldObjects = false;
 
-	GetEngineVersion = decltype(GetEngineVersion)(FindPattern(_("40 53 48 83 EC 20 48 8B D9 E8 ? ? ? ? 48 8B C8 41 B8 04 ? ? ? 48 8B D3")));
+	GetEngineVersion = decltype(GetEngineVersion)(FindPattern(("40 53 48 83 EC 20 48 8B D9 E8 ? ? ? ? 48 8B C8 41 B8 04 ? ? ? 48 8B D3")));
 
 	std::string FullVersion;
 	FString toFree;
 
 	if (!GetEngineVersion)
 	{
-		auto VerStr = FindPattern(_("2B 2B 46 6F 72 74 6E 69 74 65 2B 52 65 6C 65 61 73 65 2D ? ? ? ?"));
+		auto VerStr = FindPattern(("2B 2B 46 6F 72 74 6E 69 74 65 2B 52 65 6C 65 61 73 65 2D ? ? ? ?"));
 
 		if (!VerStr)
 		{
-			MessageBoxA(0, _("Failed to find fortnite version!"), _("Universal Walking Simulator"), MB_ICONERROR);
+			MessageBoxA(0, ("Failed to find fortnite version!"), ("Universal Walking Simulator"), MB_ICONERROR);
 			return false;
 		}
 
@@ -1040,22 +1040,22 @@ bool Setup(/* void* ProcessEventHookAddr */)
 	std::string FNVer = FullVersion;
 	std::string EngineVer = FullVersion;
 
-	if (!FullVersion.contains(_("Live")) && !FullVersion.contains(_("Next")) && !FullVersion.contains(_("Cert")))
+	if (!FullVersion.contains(("Live")) && !FullVersion.contains(("Next")) && !FullVersion.contains(("Cert")))
 	{
 		if (GetEngineVersion)
 		{
-			FNVer.erase(0, FNVer.find_last_of(_("-"), FNVer.length() - 1) + 1);
-			EngineVer.erase(EngineVer.find_first_of(_("-"), FNVer.length() - 1), 40);
+			FNVer.erase(0, FNVer.find_last_of(("-"), FNVer.length() - 1) + 1);
+			EngineVer.erase(EngineVer.find_first_of(("-"), FNVer.length() - 1), 40);
 
 			if (EngineVer.find_first_of(".") != EngineVer.find_last_of(".")) // this is for 4.21.0 and itll remove the .0
-				EngineVer.erase(EngineVer.find_last_of(_(".")), 2);
+				EngineVer.erase(EngineVer.find_last_of((".")), 2);
 
 			Engine_Version = std::stod(EngineVer) * 100;
 		}
 
 		else
 		{
-			const std::regex base_regex(_("-([0-9.]*)-"));
+			const std::regex base_regex(("-([0-9.]*)-"));
 			std::cmatch base_match;
 
 			std::regex_search(FullVersion.c_str(), base_match, base_regex);
@@ -1074,54 +1074,54 @@ bool Setup(/* void* ProcessEventHookAddr */)
 	else
 	{
 		Engine_Version = 419;
-		FN_Version = _("2.69");
+		FN_Version = ("2.69");
 	}
 
 	if (Engine_Version >= 416 && Engine_Version <= 420)
 	{
-		ObjectsAddr = FindPattern(_("48 8B 05 ? ? ? ? 48 8D 1C C8 81 4B ? ? ? ? ? 49 63 76 30"), false, 7, true);
+		ObjectsAddr = FindPattern(("48 8B 05 ? ? ? ? 48 8D 1C C8 81 4B ? ? ? ? ? 49 63 76 30"), false, 7, true);
 
 		if (!ObjectsAddr)
-			ObjectsAddr = FindPattern(_("48 8B 05 ? ? ? ? 48 8D 14 C8 EB 03 49 8B D6 8B 42 08 C1 E8 1D A8 01 0F 85 ? ? ? ? F7 86 ? ? ? ? ? ? ? ?"), false, 7, true);
+			ObjectsAddr = FindPattern(("48 8B 05 ? ? ? ? 48 8D 14 C8 EB 03 49 8B D6 8B 42 08 C1 E8 1D A8 01 0F 85 ? ? ? ? F7 86 ? ? ? ? ? ? ? ?"), false, 7, true);
 
 		if (Engine_Version == 420)
-			ToStringAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 40 83 79 04 00 48 8B DA 48 8B F9 75 23 E8 ? ? ? ? 48 85 C0 74 19 48 8B D3 48 8B C8 E8 ? ? ? ? 48"));
+			ToStringAddr = FindPattern(("48 89 5C 24 ? 57 48 83 EC 40 83 79 04 00 48 8B DA 48 8B F9 75 23 E8 ? ? ? ? 48 85 C0 74 19 48 8B D3 48 8B C8 E8 ? ? ? ? 48"));
 		else
 		{
-			ToStringAddr = FindPattern(_("40 53 48 83 EC 40 83 79 04 00 48 8B DA 75 19 E8 ? ? ? ? 48 8B C8 48 8B D3 E8 ? ? ? ?"));
+			ToStringAddr = FindPattern(("40 53 48 83 EC 40 83 79 04 00 48 8B DA 75 19 E8 ? ? ? ? 48 8B C8 48 8B D3 E8 ? ? ? ?"));
 
 			if (!ToStringAddr) // This means that we are in season 1 (i think).
 			{
-				ToStringAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B DA 4C 8B F1 E8 ? ? ? ? 4C 8B C8 41 8B 06 99"));
+				ToStringAddr = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B DA 4C 8B F1 E8 ? ? ? ? 4C 8B C8 41 8B 06 99"));
 
 				if (ToStringAddr)
 					Engine_Version = 416;
 			}
 		}
 
-		FreeMemoryAddr = FindPattern(_("48 85 C9 74 1D 4C 8B 05 ? ? ? ? 4D 85 C0 0F 84 ? ? ? ? 49"));
+		FreeMemoryAddr = FindPattern(("48 85 C9 74 1D 4C 8B 05 ? ? ? ? 4D 85 C0 0F 84 ? ? ? ? 49"));
 
 		if (!FreeMemoryAddr)
-			FreeMemoryAddr = FindPattern(_("48 85 C9 74 2E 53 48 83 EC 20 48 8B D9 48 8B 0D ? ? ? ? 48 85 C9 75 0C E8 ? ? ? ? 48 8B 0D ? ? ? ? 48"));
+			FreeMemoryAddr = FindPattern(("48 85 C9 74 2E 53 48 83 EC 20 48 8B D9 48 8B 0D ? ? ? ? 48 85 C9 75 0C E8 ? ? ? ? 48 8B 0D ? ? ? ? 48"));
 
-		ProcessEventAddr = FindPattern(_("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 48 63 41 0C 45 33 F6"));
+		ProcessEventAddr = FindPattern(("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 48 63 41 0C 45 33 F6"));
 
 		bOldObjects = true;
 	}
 
 	if (Engine_Version >= 421 && Engine_Version <= 424)
 	{
-		ToStringAddr = FindPattern(_("48 89 5C 24 ? 57 48 83 EC 30 83 79 04 00 48 8B DA 48 8B F9"));
-		ProcessEventAddr = FindPattern(_("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6"));
+		ToStringAddr = FindPattern(("48 89 5C 24 ? 57 48 83 EC 30 83 79 04 00 48 8B DA 48 8B F9"));
+		ProcessEventAddr = FindPattern(("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6"));
 	
 		if (!ToStringAddr)
-			ToStringAddr = FindPattern(_("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 30 8B 01 48 8B F1 44 8B 49 04 8B F8 C1 EF 10 48 8B DA 0F B7 C8 89 4D 24 89 7D 20 45 85 C9 75 50 44 38 0D ? ? ? ? 74 09 4C 8D 05 ? ? ? ?")); // s11
+			ToStringAddr = FindPattern(("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 30 8B 01 48 8B F1 44 8B 49 04 8B F8 C1 EF 10 48 8B DA 0F B7 C8 89 4D 24 89 7D 20 45 85 C9 75 50 44 38 0D ? ? ? ? 74 09 4C 8D 05 ? ? ? ?")); // s11
 	}
 
 	if (Engine_Version >= 425 && Engine_Version < 500)
 	{
-		ToStringAddr = FindPattern(_("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 30 8B 01 48 8B F1 44 8B 49 04 8B F8 C1 EF 10 48 8B DA 0F B7 C8 89 4D 24 89 7D 20 45 85 C9"));
-		ProcessEventAddr = FindPattern(_("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 8B 41 0C 45 33 F6"));
+		ToStringAddr = FindPattern(("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 30 8B 01 48 8B F1 44 8B 49 04 8B F8 C1 EF 10 48 8B DA 0F B7 C8 89 4D 24 89 7D 20 45 85 C9"));
+		ProcessEventAddr = FindPattern(("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 8B 41 0C 45 33 F6"));
 	}
 
 	auto FnVerDouble = std::stod(FN_Version);
@@ -1134,59 +1134,59 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ServerReplicateActorsOffset = 0x57;
 	if (Engine_Version == 424)
 		ServerReplicateActorsOffset = 0x5A;
-	else if (Engine_Version == 425)
+	else if (Engine_Version >= 425)
 		ServerReplicateActorsOffset = 0x5D;
-	else if (Engine_Version >= 426)
-		ServerReplicateActorsOffset = 0x5F;
+	// else if (Engine_Version >= 426)
+		// ServerReplicateActorsOffset = 0x5F;
 
 	if (FnVerDouble >= 5)
 	{
-		ObjectsAddr = FindPattern(_("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8D 04 D1 EB 03 48 8B ? 81 48 08 ? ? ? 40 49"), false, 7, true);
-		FreeMemoryAddr = FindPattern(_("48 85 C9 74 2E 53 48 83 EC 20 48 8B D9"));
+		ObjectsAddr = FindPattern(("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8D 04 D1 EB 03 48 8B ? 81 48 08 ? ? ? 40 49"), false, 7, true);
+		FreeMemoryAddr = FindPattern(("48 85 C9 74 2E 53 48 83 EC 20 48 8B D9"));
 		bOldObjects = false;
 
 		if (!ObjectsAddr)
-			ObjectsAddr = FindPattern(_("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1"), true, 3);
+			ObjectsAddr = FindPattern(("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8B 04 D1"), true, 3);
 
 		if (!ObjectsAddr)
-			ObjectsAddr = FindPattern(_("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8D 04 D1"), true, 3); // stupid 5.41
+			ObjectsAddr = FindPattern(("48 8B 05 ? ? ? ? 48 8B 0C C8 48 8D 04 D1"), true, 3); // stupid 5.41
 	}
 
 	if (FnVerDouble >= 16.00) // 4.26.1
 	{
-		FreeMemoryAddr = FindPattern(_("48 85 C9 0F 84 ? ? ? ? 48 89 5C 24 ? 57 48 83 EC 20 48 8B 3D ? ? ? ? 48 8B D9 48"));
+		FreeMemoryAddr = FindPattern(("48 85 C9 0F 84 ? ? ? ? 48 89 5C 24 ? 57 48 83 EC 20 48 8B 3D ? ? ? ? 48 8B D9 48"));
 
 		if (FnVerDouble < 19.00)
 		{
-			ToStringAddr = FindPattern(_("48 89 5C 24 ? 56 57 41 56 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B 19 48 8B F2 0F B7 FB 4C 8B F1 E8 ? ? ? ? 44 8B C3 8D 1C 3F 49 C1 E8 10 33 FF 4A 03 5C C0 ? 41 8B 46 04"));
-			ProcessEventAddr = FindPattern(_("40 55 53 56 57 41 54 41 56 41 57 48 81 EC"));
+			ToStringAddr = FindPattern(("48 89 5C 24 ? 56 57 41 56 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B 19 48 8B F2 0F B7 FB 4C 8B F1 E8 ? ? ? ? 44 8B C3 8D 1C 3F 49 C1 E8 10 33 FF 4A 03 5C C0 ? 41 8B 46 04"));
+			ProcessEventAddr = FindPattern(("40 55 53 56 57 41 54 41 56 41 57 48 81 EC"));
 
 			if (!ToStringAddr)
-				ToStringAddr = FindPattern(_("48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B 19 33 ED 0F B7 01 48 8B FA C1 EB 10 4C"));
+				ToStringAddr = FindPattern(("48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B 19 33 ED 0F B7 01 48 8B FA C1 EB 10 4C"));
 		}
 	}
 
 	// if (Engine_Version >= 500)
 	if (FnVerDouble >= 19.00)
 	{
-		ToStringAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B"));
-		ProcessEventAddr = FindPattern(_("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 45 33 ED"));
+		ToStringAddr = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B"));
+		ProcessEventAddr = FindPattern(("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 45 33 ED"));
 
 		if (!FreeMemoryAddr)
-			FreeMemoryAddr = FindPattern(_("48 85 C9 0F 84 ? ? ? ? 53 48 83 EC 20 48 89 7C 24 ? 48 8B D9 48 8B 3D ? ? ? ? 48 85 FF"));
+			FreeMemoryAddr = FindPattern(("48 85 C9 0F 84 ? ? ? ? 53 48 83 EC 20 48 89 7C 24 ? 48 8B D9 48 8B 3D ? ? ? ? 48 85 FF"));
 
 		// C3 S3
 
 		if (!ToStringAddr)
-			ToStringAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 57 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B 01 48 8B F2 8B"));
+			ToStringAddr = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 57 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B 01 48 8B F2 8B"));
 
 		if (!ProcessEventAddr)
-			ProcessEventAddr = FindPattern(_("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 45"));
+			ProcessEventAddr = FindPattern(("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 45"));
 	}
 
 	if (!FreeMemoryAddr)
 	{
-		MessageBoxA(0, _("Failed to find FMemory::Free"), _("Universal Walking Simulator"), MB_OK);
+		MessageBoxA(0, ("Failed to find FMemory::Free"), ("Universal Walking Simulator"), MB_OK);
 		return false;
 	}
 
@@ -1196,7 +1196,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 	if (!ToStringAddr)
 	{
-		MessageBoxA(0, _("Failed to find FName::ToString"), _("Universal Walking Simulator"), MB_OK);
+		MessageBoxA(0, ("Failed to find FName::ToString"), ("Universal Walking Simulator"), MB_OK);
 		return false;
 	}
 
@@ -1204,7 +1204,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 	if (!ProcessEventAddr)
 	{
-		MessageBoxA(0, _("Failed to find UObject::ProcessEvent"), _("Universal Walking Simulator"), MB_OK);
+		MessageBoxA(0, ("Failed to find UObject::ProcessEvent"), ("Universal Walking Simulator"), MB_OK);
 		return false;
 	}
 
@@ -1212,7 +1212,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 	if (!ObjectsAddr)
 	{
-		MessageBoxA(0, _("Failed to find FUObjectArray::ObjObjects"), _("Universal Walking Simulator"), MB_OK);
+		MessageBoxA(0, ("Failed to find FUObjectArray::ObjObjects"), ("Universal Walking Simulator"), MB_OK);
 		return false;
 	}
 
@@ -1226,7 +1226,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 UObject* GetEngine()
 {
-	static auto Engine = FindObjectOld(_("FortEngine_"));
+	static auto Engine = FindObjectOld(("FortEngine_"));
 
 	return Engine;
 }

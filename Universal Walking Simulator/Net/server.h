@@ -19,12 +19,12 @@ void AllowConnections(UObject* NetDriver)
 
     if (NetDriver)
     {
-        *NetDriver->Member<UObject*>(_("World")) = World;
+        *NetDriver->Member<UObject*>(("World")) = World;
 
         if (SetWorld)
             SetWorld(NetDriver, World);
         else
-            std::cout << _("Invalid SetWorld!\n");
+            std::cout << ("Invalid SetWorld!\n");
     }
 }
 
@@ -36,7 +36,7 @@ DWORD WINAPI MapLoadThread(LPVOID) // DOES NOT WORK
 
     // rythmm
 
-    auto StreamingLevels = World->Member<TArray<UObject*>>(_("StreamingLevels")); // ULevelStreaming*
+    auto StreamingLevels = World->Member<TArray<UObject*>>(("StreamingLevels")); // ULevelStreaming*
 
     for (int i = 0; i < StreamingLevels->Num(); i++)
     {
@@ -45,7 +45,7 @@ DWORD WINAPI MapLoadThread(LPVOID) // DOES NOT WORK
         if (!StreamingLevel)
             continue;
 
-        static auto IsLevelLoaded = StreamingLevel->Function(_("IsLevelLoaded"));
+        static auto IsLevelLoaded = StreamingLevel->Function(("IsLevelLoaded"));
         bool bIsLevelLoaded = false;
 
         if (IsLevelLoaded)
@@ -61,14 +61,14 @@ DWORD WINAPI MapLoadThread(LPVOID) // DOES NOT WORK
 
     if (BeaconHost)
     {
-        AllowConnections(*BeaconHost->Member<UObject*>(_("NetDriver")));
+        AllowConnections(*BeaconHost->Member<UObject*>(("NetDriver")));
     }
 
     else
     {
     }
 
-    std::cout << _("Players can now join!\n");
+    std::cout << ("Players can now join!\n");
     serverStatus = EServerStatus::Up;
 
 #ifndef DPP_DISABLED
@@ -92,84 +92,84 @@ void Listen(int Port = 7777)
 
     if (bUseBeacons)
     {
-        static UObject* BeaconHostClass = FindObject(_("Class /Script/OnlineSubsystemUtils.OnlineBeaconHost"));
+        static UObject* BeaconHostClass = FindObject(("Class /Script/OnlineSubsystemUtils.OnlineBeaconHost"));
 
         if (!BeaconHostClass)
         {
-            std::cout << dye::red(_("[ERROR] ")) << _("Unable to find BeaconClass!\n");
+            std::cout << dye::red(("[ERROR] ")) << ("Unable to find BeaconClass!\n");
             return;
         }
 
-        std::cout << _("Spawning Beacon!\n");
+        std::cout << ("Spawning Beacon!\n");
 
         BeaconHost = Easy::SpawnActor(BeaconHostClass, FVector());
 
         if (!BeaconHost)
         {
-            std::cout << dye::red(_("[ERROR] ")) << _("Beacon failed to spawn!\n");
+            std::cout << dye::red(("[ERROR] ")) << ("Beacon failed to spawn!\n");
             return;
         }
 
-        std::cout << _("Spawned Beacon!\n");
+        std::cout << ("Spawned Beacon!\n");
 
-        *BeaconHost->Member<int>(_("ListenPort")) = Port - 1;
+        *BeaconHost->Member<int>(("ListenPort")) = Port - 1;
         bool bInitBeacon = false;
 
-        // *BeaconHost->Member<FName>(_("NetDriverName")) = FName(282);
-        // *BeaconHost->Member<FName>(_("NetDriverDefinitionName")) = FName(282);
+        // *BeaconHost->Member<FName>(("NetDriverName")) = FName(282);
+        // *BeaconHost->Member<FName>(("NetDriverDefinitionName")) = FName(282);
 
         if (InitHost)
             bInitBeacon = InitHost(BeaconHost);
         else
         {
-            std::cout << dye::red(_("[ERROR] ")) << _("No InitHost!\n");
+            std::cout << dye::red(("[ERROR] ")) << ("No InitHost!\n");
             return;
         }
 
         if (!bInitBeacon)
         {
-            std::cout << dye::red(_("[ERROR] ")) << _("Unable to initialize Beacon!\n");
+            std::cout << dye::red(("[ERROR] ")) << ("Unable to initialize Beacon!\n");
             return;
         }
 
-        std::cout << _("Initialized Beacon!\n");
+        std::cout << ("Initialized Beacon!\n");
         
-        NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
+        NetDriver = *BeaconHost->Member<UObject*>(("NetDriver"));
 
         /* FName GameNetDriverName = FName(282);
 
-        *BeaconHost->Member<FName>(_("NetDriverName")) = GameNetDriverName;
-        NetDriver = *BeaconHost->Member<UObject*>(_("NetDriver"));
-        static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
-        *NetDriver->Member<UObject*>(_("ReplicationDriverClass")) = ReplicationDriverClass;
-        *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
+        *BeaconHost->Member<FName>(("NetDriverName")) = GameNetDriverName;
+        NetDriver = *BeaconHost->Member<UObject*>(("NetDriver"));
+        static auto ReplicationDriverClass = FindObject(("Class /Script/FortniteGame.FortReplicationGraph"));
+        *NetDriver->Member<UObject*>(("ReplicationDriverClass")) = ReplicationDriverClass;
+        *NetDriver->Member<FName>(("NetDriverName")) = GameNetDriverName;
         // FString string;
         // string.Set(L"GameNetDriver");
         // auto GameNetDriverName = Helper::StringToName(string);
 
         InitListen(NetDriver, World, InURL, true, Error);
-        *NetDriver->Member<UObject*>(_("World")) = World;
+        *NetDriver->Member<UObject*>(("World")) = World;
         PauseBeaconRequests(BeaconHost, true);
-        *NetDriver->Member<UObject*>(_("World")) = World;
-        *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName; */
+        *NetDriver->Member<UObject*>(("World")) = World;
+        *NetDriver->Member<FName>(("NetDriverName")) = GameNetDriverName; */
     }
 
     if (!NetDriver)
     {
-        std::cout << _("Failed to create NetDriver!\n");
+        std::cout << ("Failed to create NetDriver!\n");
         return;
     }
     else
     {
         if (BeaconHost)
-            *BeaconHost->Member<int>(_("ListenPort")) = Port;
+            *BeaconHost->Member<int>(("ListenPort")) = Port;
 
         FString string;
         string.Set(L"GameNetDriver");
         auto GameNetDriverName = Helper::StringToName(string);
-        *NetDriver->Member<FName>(_("NetDriverName")) = GameNetDriverName;
-        *NetDriver->Member<UObject*>(_("World")) = World;
-        *World->Member<UObject*>(_("NetDriver")) = NetDriver;
+        *NetDriver->Member<FName>(("NetDriverName")) = GameNetDriverName;
+        *NetDriver->Member<UObject*>(("World")) = World;
+        *World->Member<UObject*>(("NetDriver")) = NetDriver;
 
         FString Error;
         auto InURL = FURL();
@@ -196,7 +196,7 @@ void Listen(int Port = 7777)
         }
     }
 
-    *NetDriver->Member<int>(_("MaxClientRate")) = *NetDriver->Member<int>(_("MaxInternetClientRate"));
+    *NetDriver->Member<int>(("MaxClientRate")) = *NetDriver->Member<int>(("MaxInternetClientRate"));
     UObject** ReplicationDriver = nullptr;
 
     AllowConnections(NetDriver);
@@ -205,7 +205,7 @@ void Listen(int Port = 7777)
 
     if (NetDriver)
     {
-        ReplicationDriver = NetDriver->Member<UObject*>(_("ReplicationDriver"));
+        ReplicationDriver = NetDriver->Member<UObject*>(("ReplicationDriver"));
 
         if (Engine_Version >= 424)
         {
@@ -215,31 +215,31 @@ void Listen(int Port = 7777)
                 {
                     if (ReplicationGraph_Enable)
                     {
-                        static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
+                        static auto ReplicationDriverClass = FindObject(("Class /Script/FortniteGame.FortReplicationGraph"));
 
                         auto Ret = Easy::SpawnObject(ReplicationDriverClass, NetDriver);
                         std::cout << "new rep graph: " << Ret << '\n';
                         SetReplicationDriver(NetDriver, Ret);
                     }
                     else
-                        std::cout << _("No ReplicationGraph_Enable\n");
+                        std::cout << ("No ReplicationGraph_Enable\n");
                 }
                 else
-                    std::cout << dye::red(_("\n\n[WARNING] ReplicationDriver is valid, but we are trying to create it. (This is VERY good)\n\n\n"));
+                    std::cout << dye::red(("\n\n[WARNING] ReplicationDriver is valid, but we are trying to create it. (This is VERY good)\n\n\n"));
             }
             else
-                std::cout << _("No SetReplicationDriver!\n");
+                std::cout << ("No SetReplicationDriver!\n");
         }
     }
     else
-        std::cout << _("No NetDriver!\n");
+        std::cout << ("No NetDriver!\n");
 
     if (ReplicationDriver && *ReplicationDriver)
         RepGraph_ServerReplicateActors = decltype(RepGraph_ServerReplicateActors)((*ReplicationDriver)->VFTable[ServerReplicateActorsOffset]);
     else
-        std::cout << dye::red(_("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
+        std::cout << dye::red(("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
 
-    auto LevelCollections = World->Member<TArray<FLevelCollection>>(_("LevelCollections"));
+    auto LevelCollections = World->Member<TArray<FLevelCollection>>(("LevelCollections"));
 
     if (LevelCollections)
     {

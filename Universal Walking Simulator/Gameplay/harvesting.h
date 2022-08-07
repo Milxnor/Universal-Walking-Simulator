@@ -5,16 +5,16 @@
 
 inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void* Parameters)
 {
-	static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
-	if (BuildingActor->IsA(BuildingSMActorClass)) // || BuildingActor->GetFullName().contains(_("Car_")))
+	static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
+	if (BuildingActor->IsA(BuildingSMActorClass)) // || BuildingActor->GetFullName().contains(("Car_")))
 	{
-		auto InstigatedByOffset = FindOffsetStruct(_("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), _("InstigatedBy"));
+		auto InstigatedByOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("InstigatedBy"));
 		auto InstigatedBy = *(UObject**)(__int64(Parameters) + InstigatedByOffset);
 
-		auto DamageCauserOffset = FindOffsetStruct(_("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), _("DamageCauser"));
+		auto DamageCauserOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("DamageCauser"));
 		auto DamageCauser = *(UObject**)(__int64(Parameters) + DamageCauserOffset);
 
-		auto DamageTagsOffset = FindOffsetStruct(_("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), _("DamageTags"));
+		auto DamageTagsOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("DamageTags"));
 		auto DamageTags = (FGameplayTagContainer*)(__int64(Parameters) + DamageTagsOffset);
 
 		struct Bitfield
@@ -29,21 +29,21 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 			unsigned char                                      bShouldTick : 1;
 		};
 
-		auto BitField = BuildingActor->Member<Bitfield>(_("bPlayerPlaced"));
+		auto BitField = BuildingActor->Member<Bitfield>(("bPlayerPlaced"));
 		auto bPlayerPlaced = false; // BitField->bPlayerPlaced;
 
-		static auto FortPlayerControllerAthenaClass = FindObject(_("Class /Script/FortniteGame.FortPlayerControllerAthena"));
+		static auto FortPlayerControllerAthenaClass = FindObject(("Class /Script/FortniteGame.FortPlayerControllerAthena"));
 
 		// if (DamageTags)
-			// std::cout << _("DamageTags: ") << DamageTags->ToStringSimple(false) << '\n';
+			// std::cout << ("DamageTags: ") << DamageTags->ToStringSimple(false) << '\n';
 
 		if (!bPlayerPlaced && InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass) &&
 			DamageCauser->GetFullName().contains("B_Melee_Impact_Pickaxe_Athena_C")) // cursed
 		{
 			// TODO: Not hardcode the PickaxeDef, do like slot 0  or something
-			static auto PickaxeDef = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-			auto CurrentWeapon = *(*InstigatedBy->Member<UObject*>(_("MyFortPawn")))->Member<UObject*>(_("CurrentWeapon"));
-			if (CurrentWeapon && *CurrentWeapon->Member<UObject*>(_("WeaponData")) == PickaxeDef)
+			static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+			auto CurrentWeapon = *(*InstigatedBy->Member<UObject*>(("MyFortPawn")))->Member<UObject*>(("CurrentWeapon"));
+			if (CurrentWeapon && *CurrentWeapon->Member<UObject*>(("WeaponData")) == PickaxeDef)
 			{
 				std::random_device rd; // obtain a random number from hardware
 				std::mt19937 gen(rd()); // seed the generator
@@ -58,10 +58,10 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 					int                                                PotentialResourceCount;                                   // (Parm, ZeroConstructor, IsPlainOldData)
 					bool                                               bDestroyed;                                               // (Parm, ZeroConstructor, IsPlainOldData)
 					bool                                               bJustHitWeakspot;                                         // (Parm, ZeroConstructor, IsPlainOldData)
-				} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(_("ResourceType")),
+				} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(("ResourceType")),
 					 distr(gen), false, false };
 
-				static auto ClientReportDamagedResourceBuilding = InstigatedBy->Function(_("ClientReportDamagedResourceBuilding"));
+				static auto ClientReportDamagedResourceBuilding = InstigatedBy->Function(("ClientReportDamagedResourceBuilding"));
 
 				if (ClientReportDamagedResourceBuilding)
 				{
@@ -71,11 +71,11 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 
 					// idk y hook no work
 
-					auto Pawn = *InstigatedBy->Member<UObject*>(_("Pawn"));
+					auto Pawn = *InstigatedBy->Member<UObject*>(("Pawn"));
 
-					static auto WoodItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
-					static auto StoneItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
-					static auto MetalItemData = FindObject(_("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+					static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+					static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+					static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
 					UObject* ItemDef = WoodItemData;
 
@@ -91,7 +91,7 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 
 					if (ItemInstance && Pawn)
 					{
-						auto Entry = ItemInstance->Member<__int64>(_("ItemEntry"));
+						auto Entry = ItemInstance->Member<__int64>(("ItemEntry"));
 
 						// BUG: You lose some mats if you have like 998 or idfk
 						if (*FFortItemEntry::GetCount(Entry) >= 999)
@@ -112,6 +112,6 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 
 void InitializeHarvestingHooks()
 {
-	AddHook(_("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), OnDamageServerHook);
-	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ClientReportDamagedResourceBuilding"), ClientReportDamagedResourceBuildingHook);
+	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), OnDamageServerHook);
+	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ClientReportDamagedResourceBuilding"), ClientReportDamagedResourceBuildingHook);
 }

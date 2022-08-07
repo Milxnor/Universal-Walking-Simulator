@@ -14,12 +14,12 @@ namespace Player
 			Helper::DestroyActor(Pawn);
 		} */
 
-		static auto setHealthFn = Pawn->Function(_("SetHealth"));
+		static auto setHealthFn = Pawn->Function(("SetHealth"));
 		struct { float NewHealthVal; }healthParams{ 100 };
 
 		if (setHealthFn)
 			Pawn->ProcessEvent(setHealthFn, &healthParams);
-		static auto PickaxeDefinition = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+		static auto PickaxeDefinition = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
 		// TODO: StructProperty /Script/FortniteGame.FortPlaylistAthena.RespawnHeight
 		struct { float HeightAboveGround; }TeleportToSkyDiveParams{ 10000 };
@@ -28,12 +28,12 @@ namespace Player
 
 		if (NewPawn)
 		{
-			static auto TeleportToSkyDiveFn = NewPawn->Function(_("TeleportToSkyDive"));
+			static auto TeleportToSkyDiveFn = NewPawn->Function(("TeleportToSkyDive"));
 
 			if (TeleportToSkyDiveFn)
 				NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
 		}
 
-		// PlayerController->ProcessEvent(_("RespawnPlayer"));
+		// PlayerController->ProcessEvent(("RespawnPlayer"));
 	}
 }

@@ -38,7 +38,7 @@ DWORD WINAPI InputThread(LPVOID)
         {
             InitializeNetHooks();
 
-            std::cout << _("Initialized NetHooks!\n");
+            std::cout << ("Initialized NetHooks!\n");
         }
 
         Sleep(1000 / 30);
@@ -52,7 +52,7 @@ DWORD WINAPI Main(LPVOID)
     AllocConsole();
 
     FILE* fptr;
-    freopen_s(&fptr, _("CONOUT$"), _("w"), stdout);
+    freopen_s(&fptr, ("CONOUT$"), ("w"), stdout);
 
     auto stat = MH_Initialize();
 
@@ -76,7 +76,7 @@ DWORD WINAPI Main(LPVOID)
 
     if (!Setup())
     {
-        std::cout << _("Failed setup!\n");
+        std::cout << ("Failed setup!\n");
         return 1;
     }
 
@@ -87,11 +87,11 @@ DWORD WINAPI Main(LPVOID)
         if (!RequestExitWSAddr)
         {
             if (Engine_Version >= 426)
-                std::cout << _("[WARNING] Could not find RequestExitWithStatus, game will probably close!\n");
+                std::cout << ("[WARNING] Could not find RequestExitWithStatus, game will probably close!\n");
         }
         else
         {
-            CheckPattern(_("RequestExitWithStatus"), RequestExitWSAddr, &RequestExitWithStatus);
+            CheckPattern(("RequestExitWithStatus"), RequestExitWSAddr, &RequestExitWithStatus);
 
             if (RequestExitWSAddr)
             {
@@ -103,7 +103,7 @@ DWORD WINAPI Main(LPVOID)
 
     InitializePatterns();
 
-    std::cout << _("Initialized Patterns!\n");
+    std::cout << ("Initialized Patterns!\n");
 
     InitializeNetUHooks();
 
@@ -126,20 +126,20 @@ DWORD WINAPI Main(LPVOID)
 #endif
 
     Looting::Tables::Init(nullptr);
-    SetConsoleTitleA(_("Project Reboot Server"));
-    std::cout << _("Found all loot!\n");
+    SetConsoleTitleA(("Project Reboot Server"));
+    std::cout << ("Found all loot!\n");
 
     if (Engine_Version < 422)
-        std::cout << _("Press play button to host!\n");
+        std::cout << ("Press play button to host!\n");
     else
-        std::cout << _("Press F5 to host!\n");
+        std::cout << ("Press F5 to host!\n");
 
-    std::cout << dye::aqua(_("[Base Address] ")) << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
-    std::cout << dye::green(_("[ServerReplicateActors] ")) << std::format("0x{:x}\n", ServerReplicateActorsOffset);
+    std::cout << dye::aqua(("[Base Address] ")) << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
+    std::cout << dye::green(("[ServerReplicateActors] ")) << std::format("0x{:x}\n", ServerReplicateActorsOffset);
     
-    std::cout << dye::blue(_("[DEBUG] ")) << std::format("Size of Entry: 0x{:x}.\n", GetEntrySize());
-    std::cout << dye::blue(_("[DEBUG] ")) << std::format("ReplicatedEntries Offset: 0x{:x}.\n", FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ReplicatedEntries")));
-    std::cout << dye::blue(_("[DEBUG] ")) << std::format("ItemInstances Offset: 0x{:x}.\n", FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemList"), _("ItemInstances")));
+    std::cout << dye::blue(("[DEBUG] ")) << std::format("Size of Entry: 0x{:x}.\n", GetEntrySize());
+    std::cout << dye::blue(("[DEBUG] ")) << std::format("ReplicatedEntries Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ReplicatedEntries")));
+    std::cout << dye::blue(("[DEBUG] ")) << std::format("ItemInstances Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances")));
 
     TestAbilitySizeDifference();
 
@@ -157,7 +157,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         CreateThread(0, 0, Main, 0, 0, 0);
         break;
     case DLL_PROCESS_DETACH:
-        std::cout << _("Disabling all Hooks!");
+        std::cout << ("Disabling all Hooks!");
         MH_DisableHook(MH_ALL_HOOKS); // Untested
         SendDiscordEnd();
         break;

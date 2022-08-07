@@ -9,9 +9,9 @@ FGameplayAbilitySpec* FindAbilitySpecFromHandle(UObject* ASC, FGameplayAbilitySp
     TArray<FGameplayAbilitySpec> Specs;
 
     if (Engine_Version <= 422)
-        Specs = (*ASC->Member<FGameplayAbilitySpecContainerOL>(_("ActivatableAbilities"))).Items;
+        Specs = (*ASC->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
     else
-        Specs = (*ASC->Member<FGameplayAbilitySpecContainerSE>(_("ActivatableAbilities"))).Items;
+        Specs = (*ASC->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))).Items;
 
     for (int i = 0; i < Specs.Num(); i++)
     {
@@ -53,7 +53,7 @@ void ConsumeAllReplicatedData(UObject* AbilitySystemComponent, FGameplayAbilityS
 void PrintExplicitTags(UObject* ASC)
 {
     static auto AHAHA = 264;
-    auto MinimalReplicationGameplayCuesOff = GetOffset(ASC, (_("MinimalReplicationGameplayCues")));
+    auto MinimalReplicationGameplayCuesOff = GetOffset(ASC, (("MinimalReplicationGameplayCues")));
     auto BlockedAbilityTags = (__int64(ASC) + (MinimalReplicationGameplayCuesOff + 0xD0));
     auto ExplicitTags = *(FGameplayTagContainer*)(BlockedAbilityTags + AHAHA);
     std::cout << "\n\nExplicit Tags: " << ExplicitTags.ToStringSimple(true) << "\n\n\n";
@@ -65,7 +65,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
     if (!Spec)
     {
         // Can potentially happen in race conditions where client tries to activate ability that is removed server side before it is received.
-        std::cout << _("InternalServerTryActivateAbility. Rejecting ClientActivation of ability with invalid SpecHandle!\n");
+        std::cout << ("InternalServerTryActivateAbility. Rejecting ClientActivation of ability with invalid SpecHandle!\n");
         Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, PredictionKey.Current);
         return;
     }
@@ -74,7 +74,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     if (!AbilityToActivate) //!ensure(AbilityToActivate))
     {
-        std::cout << _("InternalServerTryActiveAbility. Rejecting ClientActivation of unconfigured spec ability!\n");
+        std::cout << ("InternalServerTryActiveAbility. Rejecting ClientActivation of unconfigured spec ability!\n");
         Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, PredictionKey.Current);
         return;
     }
@@ -89,14 +89,14 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     if (!InternalTryActivateAbility(ASC, Handle, PredictionKey, &InstancedAbility, nullptr, TriggerEventData))
     {
-        auto InternalTryActivateAbilityFailureTags = ASC->Member<FGameplayTagContainer>(_("ClientDebugStrings"), sizeof(FGameplayTagContainer));
+        auto InternalTryActivateAbilityFailureTags = ASC->Member<FGameplayTagContainer>(("ClientDebugStrings"), sizeof(FGameplayTagContainer));
         std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed: {}\n", Spec->Ability->GetName(), InternalTryActivateAbilityFailureTags->ToStringSimple(true));
         Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, PredictionKey.Current);
         Spec->InputPressed = false;
         if (Engine_Version <= 422)
-            ASC->Member<FGameplayAbilitySpecContainerOL>(_("ActivatableAbilities"))->MarkItemDirty(Spec);
+            ASC->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))->MarkItemDirty(Spec);
         else
-            ASC->Member<FGameplayAbilitySpecContainerSE>(_("ActivatableAbilities"))->MarkItemDirty(Spec);
+            ASC->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))->MarkItemDirty(Spec);
     }
 }
 
@@ -105,7 +105,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     if (!GameplayAbilityClass || !TargetPawn)
         return nullptr;
 
-    auto AbilitySystemComponent = *TargetPawn->Member<UObject*>(_("AbilitySystemComponent"));
+    auto AbilitySystemComponent = *TargetPawn->Member<UObject*>(("AbilitySystemComponent"));
 
     if (!AbilitySystemComponent)
         return nullptr;
@@ -126,7 +126,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     if (Engine_Version <= 422)
     {
-        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(_("ActivatableAbilities"));
+        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"));
 
         for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
         {
@@ -138,7 +138,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     }
     else
     {
-        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(_("ActivatableAbilities"));
+        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"));
 
         for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
         {
@@ -216,7 +216,7 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
 
 inline bool ServerTryActivateAbilityWithEventDataHook(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)
 {
-    // std::cout << _("ServerTryActivateAbilityWithEventData!\n");
+    // std::cout << ("ServerTryActivateAbilityWithEventData!\n");
 
     struct UAbilitySystemComponent_ServerTryActivateAbilityWithEventData_Params {
         FGameplayAbilitySpecHandle                  AbilityToActivate;                                        // (Parm)
@@ -244,9 +244,9 @@ bool hk_CanActivateAbility(UObject* GameplayAbility, const FGameplayAbilitySpecH
 
 void InitializeAbilityHooks()
 {
-    AddHook(_("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData"), ServerTryActivateAbilityWithEventDataHook);
-    AddHook(_("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch"), ServerAbilityRPCBatchHook);
-    AddHook(_("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility"), ServerTryActivateAbilityHook);
+    AddHook(("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData"), ServerTryActivateAbilityWithEventDataHook);
+    AddHook(("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch"), ServerAbilityRPCBatchHook);
+    AddHook(("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility"), ServerTryActivateAbilityHook);
 
     if (o_CanActivateAbility)
     {
@@ -272,24 +272,24 @@ void TestAbilitySizeDifference()
 {
     /* auto PredictionKeyDiff = SizeOfPredictionKey >= sizeof(FPredictionKey) ? SizeOfPredictionKey - sizeof(FPredictionKey) : sizeof(FPredictionKey) - SizeOfPredictionKey; */
 
-    AHH<FPredictionKey>(_("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
-    AHH<FGameplayAbilitySpecHandle>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecHandle"));
-    AHH<FGameplayAbilitySpec>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec"));
+    AHH<FPredictionKey>(("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
+    AHH<FGameplayAbilitySpecHandle>(("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecHandle"));
+    AHH<FGameplayAbilitySpec>(("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec"));
 
     if (Engine_Version <= 422)
     {
-        AHH<FGameplayAbilitySpecContainerOL>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
-        AHH<FGameplayAbilityTargetDataHandleOL>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
-        AHH<FServerAbilityRPCBatchOL>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
-        AHH<FGameplayEventDataOL>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
-        AHH<FFastArraySerializerOL>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
+        AHH<FGameplayAbilitySpecContainerOL>(("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
+        AHH<FGameplayAbilityTargetDataHandleOL>(("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
+        AHH<FServerAbilityRPCBatchOL>(("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
+        AHH<FGameplayEventDataOL>(("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
+        AHH<FFastArraySerializerOL>(("ScriptStruct /Script/Engine.FastArraySerializer"));
     }
     else
     {
-        AHH<FGameplayAbilitySpecContainerSE>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
-        AHH<FGameplayAbilityTargetDataHandleSE>(_("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
-        AHH<FServerAbilityRPCBatchSE>(_("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
-        AHH<FGameplayEventDataSE>(_("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
-        AHH<FFastArraySerializerSE>(_("ScriptStruct /Script/Engine.FastArraySerializer"));
+        AHH<FGameplayAbilitySpecContainerSE>(("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
+        AHH<FGameplayAbilityTargetDataHandleSE>(("ScriptStruct /Script/GameplayAbilities.GameplayAbilityTargetDataHandle"));
+        AHH<FServerAbilityRPCBatchSE>(("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch"));
+        AHH<FGameplayEventDataSE>(("ScriptStruct /Script/GameplayAbilities.GameplayEventData"));
+        AHH<FFastArraySerializerSE>(("ScriptStruct /Script/Engine.FastArraySerializer"));
     }
 }

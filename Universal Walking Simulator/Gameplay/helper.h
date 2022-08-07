@@ -8,10 +8,10 @@
 
 UObject* GetWorldW(bool bReset = false)
 {
-	auto GameViewport = *GetEngine()->Member<UObject*>(_("GameViewport"));
+	auto GameViewport = *GetEngine()->Member<UObject*>(("GameViewport"));
 
 	if (GameViewport)
-		return *GameViewport->Member<UObject*>(_("World")); // we could also find the world by name but that depends on the map
+		return *GameViewport->Member<UObject*>(("World")); // we could also find the world by name but that depends on the map
 
 	return nullptr;
 }
@@ -32,8 +32,8 @@ namespace Easy
 		params.ObjectClass = ObjectClass;
 		params.Outer = Outer;
 
-		static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
-		static auto fn = GSC->Function(_("SpawnObject"));
+		static auto GSC = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+		static auto fn = GSC->Function(("SpawnObject"));
 
 		GSC->ProcessEvent(fn, &params);
 
@@ -57,8 +57,8 @@ namespace Easy
 			class AActor* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
 		} params{Helper::GetWorld(), Class, transform, false, nullptr};
 
-		static auto GSC = FindObject(_("Class /Script/Engine.GameplayStatics"));
-		static auto BeginSpawningActorFromClass = GSC->Function(_("BeginSpawningActorFromClass"));
+		static auto GSC = FindObject(("Class /Script/Engine.GameplayStatics"));
+		static auto BeginSpawningActorFromClass = GSC->Function(("BeginSpawningActorFromClass"));
 
 		if (BeginSpawningActorFromClass) */
 
@@ -78,29 +78,29 @@ namespace Helper
 		int Season = (int)Version;
 		//Volcano
 		if (Season == 8) {
-			static auto Volcano = FindObject(_("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
+			static auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
 			
-			*Volcano->Member<uint8_t>(_("DynamicFoundationType")) = 0;
+			*Volcano->Member<uint8_t>(("DynamicFoundationType")) = 0;
 
-			static auto OnRep_ServerStreamedInLevel = Volcano->Function(_("OnRep_ServerStreamedInLevel"));
+			static auto OnRep_ServerStreamedInLevel = Volcano->Function(("OnRep_ServerStreamedInLevel"));
 		
 			if (OnRep_ServerStreamedInLevel)
 				Volcano->ProcessEvent(OnRep_ServerStreamedInLevel);
 			else
-				std::cout << _("Unable to find OnRep_ServerStreamedInLevel!\n");
+				std::cout << ("Unable to find OnRep_ServerStreamedInLevel!\n");
 		}
 		//Pleasant
 		if (Season == 7) {
-			*FindObject(_("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
+			*FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36"))->Member<uint8_t>(("DynamicFoundationType")) = 0;
 		}
 		//Marshamello
 		if (Version == 7.30f) {
-			*FindObject(_("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
+			*FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"))->Member<uint8_t>(("DynamicFoundationType")) = 0;
 		}
 		//Loot Lake
 		if (Season == 6) {
-			*FindObject(_("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
-			*FindObject(_("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"))->Member<uint8_t>(_("DynamicFoundationType")) = 0;
+			*FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"))->Member<uint8_t>(("DynamicFoundationType")) = 0;
+			*FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"))->Member<uint8_t>(("DynamicFoundationType")) = 0;
 		}
 	}
 	
@@ -113,8 +113,8 @@ namespace Helper
 	{
 		/* if (std::stod(FN_Version) >= 6) // TODO: make sure this is actually when they change it.
 		{
-			auto PlayerState = *Pawn->Member<UObject*>(_("PlayerState"));
-			auto CustomCharacterParts = PlayerState->Member<__int64>(_("CharacterParts")); // FCustomCharacterParts
+			auto PlayerState = *Pawn->Member<UObject*>(("PlayerState"));
+			auto CustomCharacterParts = PlayerState->Member<__int64>(("CharacterParts")); // FCustomCharacterParts
 			struct ahh
 			{
 				char WasReplicatedFlags; // 0x00(0x01)
@@ -131,7 +131,7 @@ namespace Helper
 				UObject* ChosenCharacterPart;
 			} params{ Part, ChosenCharacterPart };
 
-			static auto chooseFn = Pawn->Function(_("ServerChoosePart"));
+			static auto chooseFn = Pawn->Function(("ServerChoosePart"));
 			Pawn->ProcessEvent(chooseFn, &params);
 		}
 	}
@@ -141,7 +141,7 @@ namespace Helper
 		if (!Controller)
 			return false;
 
-		static auto fn = Controller->Function(_("IsInAircraft"));
+		static auto fn = Controller->Function(("IsInAircraft"));
 		
 		bool bIsInAircraft = false;
 
@@ -156,7 +156,7 @@ namespace Helper
 		if (!Actor)
 			return FVector();
 
-		/* static */ auto K2_GetActorLocationFN = Actor->Function(_("K2_GetActorLocation"));
+		/* static */ auto K2_GetActorLocationFN = Actor->Function(("K2_GetActorLocation"));
 
 		if (K2_GetActorLocationFN)
 		{
@@ -165,25 +165,25 @@ namespace Helper
 			return loc;
 		}
 		else
-			K2_GetActorLocationFN = Actor->Function(_("K2_GetActorLocation"));
+			K2_GetActorLocationFN = Actor->Function(("K2_GetActorLocation"));
 
 		return FVector();
 	}
 
 	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true)
 	{
-		static UObject* EffectClass = FindObject(_("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C"));
-		static UObject* PickupClass = FindObject(_("Class /Script/FortniteGame.FortPickupAthena"));
+		static UObject* EffectClass = FindObject(("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C"));
+		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena"));
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location);
 		auto Effect = Easy::SpawnActor(EffectClass, Location);
 		if (Pickup && Definition)
 		{
-			auto ItemEntry = Pickup->Member<void>(_("PrimaryPickupItemEntry"));
-			static auto CountOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("Count"));
-			static auto ItemDefOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortItemEntry"), _("ItemDefinition"));
+			auto ItemEntry = Pickup->Member<void>(("PrimaryPickupItemEntry"));
+			static auto CountOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("Count"));
+			static auto ItemDefOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
 
-			static auto OnRep_PrimaryPickupItemEntry = Pickup->Function(_("OnRep_PrimaryPickupItemEntry"));
+			static auto OnRep_PrimaryPickupItemEntry = Pickup->Function(("OnRep_PrimaryPickupItemEntry"));
 
 			if (ItemEntry && OnRep_PrimaryPickupItemEntry)
 			{
@@ -194,7 +194,7 @@ namespace Helper
 
 				if (bTossPickup)
 				{
-					static auto TossPickupFn = Pickup->Function(_("TossPickup"));
+					static auto TossPickupFn = Pickup->Function(("TossPickup"));
 
 					struct {
 						FVector FinalLocation;
@@ -211,9 +211,9 @@ namespace Helper
 
 				if (PickupSource == EFortPickupSourceTypeFlag::Container)
 				{
-					*Pickup->Member<bool>(_("bTossedFromContainer")) = true;
+					*Pickup->Member<bool>(("bTossedFromContainer")) = true;
 
-					static auto OnRep_TossedFromContainer = Pickup->Function(_("OnRep_TossedFromContainer"));
+					static auto OnRep_TossedFromContainer = Pickup->Function(("OnRep_TossedFromContainer"));
 
 					if (OnRep_TossedFromContainer)
 						Pickup->ProcessEvent(OnRep_TossedFromContainer);
@@ -226,7 +226,7 @@ namespace Helper
 
 	UObject* GetOwnerOfComponent(UObject* Component)
 	{
-		static auto fn = Component->Function(_("GetOwner"));
+		static auto fn = Component->Function(("GetOwner"));
 
 		UObject* Owner = nullptr;
 
@@ -241,17 +241,17 @@ namespace Helper
 		if (!Actor) 
 			return;
 
-		static auto fn = Actor->Function(_("K2_DestroyActor"));
+		static auto fn = Actor->Function(("K2_DestroyActor"));
 
 		if (fn)
 			Actor->ProcessEvent(fn);
 		else
-			std::cout << _("Failed to find K2_DestroyActor function!\n");
+			std::cout << ("Failed to find K2_DestroyActor function!\n");
 	}
 
 	FRotator GetActorRotation(UObject* Actor)
 	{
-		static auto K2_GetActorRotationFN = Actor->Function(_("K2_GetActorRotation"));
+		static auto K2_GetActorRotationFN = Actor->Function(("K2_GetActorRotation"));
 
 		if (K2_GetActorRotationFN)
 		{
@@ -260,16 +260,16 @@ namespace Helper
 			return loc;
 		}
 		else
-			K2_GetActorRotationFN = Actor->Function(_("K2_GetActorRotation"));
+			K2_GetActorRotationFN = Actor->Function(("K2_GetActorRotation"));
 
 		return FRotator();
 	}
 
 	static TArray<UObject*> GetAllActorsOfClass(UObject* Class)
 	{
-		static auto GSCClass = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+		static auto GSCClass = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
 
-		static UObject* GetAllActorsOfClass = GSCClass->Function(_("GetAllActorsOfClass"));
+		static UObject* GetAllActorsOfClass = GSCClass->Function(("GetAllActorsOfClass"));
 
 		struct
 		{
@@ -303,7 +303,7 @@ namespace Helper
 
 		if (Controller && BuildingActor)
 		{
-			static auto fn = BuildingActor->Function(_("InitializeKismetSpawnedBuildingActor"));
+			static auto fn = BuildingActor->Function(("InitializeKismetSpawnedBuildingActor"));
 
 			if (fn)
 				BuildingActor->ProcessEvent(fn, &IBAParams);
@@ -312,30 +312,30 @@ namespace Helper
 
 	static UObject* SpawnChip(UObject* Controller)
 	{
-		static auto ChipClass = FindObject(_("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip"));
+		static auto ChipClass = FindObject(("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip"));
 
-		auto Pawn = Controller->Member<UObject*>(_("Pawn"));
+		auto Pawn = Controller->Member<UObject*>(("Pawn"));
 
 		if (ChipClass && Pawn && *Pawn)
 		{
-			auto PlayerState = (*Pawn)->Member<UObject*>(_("PlayerState"));
+			auto PlayerState = (*Pawn)->Member<UObject*>(("PlayerState"));
 
 			if (PlayerState && *PlayerState)
 			{
-				std::cout << _("Spawning Chip!\n");
+				std::cout << ("Spawning Chip!\n");
 
 				auto Chip = Easy::SpawnActor(ChipClass, Helper::GetActorLocation(*Pawn), Helper::GetActorRotation(*Pawn));
 
-				std::cout << _("Initializing Chip!\n");
+				std::cout << ("Initializing Chip!\n");
 
 				Helper::InitializeBuildingActor(Controller, Chip);
 
-				std::cout << _("Initialized Chip!\n");
+				std::cout << ("Initialized Chip!\n");
 
-				*Chip->Member<UObject*>(_("OwnerPlayerController")) = Controller;
-				*Chip->Member<UObject*>(_("OwnerPlayerState")) = *PlayerState;
-				*Chip->Member<unsigned char>(_("SquadId")) = *(*PlayerState)->Member<unsigned char>(_("SquadId"));
-				*Chip->Member<__int64>(_("OwnerPlayerId")) = *(*PlayerState)->Member<__int64>(_("UniqueId"));
+				*Chip->Member<UObject*>(("OwnerPlayerController")) = Controller;
+				*Chip->Member<UObject*>(("OwnerPlayerState")) = *PlayerState;
+				*Chip->Member<unsigned char>(("SquadId")) = *(*PlayerState)->Member<unsigned char>(("SquadId"));
+				*Chip->Member<__int64>(("OwnerPlayerId")) = *(*PlayerState)->Member<__int64>(("UniqueId"));
 
 				struct FRebootCardReplicatedState {
 					float                                              ChipExpirationServerStartTime;                            // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData)
@@ -347,26 +347,26 @@ namespace Helper
 
 				CardReplicatedState.PlayerState = *PlayerState;
 
-				*Chip->Member<FRebootCardReplicatedState>(_("RebootCardReplicatedState")) = CardReplicatedState;
-				Chip->ProcessEvent(_("OnRep_RebootCardReplicatedState"));
+				*Chip->Member<FRebootCardReplicatedState>(("RebootCardReplicatedState")) = CardReplicatedState;
+				Chip->ProcessEvent(("OnRep_RebootCardReplicatedState"));
 
 				return Chip;
 			}
 		}
 		else
-			std::cout << _("Unable to find ChipClass!\n");
+			std::cout << ("Unable to find ChipClass!\n");
 
 		return nullptr;
 	}
 	static void SpawnMilo(UObject* Pawn)
 	{
-		auto def = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_AshtonPack_Milo.WID_AshtonPack_Milo"));
+		auto def = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_AshtonPack_Milo.WID_AshtonPack_Milo"));
 		auto Location = GetActorLocation(Pawn);
 		SummonPickup(Pawn, def, Location, EFortPickupSourceTypeFlag::Tossed, EFortPickupSpawnSource::Chest, 1, true);
 	}
 	static void SpawnAshton(UObject* Pawn)
 	{
-		auto def = FindObject(_("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/Ashton/AGID_AshtonPack.AGID_AshtonPack"));
+		auto def = FindObject(("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/Ashton/AGID_AshtonPack.AGID_AshtonPack"));
 		auto Location = GetActorLocation(Pawn);
 		SummonPickup(Pawn, def, Location, EFortPickupSourceTypeFlag::Tossed, EFortPickupSpawnSource::Chest, 1, true);
 	}
@@ -379,7 +379,7 @@ namespace Helper
 			bool Res;
 		} params{ Location, Rot, false };
 
-		auto fn = Actor->Function(_("K2_TeleportTo"));
+		auto fn = Actor->Function(("K2_TeleportTo"));
 
 		if (fn)
 			Actor->ProcessEvent(fn, &params);
@@ -390,13 +390,13 @@ namespace Helper
 	EAthenaGamePhase* GetGamePhase()
 	{
 		auto world = Helper::GetWorld();
-		auto gameState = *world->Member<UObject*>(_("GameState"));
-		return gameState->Member<EAthenaGamePhase>(_("GamePhase"));
+		auto gameState = *world->Member<UObject*>(("GameState"));
+		return gameState->Member<EAthenaGamePhase>(("GamePhase"));
 	}
 
 	FVector GetPlayerStart()
 	{
-		static auto WarmupClass = FindObject(_("Class /Script/FortniteGame.FortPlayerStartWarmup"));
+		static auto WarmupClass = FindObject(("Class /Script/FortniteGame.FortPlayerStartWarmup"));
 		TArray<UObject*> OutActors = GetAllActorsOfClass(WarmupClass);
 
 		auto ActorsNum = OutActors.Num();
@@ -470,31 +470,31 @@ namespace Helper
 
 		DWORD WINAPI Setup(LPVOID)
 		{
-			static auto Engine = FindObjectOld(_("FortEngine_"));
+			static auto Engine = FindObjectOld(("FortEngine_"));
 
 			while (!Engine)
 			{
-				Engine = FindObjectOld(_("FortEngine_"));
+				Engine = FindObjectOld(("FortEngine_"));
 				Sleep(1000 / 30);
 			}
 
-			static auto ConsoleClass = FindObject(_("Class /Script/Engine.Console"));
-			static auto GameViewport = Engine->Member<UObject*>(_("GameViewport"));
+			static auto ConsoleClass = FindObject(("Class /Script/Engine.Console"));
+			static auto GameViewport = Engine->Member<UObject*>(("GameViewport"));
 
 			while (!*GameViewport)
 			{
-				GameViewport = Engine->Member<UObject*>(_("GameViewport"));
+				GameViewport = Engine->Member<UObject*>(("GameViewport"));
 				Sleep(1000 / 30);
 			}
 
-			ViewportConsole = (*GameViewport)->Member<UObject*>(_("ViewportConsole"));
+			ViewportConsole = (*GameViewport)->Member<UObject*>(("ViewportConsole"));
 
 			auto ConsoleObject = Easy::SpawnObject(ConsoleClass, *GameViewport);
 
 			if (ConsoleObject)
 				*ViewportConsole = ConsoleObject;
 			else
-				std::cout << _("[WARNING] SpawnObject failed to create console!\n");
+				std::cout << ("[WARNING] SpawnObject failed to create console!\n");
 
 			return 0;
 		}
@@ -507,34 +507,34 @@ namespace Helper
 				UObject* SpecificPlayer;                                           // (Parm, ZeroConstructor, IsPlainOldData)
 			} params{Helper::GetWorld(), Command, nullptr};
 
-			static auto KSLClass = FindObject(_("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+			static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
 
 			if (KSLClass)
 			{
-				// static auto ExecuteConsoleCommandFn = KSLClass->Function(_("ExecuteConsoleCommand"));
-				static auto ExecuteConsoleCommandFn = FindObject(_("Function /Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand"));
+				// static auto ExecuteConsoleCommandFn = KSLClass->Function(("ExecuteConsoleCommand"));
+				static auto ExecuteConsoleCommandFn = FindObject(("Function /Script/Engine.KismetSystemLibrary.ExecuteConsoleCommand"));
 
 				if (ExecuteConsoleCommandFn)
 					KSLClass->ProcessEvent(ExecuteConsoleCommandFn, &params);
 				else
-					std::cout << _("No ExecuteConsoleCommand!\n");
+					std::cout << ("No ExecuteConsoleCommand!\n");
 			}
 			else
-				std::cout << _("No KismetSyustemLibrary!\n");
+				std::cout << ("No KismetSyustemLibrary!\n");
 		}
 	}
 
 	void SetOwner(UObject* Actor, UObject* Owner)
 	{
-		*Actor->Member<UObject*>(_("Owner")) = Owner; // TODO: Call SetOwner
-		static auto OnRepOwner = Actor->Function(_("OnRep_Owner"));
+		*Actor->Member<UObject*>(("Owner")) = Owner; // TODO: Call SetOwner
+		static auto OnRepOwner = Actor->Function(("OnRep_Owner"));
 		if (OnRepOwner)
 			Actor->ProcessEvent(OnRepOwner);
 	}
 
 	static UObject* GetVehicle(UObject* Pawn)
 	{
-		static auto fn = Pawn->Function(_("GetVehicle"));
+		static auto fn = Pawn->Function(("GetVehicle"));
 
 		UObject* Vehicle;
 		Pawn->ProcessEvent(fn, &Vehicle);
@@ -544,17 +544,17 @@ namespace Helper
 
 	void SetLocalRole(UObject* Actor, ENetRole LocalRole)
 	{
-		*Actor->Member<ENetRole>(_("Role")) = LocalRole;
+		*Actor->Member<ENetRole>(("Role")) = LocalRole;
 	}
 
 	void SetRemoteRole(UObject* Actor, ENetRole RemoteRole)
 	{
-		*Actor->Member<ENetRole>(_("RemoteRole")) = RemoteRole;
+		*Actor->Member<ENetRole>(("RemoteRole")) = RemoteRole;
 	}
 
 	static void SetActorScale3D(UObject* Actor, const FVector& Scale)
 	{
-		static auto SetActorScaleFn = Actor->Function(_("SetActorScale3D"));
+		static auto SetActorScaleFn = Actor->Function(("SetActorScale3D"));
 		struct { FVector Scale; }params{ Scale };
 
 		if (SetActorScaleFn)
@@ -563,11 +563,11 @@ namespace Helper
 
 	static FString GetfPlayerName(UObject* PlayerState)
 	{
-		FString Name; // = *PlayerState->Member<FString>(_("PlayerNamePrivate"));
+		FString Name; // = *PlayerState->Member<FString>(("PlayerNamePrivate"));
 
 		if (PlayerState)
 		{
-			static auto fn = PlayerState->Function(_("GetPlayerName"));
+			static auto fn = PlayerState->Function(("GetPlayerName"));
 
 			if (fn)
 				PlayerState->ProcessEvent(fn, &Name);
@@ -588,7 +588,7 @@ namespace Helper
 
 		if (PlayerState)
 		{
-			IP = *PlayerState->Member<FString>(_("SavedNetworkAddress"));
+			IP = *PlayerState->Member<FString>(("SavedNetworkAddress"));
 		}
 
 		return IP.Data.GetData() ? IP : FString();
@@ -606,7 +606,7 @@ namespace Helper
 			return false;
 
 		struct { bool Ret; }params;
-		static auto fn = BuildingActor->Function(_("IsStructurallySupported"));
+		static auto fn = BuildingActor->Function(("IsStructurallySupported"));
 		if (fn)
 			BuildingActor->ProcessEvent(fn, &params);
 		return params.Ret;
@@ -633,32 +633,32 @@ namespace Helper
 	{
 		static const auto FnVerDouble = std::stod(FN_Version);
 
-		UObject* PlayerState = *PC->Member<UObject*>(_("PlayerState"));
+		UObject* PlayerState = *PC->Member<UObject*>(("PlayerState"));
 
-		static auto PawnClass = FindObject(_("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
+		static auto PawnClass = FindObject(("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
 		auto Pawn = Easy::SpawnActor(PawnClass, Location, {});
 
 		if (!Pawn)
 			return nullptr;
 
-		static auto SetReplicateMovementFn = Pawn->Function(_("SetReplicateMovement"));
+		static auto SetReplicateMovementFn = Pawn->Function(("SetReplicateMovement"));
 		struct { bool b; } bruh{true};
 		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh);
 
 		// prob not needed here from
 
-		static auto Rep_ReplicateMovement = Pawn->Function(_("OnRep_ReplicateMovement"));
+		static auto Rep_ReplicateMovement = Pawn->Function(("OnRep_ReplicateMovement"));
 		Pawn->ProcessEvent(Rep_ReplicateMovement);
 
-		static auto Rep_ReplicatedMovement = Pawn->Function(_("OnRep_ReplicatedMovement"));
+		static auto Rep_ReplicatedMovement = Pawn->Function(("OnRep_ReplicatedMovement"));
 		Pawn->ProcessEvent(Rep_ReplicatedMovement);
 
-		static auto Rep_ReplicatedBasedMovement = Pawn->Function(_("OnRep_ReplicatedBasedMovement"));
+		static auto Rep_ReplicatedBasedMovement = Pawn->Function(("OnRep_ReplicatedBasedMovement"));
 		Pawn->ProcessEvent(Rep_ReplicateMovement);
 
 		// here
 
-		static auto PossessFn = PC->Function(_("Possess"));
+		static auto PossessFn = PC->Function(("Possess"));
 
 		if (PossessFn)
 		{
@@ -668,134 +668,134 @@ namespace Helper
 			PC->ProcessEvent(PossessFn, &params);
 		}
 		else
-			std::cout << _("Could not find Possess!\n");
+			std::cout << ("Could not find Possess!\n");
 
 		Helper::SetOwner(Pawn, PC); // prob not needed
 
-		*PC->Member<char>(_("bReadyToStartMatch")) = true;
-		*PC->Member<char>(_("bClientPawnIsLoaded")) = true;
-		*PC->Member<char>(_("bHasInitiallySpawned")) = true;
+		*PC->Member<char>(("bReadyToStartMatch")) = true;
+		*PC->Member<char>(("bClientPawnIsLoaded")) = true;
+		*PC->Member<char>(("bHasInitiallySpawned")) = true;
 
-		*PC->Member<bool>(_("bHasServerFinishedLoading")) = true;
-		*PC->Member<bool>(_("bHasClientFinishedLoading")) = true;
+		*PC->Member<bool>(("bHasServerFinishedLoading")) = true;
+		*PC->Member<bool>(("bHasClientFinishedLoading")) = true;
 
-		*PlayerState->Member<char>(_("bHasStartedPlaying")) = true;
-		*PlayerState->Member<char>(_("bHasFinishedLoading")) = true;
-		*PlayerState->Member<char>(_("bIsReadyToContinue")) = true;
+		*PlayerState->Member<char>(("bHasStartedPlaying")) = true;
+		*PlayerState->Member<char>(("bHasFinishedLoading")) = true;
+		*PlayerState->Member<char>(("bIsReadyToContinue")) = true;
 
-		// *Pawn->Member<float>(_("NetUpdateFrequency")) = 200;
+		// *Pawn->Member<float>(("NetUpdateFrequency")) = 200;
 
-		static auto setMaxHealthFn = Pawn->Function(_("SetMaxHealth"));
+		static auto setMaxHealthFn = Pawn->Function(("SetMaxHealth"));
 		struct { float NewHealthVal; }healthParams{ 100 };
 
 		if (setMaxHealthFn)
 			Pawn->ProcessEvent(setMaxHealthFn, &healthParams);
 		else
-			std::cout << _("Unable to find setMaxHealthFn!\n");
+			std::cout << ("Unable to find setMaxHealthFn!\n");
 
-		static auto setMaxShieldFn = Pawn->Function(_("SetMaxShield"));
+		static auto setMaxShieldFn = Pawn->Function(("SetMaxShield"));
 		struct { float NewValue; }shieldParams{ 100 };
 
 		if (setMaxShieldFn)
 			Pawn->ProcessEvent(setMaxShieldFn, &shieldParams);
 		else
-			std::cout << _("Unable to find setMaxShieldFn!\n");
+			std::cout << ("Unable to find setMaxShieldFn!\n");
 
-		static const auto HeroType = FindObject(_("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
+		static const auto HeroType = FindObject(("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
 
-		*PlayerState->Member<UObject*>(_("HeroType")) = HeroType;
-		static auto OnRepHeroType = PlayerState->Function(_("OnRep_HeroType"));
+		*PlayerState->Member<UObject*>(("HeroType")) = HeroType;
+		static auto OnRepHeroType = PlayerState->Function(("OnRep_HeroType"));
 		PlayerState->ProcessEvent(OnRepHeroType);
 
-		/*static auto FortCustomizationAssetLoader = FindObject(_("FortCustomizationAssetLoader /Script/FortniteGame.Default__FortCustomizationAssetLoader"));
+		/*static auto FortCustomizationAssetLoader = FindObject(("FortCustomizationAssetLoader /Script/FortniteGame.Default__FortCustomizationAssetLoader"));
 		auto PawnCustomizationAssetLoader = Pawn->Member<UObject*>("CustomizationAssetLoader");
 		auto LocalPawnCustomizationAssetLoader = PC->Member<UObject*>("LocalPawnCustomizationAssetLoader");
 		*PawnCustomizationAssetLoader = FortCustomizationAssetLoader;
 		*LocalPawnCustomizationAssetLoader = FortCustomizationAssetLoader;*/
 
-		/* auto CustomizationAssetLoader = Pawn->Member<UObject*>(_("CustomizationAssetLoader"));
+		/* auto CustomizationAssetLoader = Pawn->Member<UObject*>(("CustomizationAssetLoader"));
 
 		if (CustomizationAssetLoader && *CustomizationAssetLoader)
 		{
-			void* CurrentAssetsToLoad = (*CustomizationAssetLoader)->Member<void>(_("CurrentAssetsToLoad"));
+			void* CurrentAssetsToLoad = (*CustomizationAssetLoader)->Member<void>(("CurrentAssetsToLoad"));
 
-			static auto CharacterPartsOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortCustomizationAssetsToLoad"), _("CharacterParts"));
+			static auto CharacterPartsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortCustomizationAssetsToLoad"), ("CharacterParts"));
 
 			auto CharacterPartsToLoad = (TArray<UObject*>*)(__int64(CurrentAssetsToLoad) + CharacterPartsOffset);
 		}
 		
-		static auto headPart = Engine_Version >= 423 ? FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_TreasureHunterFashion.CP_Head_F_TreasureHunterFashion")) :
-			FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-		static auto bodyPart = Engine_Version >= 423 ? FindObject(_("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_TreasureHunterFashion.CP_Body_Commando_F_TreasureHunterFashion")) :
-			FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01")); */
+		static auto headPart = Engine_Version >= 423 ? FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_TreasureHunterFashion.CP_Head_F_TreasureHunterFashion")) :
+			FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
+		static auto bodyPart = Engine_Version >= 423 ? FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_TreasureHunterFashion.CP_Body_Commando_F_TreasureHunterFashion")) :
+			FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01")); */
 
-		static auto headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-		static auto bodyPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+		static auto headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
+		static auto bodyPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
 
 		if (!headPart)
-			headPart = FindObject(_("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA"));
+			headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA"));
 
 		if (!bodyPart)
-			bodyPart = FindObject(_("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.CP_Body_Commando_F_RebirthDefaultA"));
+			bodyPart = FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.CP_Body_Commando_F_RebirthDefaultA"));
 
 		if (headPart && bodyPart && bResetCharacterParts)
 		{
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
-			static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(_("OnRep_CharacterData")) : PlayerState->Function(_("OnRep_CharacterParts")); //Make sure its s10 and up
+			static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
 
 			if (OnRep_Parts)
 				PlayerState->ProcessEvent(OnRep_Parts, nullptr);
 		}
 		else
-			std::cout << _("Unable to find Head and Body!\n");
+			std::cout << ("Unable to find Head and Body!\n");
 
 		if (false && std::stod(FN_Version) >= 7.40)
 		{
-			auto TeamIndex = *PlayerState->Member<uint8_t>(_("TeamIndex"));
+			auto TeamIndex = *PlayerState->Member<uint8_t>(("TeamIndex"));
 
-			*PlayerState->Member<uint8_t>(_("SquadId")) = TeamIndex;
+			*PlayerState->Member<uint8_t>(("SquadId")) = TeamIndex;
 
-			*PlayerState->Member<ETeamMemberState>(_("TeamMemberState")) = ETeamMemberState::None;
-			*PlayerState->Member<ETeamMemberState>(_("ReplicatedTeamMemberState")) = ETeamMemberState::None;
+			*PlayerState->Member<ETeamMemberState>(("TeamMemberState")) = ETeamMemberState::None;
+			*PlayerState->Member<ETeamMemberState>(("ReplicatedTeamMemberState")) = ETeamMemberState::None;
 
-			auto PlayerTeam = PlayerState->Member<UObject*>(_("PlayerTeam"));
+			auto PlayerTeam = PlayerState->Member<UObject*>(("PlayerTeam"));
 
 			static auto world = Helper::GetWorld();
-			static auto gameState = *world->Member<UObject*>(_("GameState"));
+			static auto gameState = *world->Member<UObject*>(("GameState"));
 
-			*PlayerTeam = gameState->Member<TArray<UObject*>>(_("Teams"))->At(TeamIndex); // TArray<class AFortTeamInfo*>
+			*PlayerTeam = gameState->Member<TArray<UObject*>>(("Teams"))->At(TeamIndex); // TArray<class AFortTeamInfo*>
 
-			auto PrivateInfo = (*PlayerTeam)->Member<UObject*>(_("PrivateInfo"));
+			auto PrivateInfo = (*PlayerTeam)->Member<UObject*>(("PrivateInfo"));
 			if (PrivateInfo && *PrivateInfo)
-				*PlayerState->Member<UObject*>(_("PlayerTeamPrivate")) = *PrivateInfo;
+				*PlayerState->Member<UObject*>(("PlayerTeamPrivate")) = *PrivateInfo;
 
-			static auto OnRepSquadIdFn = PlayerState->Function(_("OnRep_SquadId"));
+			static auto OnRepSquadIdFn = PlayerState->Function(("OnRep_SquadId"));
 
 			if (OnRepSquadIdFn)
 				PlayerState->ProcessEvent(OnRepSquadIdFn);
 			else
-				std::cout << _("Unable to find OnRepSquadIdFn!\n");
+				std::cout << ("Unable to find OnRepSquadIdFn!\n");
 
 			if (PlayerTeam && *PlayerTeam)
 			{
-				(*PlayerTeam)->Member<TArray<UObject*>>(_("TeamMembers"))->Add(PC);
-				static auto OnRepPlayerFn = PlayerState->Function(_("OnRep_PlayerTeam"));
+				(*PlayerTeam)->Member<TArray<UObject*>>(("TeamMembers"))->Add(PC);
+				static auto OnRepPlayerFn = PlayerState->Function(("OnRep_PlayerTeam"));
 
 				if (OnRepPlayerFn)
 					PlayerState->ProcessEvent(OnRepPlayerFn);
 				else
-					std::cout << _("Unable to find OnRepPlayerFn!\n");
+					std::cout << ("Unable to find OnRepPlayerFn!\n");
 			}
 
-			static auto OnRep_TeamIndex = PlayerState->Function(_("OnRep_TeamIndex"));
+			static auto OnRep_TeamIndex = PlayerState->Function(("OnRep_TeamIndex"));
 
 			unsigned char OldVal = 0;
 
 			if (OnRep_TeamIndex)
 				PlayerState->ProcessEvent(OnRep_TeamIndex, &OldVal);
 			else
-				std::cout << _("Unable to find OnRep_TeamIndex!\n");
+				std::cout << ("Unable to find OnRep_TeamIndex!\n");
 		}
 
 		return Pawn;
@@ -808,9 +808,9 @@ namespace Helper
 		{
 			// Function /Script/Engine.KismetSystemLibrary.Conv_SoftObjectReferenceToObject
 
-			static auto KSLClass = FindObject(_("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+			static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
 
-			static auto fn = KSLClass->Function(_("Conv_SoftObjectReferenceToObject"));
+			static auto fn = KSLClass->Function(("Conv_SoftObjectReferenceToObject"));
 
 			UObject* Object;
 
@@ -830,35 +830,35 @@ namespace Helper
 			switch (Rarity)
 			{
 			case EFortRarity::Badass:
-				return _("Badass");
+				return ("Badass");
 			case EFortRarity::Elegant:
-				return _("Elegant");
+				return ("Elegant");
 			case EFortRarity::Epic:
-				return _("Epic");
+				return ("Epic");
 			case EFortRarity::Masterwork:
-				return _("Masterwork");
+				return ("Masterwork");
 			case EFortRarity::Legendary:
-				return _("Legendary");
+				return ("Legendary");
 			case EFortRarity::Sturdy:
-				return _("Sturdy");
+				return ("Sturdy");
 			case EFortRarity::Quality:
-				return _("Quality");
+				return ("Quality");
 			case EFortRarity::Ordinary:
-				return _("Ordinary");
+				return ("Ordinary");
 			default:
-				return _("InvalidRarity");
+				return ("InvalidRarity");
 			}
 		}
 
 		FText StringToText(FString String)
 		{
-			static auto KTL = FindObject(_("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
+			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
 
 			FText text;
 
 			if (KTL)
 			{
-				static auto fn = KTL->Function(_("Conv_StringToText"));
+				static auto fn = KTL->Function(("Conv_StringToText"));
 
 				struct {
 					FString InText;
@@ -868,25 +868,25 @@ namespace Helper
 				if (fn)
 					KTL->ProcessEvent(fn, &params);
 				else
-					std::cout << _("Unable to find Conv_StringToText!\n");
+					std::cout << ("Unable to find Conv_StringToText!\n");
 
 				text = params.ReturnValue;
 			}
 			else
-				std::cout << _("Unable to find KTL!\n");
+				std::cout << ("Unable to find KTL!\n");
 
 			return text;
 		}
 
 		std::string TextToString(FText Text)
 		{
-			static auto KTL = FindObject(_("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
+			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
 
 			FString String;
 
 			if (KTL)
 			{
-				static auto fn = KTL->Function(_("Conv_TextToString"));
+				static auto fn = KTL->Function(("Conv_TextToString"));
 
 				struct {
 					FText InText;
@@ -896,12 +896,12 @@ namespace Helper
 				if (fn)
 					KTL->ProcessEvent(fn, &params);
 				else
-					std::cout << _("Unable to find Conv_TextToString!\n");
+					std::cout << ("Unable to find Conv_TextToString!\n");
 
 				String = params.ReturnValue;
 			}
 			else
-				std::cout << _("Unable to find KTL!\n");
+				std::cout << ("Unable to find KTL!\n");
 
 			return String.Data.GetData() ? String.ToString() : "INVALID_STRING";
 		}
@@ -909,7 +909,7 @@ namespace Helper
 
 	void SilentDie(UObject* BuildingActor)
 	{
-		static auto fn = BuildingActor->Function(_("SilentDie"));
+		static auto fn = BuildingActor->Function(("SilentDie"));
 
 		if (fn)
 			BuildingActor->ProcessEvent(fn);
@@ -917,7 +917,7 @@ namespace Helper
 
 	bool SetActorLocation(UObject* Actor, FVector& Location)
 	{
-		static auto fn = Actor->Function(_("K2_SetActorLocation"));
+		static auto fn = Actor->Function(("K2_SetActorLocation"));
 
 		struct
 		{
@@ -935,8 +935,8 @@ namespace Helper
 
 	static FName StringToName(FString Str)
 	{
-		static auto fn = FindObject(_("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
-		static auto KSL = FindObject(_("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
+		static auto fn = FindObject(("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
+		static auto KSL = FindObject(("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
 
 		struct {
 			FString InString;
@@ -950,7 +950,7 @@ namespace Helper
 
 	bool SetActorLocationAndRotation(UObject* Actor, FVector& Location, FRotator& Rotation)
 	{
-		static auto fn = Actor->Function(_("K2_SetActorLocationAndRotation"));
+		static auto fn = Actor->Function(("K2_SetActorLocationAndRotation"));
 
 		struct 
 		{
@@ -980,15 +980,15 @@ namespace Helper
 
 			if (ASC)
 			{
-				static auto fn = ASC->Function(_("ClientActivateAbilityFailed"));
+				static auto fn = ASC->Function(("ClientActivateAbilityFailed"));
 
 				if (fn)
 					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ClientActivateAbilityFailed_Params);
 				else
-					std::cout << _("Could not find ClientActivateAbilityFailed!\n");
+					std::cout << ("Could not find ClientActivateAbilityFailed!\n");
 			}
 			else
-				std::cout << _("Invalid component!\n");
+				std::cout << ("Invalid component!\n");
 		}
 
 		void ServerEndAbility(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityToEnd, const FGameplayAbilityActivationInfo& ActivationInfo, const FPredictionKey& PredictionKey)
@@ -1002,15 +1002,15 @@ namespace Helper
 
 			if (ASC)
 			{
-				static auto fn = ASC->Function(_("ServerEndAbility"));
+				static auto fn = ASC->Function(("ServerEndAbility"));
 
 				if (fn)
 					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ServerEndAbility_Params);
 				else
-					std::cout << _("Could not find ServerEndAbility!\n");
+					std::cout << ("Could not find ServerEndAbility!\n");
 			}
 			else
-				std::cout << _("Invalid component!\n");
+				std::cout << ("Invalid component!\n");
 		}
 
 		void ServerSetReplicatedTargetData(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityHandle, const FPredictionKey& AbilityOriginalPredictionKey, const FGameplayAbilityTargetDataHandleOL& ReplicatedTargetDataHandle, const FGameplayTag& ApplicationTag, const FPredictionKey& CurrentPredictionKey)
@@ -1026,15 +1026,15 @@ namespace Helper
 
 			if (ASC)
 			{
-				static auto fn = ASC->Function(_("ServerSetReplicatedTargetData"));
+				static auto fn = ASC->Function(("ServerSetReplicatedTargetData"));
 
 				if (fn)
 					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ServerSetReplicatedTargetData_Params);
 				else
-					std::cout << _("Could not find ServerEndAbility!\n");
+					std::cout << ("Could not find ServerEndAbility!\n");
 			}
 			else
-				std::cout << _("Invalid component!\n");
+				std::cout << ("Invalid component!\n");
 		}
 
 		void ServerSetReplicatedTargetData(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityHandle, const FPredictionKey& AbilityOriginalPredictionKey, const FGameplayAbilityTargetDataHandleSE& ReplicatedTargetDataHandle, const FGameplayTag& ApplicationTag, const FPredictionKey& CurrentPredictionKey)
@@ -1050,15 +1050,15 @@ namespace Helper
 
 			if (ASC)
 			{
-				static auto fn = ASC->Function(_("ServerSetReplicatedTargetData"));
+				static auto fn = ASC->Function(("ServerSetReplicatedTargetData"));
 
 				if (fn)
 					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ServerSetReplicatedTargetData_Params);
 				else
-					std::cout << _("Could not find ServerEndAbility!\n");
+					std::cout << ("Could not find ServerEndAbility!\n");
 			}
 			else
-				std::cout << _("Invalid component!\n");
+				std::cout << ("Invalid component!\n");
 		}
 	}
 
@@ -1068,13 +1068,13 @@ namespace Helper
 		{
 			FText text = Conversion::StringToText(Reason);
 			static auto World = Helper::GetWorld();
-			auto GameMode = *World->Member<UObject*>(_("AuthorityGameMode"));
-			auto GameSession = *World->Member<UObject*>(_("GameSession"));
+			auto GameMode = *World->Member<UObject*>(("AuthorityGameMode"));
+			auto GameSession = *World->Member<UObject*>(("GameSession"));
 
 			if (GameSession)
 				KickPlayer(GameSession, Controller, text); // TODO: Use a differentfunction, this crashes after a second try.
 			else
-				std::cout << _("Unable to find GameSession!\n");
+				std::cout << ("Unable to find GameSession!\n");
 		}
 		else
 		{
@@ -1086,7 +1086,7 @@ namespace Helper
 	{
 		bool Ban(const std::wstring& IP, UObject* Controller, const std::wstring& Username)
 		{
-			std::ofstream stream(_("banned-ips.json"), std::ios::app);
+			std::ofstream stream(("banned-ips.json"), std::ios::app);
 
 			if (!stream.is_open())
 				return false;
@@ -1108,7 +1108,7 @@ namespace Helper
 
 		bool Unban(const std::wstring& IP) // I think I have SEVERE brain damage, but it works. // IP Or Name
 		{
-			std::ifstream input_file(_("banned-ips.json"));
+			std::ifstream input_file(("banned-ips.json"));
 
 			if (!input_file.is_open())
 				return false;
@@ -1143,7 +1143,7 @@ namespace Helper
 
 		bool IsBanned(const std::wstring& IP)
 		{
-			std::ifstream input_file(_("banned-ips.json"));
+			std::ifstream input_file(("banned-ips.json"));
 			std::string line;
 
 			if (!input_file.is_open())

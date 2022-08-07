@@ -25,7 +25,7 @@ inline bool ServerAcknowledgePossessionHook(UObject* Object, UFunction* Function
     {
         auto Pawn = Params->P; // (UObject*)Parameters;
 
-        *Object->Member<UObject*>(_("AcknowledgedPawn")) = Pawn;
+        *Object->Member<UObject*>(("AcknowledgedPawn")) = Pawn;
         std::cout << "Set Pawn!\n";
     }
 
@@ -34,14 +34,14 @@ inline bool ServerAcknowledgePossessionHook(UObject* Object, UFunction* Function
 
 void InitializeNetUHooks()
 {
-    AddHook(_("Function /Script/Engine.PlayerController.ServerAcknowledgePossession"), ServerAcknowledgePossessionHook);
+    AddHook(("Function /Script/Engine.PlayerController.ServerAcknowledgePossession"), ServerAcknowledgePossessionHook);
 }
 
 void TickFlushDetour(UObject* thisNetDriver, float DeltaSeconds)
 {
-    // std::cout << _("TicKFluSh!\n");
-    static auto NetDriver = *Helper::GetWorld()->Member<UObject*>(_("NetDriver"));
-    static auto& ClientConnections = *NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+    // std::cout << ("TicKFluSh!\n");
+    static auto NetDriver = *Helper::GetWorld()->Member<UObject*>(("NetDriver"));
+    static auto& ClientConnections = *NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
 
     if (ClientConnections.Num() > 0)
     {
@@ -67,13 +67,13 @@ bool LP_SpawnPlayActorDetour(UObject* Player, const FString& URL, FString& OutEr
 
 char KickPlayerDetour(__int64 a1, __int64 a2, __int64 a3)
 {
-    std::cout << _("Player Kick! Returning 0..\n");
+    std::cout << ("Player Kick! Returning 0..\n");
     return 0;
 }
 
 char __fastcall ValidationFailureDetour(__int64* a1, __int64 a2)
 {
-    std::cout << _("Validation!\n");
+    std::cout << ("Validation!\n");
     return 0;
 }
 
@@ -89,19 +89,19 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         bSpawnedFloorLoot = true;
     }
 
-    std::cout << _("SpawnPlayActor called!\n");
-    // static UObject* CameraManagerClass = FindObject(_("BlueprintGeneratedClass /Game/Blueprints/Camera/Original/MainPlayerCamera.MainPlayerCamera_C"));
+    std::cout << ("SpawnPlayActor called!\n");
+    // static UObject* CameraManagerClass = FindObject(("BlueprintGeneratedClass /Game/Blueprints/Camera/Original/MainPlayerCamera.MainPlayerCamera_C"));
 
     auto PlayerController = SpawnPlayActor(Helper::GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex); // crashes 0x356 here sometimes when rejoining
 
-    // *PlayerController->Member<UObject*>(_("PlayerCameraManagerClass")) = CameraManagerClass;
+    // *PlayerController->Member<UObject*>(("PlayerCameraManagerClass")) = CameraManagerClass;
 
-    static auto FortPlayerControllerAthenaClass = FindObject(_("Class /Script/FortniteGame.FortPlayerControllerAthena"));
+    static auto FortPlayerControllerAthenaClass = FindObject(("Class /Script/FortniteGame.FortPlayerControllerAthena"));
 
     if (!PlayerController || !PlayerController->IsA(FortPlayerControllerAthenaClass))
         return nullptr;
 
-    auto PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
+    auto PlayerState = *PlayerController->Member<UObject*>(("PlayerState"));
 
     if (Helper::Banning::IsBanned(Helper::GetfIP(PlayerState).Data.GetData()))
     {
@@ -114,7 +114,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     std::string PlayerName = OPlayerName;
     std::transform(OPlayerName.begin(), OPlayerName.end(), OPlayerName.begin(), ::tolower);
 
-    if (OPlayerName.contains(_("fuck")) || OPlayerName.contains(_("shit")))
+    if (OPlayerName.contains(("fuck")) || OPlayerName.contains(("shit")))
     {
         FString Reason;
         Reason.Set(L"Inappropriate name!");
@@ -128,14 +128,14 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         Helper::KickController(PlayerController, Reason);
     }
 
-    *NewPlayer->Member<UObject*>(_("PlayerController")) = PlayerController;
+    *NewPlayer->Member<UObject*>(("PlayerController")) = PlayerController;
 
     static const auto FnVerDouble = std::stod(FN_Version);
 
     if (FnVerDouble < 7.4)
     {
-        static const auto QuickBarsClass = FindObject(_("Class /Script/FortniteGame.FortQuickBars", true));
-        auto QuickBars = PlayerController->Member<UObject*>(_("QuickBars"));
+        static const auto QuickBarsClass = FindObject("Class /Script/FortniteGame.FortQuickBars", true);
+        auto QuickBars = PlayerController->Member<UObject*>(("QuickBars"));
 
         if (QuickBars)
         {
@@ -151,18 +151,18 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     if (GiveAbility)
     {
-        auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
+        auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
 
         if (AbilitySystemComponent && Engine_Version < 424)
         {
-            std::cout << _("Granting abilities!\n");
+            std::cout << ("Granting abilities!\n");
             if (FnVerDouble < 8)
             {
-                static auto AbilitySet = FindObject(_("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
+                static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
 
                 if (AbilitySet)
                 {
-                    auto Abilities = AbilitySet->Member<TArray<UObject*>>(_("GameplayAbilities"));
+                    auto Abilities = AbilitySet->Member<TArray<UObject*>>(("GameplayAbilities"));
 
                     if (Abilities)
                     {
@@ -180,18 +180,18 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
             }
             else
             {
-                // static auto MatsAbility = FindObject(_("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
+                // static auto MatsAbility = FindObject(("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
                 //GrantGameplayAbility(Pawn, MatsAbility);
 
-                static auto SprintAbility = FindObject(_("Class /Script/FortniteGame.FortGameplayAbility_Sprint"));
-                static auto ReloadAbility = FindObject(_("Class /Script/FortniteGame.FortGameplayAbility_Reload"));
-                static auto JumpAbility = FindObject(_("Class /Script/FortniteGame.FortGameplayAbility_Jump"));
-                static auto InteractUseAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C"));
+                static auto SprintAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Sprint"));
+                static auto ReloadAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Reload"));
+                static auto JumpAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Jump"));
+                static auto InteractUseAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C"));
                 static auto InteractSearchAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.GA_DefaultPlayer_InteractSearch_C");
-                static auto EnterVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.GA_AthenaEnterVehicle_C"));
-                static auto ExitVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.GA_AthenaExitVehicle_C"));
-                static auto InVehicleAbility = FindObject(_("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.GA_AthenaInVehicle_C"));
-                static auto RangedAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C"));
+                static auto EnterVehicleAbility = FindObject(("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.GA_AthenaEnterVehicle_C"));
+                static auto ExitVehicleAbility = FindObject(("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.GA_AthenaExitVehicle_C"));
+                static auto InVehicleAbility = FindObject(("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.GA_AthenaInVehicle_C"));
+                static auto RangedAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C"));
 
                 if (SprintAbility)
                     GrantGameplayAbility(Pawn, SprintAbility); //, true);
@@ -209,48 +209,48 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                     GrantGameplayAbility(Pawn, ExitVehicleAbility);
                 if (InVehicleAbility)
                     GrantGameplayAbility(Pawn, InVehicleAbility);
-                if (RangedAbility)
-                    GrantGameplayAbility(Pawn, RangedAbility);
+                /* if (RangedAbility)
+                    GrantGameplayAbility(Pawn, RangedAbility); */
             }
 
             // if (FnVerDouble < 9)
             {
-                static auto EmoteAbility = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+                static auto EmoteAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
                 if (EmoteAbility)
                     GrantGameplayAbility(Pawn, EmoteAbility);
             }
 
-            std::cout << _("Granted Abilities!\n");
+            std::cout << ("Granted Abilities!\n");
         }
         else
-            std::cout << _("Unable to find AbilitySystemComponent!\n");
+            std::cout << ("Unable to find AbilitySystemComponent!\n");
     }
     else
-        std::cout << _("Unable to grant abilities due to no GiveAbility!\n");
+        std::cout << ("Unable to grant abilities due to no GiveAbility!\n");
 
-    if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
+    if (Engine_Version < 425) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
     {
-        static auto PickaxeDef = FindObject(_("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-        static auto Minis = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
-        static auto SlurpJuice = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff"));
-        static auto GoldAR = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"));
+        static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+        static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
+        static auto SlurpJuice = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff"));
+        static auto GoldAR = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"));
 
         Inventory::CreateAndAddItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0, 1);
         Inventory::CreateAndAddItem(PlayerController, GoldAR, EFortQuickBars::Primary, 1, 1);
 
         if (FnVerDouble < 9.10)
         {
-            static auto GoldPump = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_SR_Ore_T03.WID_Shotgun_Standard_Athena_SR_Ore_T03"));
-            static auto HeavySniper = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Sniper_Heavy_Athena_SR_Ore_T03.WID_Sniper_Heavy_Athena_SR_Ore_T03"));
+            static auto GoldPump = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_SR_Ore_T03.WID_Shotgun_Standard_Athena_SR_Ore_T03"));
+            static auto HeavySniper = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Sniper_Heavy_Athena_SR_Ore_T03.WID_Sniper_Heavy_Athena_SR_Ore_T03"));
 
             Inventory::CreateAndAddItem(PlayerController, GoldPump, EFortQuickBars::Primary, 2, 1);
             Inventory::CreateAndAddItem(PlayerController, HeavySniper, EFortQuickBars::Primary, 3, 1);
         }
         else
         {
-            static auto BurstSMG = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Pistol_BurstFireSMG_Athena_R_Ore_T03.WID_Pistol_BurstFireSMG_Athena_R_Ore_T03"));
-            static auto CombatShotgun = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Combat_Athena_SR_Ore_T03.WID_Shotgun_Combat_Athena_SR_Ore_T03"));
+            static auto BurstSMG = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Pistol_BurstFireSMG_Athena_R_Ore_T03.WID_Pistol_BurstFireSMG_Athena_R_Ore_T03"));
+            static auto CombatShotgun = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Combat_Athena_SR_Ore_T03.WID_Shotgun_Combat_Athena_SR_Ore_T03"));
 
             Inventory::CreateAndAddItem(PlayerController, CombatShotgun, EFortQuickBars::Primary, 2, 1);
             Inventory::CreateAndAddItem(PlayerController, BurstSMG, EFortQuickBars::Primary, 3, 1);
@@ -264,14 +264,14 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         Inventory::GiveMats(PlayerController);
     }
 
-    std::cout << _("Spawned Player!\n");
+    std::cout << ("Spawned Player!\n");
 
     return PlayerController;
 }
 
 static bool __fastcall HasClientLoadedCurrentWorldDetour(UObject* pc)
 {
-    std::cout << _("yes\n");
+    std::cout << ("yes\n");
     return true;
 }
 
@@ -303,7 +303,7 @@ char __fastcall malformedDetour(__int64 a1, __int64 a2)
 
 void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8_t MessageType, __int64* Bunch)
 {
-    std::cout << _("Receieved control message: ") << std::to_string((int)MessageType) << '\n';
+    std::cout << ("Receieved control message: ") << std::to_string((int)MessageType) << '\n';
 
     static const auto FnVerDouble = std::stod(FN_Version);
 
@@ -341,14 +341,14 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
                 // if (*((char*)Bunch + 40) < 0)
                     // do stuff
 
-                std::cout << _("EncryptionToken: ") << __int64(EncryptionToken.Data.GetData()) << '\n';
+                std::cout << ("EncryptionToken: ") << __int64(EncryptionToken.Data.GetData()) << '\n';
 
                 if (EncryptionToken.Data.GetData())
-                    std::cout << _("EncryptionToken Str: ") << EncryptionToken.ToString() << '\n';
+                    std::cout << ("EncryptionToken Str: ") << EncryptionToken.ToString() << '\n';
 
-                std::cout << _("Sending challenge!\n");
+                std::cout << ("Sending challenge!\n");
                 SendChallenge(World, Connection);
-                std::cout << _("Sent challenge!\n");
+                std::cout << ("Sent challenge!\n");
                 // World_NotifyControlMessage(World, Connection, MessageType, (void*)Bunch);
                 // std::cout << "IDK: " << *((char*)Bunch + 40) << '\n';
                 return;
@@ -358,9 +358,9 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     }
     case 4: // NMT_Netspeed // Do we even have to rei,plment this?
         // if (Engine_Version >= 423)
-          //  *Connection->Member<int>(_("CurrentNetSpeed")) = 60000; // sometimes 60000
+          //  *Connection->Member<int>(("CurrentNetSpeed")) = 60000; // sometimes 60000
         // else
-        *Connection->Member<int>(_("CurrentNetSpeed")) = 30000; // sometimes 60000
+        *Connection->Member<int>(("CurrentNetSpeed")) = 30000; // sometimes 60000
         return;
     case 5: // NMT_Login
     {
@@ -388,16 +388,16 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
                 ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 440));
             }
 
-            ReceiveUniqueIdRepl(Bunch, Connection->Member<__int64>(_("PlayerID")));
-            std::cout << _("Got PlayerID!\n");
-            // std::cout << "PlayerID => " + *Connection->Member<__int64>(_("PlayerID")) << '\n';
+            ReceiveUniqueIdRepl(Bunch, Connection->Member<__int64>(("PlayerID")));
+            std::cout << ("Got PlayerID!\n");
+            // std::cout << "PlayerID => " + *Connection->Member<__int64>(("PlayerID")) << '\n';
             // std::cout << "PlayerID => " + std::to_string(*UniqueId) << '\n';
             ReceiveFString(Bunch, OnlinePlatformName);
 
-            std::cout << _("Got OnlinePlatformName!\n");
+            std::cout << ("Got OnlinePlatformName!\n");
 
             if (OnlinePlatformName.Data.GetData())
-                std::cout << _("OnlinePlatformName => ") << OnlinePlatformName.ToString() << '\n';
+                std::cout << ("OnlinePlatformName => ") << OnlinePlatformName.ToString() << '\n';
 
             Bunch[7] -= (16 * 1024 * 1024);
 
@@ -405,12 +405,13 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 
             return;
         }
+        break;
     }
     case 9: // NMT_Join
     {
         if (Engine_Version == 421)
         {
-            auto ConnectionPC = Connection->Member<UObject*>(_("PlayerController"));
+            auto ConnectionPC = Connection->Member<UObject*>(("PlayerController"));
             if (!*ConnectionPC)
             {
                 FURL InURL;
@@ -430,21 +431,21 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
                 // ^ This was all taken from 3.5
 
                 FString ErrorMsg;
-                SpawnPlayActorDetour(World, Connection, ENetRole::ROLE_AutonomousProxy, InURL, Connection->Member<void>(_("PlayerID")), ErrorMsg, 0);
+                SpawnPlayActorDetour(World, Connection, ENetRole::ROLE_AutonomousProxy, InURL, Connection->Member<void>(("PlayerID")), ErrorMsg, 0);
 
                 if (!*ConnectionPC)
                 {
-                    std::cout << _("Failed to spawn PlayerController! Error Msg: ") << ErrorMsg.ToString() << "\n";
+                    std::cout << ("Failed to spawn PlayerController! Error Msg: ") << ErrorMsg.ToString() << "\n";
                     // TODO: Send NMT_Failure and FlushNet
                     return;
                 }
                 else
                 {
-                    std::cout << _("Join succeeded!\n");
+                    std::cout << ("Join succeeded!\n");
                     FString LevelName;
                     const bool bSeamless = true; // If this is true and crashes the client then u didn't remake NMT_Hello or NMT_Join correctly.
 
-                    static auto ClientTravelFn = (*ConnectionPC)->Function(_("ClientTravel"));
+                    static auto ClientTravelFn = (*ConnectionPC)->Function(("ClientTravel"));
                     struct {
                         const FString& URL;
                         ETravelType TravelType;
@@ -454,11 +455,11 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 
                     // ClientTravel(*ConnectionPC, LevelName, ETravelType::TRAVEL_Relative, bSeamless, FGuid());
 
-                    (*ConnectionPC)->ProcessEvent(_("ClientTravel"), &paramsTravel);
+                    (*ConnectionPC)->ProcessEvent(("ClientTravel"), &paramsTravel);
 
-                    std::cout << _("Traveled client.\n");
+                    std::cout << ("Traveled client.\n");
 
-                    *(int32_t*)(__int64(&*Connection->Member<int>(_("LastReceiveTime"))) + (sizeof(double) * 4) + (sizeof(int32_t) * 2)) = 0; // QueuedBits
+                    *(int32_t*)(__int64(&*Connection->Member<int>(("LastReceiveTime"))) + (sizeof(double) * 4) + (sizeof(int32_t) * 2)) = 0; // QueuedBits
                 }
                 return;
             }
@@ -477,7 +478,7 @@ void Beacon_NotifyControlMessageDetour(UObject* Beacon, UObject* Connection, uin
 
 char __fastcall NoReserveDetour(__int64* a1, __int64 a2, char a3, __int64* a4)
 {
-    std::cout << _("No Reserve!\n");
+    std::cout << ("No Reserve!\n");
     return 0;
 }
 
@@ -487,12 +488,12 @@ UObject* __fastcall CreateNetDriver_LocalDetour(UObject* Engine, __int64 a2, FNa
     // FNetDriverDefinition* Definition = nullptr;
 
     // if (Definition != nullptr)
-    ReturnVal = *Helper::GetWorld()->Member<UObject*>(_("NetDriver"));
+    ReturnVal = *Helper::GetWorld()->Member<UObject*>(("NetDriver"));
     if (false)
     {
         // UClass* NetDriverClass = StaticLoadClass(UNetDriver::StaticClass(), nullptr, *Definition->DriverClassName.ToString(), nullptr, LOAD_Quiet);
 
-        static auto NetDriverClass = FindObject(_("Class /Script/Engine.NetDriver"));
+        static auto NetDriverClass = FindObject(("Class /Script/Engine.NetDriver"));
 
         // if it fails, then fall back to standard fallback
         /* if (NetDriverClass == nullptr || !NetDriverClass->GetDefaultObject<UNetDriver>()->IsAvailable())
@@ -518,7 +519,7 @@ UObject* __fastcall CreateNetDriver_LocalDetour(UObject* Engine, __int64 a2, FNa
 
     if (!ReturnVal)
     {
-        std::cout << _("Failed to create netdriver!\n");
+        std::cout << ("Failed to create netdriver!\n");
         // UE_LOG(LogNet, Log, TEXT("CreateNamedNetDriver failed to create driver from definition %s"), *NetDriverDefinition.ToString());
     }
 
@@ -594,7 +595,7 @@ void InitializeNetHooks()
             }
         }
         else
-            std::cout << _("[WARNING] Unable to hook CollectGarbage!\n");
+            std::cout << ("[WARNING] Unable to hook CollectGarbage!\n");
     }
 
     if (Engine_Version >= 425)

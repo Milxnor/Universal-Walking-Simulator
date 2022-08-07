@@ -9,7 +9,7 @@ int PrepConnections(UObject* NetDriver)
 {
     int ReadyConnections = 0;
 
-    auto ClientConnections = NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+    auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
 
     for (int ConnIdx = 0; ConnIdx < ClientConnections->Num(); ConnIdx++)
     {
@@ -18,18 +18,18 @@ int PrepConnections(UObject* NetDriver)
         if (!Connection)
             continue;
 
-        UObject* OwningActor = *Connection->Member<UObject*>(_("OwningActor"));
+        UObject* OwningActor = *Connection->Member<UObject*>(("OwningActor"));
 
         if (OwningActor)
         {
             ReadyConnections++;
             UObject* DesiredViewTarget = OwningActor;
 
-            auto PlayerController = *Connection->Member<UObject*>(_("PlayerController"));
+            auto PlayerController = *Connection->Member<UObject*>(("PlayerController"));
 
             if (PlayerController)
             {
-                static auto GetViewTarget = PlayerController->Function(_("GetViewTarget"));
+                static auto GetViewTarget = PlayerController->Function(("GetViewTarget"));
                 UObject* ViewTarget = nullptr;
 
                 if (GetViewTarget)
@@ -39,7 +39,7 @@ int PrepConnections(UObject* NetDriver)
                     DesiredViewTarget = ViewTarget;
             }
 
-            *Connection->Member<UObject*>(_("ViewTarget")) = DesiredViewTarget;
+            *Connection->Member<UObject*>(("ViewTarget")) = DesiredViewTarget;
 
             /* for(int ChildIdx = 0; ChildIdx < Connection->Children.Num(); ++ChildIdx)
             {
@@ -52,7 +52,7 @@ int PrepConnections(UObject* NetDriver)
         }
         else
         {
-            *Connection->Member<UObject*>(_("ViewTarget")) = nullptr;
+            *Connection->Member<UObject*>(("ViewTarget")) = nullptr;
 
             /* for (int ChildIdx = 0; ChildIdx < Connection->Children.Num(); ++ChildIdx)
             {
@@ -70,7 +70,7 @@ int PrepConnections(UObject* NetDriver)
 
 UObject* FindChannel(UObject* Actor, UObject* Connection)
 {
-    auto OpenChannels = Connection->Member<TArray<UObject*>>(_("OpenChannels"));
+    auto OpenChannels = Connection->Member<TArray<UObject*>>(("OpenChannels"));
 
     for (int i = 0; i < OpenChannels->Num(); i++)
     {
@@ -78,10 +78,10 @@ UObject* FindChannel(UObject* Actor, UObject* Connection)
 
         if (Channel && Channel->ClassPrivate)
         {
-            static UObject* ActorChannelClass = FindObject(_("Class /Script/Engine.ActorChannel"));
+            static UObject* ActorChannelClass = FindObject(("Class /Script/Engine.ActorChannel"));
             if (Channel->ClassPrivate == ActorChannelClass)
             {
-                if (*Channel->Member<UObject*>(_("Actor")) == Actor)
+                if (*Channel->Member<UObject*>(("Actor")) == Actor)
                     return Channel;
             }
         }
@@ -94,24 +94,24 @@ TArray<UObject*> GetAllActors(UObject* World)
 {
     /* if (!World) return nullptr;
 
-    auto Level = World->Member<UObject*>(_("PersistentLevel"));
+    auto Level = World->Member<UObject*>(("PersistentLevel"));
 
     if (!*Level || !Level) return nullptr;
 
-    auto OwningWorld = (*Level)->Member<UObject*>(_("OwningWorld"));
+    auto OwningWorld = (*Level)->Member<UObject*>(("OwningWorld"));
 
     if (!*OwningWorld || !OwningWorld) return nullptr;
 
     return (TArray<UObject*>*)(&*OwningWorld - 2); */
 
-    static auto ActorsClass = FindObject(_("Class /Script/Engine.Actor"));
+    static auto ActorsClass = FindObject(("Class /Script/Engine.Actor"));
     auto AllActors = Helper::GetAllActorsOfClass(ActorsClass);
     return AllActors;
 }
 
 void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderList)
 {
-    static auto World = *NetDriver->Member<UObject*>(_("World"));
+    static auto World = *NetDriver->Member<UObject*>(("World"));
 
     if (!World || !NetDriver)
         return;
@@ -120,17 +120,17 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
 
     TArray<UObject*> Actors = GetAllActors(World);
 
-    std::cout << _("NumActors: ") << Actors.Num() << '\n';
+    std::cout << ("NumActors: ") << Actors.Num() << '\n';
 
     for (int j = 0; j < Actors.Num(); j++)
     {
         auto Actor = Actors.At(j);
 
-        if (!Actor || *Actor->Member<ENetRole>(_("RemoteRole")) == ENetRole::ROLE_None)
+        if (!Actor || *Actor->Member<ENetRole>(("RemoteRole")) == ENetRole::ROLE_None)
             continue;
 
         // TODO: Fix because bitfields makes it replicate A LOT of actors that should NOT be replicated
-        if (*Actor->Member<ENetDormancy>(_("NetDormancy")) == ENetDormancy::DORM_Initial && *Actor->Member<char>(_("bNetStartup")))
+        if (*Actor->Member<ENetDormancy>(("NetDormancy")) == ENetDormancy::DORM_Initial && *Actor->Member<char>(("bNetStartup")))
             continue;
         {
             CallPreReplication(Actor, NetDriver);
@@ -148,7 +148,7 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 #if !defined(N_T) // && !defined(F_TF)
 	// Supports replicationgraph
 
-	auto ReplicationDriver = NetDriver->Member<UObject*>(_("ReplicationDriver"));
+	auto ReplicationDriver = NetDriver->Member<UObject*>(("ReplicationDriver"));
 
 	if (ReplicationDriver && *ReplicationDriver)
 	{
@@ -178,9 +178,9 @@ int32_t ServerReplicateActors(UObject* NetDriver)
     // ConsiderList.reserve(ObjectList.size());
     BuildConsiderList(NetDriver, ConsiderList);
 
-    std::cout << _("Considering: ") << ConsiderList.size() << '\n';
+    std::cout << ("Considering: ") << ConsiderList.size() << '\n';
 
-    auto ClientConnections = NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+    auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
 
     for (int i = 0; i < ClientConnections->Num(); i++)
     {
@@ -192,7 +192,7 @@ int32_t ServerReplicateActors(UObject* NetDriver)
         if (i >= NumClientsToTick)
             break; // Only tick on ready connections
 
-        else if (*Connection->Member<UObject*>(_("ViewTarget")))
+        else if (*Connection->Member<UObject*>(("ViewTarget")))
         {
             /*
             static auto ConnectionViewers = GetWorld()->PersistentLevel->WorldSettings->ReplicationViewers;
@@ -208,14 +208,14 @@ int32_t ServerReplicateActors(UObject* NetDriver)
             }
             */
 
-            auto PlayerController = *Connection->Member<UObject*>(_("PlayerController"));
+            auto PlayerController = *Connection->Member<UObject*>(("PlayerController"));
 
             if (SendClientAdjustment && PlayerController)
                 SendClientAdjustment(PlayerController); // Sending adjustments to children is for splitscreen
 
             for (auto Actor : ConsiderList)
             {
-                static auto PlayerControllerClass = FindObject(_("Class /Script/Engine.PlayerController"));
+                static auto PlayerControllerClass = FindObject(("Class /Script/Engine.PlayerController"));
 
                 if (Actor->IsA(PlayerControllerClass) && Actor != PlayerController)
                     continue;
@@ -243,19 +243,19 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 
                     FName ActorName(102);
 
-                    std::cout << _("Comparison Index: ") << ActorName.ComparisonIndex << '\n';
-                    std::cout << _("Number: ") << ActorName.Number << '\n';
+                    std::cout << ("Comparison Index: ") << ActorName.ComparisonIndex << '\n';
+                    std::cout << ("Number: ") << ActorName.Number << '\n';
 
                     Channel = CreateChannelByName(Connection, &ActorName, EChannelCreateFlags::OpenedLocally, -1);
 #endif
                     if (Channel)
                     {
                         SetChannelActor(Channel, Actor);
-                        std::cout << _("Created Channel for Actor => ") << Actor->GetFullName() << '\n';
+                        std::cout << ("Created Channel for Actor => ") << Actor->GetFullName() << '\n';
                     }
                     else
                     {
-                        std::cout << _("Unable to Create Channel!\n");
+                        std::cout << ("Unable to Create Channel!\n");
                     }
                 }
 

@@ -237,7 +237,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 		if (!ImGui::IsWindowCollapsed())
 		{
-			ImGui::Begin(_("Project Reboot"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
+			ImGui::Begin(("Project Reboot"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
 
 			std::vector<std::pair<UObject*, UObject*>> Players; // Pawn, PlayerState
 
@@ -245,10 +245,10 @@ DWORD WINAPI GuiThread(LPVOID)
 				auto World = Helper::GetWorld();
 				if (World)
 				{
-					auto NetDriver = *World->Member<UObject*>(_("NetDriver"));
+					auto NetDriver = *World->Member<UObject*>(("NetDriver"));
 					if (NetDriver)
 					{
-						auto ClientConnections = NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+						auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
 
 						if (ClientConnections)
 						{
@@ -259,16 +259,16 @@ DWORD WINAPI GuiThread(LPVOID)
 								if (!Connection)
 									return;
 
-								auto Controller = *Connection->Member<UObject*>(_("PlayerController"));
+								auto Controller = *Connection->Member<UObject*>(("PlayerController"));
 
 								if (Controller)
 								{
-									auto PlayerState = *Controller->Member<UObject*>(_("PlayerState"));
-									auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+									auto PlayerState = *Controller->Member<UObject*>(("PlayerState"));
+									auto Pawn = *Controller->Member<UObject*>(("Pawn"));
 
 									if (Pawn)
 									{
-										static auto IsActorBeingDestroyed = Pawn->Function(_("IsActorBeingDestroyed"));
+										static auto IsActorBeingDestroyed = Pawn->Function(("IsActorBeingDestroyed"));
 
 										bool bIsActorBeingDestroyed = true;
 
@@ -309,7 +309,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 				}
 
-				if (ImGui::BeginTabItem(_("Gamemode")))
+				if (ImGui::BeginTabItem(("Gamemode")))
 				{
 					Tab = 3;
 					PlayerTab = -1;
@@ -317,7 +317,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem(_("Thanos")))
+				if (ImGui::BeginTabItem(("Thanos")))
 				{
 					Tab = 5;
 					PlayerTab = -1;
@@ -325,7 +325,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem(_("Credits")))
+				if (ImGui::BeginTabItem(("Credits")))
 				{
 					Tab = 4;
 					PlayerTab = -1;
@@ -342,14 +342,14 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 				case 1:
 				{
-					ImGui::Checkbox(_("Log RPCS"), &bLogRpcs);
-					ImGui::Checkbox(_("Log ProcessEvent"), &bLogProcessEvent);
-					ImGui::Checkbox(_("Use Beacons"), &bUseBeacons);
+					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
+					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
+					ImGui::Checkbox(("Use Beacons"), &bUseBeacons);
 
 					if (serverStatus == EServerStatus::Down && !bTraveled)
 					{
 						// TODO: Map name
-						if (ImGui::Button(_("Load in the Match")))
+						if (ImGui::Button(("Load in the Match")))
 						{
 							LoadInMatch();
 						}
@@ -359,18 +359,18 @@ DWORD WINAPI GuiThread(LPVOID)
 					{
 						if (Engine_Version < 423) // I do not know how to start the bus on S8+
 						{
-							if (ImGui::Button(_("Start Aircraft")))
+							if (ImGui::Button(("Start Aircraft")))
 							{
 								FString StartAircraftCmd;
 								StartAircraftCmd.Set(L"startaircraft");
 
 								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 
-								std::cout << _("Started aircraft!\n");
+								std::cout << ("Started aircraft!\n");
 
 								// TODO: Hook a func for this
 
-								static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
+								static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
 
 								// Helper::DestroyAll(BuildingSMActorClass);
 
@@ -379,24 +379,24 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 						// else
 						{
-							if (ImGui::Button(_("Change Phase to Aircraft"))) // TODO: Improve phase stuff
+							if (ImGui::Button(("Change Phase to Aircraft"))) // TODO: Improve phase stuff
 							{
 								auto world = Helper::GetWorld();
-								auto gameState = *world->Member<UObject*>(_("GameState"));
+								auto gameState = *world->Member<UObject*>(("GameState"));
 
-								*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Aircraft;
+								*gameState->Member<EAthenaGamePhase>(("GamePhase")) = EAthenaGamePhase::Aircraft;
 
 								struct {
 									EAthenaGamePhase OldPhase;
 								} params2{ EAthenaGamePhase::None };
 
-								static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
+								static const auto fnGamephase = gameState->Function(("OnRep_GamePhase"));
 
-								std::cout << _("Changed Phase to Aircraft.");
+								std::cout << ("Changed Phase to Aircraft.");
 
 								// TODO: Hook a func for this
 
-								static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
+								static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
 
 								// Helper::DestroyAll(BuildingSMActorClass);
 
@@ -404,23 +404,23 @@ DWORD WINAPI GuiThread(LPVOID)
 							}
 						}
 
-						if (ImGui::Button(_("Summon Llamas")))
+						if (ImGui::Button(("Summon Llamas")))
 						{
 							CreateThread(0, 0, Looting::Tables::SpawnLlamas, 0, 0, 0);
 						}
 					}
 
 					if (Events::HasEvent()) {
-						if (ImGui::Button(_("Start Event")))
+						if (ImGui::Button(("Start Event")))
 							Events::StartEvent();
 					}
 
-					/* if (ImGui::Button(_("Summon FloorLoot")))
+					/* if (ImGui::Button(("Summon FloorLoot")))
 					{
 						CreateThread(0, 0, Looting::Tables::SpawnFloorLoot, 0, 0, 0);
 					} */
 
-					if (ImGui::Button(_("Dump Objects (Win64/Objects.log)")))
+					if (ImGui::Button(("Dump Objects (Win64/Objects.log)")))
 					{
 						CreateThread(0, 0, Helper::DumpObjects, 0, 0, 0);
 					}
@@ -447,21 +447,21 @@ DWORD WINAPI GuiThread(LPVOID)
 				case 3:
 				{
 					static std::string CurrentPlaylist;
-					ImGui::InputText(_("Playlist"), &CurrentPlaylist);
-					ImGui::Checkbox(_("Playground"), &bIsPlayground);
+					ImGui::InputText(("Playlist"), &CurrentPlaylist);
+					ImGui::Checkbox(("Playground"), &bIsPlayground);
 
 					// TODO: default character parts
 					break;
 				}
 				case 4:
-					TextCentered(_("Credits:"));
-					TextCentered(_("Milxnor: Made the base, main developer"));
-					TextCentered(_("GD: Added events, cleans up code and adds features."));
+					TextCentered(("Credits:"));
+					TextCentered(("Milxnor: Made the base, main developer"));
+					TextCentered(("GD: Added events, cleans up code and adds features."));
 
 					break;
 
 				case 5:
-					if(ImGui::Button(_("Spawn Mind Stone"))) {
+					if(ImGui::Button(("Spawn Mind Stone"))) {
 						FVector RandLocation;
 						std::random_device rd; // obtain a random number from hardware
 						std::mt19937 gen(rd()); // seed the generator
@@ -478,7 +478,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_Y.AshtonRockItemDef_Y"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
 					}
-					if (ImGui::Button(_("Spawn Reality Stone"))) {
+					if (ImGui::Button(("Spawn Reality Stone"))) {
 						FVector RandLocation;
 						std::random_device rd; // obtain a random number from hardware
 						std::mt19937 gen(rd()); // seed the generator
@@ -498,7 +498,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_R.AshtonRockItemDef_R"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
 						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_R.AshtonRockItemDef_R"), RandLocation, {});
 					}
-					if (ImGui::Button(_("Spawn Power Stone"))) {
+					if (ImGui::Button(("Spawn Power Stone"))) {
 						FVector RandLocation;
 						std::random_device rd; // obtain a random number from hardware
 						std::mt19937 gen(rd()); // seed the generator
@@ -516,7 +516,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_P.AshtonRockItemDef_P"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
 						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_P.AshtonRockItemDef_P"), RandLocation, {});
 					}
-					if (ImGui::Button(_("Spawn Soul Stone"))) {
+					if (ImGui::Button(("Spawn Soul Stone"))) {
 						FVector RandLocation;
 						std::random_device rd; // obtain a random number from hardware
 						std::mt19937 gen(rd()); // seed the generator
@@ -534,7 +534,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_O.AshtonRockItemDef_O"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
 						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_O.AshtonRockItemDef_O"), RandLocation, {});
 					}
-					if (ImGui::Button(_("Spawn Time Stone"))) {
+					if (ImGui::Button(("Spawn Time Stone"))) {
 						FVector RandLocation;
 						std::random_device rd; // obtain a random number from hardware
 						std::mt19937 gen(rd()); // seed the generator
@@ -552,7 +552,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_G.AshtonRockItemDef_G"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
 						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_G.AshtonRockItemDef_G"), RandLocation, {});
 					}
-					if (ImGui::Button(_("Spawn Space Stone"))) {
+					if (ImGui::Button(("Spawn Space Stone"))) {
 						FVector RandLocation;
 						std::random_device rd; // obtain a random number from hardware
 						std::mt19937 gen(rd()); // seed the generator
@@ -588,19 +588,19 @@ DWORD WINAPI GuiThread(LPVOID)
 							static int Count = 1;
 
 							auto PlayerName = Helper::GetfPlayerName(CurrentPlayer.second);
-							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (_("Player: ") + PlayerName.ToString()).c_str());
-							if (ImGui::Button(_("Game Statistics")))
+							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (("Player: ") + PlayerName.ToString()).c_str());
+							if (ImGui::Button(("Game Statistics")))
 							{
 								bInformationTab = true;
 							}
 							ImGui::NewLine();
-							auto Controller = *CurrentPlayer.first->Member<UObject*>(_("Controller"));
+							auto Controller = *CurrentPlayer.first->Member<UObject*>(("Controller"));
 							/* if (ImGui::Button(ICON_FA_HAMMER " Ban"))
 							{
 								auto IP = Helper::GetfIP(CurrentPlayer.second);
 								Helper::Banning::Ban(PlayerName.Data.GetData(), Controller, IP.Data.GetData());
 							}  */
-							if (ImGui::Button(_("Kick (Do not use twice)")))
+							if (ImGui::Button(("Kick (Do not use twice)")))
 							{
 								FString Reason;
 								Reason.Set(L"You have been kicked!");
@@ -613,8 +613,8 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							// TODO: Add teleport to location
 
-							ImGui::InputText(_("WID"), &WID);
-							ImGui::InputInt(_("Count"), &Count);
+							ImGui::InputText(("WID"), &WID);
+							ImGui::InputInt(("Count"), &Count);
 
 							if (ImGui::Button(ICON_FA_HAND_HOLDING_USD " Give Weapon"))
 							{
@@ -623,7 +623,7 @@ DWORD WINAPI GuiThread(LPVOID)
 								if (wID)
 									Inventory::GiveItem(Controller, wID, EFortQuickBars::Primary, 1, Count);
 								else
-									std::cout << _("Invalid WID! Please make sure it's a valid object.\n");
+									std::cout << ("Invalid WID! Please make sure it's a valid object.\n");
 							}
 
 							ImGui::NewLine();
@@ -638,19 +638,19 @@ DWORD WINAPI GuiThread(LPVOID)
 						else
 						{
 							auto Pawn = CurrentPlayer.first;
-							TextCentered(std::format(("Kills: {}"), *CurrentPlayer.second->Member<int>(_("KillScore"))));
+							TextCentered(std::format(("Kills: {}"), *CurrentPlayer.second->Member<int>(("KillScore"))));
 							auto PawnLocation = Helper::GetActorLocation(Pawn);
 							TextCentered(std::format(("X: {} Y: {} Z: {}"), (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 
 
-							auto CurrentWeapon = *Pawn->Member<UObject*>(_("CurrentWeapon"));
+							auto CurrentWeapon = *Pawn->Member<UObject*>(("CurrentWeapon"));
 
 							if (CurrentWeapon)
 							{
-								auto Guid = CurrentWeapon->Member<FGuid>(_("ItemEntryGuid"));
+								auto Guid = CurrentWeapon->Member<FGuid>(("ItemEntryGuid"));
 
 								if (Guid)
 								{
-									auto Controller = *Pawn->Member<UObject*>(_("Controller"));
+									auto Controller = *Pawn->Member<UObject*>(("Controller"));
 									UObject* Definition = nullptr;
 									int Count = -1;
 
@@ -673,19 +673,19 @@ DWORD WINAPI GuiThread(LPVOID)
 												if (CurrentGuid == *Guid)
 												{
 													Definition = Inventory::GetItemDefinition(ItemInstance);
-													Count = *FFortItemEntry::GetCount(ItemInstance->Member<__int64>(_("ItemEntry"))); // lets hope its a UFortWorldItem*
+													Count = *FFortItemEntry::GetCount(ItemInstance->Member<__int64>(("ItemEntry"))); // lets hope its a UFortWorldItem*
 													// break;
 												}
 											}
 
 											if (Definition)
 											{
-												auto Name = Definition->Member<FText>(_("DisplayName"));
+												auto Name = Definition->Member<FText>(("DisplayName"));
 
 												if (Name)
 												{
 													auto DisplayName = Helper::Conversion::TextToString(*Name);
-													// auto Rarity = *Definition->Member<EFortRarity>(_("Rarity"));
+													// auto Rarity = *Definition->Member<EFortRarity>(("Rarity"));
 
 													bool bMultiple = Count > 1;
 													TextCentered(std::format("Holding {} {}", bMultiple ? std::format("{}x", Count) : "a", bMultiple ? DisplayName + "s" : DisplayName)); // TODO: Add Count and Rarity
@@ -700,7 +700,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							ImGui::NewLine();
 
-							if (ButtonCentered(_("Exit")))
+							if (ButtonCentered(("Exit")))
 							{
 								bInformationTab = false;
 							}

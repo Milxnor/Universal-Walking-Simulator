@@ -115,12 +115,12 @@ DWORD WINAPI BotThread(LPVOID) {
             std::unordered_map<std::string, int> PlayerAndKillsMap = {};
 
             static const auto World = Helper::GetWorld();
-            auto NetDriver = *World->Member<UObject*>(_("NetDriver"));
-            auto ClientConnections = NetDriver->Member<TArray<UObject*>>(_("ClientConnections"));
+            auto NetDriver = *World->Member<UObject*>(("NetDriver"));
+            auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
 
             if (ClientConnections->Num() == 0)
             {
-                event.reply(_("No one is connected!\n"));
+                event.reply(("No one is connected!\n"));
                 return;
             }
 
@@ -131,17 +131,17 @@ DWORD WINAPI BotThread(LPVOID) {
                 if (!Connection)
                     return;
 
-                auto Controller = *Connection->Member<UObject*>(_("PlayerController"));
+                auto Controller = *Connection->Member<UObject*>(("PlayerController"));
 
                 if (Controller)
                 {
-                    auto PlayerState = *Controller->Member<UObject*>(_("PlayerState"));
+                    auto PlayerState = *Controller->Member<UObject*>(("PlayerState"));
 
                     if (PlayerState)
                     {
                         PlayerAndKillsMap.emplace(
                             Helper::GetPlayerName(PlayerState),
-                            *PlayerState->Member<int>(_("KillScore"))
+                            *PlayerState->Member<int>(("KillScore"))
                         );
                     }
                 }
@@ -202,19 +202,19 @@ DWORD WINAPI BotThread(LPVOID) {
             switch (serverStatus)
             {
             case EServerStatus::Down:
-                event.reply(_("Servers are starting soon."));
+                event.reply(("Servers are starting soon."));
                 break;
             case EServerStatus::Up:
-                event.reply(_("Servers are up. You can join!"));
+                event.reply(("Servers are up. You can join!"));
                 break;
             case EServerStatus::Loading:
-                event.reply(_("Servers are loading. You will be able to join soon."));
+                event.reply(("Servers are loading. You will be able to join soon."));
                 break;
             case EServerStatus::Restarting:
-                event.reply(_("The servers are restarting. Please wait."));
+                event.reply(("The servers are restarting. Please wait."));
                 break;
             default:
-                event.reply(_("Unable to tell the status of the server!\n"));
+                event.reply(("Unable to tell the status of the server!\n"));
                 break;
             }
             // Maybe also add like Gamephase stuff

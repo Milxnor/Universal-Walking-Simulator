@@ -31,36 +31,36 @@ inline void initStuff()
 		CreateThread(0, 0, Helper::Console::Setup, 0, 0, 0);
 
 		auto world = Helper::GetWorld();
-		auto gameState = *world->Member<UObject*>(_("GameState"));
+		auto gameState = *world->Member<UObject*>(("GameState"));
 
 		if (gameState)
 		{
-			auto AuthGameMode = *world->Member<UObject*>(_("AuthorityGameMode"));
+			auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
 
-			*(*AuthGameMode->Member<UObject*>(_("GameSession")))->Member<int>(_("MaxPlayers")) = 100; // GameState->GetMaxPlaylistPlayers()
+			*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = 100; // GameState->GetMaxPlaylistPlayers()
 
 			if (std::stod(FN_Version) >= 8 && AuthGameMode)
 			{
-				static auto PlayerControllerClass = FindObject(_("BlueprintGeneratedClass /Game/Athena/Athena_PlayerController.Athena_PlayerController_C"));
-				std::cout << _("PlayerControllerClass: ") << PlayerControllerClass << '\n';
-				*AuthGameMode->Member<UObject*>(_("PlayerControllerClass")) = PlayerControllerClass;
+				static auto PlayerControllerClass = FindObject(("BlueprintGeneratedClass /Game/Athena/Athena_PlayerController.Athena_PlayerController_C"));
+				std::cout << ("PlayerControllerClass: ") << PlayerControllerClass << '\n';
+				*AuthGameMode->Member<UObject*>(("PlayerControllerClass")) = PlayerControllerClass;
 			}
 
-			*gameState->Member<char>(_("bGameModeWillSkipAircraft")) = false;
-			*gameState->Member<float>(_("AircraftStartTime")) = 99999.0f;
-			*gameState->Member<float>(_("WarmupCountdownEndTime")) = 99999.0f;
+			*gameState->Member<char>(("bGameModeWillSkipAircraft")) = false;
+			*gameState->Member<float>(("AircraftStartTime")) = 99999.0f;
+			*gameState->Member<float>(("WarmupCountdownEndTime")) = 99999.0f;
 
-			*gameState->Member<EFriendlyFireType>(_("FriendlyFireType")) = EFriendlyFireType::On;
+			*gameState->Member<EFriendlyFireType>(("FriendlyFireType")) = EFriendlyFireType::On;
 
 			if (Engine_Version >= 420)
 			{
-				*gameState->Member<EAthenaGamePhase>(_("GamePhase")) = EAthenaGamePhase::Warmup;
+				*gameState->Member<EAthenaGamePhase>(("GamePhase")) = EAthenaGamePhase::Warmup;
 
 				struct {
 					EAthenaGamePhase OldPhase;
 				} params2{ EAthenaGamePhase::None };
 
-				static const auto fnGamephase = gameState->Function(_("OnRep_GamePhase"));
+				static const auto fnGamephase = gameState->Function(("OnRep_GamePhase"));
 
 				if (fnGamephase)
 					gameState->ProcessEvent(fnGamephase, &params2);
@@ -68,46 +68,46 @@ inline void initStuff()
 
 			if (AuthGameMode)
 			{
-				AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartPlay")), nullptr);
+				AuthGameMode->ProcessEvent(AuthGameMode->Function(("StartPlay")), nullptr);
 
 				auto FNVer = std::stod(FN_Version);
 
 				if (std::floor(FNVer) == 3 || FNVer >= 8.0) 
 				{
 					//If This is called on Seasons 4, 6, or 7 then Setting The Playlist Crashes.
-					AuthGameMode->ProcessEvent(AuthGameMode->Function(_("StartMatch")), nullptr);
+					AuthGameMode->ProcessEvent(AuthGameMode->Function(("StartMatch")), nullptr);
 				}
-				// *AuthGameMode->Member<bool>(_("bAlwaysDBNO")) = true;
+				// *AuthGameMode->Member<bool>(("bAlwaysDBNO")) = true;
 
 				// Is this correct?
-				/*class UClass* VehicleClass = (UClass*)(FindObject(_("Class /Script/FortniteGame.FortAthenaFerretVehicle")));//(UClass*(FindObject(_("Class /Script/FortniteGame.FortAthenaFerretVehicle.FortAthenaFerretVehicle"))));
+				/*class UClass* VehicleClass = (UClass*)(FindObject(("Class /Script/FortniteGame.FortAthenaFerretVehicle")));//(UClass*(FindObject(("Class /Script/FortniteGame.FortAthenaFerretVehicle.FortAthenaFerretVehicle"))));
 				struct 
 				{
 					class UClass* VehicleClass;
 				} SSVParams{ VehicleClass };
 				
-				auto SSVFn = *AuthGameMode->Member<bool>(_("ShouldSpawnVehicle")) = true;*/
+				auto SSVFn = *AuthGameMode->Member<bool>(("ShouldSpawnVehicle")) = true;*/
 				
-				static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
-				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
-				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
-				// static auto Playlist = FindObject(_("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
-				// static auto Playlist = FindObject(_("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
+				static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
+				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
+				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
+				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
+				// static auto Playlist = FindObject(("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
 				 
 				if (std::stod(FN_Version) >= 7.00)
 				{
-					auto OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistInfo"));
+					auto OnRepPlaylist = gameState->Function(("OnRep_CurrentPlaylistInfo"));
 
-					static auto BasePlaylistOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("BasePlaylist"));
-					static auto PlaylistReplicationKeyOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), _("PlaylistReplicationKey"));
+					static auto BasePlaylistOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("BasePlaylist"));
+					static auto PlaylistReplicationKeyOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("PlaylistReplicationKey"));
 
 					if (BasePlaylistOffset && OnRepPlaylist && Playlist)
 					{
 						if (Engine_Version <= 422)
 						{
-							static auto PlaylistInfo = gameState->Member<FFastArraySerializerOL>(_("CurrentPlaylistInfo"));
+							static auto PlaylistInfo = gameState->Member<FFastArraySerializerOL>(("CurrentPlaylistInfo"));
 
-							auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(_("CurrentPlaylistInfo"))->Member<UObject*>(_("BasePlaylist"), true);
+							auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
 							auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
 
 							if (BasePlaylist)
@@ -115,16 +115,16 @@ inline void initStuff()
 								*BasePlaylist = Playlist;
 								(*PlaylistReplicationKey)++;
 								PlaylistInfo->MarkArrayDirty();
-								std::cout << _("Set playlist to: ") << Playlist->GetFullName() << '\n';
+								std::cout << ("Set playlist to: ") << Playlist->GetFullName() << '\n';
 							}
 							else
-								std::cout << _("Base Playlist is null!\n");
+								std::cout << ("Base Playlist is null!\n");
 						}
 						else
 						{
-							static auto PlaylistInfo = gameState->Member<FFastArraySerializerSE>(_("CurrentPlaylistInfo"));
+							static auto PlaylistInfo = gameState->Member<FFastArraySerializerSE>(("CurrentPlaylistInfo"));
 
-							auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(_("CurrentPlaylistInfo"))->Member<UObject*>(_("BasePlaylist"), true);
+							auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
 							auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
 
 							if (BasePlaylist)
@@ -132,18 +132,18 @@ inline void initStuff()
 								*BasePlaylist = Playlist;
 								(*PlaylistReplicationKey)++;
 								PlaylistInfo->MarkArrayDirty();
-								std::cout << _("Set playlist to: ") << Playlist->GetFullName() << '\n';
+								std::cout << ("Set playlist to: ") << Playlist->GetFullName() << '\n';
 							}
 							else
-								std::cout << _("Base Playlist is null!\n");
+								std::cout << ("Base Playlist is null!\n");
 						}
 					}
 					else
 					{
-						std::cout << _("Missing something related to the Playlist!\n");
-						std::cout << _("BasePlaylist Offset: ") << BasePlaylistOffset << '\n';
-						std::cout << _("OnRepPlaylist: ") << OnRepPlaylist << '\n';
-						std::cout << _("Playlist: ") << Playlist << '\n';
+						std::cout << ("Missing something related to the Playlist!\n");
+						std::cout << ("BasePlaylist Offset: ") << BasePlaylistOffset << '\n';
+						std::cout << ("OnRepPlaylist: ") << OnRepPlaylist << '\n';
+						std::cout << ("Playlist: ") << Playlist << '\n';
 					}
 
 					gameState->ProcessEvent(OnRepPlaylist);
@@ -151,30 +151,30 @@ inline void initStuff()
 				else
 				{
 					if (Playlist) {
-						static auto OnRepPlaylist = gameState->Function(_("OnRep_CurrentPlaylistData"));
-						*gameState->Member<UObject*>(_("CurrentPlaylistData")) = Playlist;
+						static auto OnRepPlaylist = gameState->Function(("OnRep_CurrentPlaylistData"));
+						*gameState->Member<UObject*>(("CurrentPlaylistData")) = Playlist;
 
 						if (OnRepPlaylist)
 							gameState->ProcessEvent(OnRepPlaylist);
 					}
 					else {
-						std::cout << _("Playlist is NULL") << '\n';
+						std::cout << ("Playlist is NULL") << '\n';
 					}
 				}
 			}
 			else
 			{
-				std::cout << dye::yellow(_("[WARNING] ")) << _("Failed to find AuthorityGameMode!\n");
+				std::cout << dye::yellow(("[WARNING] ")) << ("Failed to find AuthorityGameMode!\n");
 			}
 
 			if (Engine_Version != 421)
 			{
-				auto PlayersLeft = gameState->Member<int>(_("PlayersLeft"));
+				auto PlayersLeft = gameState->Member<int>(("PlayersLeft"));
 
 				if (PlayersLeft && *PlayersLeft)
 					*PlayersLeft = 0;
 
-				static auto OnRep_PlayersLeft = gameState->Function(_("OnRep_PlayersLeft"));
+				static auto OnRep_PlayersLeft = gameState->Function(("OnRep_PlayersLeft"));
 
 				if (OnRep_PlayersLeft)
 					gameState->ProcessEvent(OnRep_PlayersLeft);
@@ -194,7 +194,7 @@ inline void initStuff()
 
 		InitializeNetHooks();
 
-		std::cout << _("Initialized NetHooks!\n");
+		std::cout << ("Initialized NetHooks!\n");
 
 		if (Engine_Version >= 420) {
 			Events::LoadEvents();
@@ -205,8 +205,8 @@ inline void initStuff()
 
 bool ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
-	auto PlayerState = *PlayerController->Member<UObject*>(_("PlayerState"));
-	auto Pawn = *PlayerController->Member<UObject*>(_("Pawn"));
+	auto PlayerState = *PlayerController->Member<UObject*>(("PlayerState"));
+	auto Pawn = *PlayerController->Member<UObject*>(("Pawn"));
 
 	return false;
 }
@@ -218,28 +218,28 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 		struct parms { __int64 InState; };
 		auto Params = (parms*)Parameters;
 
-		static auto TranslationOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), _("Translation"));
+		static auto TranslationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), ("Translation"));
 		auto Translation = (FVector*)(__int64(&Params->InState) + TranslationOffset);
 
-		std::cout << _("TranslationOffset: ") << TranslationOffset << '\n';
+		std::cout << ("TranslationOffset: ") << TranslationOffset << '\n';
 
-		static auto RotationOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), _("Rotation"));
+		static auto RotationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), ("Rotation"));
 		auto Rotation = (FQuat*)(__int64(&Params->InState) + RotationOffset);
 
 		if (Translation && Rotation)
 		{
-			std::cout << _("X: ") << Translation->X << '\n';
-			std::cout << _("Y: ") << Translation->Y << '\n';
-			std::cout << _("Z: ") << Translation->Z << '\n';
+			std::cout << ("X: ") << Translation->X << '\n';
+			std::cout << ("Y: ") << Translation->Y << '\n';
+			std::cout << ("Z: ") << Translation->Z << '\n';
 
 			// Helper::SetActorLocation(Vehicle, *Translation);
 			auto rot = Rotation->Rotator();
 
 			// rot.Pitch = 0;
 
-			std::cout << _("Pitch: ") << rot.Pitch << '\n';
-			std::cout << _("Yaw: ") << rot.Yaw << '\n';
-			std::cout << _("Roll: ") << rot.Roll << '\n';
+			std::cout << ("Pitch: ") << rot.Pitch << '\n';
+			std::cout << ("Yaw: ") << rot.Yaw << '\n';
+			std::cout << ("Roll: ") << rot.Roll << '\n';
 
 			Helper::SetActorLocationAndRotation(Vehicle, *Translation, rot);
 
@@ -261,11 +261,11 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 	if (PlayerController && Params) // PlayerController->IsInAircraft()
 	{
 		static auto world = Helper::GetWorld();
-		static auto GameState = *world->Member<UObject*>(_("GameState"));
+		static auto GameState = *world->Member<UObject*>(("GameState"));
 
 		if (GameState)
 		{
-			auto Aircraft = GameState->Member<TArray<UObject*>>(_("Aircrafts"))->At(0);
+			auto Aircraft = GameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
 
 			if (Aircraft)
 			{
@@ -289,13 +289,13 @@ bool ReadyToStartMatchHook(UObject* Object, UFunction* Function, void* Parameter
 
 void LoadInMatch()
 {
-	auto GameInstance = *GetEngine()->Member<UObject*>(_("GameInstance"));
-	auto& LocalPlayers = *GameInstance->Member<TArray<UObject*>>(_("LocalPlayers"));
-	auto PlayerController = *LocalPlayers.At(0)->Member<UObject*>(_("PlayerController"));
+	auto GameInstance = *GetEngine()->Member<UObject*>(("GameInstance"));
+	auto& LocalPlayers = *GameInstance->Member<TArray<UObject*>>(("LocalPlayers"));
+	auto PlayerController = *LocalPlayers.At(0)->Member<UObject*>(("PlayerController"));
 
 	if (PlayerController)
 	{
-		static auto SwitchLevelFn = PlayerController->Function(_("SwitchLevel"));
+		static auto SwitchLevelFn = PlayerController->Function(("SwitchLevel"));
 		FString Map;
 		Map.Set(GetMapName());
 		PlayerController->ProcessEvent(SwitchLevelFn, &Map);
@@ -304,7 +304,7 @@ void LoadInMatch()
 	}
 	else
 	{
-		std::cout << dye::red(_("[ERROR] ")) << _("Unable to find PlayerController!\n");
+		std::cout << dye::red(("[ERROR] ")) << ("Unable to find PlayerController!\n");
 	}
 }
 // HEAVILY INSPIRED BY RAIDER 
@@ -366,7 +366,7 @@ inline bool ServerCheatHook(UObject* Controller, UFunction* Function, void* Para
 			}
 			else if (Command == "revive")
 			{
-				Controller->ProcessEvent(_("Suicide"));
+				Controller->ProcessEvent(("Suicide"));
 				/* auto Pawn = Controller->Member<UObject>("Pawn");
 				bool bIsDBNO = Pawn->Member<UObject>("bIsDBNO");
 				bool bIsDBNO = false;
@@ -404,8 +404,8 @@ uint8_t GetDeathCause(FGameplayTagContainer Tags) // Credits: Pakchunk on github
 		{ "Weapon.Melee.Impact.Pickaxe", EDeathCause::Melee }
 	};
 
-	static auto DeathEnum = FindObject(_("Enum /Script/FortniteGame.EDeathCause"));
-	static uint8_t SMGnum = GetEnumValue(DeathEnum, _("SMG"));
+	static auto DeathEnum = FindObject(("Enum /Script/FortniteGame.EDeathCause"));
+	static uint8_t SMGnum = GetEnumValue(DeathEnum, ("SMG"));
 
 	std::cout << "SMGnum: " << (int)SMGnum << '\n';
 
@@ -440,8 +440,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 {
 	if (DeadPC && Parameters)
 	{
-		auto DeadPawn = *DeadPC->Member<UObject*>(_("Pawn"));
-		auto DeadPlayerState = *DeadPC->Member<UObject*>(_("PlayerState"));
+		auto DeadPawn = *DeadPC->Member<UObject*>(("Pawn"));
+		auto DeadPlayerState = *DeadPC->Member<UObject*>(("PlayerState"));
 
 		struct parms { __int64 DeathReport; };
 
@@ -469,16 +469,16 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 						struct FVector                                     WorldLocation;                                            // 0x000C(0x000C) (ZeroConstructor, IsPlainOldData)
 					};
 
-					auto PlayerState = *DeadPawn->Member<UObject*>(_("PlayerState"));
-					auto FortResurrectionData = PlayerState->Member<FFortResurrectionData>(_("ResurrectionChipAvailable"));
+					auto PlayerState = *DeadPawn->Member<UObject*>(("PlayerState"));
+					auto FortResurrectionData = PlayerState->Member<FFortResurrectionData>(("ResurrectionChipAvailable"));
 
 					if (FortResurrectionData)
 					{
-						std::cout << _("FortResurrectionData valid!\n");
-						std::cout << _("FortResurrectionData Location X: ") << FortResurrectionData->WorldLocation.X << '\n';
+						std::cout << ("FortResurrectionData valid!\n");
+						std::cout << ("FortResurrectionData Location X: ") << FortResurrectionData->WorldLocation.X << '\n';
 					}
 					else
-						std::cout << _("No FortResurrectionData!\n");
+						std::cout << ("No FortResurrectionData!\n");
 
 					auto ResurrectionData = FFortResurrectionData{};
 					ResurrectionData.bResurrectionChipAvailable = true;
@@ -489,13 +489,13 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 					if (FortResurrectionData)
 						*FortResurrectionData = ResurrectionData;
 
-					std::cout << _("Spawned Chip!\n");
+					std::cout << ("Spawned Chip!\n");
 				}
 			}
 		}
 
-		static auto KillerPawnOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), _("KillerPawn"));
-		static auto KillerPlayerStateOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), _("KillerPlayerState"));
+		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
+		static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
 
 		auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
 		auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
@@ -503,16 +503,16 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		UObject* KillerController = nullptr;
 
 		if (KillerPawn)
-			KillerController = *KillerPawn->Member<UObject*>(_("Controller"));
+			KillerController = *KillerPawn->Member<UObject*>(("Controller"));
 
 		if (KillerPlayerState)
 		{
-			auto DeathInfo = DeadPlayerState->Member<__int64>(_("DeathInfo"));
+			auto DeathInfo = DeadPlayerState->Member<__int64>(("DeathInfo"));
 
-			static auto TagsOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("Tags"));
-			static auto DeathCauseOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("DeathCause"));
-			static auto FinisherOrDownerOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("FinisherOrDowner"));
-			static auto bDBNOOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.DeathInfo"), _("bDBNO"));
+			static auto TagsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("Tags"));
+			static auto DeathCauseOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathCause"));
+			static auto FinisherOrDownerOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("FinisherOrDowner"));
+			static auto bDBNOOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("bDBNO"));
 
 			auto Tags = (FGameplayTagContainer*)(__int64(&*DeathInfo) + TagsOffset);
 
@@ -520,7 +520,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			*(UObject**)(__int64(&*DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
 			*(bool*)(__int64(&*DeathInfo) + bDBNOOffset) = false;
 
-			static auto OnRep_DeathInfo = DeadPlayerState->Function(_("OnRep_DeathInfo"));
+			static auto OnRep_DeathInfo = DeadPlayerState->Function(("OnRep_DeathInfo"));
 
 			if (OnRep_DeathInfo)
 				DeadPlayerState->ProcessEvent(OnRep_DeathInfo);
@@ -529,7 +529,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			{
 				if (KillerController)
 				{
-					static auto ClientReceiveKillNotification = KillerController->Function(_("ClientReceiveKillNotification"));
+					static auto ClientReceiveKillNotification = KillerController->Function(("ClientReceiveKillNotification"));
 
 					struct {
 						// Both playerstates
@@ -541,17 +541,17 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 						KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
 				}
 
-				// *DeadPlayerState->Member<__int64>(_("DeathInfo")) = *(__int64*)malloc(GetSizeOfStruct(FindObject(_("ScriptStruct /Script/FortniteGame.DeathInfo"))));
+				// *DeadPlayerState->Member<__int64>(("DeathInfo")) = *(__int64*)malloc(GetSizeOfStruct(FindObject(("ScriptStruct /Script/FortniteGame.DeathInfo"))));
 
-				(*KillerPlayerState->Member<int>(_("KillScore")))++;
-				(*KillerPlayerState->Member<int>(_("TeamKillScore")))++;
+				(*KillerPlayerState->Member<int>(("KillScore")))++;
+				(*KillerPlayerState->Member<int>(("TeamKillScore")))++;
 
-				static auto ClientReportKill = KillerPlayerState->Function(_("ClientReportKill"));
+				static auto ClientReportKill = KillerPlayerState->Function(("ClientReportKill"));
 				struct { UObject* PlayerState; }ClientReportKill_Params{ DeadPlayerState };
 				if (ClientReportKill)
 					KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
 
-				static auto OnRep_Kills = KillerPlayerState->Function(_("OnRep_Kills"));
+				static auto OnRep_Kills = KillerPlayerState->Function(("OnRep_Kills"));
 				if (OnRep_Kills)
 					KillerPlayerState->ProcessEvent(OnRep_Kills);
 			}
@@ -565,7 +565,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
-	auto Pawn = Controller->Member<UObject*>(_("Pawn"));
+	auto Pawn = Controller->Member<UObject*>(("Pawn"));
 
 	if (Pawn && *Pawn)
 	{
@@ -583,7 +583,7 @@ inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Functio
 
 inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
-	auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+	auto Pawn = *Controller->Member<UObject*>(("Pawn"));
 
 	struct SPEIParams  { UObject* EmoteAsset; }; // UFortMontageItemDefinitionBase
 	auto EmoteParams = (SPEIParams*)Parameters;
@@ -597,7 +597,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 			TEnumAsByte<EFortCustomGender> Gender;
 			UObject* AnimMontage; // UAnimMontage
 		} GAHRParams{EFortCustomBodyType::All, EFortCustomGender::Both}; // (CurrentPawn->CharacterBodyType, CurrentPawn->CharacterGender)
-		static auto fn = EmoteAsset->Function(_("GetAnimationHardReference"));
+		static auto fn = EmoteAsset->Function(("GetAnimationHardReference"));
 
 		if (fn)
 		{
@@ -605,17 +605,17 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 			auto Montage = GAHRParams.AnimMontage;
 			if (Montage)
 			{
-				std::cout << _("Playing Montage: ") << Montage->GetFullName() << '\n';
+				std::cout << ("Playing Montage: ") << Montage->GetFullName() << '\n';
 
-				auto AbilitySystemComponent = *Pawn->Member<UObject*>(_("AbilitySystemComponent"));
-				static auto EmoteClass = FindObject(_("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+				auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
+				static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
 				TArray<FGameplayAbilitySpec> Specs;
 
 				if (Engine_Version <= 422)
-					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(_("ActivatableAbilities"))).Items;
+					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
 				else
-					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(_("ActivatableAbilities"))).Items;
+					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))).Items;
 
 				UObject* DefaultObject = EmoteClass->CreateDefaultObject();
 
@@ -625,7 +625,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 					if (CurrentSpec.Ability == DefaultObject)
 					{
-						auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(_("CurrentActivationInfo"));
+						auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(("CurrentActivationInfo"));
 
 						// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
 						if (PlayMontage)
@@ -633,7 +633,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 							auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
 							// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
 
-							std::cout << _("Played for: ") << Dura << '\n';
+							std::cout << ("Played for: ") << Dura << '\n';
 						}
 					}
 				}
@@ -666,16 +666,16 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 	if (Params && Controller)
 	{
-		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+		auto Pawn = *Controller->Member<UObject*>(("Pawn"));
 		auto ReceivingActor = Params->ReceivingActor;
 
 		if (ReceivingActor)
 		{
 			auto ReceivingActorName = ReceivingActor->GetName(); // There has to be a better way, right?
 
-			std::cout << _("ReceivingActorName: ") << ReceivingActorName << '\n';
+			std::cout << ("ReceivingActorName: ") << ReceivingActorName << '\n';
 
-			if (ReceivingActorName.contains(_("Tiered")))
+			if (ReceivingActorName.contains(("Tiered")))
 			{
 				struct BitField_Container
 				{
@@ -687,38 +687,38 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 				// TODO: Implement bitfields better
 
-				auto BitField = ReceivingActor->Member<BitField_Container>(_("bAlreadySearched"));
+				auto BitField = ReceivingActor->Member<BitField_Container>(("bAlreadySearched"));
 				BitField->bAlreadySearched = true;
 
-				static auto AlreadySearchedFn = ReceivingActor->Function(_("OnRep_bAlreadySearched"));
+				static auto AlreadySearchedFn = ReceivingActor->Function(("OnRep_bAlreadySearched"));
 				if (AlreadySearchedFn)
 				{
 					ReceivingActor->ProcessEvent(AlreadySearchedFn);
 				}
 			}
 
-			if (ReceivingActorName.contains(_("B_Athena_VendingMachine")))
+			if (ReceivingActorName.contains(("B_Athena_VendingMachine")))
 			{
-				// *ReceivingActor->Member<int>(_("CostAmount"))
+				// *ReceivingActor->Member<int>(("CostAmount"))
 				// MaterialType
 				auto Super = (UClass_FTT*)ReceivingActor;
 				for (auto Super = (UClass_FTT*)ReceivingActor; Super; Super = (UClass_FTT*)Super->SuperStruct)
 				{
-					std::cout << _("SuperStruct: ") << Super->GetFullName() << '\n';
+					std::cout << ("SuperStruct: ") << Super->GetFullName() << '\n';
 				}
 
-				static auto GetCurrentActiveItem = ReceivingActor->Function(_("GetCurrentActiveItem"));
+				static auto GetCurrentActiveItem = ReceivingActor->Function(("GetCurrentActiveItem"));
 				UObject* CurrentMaterial = nullptr;
 				ReceivingActor->ProcessEvent(GetCurrentActiveItem, &CurrentMaterial);
 
-				auto SpawnLocation = *ReceivingActor->Member<FVector>(_("LootSpawnLocation"));
+				auto SpawnLocation = *ReceivingActor->Member<FVector>(("LootSpawnLocation"));
 			}
 
-			if (ReceivingActorName.contains(_("Vehicle")))
+			if (ReceivingActorName.contains(("Vehicle")))
 			{
-				Helper::SetLocalRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_Authority);
+				Helper::SetLocalRole(*Controller->Member<UObject*>(("Pawn")), ENetRole::ROLE_Authority);
 				Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_Authority);
-				// Helper::SetLocalRole(*Controller->Member<UObject*>(_("Pawn")), ENetRole::ROLE_AutonomousProxy);
+				// Helper::SetLocalRole(*Controller->Member<UObject*>(("Pawn")), ENetRole::ROLE_AutonomousProxy);
 				// Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
 			}
 
@@ -736,7 +736,7 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 		struct parms { __int64 ZiplineState; };
 		auto Params = (parms*)Parameters;
 
-		static auto ZiplineOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.ZiplinePawnState"), _("Zipline"));
+		static auto ZiplineOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.ZiplinePawnState"), ("Zipline"));
 
 		auto Zipline = (UObject**)(__int64(&Params->ZiplineState) + ZiplineOffset);
 
@@ -750,7 +750,7 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 			// Helper::SetRemoteRole(*Zipline, ENetRole::ROLE_Authority);
 		}
 		else
-			std::cout << _("No zipline!\n");
+			std::cout << ("No zipline!\n");
 	}
 
 	return false;
@@ -774,28 +774,28 @@ inline bool ServerSuicideHook(UObject* Controller, UFunction* Function, void* Pa
 			bool bPlayFeedbackEvent;
 		} LCJParams{{ 90000, 90000, 90000 }, false, false, true, true};
 
-		auto Pawn = Controller->Member<UObject*>(_("Pawn"));
+		auto Pawn = Controller->Member<UObject*>(("Pawn"));
 
 		if (Pawn && *Pawn)
 		{
-			auto ParachuteAttachment = (*Pawn)->Member<UObject*>(_("ParachuteAttachment"));
+			auto ParachuteAttachment = (*Pawn)->Member<UObject*>(("ParachuteAttachment"));
 
 			if (ParachuteAttachment && *ParachuteAttachment)
 			{
-				*(*ParachuteAttachment)->Member<bool>(_("bParachuteVisible")) = false;
-				*(*ParachuteAttachment)->Member<UObject*>(_("PlayerPawn")) = nullptr;
-				(*ParachuteAttachment)->ProcessEvent(_("OnRep_PlayerPawn"));
-				(*Pawn)->ProcessEvent(_("OnRep_ParachuteAttachment"));
+				*(*ParachuteAttachment)->Member<bool>(("bParachuteVisible")) = false;
+				*(*ParachuteAttachment)->Member<UObject*>(("PlayerPawn")) = nullptr;
+				(*ParachuteAttachment)->ProcessEvent(("OnRep_PlayerPawn"));
+				(*Pawn)->ProcessEvent(("OnRep_ParachuteAttachment"));
 				Helper::DestroyActor(*ParachuteAttachment);
-				std::cout << _("Destroyed ParachuteAttachment!\n");
+				std::cout << ("Destroyed ParachuteAttachment!\n");
 			}
 			else
-				std::cout << _("No ParachuteAttachment!\n");
+				std::cout << ("No ParachuteAttachment!\n");
 
-			static auto FortGliderInstance = FindObject(_("BlueprintGeneratedClass /Game/Athena/Cosmetics/Blueprints/Gliders/B_BaseGlider.B_BaseGlider_C"));
+			static auto FortGliderInstance = FindObject(("BlueprintGeneratedClass /Game/Athena/Cosmetics/Blueprints/Gliders/B_BaseGlider.B_BaseGlider_C"));
 			auto Gliders = Helper::GetAllActorsOfClass(FortGliderInstance);
 			
-			std::cout << _("Glider Num: ") << Gliders.Num() << '\n';
+			std::cout << ("Glider Num: ") << Gliders.Num() << '\n';
 
 			for (int i = 0; i < Gliders.Num(); i++)
 			{
@@ -813,7 +813,7 @@ inline bool ServerSuicideHook(UObject* Controller, UFunction* Function, void* Pa
 
 			if (GliderAnimInstance)
 			{
-				auto OwnerGlider = GliderAnimInstance->Member<UObject*>(_("OwnerGlider"));
+				auto OwnerGlider = GliderAnimInstance->Member<UObject*>(("OwnerGlider"));
 
 				if (OwnerGlider && *OwnerGlider)
 				{
@@ -821,34 +821,34 @@ inline bool ServerSuicideHook(UObject* Controller, UFunction* Function, void* Pa
 				}
 			} */
 			// Helper::SpawnChip(Controller);
-			*(*Pawn)->Member<bool>(_("bIsDBNO")) = false;
-			(*Pawn)->ProcessEvent(_("OnRep_IsDBNO"));
+			*(*Pawn)->Member<bool>(("bIsDBNO")) = false;
+			(*Pawn)->ProcessEvent(("OnRep_IsDBNO"));
 
 			struct { UObject* EventInstigator; } COPRParams{ Controller };
-			static auto COPRFn = FindObject(_("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnRevived"));
+			static auto COPRFn = FindObject(("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnRevived"));
 
 			Controller->ProcessEvent(COPRFn, &COPRParams);
 
-			static auto setHealthFn = (*Pawn)->Function(_("SetHealth"));
+			static auto setHealthFn = (*Pawn)->Function(("SetHealth"));
 			struct { float NewHealthVal; }healthParams{ 30 };
 
 			if (setHealthFn)
 				(*Pawn)->ProcessEvent(setHealthFn, &healthParams);
 			else
-				std::cout << _("Unable to find setHealthFn!\n");
+				std::cout << ("Unable to find setHealthFn!\n");
 
-			(*Pawn)->ProcessEvent(_("ForceReviveFromDBNO"));
+			(*Pawn)->ProcessEvent(("ForceReviveFromDBNO"));
 
-			// std::cout << _("Spawned Chip!\n");
-			/* static auto fn = (*Pawn)->Function(_("LaunchCharacterJump"));
+			// std::cout << ("Spawned Chip!\n");
+			/* static auto fn = (*Pawn)->Function(("LaunchCharacterJump"));
 
 			if (fn)
 				(*Pawn)->ProcessEvent(fn, &LCJParams);
 			else
-				std::cout << _("No LaunchCharacterJump!\n"); */
+				std::cout << ("No LaunchCharacterJump!\n"); */
 		}
 		else
-			std::cout << _("No Pawn!\n");
+			std::cout << ("No Pawn!\n");
 	}
 
 	return false;
@@ -875,21 +875,21 @@ inline bool ServerClientPawnLoadedHook(UObject* Controller, UFunction* Function,
 
 	if (Parameters && Controller)
 	{
-		std::cout << _("bIsPawnLoaded: ") << Params->bIsPawnLoaded << '\n';
+		std::cout << ("bIsPawnLoaded: ") << Params->bIsPawnLoaded << '\n';
 
-		auto Pawn = *Controller->Member<UObject*>(_("Pawn"));
+		auto Pawn = *Controller->Member<UObject*>(("Pawn"));
 
 		if (Pawn)
 		{
-			auto bLoadingScreenDropped = *Controller->Member<bool>(_("bLoadingScreenDropped"));
+			auto bLoadingScreenDropped = *Controller->Member<bool>(("bLoadingScreenDropped"));
 			if (bLoadingScreenDropped && !Params->bIsPawnLoaded)
 			{
 			}
 			else
-				std::cout << _("Loading screen is not dropped!\n");
+				std::cout << ("Loading screen is not dropped!\n");
 		}
 		else
-			std::cout << _("Pawn is not valid!\n");
+			std::cout << ("Pawn is not valid!\n");
 	}
 
 	return false;
@@ -919,7 +919,7 @@ inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void*
 {
 	if (BuildingActor)
 	{
-		static auto BuildingSMActorClass = FindObject(_("Class /Script/FortniteGame.BuildingSMActor"));
+		static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
 		if (BuildingActor->IsA(BuildingSMActorClass))
 		{
 			for (int i = 0; i < ExistingBuildings.size(); i++)
@@ -937,7 +937,7 @@ inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void*
 			}
 		}
 
-		static auto BuildingContainerClass = FindObject(_("Class /Script/FortniteGame.BuildingContainer"));
+		static auto BuildingContainerClass = FindObject(("Class /Script/FortniteGame.BuildingContainer"));
 
 		if (BuildingActor->IsA(BuildingContainerClass))
 		{
@@ -952,11 +952,11 @@ static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UOb
 {
 	if (NetDriver && World)
 	{
-		std::cout << _("ReplicationGraph_Enable called!\n");
-		std::cout << _("NetDriver: ") << NetDriver->GetFullName() << '\n';
-		std::cout << _("World: ") << World->GetFullName() << '\n';
+		std::cout << ("ReplicationGraph_Enable called!\n");
+		std::cout << ("NetDriver: ") << NetDriver->GetFullName() << '\n';
+		std::cout << ("World: ") << World->GetFullName() << '\n';
 
-		static auto ReplicationDriverClass = FindObject(_("Class /Script/FortniteGame.FortReplicationGraph"));
+		static auto ReplicationDriverClass = FindObject(("Class /Script/FortniteGame.FortReplicationGraph"));
 
 		struct {
 			UObject* ObjectClass;
@@ -964,9 +964,9 @@ static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UOb
 			UObject* ReturnValue;
 		} params{ ReplicationDriverClass , NetDriver };
 
-		static auto GSC = FindObject(_("GameplayStatics /Script/Engine.Default__GameplayStatics"));
-		static auto fn = GSC->Function(_("SpawnObject"));
-		// static auto fn = FindObject(_("Function /Script/Engine.GameplayStatics.SpawnObject"));
+		static auto GSC = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+		static auto fn = GSC->Function(("SpawnObject"));
+		// static auto fn = FindObject(("Function /Script/Engine.GameplayStatics.SpawnObject"));
 		std::cout << "Creating graph\n";
 		GSC->ProcessEvent(fn, &params);
 		std::cout << "new rep graph: " << params.ReturnValue << '\n';
@@ -974,9 +974,9 @@ static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UOb
 	}
 	else
 	{
-		std::cout << _("ReplicationGraph_Enable but missing something!\n");
-		std::cout << _("NetDriver: ") << NetDriver << '\n';
-		std::cout << _("World: ") << World << '\n';
+		std::cout << ("ReplicationGraph_Enable but missing something!\n");
+		std::cout << ("NetDriver: ") << NetDriver << '\n';
+		std::cout << ("World: ") << World << '\n';
 
 		World = Helper::GetWorld();
 
@@ -992,7 +992,7 @@ bool ServerUpdateVehicleInputStateUnreliableHook(UObject* Pawn, UFunction* Funct
 	struct parms { __int64 InState; float TimeStamp; };
 	auto Params = (parms*)Parameters;
 
-	static auto PitchAlphaOffset = FindOffsetStruct(_("ScriptStruct /Script/FortniteGame.FortAthenaVehicleInputStateUnreliable"), _("PitchAlpha"));
+	static auto PitchAlphaOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortAthenaVehicleInputStateUnreliable"), ("PitchAlpha"));
 	auto PitchAlpha = (float*)(__int64(&Params->InState) + PitchAlphaOffset);
 
 	if (Pawn && Params && PitchAlpha)
@@ -1004,7 +1004,7 @@ bool ServerUpdateVehicleInputStateUnreliableHook(UObject* Pawn, UFunction* Funct
 			auto Rotation = Helper::GetActorRotation(Vehicle);
 			auto Location = Helper::GetActorLocation(Vehicle);
 
-			std::cout << _("Pitch Alpha: ") << *PitchAlpha << '\n';
+			std::cout << ("Pitch Alpha: ") << *PitchAlpha << '\n';
 
 			auto newRotation = FRotator{ *PitchAlpha, Rotation.Yaw, Rotation.Roll };
 
@@ -1018,40 +1018,40 @@ bool ServerUpdateVehicleInputStateUnreliableHook(UObject* Pawn, UFunction* Funct
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
-		AddHook(_("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
+		AddHook(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
-	AddHook(_("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
-	AddHook(_("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
-	AddHook(_("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
-	//AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
-	// AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
-	AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
-	AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
-	// AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateUnreliable"), ServerUpdateVehicleInputStateUnreliableHook)
+	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
+	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
+	AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
+	AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
+	//AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
+	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
+	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
+	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
+	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
+	// AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateUnreliable"), ServerUpdateVehicleInputStateUnreliableHook)
 
 	if (Engine_Version >= 420)
-		AddHook(_("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);
+		AddHook(("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);
 
 	if (PlayMontage)
-		AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
+		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 
 	if (Engine_Version < 423)
 	{ // ??? Idk why we need the brackets
-		AddHook(_("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInteract"), ServerAttemptInteractHook);
+		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInteract"), ServerAttemptInteractHook);
 	}
 	else
-		AddHook(_("Function /Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract"), ServerAttemptInteractHook);
+		AddHook(("Function /Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract"), ServerAttemptInteractHook);
 
-	AddHook(_("Function /Script/FortniteGame.FortPlayerControllerZone.ServerAttemptExitVehicle"), ServerAttemptExitVehicleHook);
+	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ServerAttemptExitVehicle"), ServerAttemptExitVehicleHook);
 
-	AddHook(_("Function /Script/FortniteGame.FortPlayerPawn.ServerChoosePart"), ServerChoosePartHook);
+	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerChoosePart"), ServerChoosePartHook);
 
 	for (auto& Func : FunctionsToHook)
 	{
 		if (!Func.first)
-			std::cout << _("Detected null UFunction!\n");
+			std::cout << ("Detected null UFunction!\n");
 	}
 
 	std::cout << std::format("Hooked {} UFunctions!\n", std::to_string(FunctionsToHook.size()));
@@ -1065,56 +1065,56 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 		{
 			auto FunctionName = Function->GetName();
 			// if (Function->FunctionFlags & 0x00200000 || Function->FunctionFlags & 0x01000000) // && FunctionName.find("Ack") == -1 && FunctionName.find("AdjustPos") == -1))
-			if (bLogRpcs && (FunctionName.starts_with(_("Server")) || FunctionName.starts_with(_("Client")) || FunctionName.starts_with(_("OnRep_"))))
+			if (bLogRpcs && (FunctionName.starts_with(("Server")) || FunctionName.starts_with(("Client")) || FunctionName.starts_with(("OnRep_"))))
 			{
 				if (!FunctionName.contains("ServerUpdateCamera") && !FunctionName.contains("ServerMove")
-					&& !FunctionName.contains(_("ServerUpdateLevelVisibility"))
-					&& !FunctionName.contains(_("AckGoodMove")))
+					&& !FunctionName.contains(("ServerUpdateLevelVisibility"))
+					&& !FunctionName.contains(("AckGoodMove")))
 				{
-					std::cout << _("RPC Called: ") << FunctionName << '\n';
+					std::cout << ("RPC Called: ") << FunctionName << '\n';
 				}
 			}
 
 			if (bLogProcessEvent)
 			{
-				if (!strstr(FunctionName.c_str(), _("EvaluateGraphExposedInputs")) &&
-					!strstr(FunctionName.c_str(), _("Tick")) &&
-					!strstr(FunctionName.c_str(), _("OnSubmixEnvelope")) &&
-					!strstr(FunctionName.c_str(), _("OnSubmixSpectralAnalysis")) &&
-					!strstr(FunctionName.c_str(), _("OnMouse")) &&
-					!strstr(FunctionName.c_str(), _("Pulse")) &&
-					!strstr(FunctionName.c_str(), _("BlueprintUpdateAnimation")) &&
-					!strstr(FunctionName.c_str(), _("BlueprintPostEvaluateAnimation")) &&
-					!strstr(FunctionName.c_str(), _("BlueprintModifyCamera")) &&
-					!strstr(FunctionName.c_str(), _("BlueprintModifyPostProcess")) &&
-					!strstr(FunctionName.c_str(), _("Loop Animation Curve")) &&
-					!strstr(FunctionName.c_str(), _("UpdateTime")) &&
-					!strstr(FunctionName.c_str(), _("GetMutatorByClass")) &&
-					!strstr(FunctionName.c_str(), _("UpdatePreviousPositionAndVelocity")) &&
-					!strstr(FunctionName.c_str(), _("IsCachedIsProjectileWeapon")) &&
-					!strstr(FunctionName.c_str(), _("LockOn")) &&
-					!strstr(FunctionName.c_str(), _("GetAbilityTargetingLevel")) &&
-					!strstr(FunctionName.c_str(), _("ReadyToEndMatch")) &&
-					!strstr(FunctionName.c_str(), _("ReceiveDrawHUD")) &&
-					!strstr(FunctionName.c_str(), _("OnUpdateDirectionalLightForTimeOfDay")) &&
-					!strstr(FunctionName.c_str(), _("GetSubtitleVisibility")) &&
-					!strstr(FunctionName.c_str(), _("GetValue")) &&
-					!strstr(FunctionName.c_str(), _("InputAxisKeyEvent")) &&
-					!strstr(FunctionName.c_str(), _("ServerTouchActiveTime")) &&
-					!strstr(FunctionName.c_str(), _("SM_IceCube_Blueprint_C")) &&
-					!strstr(FunctionName.c_str(), _("OnHovered")) &&
-					!strstr(FunctionName.c_str(), _("OnCurrentTextStyleChanged")) &&
-					!strstr(FunctionName.c_str(), _("OnButtonHovered")) &&
-					!strstr(FunctionName.c_str(), _("ExecuteUbergraph_ThreatPostProcessManagerAndParticleBlueprint")) &&
-					!strstr(FunctionName.c_str(), _("UpdateCamera")) &&
-					!strstr(FunctionName.c_str(), _("GetMutatorContext")) &&
-					!strstr(FunctionName.c_str(), _("CanJumpInternal")) && 
-					!strstr(FunctionName.c_str(), _("OnDayPhaseChanged")) &&
-					!strstr(FunctionName.c_str(), _("Chime")) && 
-					!strstr(FunctionName.c_str(), _("ServerMove")) &&
-					!strstr(FunctionName.c_str(), _("OnVisibilitySetEvent")))
+				if (!strstr(FunctionName.c_str(), ("EvaluateGraphExposedInputs")) &&
+					!strstr(FunctionName.c_str(), ("Tick")) &&
+					!strstr(FunctionName.c_str(), ("OnSubmixEnvelope")) &&
+					!strstr(FunctionName.c_str(), ("OnSubmixSpectralAnalysis")) &&
+					!strstr(FunctionName.c_str(), ("OnMouse")) &&
+					!strstr(FunctionName.c_str(), ("Pulse")) &&
+					!strstr(FunctionName.c_str(), ("BlueprintUpdateAnimation")) &&
+					!strstr(FunctionName.c_str(), ("BlueprintPostEvaluateAnimation")) &&
+					!strstr(FunctionName.c_str(), ("BlueprintModifyCamera")) &&
+					!strstr(FunctionName.c_str(), ("BlueprintModifyPostProcess")) &&
+					!strstr(FunctionName.c_str(), ("Loop Animation Curve")) &&
+					!strstr(FunctionName.c_str(), ("UpdateTime")) &&
+					!strstr(FunctionName.c_str(), ("GetMutatorByClass")) &&
+					!strstr(FunctionName.c_str(), ("UpdatePreviousPositionAndVelocity")) &&
+					!strstr(FunctionName.c_str(), ("IsCachedIsProjectileWeapon")) &&
+					!strstr(FunctionName.c_str(), ("LockOn")) &&
+					!strstr(FunctionName.c_str(), ("GetAbilityTargetingLevel")) &&
+					!strstr(FunctionName.c_str(), ("ReadyToEndMatch")) &&
+					!strstr(FunctionName.c_str(), ("ReceiveDrawHUD")) &&
+					!strstr(FunctionName.c_str(), ("OnUpdateDirectionalLightForTimeOfDay")) &&
+					!strstr(FunctionName.c_str(), ("GetSubtitleVisibility")) &&
+					!strstr(FunctionName.c_str(), ("GetValue")) &&
+					!strstr(FunctionName.c_str(), ("InputAxisKeyEvent")) &&
+					!strstr(FunctionName.c_str(), ("ServerTouchActiveTime")) &&
+					!strstr(FunctionName.c_str(), ("SM_IceCube_Blueprint_C")) &&
+					!strstr(FunctionName.c_str(), ("OnHovered")) &&
+					!strstr(FunctionName.c_str(), ("OnCurrentTextStyleChanged")) &&
+					!strstr(FunctionName.c_str(), ("OnButtonHovered")) &&
+					!strstr(FunctionName.c_str(), ("ExecuteUbergraph_ThreatPostProcessManagerAndParticleBlueprint")) &&
+					!strstr(FunctionName.c_str(), ("UpdateCamera")) &&
+					!strstr(FunctionName.c_str(), ("GetMutatorContext")) &&
+					!strstr(FunctionName.c_str(), ("CanJumpInternal")) && 
+					!strstr(FunctionName.c_str(), ("OnDayPhaseChanged")) &&
+					!strstr(FunctionName.c_str(), ("Chime")) && 
+					!strstr(FunctionName.c_str(), ("ServerMove")) &&
+					!strstr(FunctionName.c_str(), ("OnVisibilitySetEvent")))
 				{
-					std::cout << _("Function called: ") << FunctionName << '\n';
+					std::cout << ("Function called: ") << FunctionName << '\n';
 				}
 			}
 		}
@@ -1149,8 +1149,8 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 {
 	if (pc)
 	{
-		static auto fn = FindObject(_("Function /Script/Engine.Controller.GetViewTarget"));
-		UObject* TheViewTarget = nullptr; // *pc->Member<UObject*>(_("Pawn"));
+		static auto fn = FindObject(("Function /Script/Engine.Controller.GetViewTarget"));
+		UObject* TheViewTarget = nullptr; // *pc->Member<UObject*>(("Pawn"));
 		pc->ProcessEvent(fn, &TheViewTarget);
 
 		if (TheViewTarget)
@@ -1172,7 +1172,7 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 			return;
 		}
 		// else
-			// std::cout << _("unable to get viewpoint!\n"); // This will happen if someone leaves iirc
+			// std::cout << ("unable to get viewpoint!\n"); // This will happen if someone leaves iirc
 	}
 
 	return GetPlayerViewPoint(pc, a2, a3);
@@ -1182,27 +1182,20 @@ __int64(__fastcall* idkbroke)(UObject* a1);
 
 __int64 idkbrokeDetour(UObject* a1)
 {
-	std::cout << _("Idk\n");
+	std::cout << ("Idk\n");
 	return 0;
+}
+
+void __fastcall HookToFixMaybeDetour(__int64 a1, unsigned int a2)
+{
+	std::cout << "Funne Called!\n";
+	return;
 }
 
 void InitializeHooks()
 {
 	MH_CreateHook((PVOID)ProcessEventAddr, ProcessEventDetour, (void**)&ProcessEventO);
 	MH_EnableHook((PVOID)ProcessEventAddr);
-
-	if (Engine_Version >= 424)
-	{
-		// MH_CreateHook((PVOID)ReplicationGraph_EnableAddr, ReplicationGraph_EnableDetour, (void**)&ReplicationGraph_Enable);
-		// MH_EnableHook((PVOID)ReplicationGraph_EnableAddr);
-
-		auto PainAddr = FindPattern(_("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 BA ? ? ? ?"));
-
-		std::cout << _("Pain Addr: ") << PainAddr << '\n';
-
-		// MH_CreateHook((PVOID)PainAddr, idkbrokeDetour, (void**)&idkbroke);
-		// MH_EnableHook((PVOID)PainAddr);
-	}
 
 	if (Engine_Version >= 423)
 	{
@@ -1217,5 +1210,5 @@ void InitializeHooks()
 		MH_EnableHook((PVOID)GetPlayerViewpointAddr);
 	}
 	else
-		std::cout << _("[WARNING] Could not fix flashing!\n");
+		std::cout << ("[WARNING] Could not fix flashing!\n");
 }
