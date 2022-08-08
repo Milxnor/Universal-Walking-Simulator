@@ -495,6 +495,7 @@ void InitializePatterns()
         CreateNetDriverSig = ("48 89 5C 24 ? 57 48 83 EC 20 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0 4C 8B C3 48 8B CF 48 8B 5C 24 ? 48 83 C4 20 5F E9 ? ? ? ?");
         PauseBeaconRequestsSig = ("40 57 48 83 EC 30 48 8B F9 84 D2 74 62 80 3D ? ? ? ? ? 72 22 48 8D 05 ? ? ? ? 41 B9 ? ? ? ? 4C 8D 05 ? ? ? ? 48 89 44 24 ? 33 D2");
         Beacon_NotifyControlMessageSig = ("4C 8B DC 49 89 5B 18 49 89 73 20 55 57 41 54 41 55 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 F6 49 8B D9 89 74 24 44 41 0F B6 F8 48 8B 41 10");
+        CollectGarbageSig = "40 55 57 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 3D ? ? ? ? ? 0F B6 FA 44 8B F9 74 3B 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 48 8D";
     }
 
     static const auto FnVerDouble = std::stod(FN_Version);
@@ -634,7 +635,12 @@ void InitializePatterns()
             GiveAbilityAddr = FindPattern(("48 89 5C 24 10 48 89 6C 24 18 48 89 7C 24 20 41 56 48 83 EC ? 83 B9 60 05"));
 
             if (!GiveAbilityAddr)
+            {
                 GiveAbilityAddr = FindPattern(("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 51 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01"));
+
+                if (!GiveAbilityAddr)
+                    GiveAbilityAddr = FindPattern(_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 52 48 63 9F"));
+            }
         }
 
         if (!GiveAbilityAddr)
@@ -646,9 +652,17 @@ void InitializePatterns()
             CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbility);
 
             InternalTryActivateAbilityAddr = FindPattern(InternalTryActivateAbilitySig);
+            
+            if (!InternalTryActivateAbilityAddr)
+                InternalTryActivateAbilityAddr = FindPattern(_("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 8B DA 4C 8B F1 E8 ? ? ? ? 4D 8D BE ? ? ? ? 33 D2 49"));
+
             CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbility);
 
             MarkAbilitySpecDirtyAddr = FindPattern(MarkAbilitySpecDirtySig);
+
+            if (!MarkAbilitySpecDirtyAddr)
+                MarkAbilitySpecDirtyAddr = FindPattern(_("48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 D8 4C 8B F2 48 8B F9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 46 10 48 89 6C 24 ? 48 89 74"));
+
             CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyNew);
         }
 

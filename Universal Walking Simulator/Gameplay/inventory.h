@@ -207,8 +207,10 @@ namespace Inventory
 		{
 			auto FullName = Definition->GetFullName();
 			bool IsAGID = (FullName.contains(("AthenaGadgetItemDefinition ")) || FullName.contains(("FortGadgetItemDefinition "))) ? true : false; // TODO: Use IsA
+			
 			if (!IsAGID)
 			{
+				// i dont think we need this on s15?
 				static auto equipFn = Pawn->Function(("EquipWeaponDefinition"));
 				struct {
 					UObject* Def;
@@ -569,9 +571,19 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
-		else if (Engine_Version >= 425)
+		else if (Engine_Version == 425)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+		}
+		else if (Engine_Version >= 426 && FlooredVer < 15) // idk if right
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x160]; };
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+		}
+		else if (FlooredVer >= 15)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x190]; };
 			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
 
@@ -663,9 +675,19 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (Engine_Version >= 425)
+		else if (Engine_Version == 425)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
+			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+		}
+		else if (Engine_Version >= 426 && FlooredVer < 15) // idk if right
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x160]; };
+			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+		}
+		else if (FlooredVer >= 15)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x190]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
 		else
@@ -753,9 +775,19 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (Engine_Version >= 425)
+		else if (Engine_Version == 425)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
+			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (Engine_Version >= 426 && FlooredVer < 15) // idk if right
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x160]; };
+			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (FlooredVer >= 15)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x190]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 

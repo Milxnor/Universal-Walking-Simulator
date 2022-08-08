@@ -110,7 +110,10 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     if (!AbilitySystemComponent)
         return nullptr;
 
-    UObject* DefaultObject = GameplayAbilityClass->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
+    UObject* DefaultObject = nullptr;
+
+    // if (Engine_Version < 424)
+    DefaultObject = GameplayAbilityClass; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
 
     auto GenerateNewSpec = [&]() -> FGameplayAbilitySpec
     {
@@ -150,7 +153,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     }
 
     // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232
-    
+
     GiveAbility(AbilitySystemComponent, &Spec.Handle, Spec);
 
     return Spec.Ability;

@@ -153,7 +153,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     {
         auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
 
-        if (AbilitySystemComponent && Engine_Version < 424)
+        if (AbilitySystemComponent && FnVerDouble < 15)
         {
             std::cout << ("Granting abilities!\n");
             if (FnVerDouble < 8)
@@ -183,7 +183,37 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 // static auto MatsAbility = FindObject(("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
                 //GrantGameplayAbility(Pawn, MatsAbility);
 
-                static auto SprintAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Sprint"));
+                static auto SprintAbility = FindObject("FortGameplayAbility_Sprint /Script/FortniteGame.Default__FortGameplayAbility_Sprint");
+                static auto JumpAbility = FindObject("FortGameplayAbility_Jump /Script/FortniteGame.Default__FortGameplayAbility_Jump");
+                static auto InteractUseAbility = FindObject("GA_DefaultPlayer_InteractUse_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.Default__GA_DefaultPlayer_InteractUse_C");
+                static auto InteractSearchAbility = FindObject("GA_DefaultPlayer_InteractSearch_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.Default__GA_DefaultPlayer_InteractSearch_C");
+                
+                // GAB_CarryPlayer_C
+
+                if (Engine_Version >= 424)
+                {
+                    static auto JumpOutAbility = FindObject("GA_Athena_HidingProp_JumpOut_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_JumpOut.Default__GA_Athena_HidingProp_JumpOut_C");
+                    static auto HidingAbility = FindObject("GA_Athena_HidingProp_Hide_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_Hide.Default__GA_Athena_HidingProp_Hide_C");
+                    static auto LandedOnAbility = FindObject("GA_Athena_HidingProp_LandedOn_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_LandedOn.Default__GA_Athena_HidingProp_LandedOn_C");
+
+                    if (JumpOutAbility)
+                        GrantGameplayAbility(Pawn, JumpOutAbility);
+                    if (HidingAbility)
+                        GrantGameplayAbility(Pawn, HidingAbility);
+                    if (LandedOnAbility)
+                        GrantGameplayAbility(Pawn, LandedOnAbility);
+                }
+
+                if (SprintAbility)
+                    GrantGameplayAbility(Pawn, SprintAbility);
+                if (JumpAbility)
+                    GrantGameplayAbility(Pawn, JumpAbility);
+                if (InteractUseAbility)
+                   GrantGameplayAbility(Pawn, InteractUseAbility);
+                if (InteractSearchAbility)
+                   GrantGameplayAbility(Pawn, InteractSearchAbility);
+
+            /*    static auto SprintAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Sprint"));
                 static auto ReloadAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Reload"));
                 static auto JumpAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Jump"));
                 static auto InteractUseAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C"));
@@ -191,7 +221,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 static auto EnterVehicleAbility = FindObject(("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.GA_AthenaEnterVehicle_C"));
                 static auto ExitVehicleAbility = FindObject(("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.GA_AthenaExitVehicle_C"));
                 static auto InVehicleAbility = FindObject(("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.GA_AthenaInVehicle_C"));
-                static auto RangedAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C"));
 
                 if (SprintAbility)
                     GrantGameplayAbility(Pawn, SprintAbility); //, true);
@@ -209,16 +238,14 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                     GrantGameplayAbility(Pawn, ExitVehicleAbility);
                 if (InVehicleAbility)
                     GrantGameplayAbility(Pawn, InVehicleAbility);
-                /* if (RangedAbility)
-                    GrantGameplayAbility(Pawn, RangedAbility); */
-            }
-
             // if (FnVerDouble < 9)
             {
                 static auto EmoteAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
                 if (EmoteAbility)
                     GrantGameplayAbility(Pawn, EmoteAbility);
+            } */
+
             }
 
             std::cout << ("Granted Abilities!\n");
@@ -229,7 +256,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     else
         std::cout << ("Unable to grant abilities due to no GiveAbility!\n");
 
-    if (Engine_Version < 425) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
+    // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
     {
         static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
         static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -583,15 +610,18 @@ void InitializeNetHooks()
 
         if (CollectGarbageAddr)
         {
-            if (Engine_Version >= 422)
+            // if (Engine_Version < 424)
             {
-                MH_CreateHook((PVOID)CollectGarbageAddr, TryCollectGarbageHook, nullptr);
-                MH_EnableHook((PVOID)CollectGarbageAddr);
-            }
-            else
-            {
-                MH_CreateHook((PVOID)CollectGarbageAddr, CollectGarbageDetour, (void**)&CollectGarbage);
-                MH_EnableHook((PVOID)CollectGarbageAddr);
+                if (Engine_Version >= 422 && Engine_Version < 424)
+                {
+                    MH_CreateHook((PVOID)CollectGarbageAddr, TryCollectGarbageHook, nullptr);
+                    MH_EnableHook((PVOID)CollectGarbageAddr);
+                }
+                else
+                {
+                    MH_CreateHook((PVOID)CollectGarbageAddr, CollectGarbageDetour, (void**)&CollectGarbage);
+                    MH_EnableHook((PVOID)CollectGarbageAddr);
+                }
             }
         }
         else

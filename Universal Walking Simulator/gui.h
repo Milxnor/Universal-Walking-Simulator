@@ -392,6 +392,9 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								static const auto fnGamephase = gameState->Function(("OnRep_GamePhase"));
 
+								// if (fnGamephase)
+									// gameState->ProcessEvent(fnGamephase);
+
 								std::cout << ("Changed Phase to Aircraft.");
 
 								// TODO: Hook a func for this

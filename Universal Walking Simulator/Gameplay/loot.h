@@ -524,9 +524,36 @@ namespace Looting
 					}
 				}
 
+				if (Engine_Version >= 424) // chapter 2 specific stuff
+				{
+					if (BuildingContainerName.contains("Barrel") && BuildingContainerName.contains("Rod"))
+					{
+						static auto FishingRodWID = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/FloppingRabbit/WID_Athena_FloppingRabbit.WID_Athena_FloppingRabbit"));
+
+						if (FishingRodWID)
+						{
+							// todo: make amount random
+
+							Helper::SummonPickup(nullptr, FishingRodWID, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset, 1);
+							Helper::SummonPickup(nullptr, FishingRodWID, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset, 1);
+							Helper::DestroyActor(BuildingContainer);
+						}
+					}
+
+					else if (BuildingContainerName.contains("FactionChest")) // IO Chests
+					{
+
+					}
+
+					else if (BuildingContainerName.contains("Wumba")) // Workbench/Upgrade Bench
+					{
+
+					}
+				}
+				 
 				else if (!BuildingContainerName.contains(("Door")) && !BuildingContainerName.contains(("Wall")))
 				{
-					std::cout << ("Unhandled container: ") << BuildingContainerName << "!\n";
+					std::cout << ("Container: ") << BuildingContainerName << "!\n";
 				}
 			}
 		}

@@ -3,13 +3,22 @@
 namespace Events {
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 12.41f || Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
+		return (Version == 12.61f || Version == 12.41f || Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
 		float Version = std::stof(FN_Version);
+
 		if (HasEvent()) {
 			std::cout << ("Loading Event!\n");
+
+			if (Version == 12.61f) {
+				auto FritterLoader = FindObject(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0"));
+				auto LoadFritterLevel = FindObject(("Function /Fritter/BP_Fritter_Loader.BP_Fritter_Loader_C.LoadFritterLevel"));
+				bool CO = true;
+				FritterLoader->ProcessEvent(LoadFritterLevel, &CO);
+			}
+
 			if (Version == 12.41f) {
 				static auto JL = FindObject(("BP_Jerky_Loader_C /CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2"));
 
@@ -58,6 +67,19 @@ namespace Events {
 		float Version = std::stof(FN_Version);
 		if (HasEvent()) {
 			std::cout << ("Starting Event!\n");
+
+			if (Version == 12.61f) {
+				auto AP = FindObject(("LevelSequencePlayer /Fritter/Level/FritterSequenceLevel.FritterSequenceLevel.PersistentLevel.Fritter_2.AnimationPlayer"));
+				
+				if (AP)
+				{
+					auto Function = FindObject(("Function /Script/MovieScene.MovieSceneSequencePlayer.Play"));
+					AP->ProcessEvent(Function);
+				}
+				else
+					std::cout << "Failed to find Fritter AP!\n";
+			}
+
 			if (Version == 12.41f) {
 				static auto JL = FindObject(("BP_Jerky_Loader_C /CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2"));
 

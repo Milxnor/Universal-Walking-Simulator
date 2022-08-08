@@ -367,6 +367,10 @@ struct light
 	}
 };
 
+struct UObject;
+
+static UObject* (*GetDefaultObject)(UObject* theClass);
+
 struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4c8e09b606f10a09776b4d1f38/Engine/Source/Runtime/CoreUObject/Public/UObject/UObjectBase.h#L20
 {
 	void** VFTable;
@@ -434,13 +438,24 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 			else if (Engine_Version > 420 && FnVerDouble < 7.40)
 				Index = 102;
 			else if (FnVerDouble >= 7.40)
-				Index = 103; // VERIFIED FOR 7.40T
+				Index = 103;
+			else if (Engine_Version == 424)
+				Index = 106; // got on 11.01
+			else if (Engine_Version >= 425)
+				Index = 114; 
 			else
 				std::cout << ("Unable to determine CreateDefaultObject Index!\n");
 		}
 
 		if (Index != 0)
-			return GetVFunction<UObject* (*)(UObject*)>(this, Index)(this);
+		{
+			if (Engine_Version < 424)
+				return GetVFunction<UObject* (*)(UObject*)>(this, Index)(this);
+			else
+			{
+				// return GetVFunction<UObject* (*)(UObject*, __int64)>(this, Index)(this, 69);
+			}
+		}
 		else
 			std::cout << ("Unable to create default object because Index is 0!\n");
 		return nullptr;
@@ -1134,10 +1149,10 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ServerReplicateActorsOffset = 0x57;
 	if (Engine_Version == 424)
 		ServerReplicateActorsOffset = 0x5A;
-	else if (Engine_Version >= 425)
+	else if (Engine_Version >= 425 && FnVerDouble < 14)
 		ServerReplicateActorsOffset = 0x5D;
-	// else if (Engine_Version >= 426)
-		// ServerReplicateActorsOffset = 0x5F;
+	else if (Engine_Version >= 426)
+		ServerReplicateActorsOffset = 0x5F;
 
 	if (FnVerDouble >= 5)
 	{
