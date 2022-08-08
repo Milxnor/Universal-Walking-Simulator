@@ -143,6 +143,9 @@ DWORD WINAPI Main(LPVOID)
 
     TestAbilitySizeDifference();
 
+    // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "DeltaFlags") << '\n'; // 256 12.41
+    // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "ArrayReplicationKey") << '\n'; // 84 12.41
+
     return 0;
 }
 

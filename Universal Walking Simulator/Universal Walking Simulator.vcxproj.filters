@@ -58,9 +58,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="UE\finder.h">
-      <Filter>Header Files\UE</Filter>
-    </ClInclude>
     <ClInclude Include="UE\other.h">
       <Filter>Header Files\UE</Filter>
     </ClInclude>
@@ -126,6 +123,9 @@
     </ClInclude>
     <ClInclude Include="finder.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="datatables.h">
+      <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

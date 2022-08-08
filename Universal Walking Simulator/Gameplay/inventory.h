@@ -402,16 +402,14 @@ namespace Inventory
 		static auto WorldHandleInvUpdate = WorldInventory->Function(("HandleInventoryLocalUpdate"));
 
 		if (WorldHandleInvUpdate)
-		{
 			WorldInventory->ProcessEvent(WorldHandleInvUpdate);
 
-			if (std::floor(FnVerDouble) < 10) // idk crashes
-			{
-				static auto PCHandleInvUpdate = Controller->Function(("HandleWorldInventoryLocalUpdate"));
+		if (std::floor(FnVerDouble) < 10) // idk crashes // TODO: Test this again
+		{
+			static auto PCHandleInvUpdate = Controller->Function(("HandleWorldInventoryLocalUpdate"));
 
-				if (PCHandleInvUpdate)
-					Controller->ProcessEvent(PCHandleInvUpdate);
-			}
+			if (PCHandleInvUpdate)
+				Controller->ProcessEvent(PCHandleInvUpdate);
 		}
 
 		if (FnVerDouble < 7.4)
@@ -446,24 +444,12 @@ namespace Inventory
 		// static auto OnRep_QuickBar = Controller->Function(("OnRep_QuickBar"));
 		// Controller->ProcessEvent(OnRep_QuickBar, nullptr);
 
-		if (Engine_Version <= 422)
-		{
-			if ((bRemovedItem || Idx != -1) && Inventory)
-				((FFastArraySerializerOL*)Inventory)->MarkArrayDirty();
+		if ((bRemovedItem || Idx != -1) && Inventory)
+			MarkArrayDirty(Inventory);
 
-			// if (Idx != -1)
-			if (ModifiedItem)
-				((FFastArraySerializerOL*)Inventory)->MarkItemDirty(ModifiedItem);
-		}
-		else
-		{
-			if ((bRemovedItem || Idx != -1) && Inventory)
-				((FFastArraySerializerSE*)Inventory)->MarkArrayDirty();
-
-			// if (Idx != -1)
-			if (ModifiedItem)
-				((FFastArraySerializerSE*)Inventory)->MarkItemDirty(ModifiedItem);
-		}
+		// if (Idx != -1)
+		if (ModifiedItem)
+			MarkItemDirty(Inventory, ModifiedItem);
 	}
 
 	UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count = 1)
@@ -540,10 +526,8 @@ namespace Inventory
 				bSuccessful = true;
 				auto Inventory = GetInventory(Controller);
 
-				if (Engine_Version <= 422)
-					((FFastArraySerializerOL*)Inventory)->MarkItemDirty((FFastArraySerializerItem*)&ItemEntry);
-				else
-					((FFastArraySerializerSE*)Inventory)->MarkItemDirty((FFastArraySerializerItem*)&ItemEntry);
+				MarkItemDirty(Inventory, (FFastArraySerializerItem*)&ItemEntry);
+
 				break;
 			}
 		}

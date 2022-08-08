@@ -750,54 +750,6 @@ namespace Helper
 		else
 			std::cout << ("Unable to find Head and Body!\n");
 
-		if (false && std::stod(FN_Version) >= 7.40)
-		{
-			auto TeamIndex = *PlayerState->Member<uint8_t>(("TeamIndex"));
-
-			*PlayerState->Member<uint8_t>(("SquadId")) = TeamIndex;
-
-			*PlayerState->Member<ETeamMemberState>(("TeamMemberState")) = ETeamMemberState::None;
-			*PlayerState->Member<ETeamMemberState>(("ReplicatedTeamMemberState")) = ETeamMemberState::None;
-
-			auto PlayerTeam = PlayerState->Member<UObject*>(("PlayerTeam"));
-
-			static auto world = Helper::GetWorld();
-			static auto gameState = *world->Member<UObject*>(("GameState"));
-
-			*PlayerTeam = gameState->Member<TArray<UObject*>>(("Teams"))->At(TeamIndex); // TArray<class AFortTeamInfo*>
-
-			auto PrivateInfo = (*PlayerTeam)->Member<UObject*>(("PrivateInfo"));
-			if (PrivateInfo && *PrivateInfo)
-				*PlayerState->Member<UObject*>(("PlayerTeamPrivate")) = *PrivateInfo;
-
-			static auto OnRepSquadIdFn = PlayerState->Function(("OnRep_SquadId"));
-
-			if (OnRepSquadIdFn)
-				PlayerState->ProcessEvent(OnRepSquadIdFn);
-			else
-				std::cout << ("Unable to find OnRepSquadIdFn!\n");
-
-			if (PlayerTeam && *PlayerTeam)
-			{
-				(*PlayerTeam)->Member<TArray<UObject*>>(("TeamMembers"))->Add(PC);
-				static auto OnRepPlayerFn = PlayerState->Function(("OnRep_PlayerTeam"));
-
-				if (OnRepPlayerFn)
-					PlayerState->ProcessEvent(OnRepPlayerFn);
-				else
-					std::cout << ("Unable to find OnRepPlayerFn!\n");
-			}
-
-			static auto OnRep_TeamIndex = PlayerState->Function(("OnRep_TeamIndex"));
-
-			unsigned char OldVal = 0;
-
-			if (OnRep_TeamIndex)
-				PlayerState->ProcessEvent(OnRep_TeamIndex, &OldVal);
-			else
-				std::cout << ("Unable to find OnRep_TeamIndex!\n");
-		}
-
 		return Pawn;
 	}
 	

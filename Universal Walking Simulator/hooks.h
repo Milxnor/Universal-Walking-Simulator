@@ -88,8 +88,8 @@ inline void initStuff()
 				
 				auto SSVFn = *AuthGameMode->Member<bool>(("ShouldSpawnVehicle")) = true;*/
 				
-				static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
-				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
+				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
+				static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
 				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
 				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
 				// static auto Playlist = FindObject(("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
@@ -513,6 +513,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			static auto DeathCauseOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathCause"));
 			static auto FinisherOrDownerOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("FinisherOrDowner"));
 			static auto bDBNOOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("bDBNO"));
+
+			// /Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamKillScore
 
 			auto Tags = (FGameplayTagContainer*)(__int64(&*DeathInfo) + TagsOffset);
 

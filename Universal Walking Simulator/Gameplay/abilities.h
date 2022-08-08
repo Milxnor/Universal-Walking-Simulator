@@ -112,8 +112,16 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     UObject* DefaultObject = nullptr;
 
-    // if (Engine_Version < 424)
-    DefaultObject = GameplayAbilityClass; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
+    if (!GameplayAbilityClass->GetFullName().starts_with("Class "))
+        DefaultObject = GameplayAbilityClass; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
+    else
+        DefaultObject = GameplayAbilityClass->CreateDefaultObject();
+
+    if (!DefaultObject)
+    {
+        std::cout << "Failed to create defaultobject!\n";
+        return nullptr;
+    }
 
     auto GenerateNewSpec = [&]() -> FGameplayAbilitySpec
     {

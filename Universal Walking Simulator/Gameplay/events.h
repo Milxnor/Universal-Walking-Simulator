@@ -3,7 +3,7 @@
 namespace Events {
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 12.61f || Version == 12.41f || Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
+		return (Version == 12.61f || /* Version == 12.41f || */ Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
@@ -26,7 +26,8 @@ namespace Events {
 
 				bool CO = true;
 
-				JL->ProcessEvent(JerkyLoadLevel, &CO);
+				if (JL)
+					JL->ProcessEvent(JerkyLoadLevel, &CO);
 			}
 			if (Version == 10.40f) {
 				//The End C1
@@ -87,6 +88,7 @@ namespace Events {
 				JL->ProcessEvent(Function);
 				// static auto JS = FindObject(("LevelSequencePlayer /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.Jerky.AnimationPlayer"));
 			}
+
 			else if (Version == 10.40f) {
 				//The End C1 (Crashes)
 				UObject* NN = FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));

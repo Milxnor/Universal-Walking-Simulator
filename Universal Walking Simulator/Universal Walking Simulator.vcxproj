@@ -115,6 +115,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="anticheat.h" />
+    <ClInclude Include="datatables.h" />
     <ClInclude Include="discord.h" />
     <ClInclude Include="finder.h" />
     <ClInclude Include="fontawesome.h" />
@@ -134,7 +135,6 @@
     <ClInclude Include="Gameplay\player.h" />
     <ClInclude Include="Net\replication.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="UE\finder.h" />
     <ClInclude Include="UE\other.h" />
     <ClInclude Include="UE\structs.h" />
   </ItemGroup>

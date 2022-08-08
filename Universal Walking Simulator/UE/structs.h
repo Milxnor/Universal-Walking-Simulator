@@ -1335,6 +1335,127 @@ INL MemberType* UObject::Member(const std::string& MemberName, int extraOffset)
 		// return (MemberType*)(__int64(this) + FindOffsetStruct(this->GetFullName(), MemberName));
 }
 
+template<typename ElementType>
+union TSparseArrayElementOrFreeListLink
+{
+	/** If the element is allocated, its value is stored here. */
+	ElementType ElementData;
+
+	struct
+	{
+		/** If the element isn't allocated, this is a link to the previous element in the array's free list. */
+		int32_t PrevFreeIndex;
+
+		/** If the element isn't allocated, this is a link to the next element in the array's free list. */
+		int32_t NextFreeIndex;
+	};
+};
+
+template<typename InElementType>//, typename Allocator /*= FDefaultSparseArrayAllocator */>
+class TSparseArray
+{
+	/*
+	using ElementType = InElementType;
+
+	typedef TSparseArrayElementOrFreeListLink<
+		TAlignedBytes<sizeof(ElementType), alignof(ElementType)>
+	> FElementOrFreeListLink;
+
+	typedef TArray<FElementOrFreeListLink> DataType;
+	DataType Data;
+
+	typedef TBitArray<typename Allocator::BitArrayAllocator> AllocationBitArrayType;
+	AllocationBitArrayType AllocationFlags;
+
+	int32_t FirstFreeIndex;
+
+	int32_t NumFreeIndices;
+	*/
+};
+
+class FSetElementId { int32_t Index; };
+
+template<typename InElementType>//, bool bTypeLayout>
+class TSetElementBase
+{
+public:
+	typedef InElementType ElementType;
+
+	/** The element's value. */
+	ElementType Value;
+
+	/** The id of the next element in the same hash bucket. */
+	mutable FSetElementId HashNextId;
+
+	/** The hash bucket that the element is currently linked to. */
+	mutable int32_t HashIndex;
+};
+
+template <typename InElementType>
+class TSetElement : public TSetElementBase<InElementType>//, THasTypeLayout<InElementType>::Value>
+{
+
+};
+
+template<
+	typename InElementType//, typename KeyFuncs /*= DefaultKeyFuncs<ElementType>*/ //, typename Allocator /*= FDefaultSetAllocator*/
+>
+class TSet
+{
+	typedef TSetElement<InElementType> SetElementType;
+
+	typedef TSparseArray<SetElementType/*, typename Allocator::SparseArrayAllocator*/>     ElementArrayType;
+	// typedef typename Allocator::HashAllocator::template ForElementType<FSetElementId> HashType;
+	typedef int32_t HashType;
+
+	ElementArrayType Elements;
+
+	mutable HashType Hash;
+	mutable int32_t	 HashSize;
+};
+
+template <typename KeyType, typename ValueType>
+class TPair // this is a very simplified version fo tpair when in reality its a ttuple and a ttuple has a base and stuff but this works
+{
+public:
+	KeyType First;
+	ValueType Second;
+
+	TPair(KeyType Key, ValueType Value)
+		: First(Key)
+		, Second(Value)
+	{
+	}
+
+	inline KeyType& Key()
+	{
+		return First;
+	}
+	inline const KeyType& Key() const
+	{
+		return First;
+	}
+	inline ValueType& Value()
+	{
+		return Second;
+	}
+	inline const ValueType& Value() const
+	{
+		return Second;
+	}
+};
+
+template<typename KeyType, typename ValueType> // , typename SetAllocator, typename KeyFuncs>
+struct TMap
+{
+	typedef TPair<KeyType, ValueType> ElementType;
+
+	typedef TSet<ElementType/*, KeyFuncs, SetAllocator */> ElementSetType;
+
+	/** A set of the key-value pairs in the map. */
+	ElementSetType Pairs;
+};
+
 struct FFastArraySerializerItem
 {
 	int                                                ReplicationID;                                            // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
@@ -1342,7 +1463,9 @@ struct FFastArraySerializerItem
 	int                                                MostRecentArrayReplicationKey;                            // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
 };
 
-struct FFastArraySerializerSE
+#define INDEX_NONE 0
+
+struct FFastArraySerializerSE // 264
 {
 	char ItemMap[0x50];
 
@@ -1354,7 +1477,42 @@ struct FFastArraySerializerSE
 
 	int32_t CachedNumItems;
 	int32_t CachedNumItemsToConsiderForWriting;
-	EFastArraySerializerDeltaFlags DeltaFlags;
+	EFastArraySerializerDeltaFlags DeltaFlags; // 256
+	// structural padding here i guess 4
+	int idkwhatthisis;
+
+	void SetDeltaSerializationEnabled(const bool bEnabled)
+	{
+		// if (!EnumHasAnyFlags(DeltaFlags, EFastArraySerializerDeltaFlags::HasBeenSerialized))
+		{
+			static auto DeltaFlagsOffset = FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "DeltaFlags");
+			auto TheseDeltaFlags = (EFastArraySerializerDeltaFlags*)(__int64(this) + DeltaFlagsOffset);
+
+			if (bEnabled)
+			{
+				*TheseDeltaFlags = EFastArraySerializerDeltaFlags::HasDeltaBeenRequested; // |= EFastArraySerializerDeltaFlags::HasDeltaBeenRequested;
+			}
+			else
+			{
+				// *TheseDeltaFlags = !EFastArraySerializerDeltaFlags::HasDeltaBeenRequested;// &= ~EFastArraySerializerDeltaFlags::HasDeltaBeenRequested;
+			}
+		}
+	}
+
+	FFastArraySerializerSE()
+		: IDCounter(0)
+		, ArrayReplicationKey(0)
+#if WITH_PUSH_MODEL
+		, OwningObject(nullptr)
+		, RepIndex(INDEX_NONE)
+#endif // WITH_PUSH_MODEL
+		, CachedNumItems(INDEX_NONE)
+		, CachedNumItemsToConsiderForWriting(INDEX_NONE)
+		, DeltaFlags(EFastArraySerializerDeltaFlags::None)
+	{
+		std::cout << "Constructor called!\n";
+		SetDeltaSerializationEnabled(true);
+	}
 
 	void MarkItemDirty(FFastArraySerializerItem* Item)
 	{
@@ -1417,11 +1575,6 @@ struct FFastArraySerializerOL
 		MarkArrayDirty();
 	}
 
-	void MarkAllItemsDirty() // This is my function, not ue.
-	{
-		
-	}
-
 	void MarkArrayDirty()
 	{
 		// ItemMap.Reset();		// This allows to clients to add predictive elements to arrays without affecting replication.
@@ -1440,8 +1593,27 @@ struct FFastArraySerializerOL
 	}
 };
 
+void MarkArrayDirty(void* Array)
+{
+	if (Engine_Version <= 422)
+		((FFastArraySerializerOL*)Array)->MarkArrayDirty();
+	else
+		((FFastArraySerializerSE*)Array)->MarkArrayDirty();
+}
+
+void MarkItemDirty(void* Array, FFastArraySerializerItem* Item)
+{
+	if (Engine_Version <= 422)
+		((FFastArraySerializerOL*)Array)->MarkItemDirty(Item);
+	else
+		((FFastArraySerializerSE*)Array)->MarkItemDirty(Item);
+}
+
 int32_t GetSizeOfStruct(UObject* Struct)
 {
+	if (!Struct)
+		return -1;
+
 	if (Engine_Version <= 420)
 		return ((UClass_FT*)Struct)->PropertiesSize;
 
@@ -1612,37 +1784,6 @@ public:
 	inline TSharedRef<ObjectType> ToSharedRef()
 	{
 		return TSharedRef<ObjectType>(Object);
-	}
-};
-
-template <typename KeyType, typename ValueType>
-class TPair
-{
-public:
-	KeyType First;
-	ValueType Second;
-
-	TPair(KeyType Key, ValueType Value)
-		: First(Key)
-		, Second(Value)
-	{
-	}
-
-	inline KeyType& Key()
-	{
-		return First;
-	}
-	inline const KeyType& Key() const
-	{
-		return First;
-	}
-	inline ValueType& Value()
-	{
-		return Second;
-	}
-	inline const ValueType& Value() const
-	{
-		return Second;
 	}
 };
 
