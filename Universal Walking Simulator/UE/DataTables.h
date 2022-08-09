@@ -20,10 +20,23 @@ static UObject* GetLootPackages()
 	UObject* Playlist = Helper::GetPlaylist();
 
 	auto LootPackagesSoft = Playlist->Member<TSoftObjectPtr>(_("LootPackages"));
-	std::cout << "AssetPathName: " << LootPackagesSoft->ObjectID.AssetPathName.ToString() << '\n';
 
-	static auto CompositeDataTableClass = FindObject("Class /Script/Engine.CompositeDataTable");
-	auto LootPackages = StaticLoadObjectO ? StaticLoadObject(CompositeDataTableClass, nullptr, LootPackagesSoft->ObjectID.AssetPathName.ToString()) : nullptr; // some versions its loaded idk why but some not
+	std::string Default = "/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client";
+
+	auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
+
+	if (!LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex)
+	{
+		std::cout << std::format("[WARNING] LootPackages comparison index is null! Defaulting to {}.\n", Default);
+		LootPackagesName = Default;
+		// return nullptr;
+	}
+
+	std::cout << "AssetPathName: " << LootPackagesName << '\n';
+
+	static auto ClassToUse = LootPackagesName.ends_with("_Client") ? FindObject("Class /Script/Engine.DataTable") : FindObject("Class /Script/Engine.CompositeDataTable"); // cursed
+
+	auto LootPackages = StaticLoadObjectO ? StaticLoadObject(ClassToUse, nullptr, LootPackagesSoft->ObjectID.AssetPathName.ToString()) : nullptr; // some versions its loaded idk why but some not
 	std::cout << "LootPackages: " << LootPackages << '\n';
 
 	if (LootPackages)

@@ -89,9 +89,9 @@ inline void initStuff()
 				auto SSVFn = *AuthGameMode->Member<bool>(("ShouldSpawnVehicle")) = true;*/
 				
 				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
-				static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
+				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
 				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
-				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
+				static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
 				// static auto Playlist = FindObject(("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
 				 
 				if (std::stod(FN_Version) >= 7.00)
@@ -105,7 +105,7 @@ inline void initStuff()
 					{
 						static auto PlaylistInfo = gameState->Member<UScriptStruct>(("CurrentPlaylistInfo"));
 
-						PlaylistInfo->MemberStruct<UObject*>("BasePlaylist");
+						// PlaylistInfo->MemberStruct<UObject*>("BasePlaylist");
 						auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
 						auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
 

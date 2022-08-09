@@ -272,6 +272,7 @@ namespace Patterns
 }
 
 std::string RequestExitWSSig = "48 89 5C 24 ? 57 48 83 EC 40 41 B9 ? ? ? ? 0F B6 F9 44 38 0D ? ? ? ? 0F B6 DA 72 24 89 5C 24 30 48 8D 05 ? ? ? ? 89 7C 24 28 4C 8D 05 ? ? ? ? 33 D2 48 89 44 24 ?  33 C9 E8";
+
 void InitializePatterns()
 {
     // { // 4.21 patterns by default
@@ -336,7 +337,6 @@ void InitializePatterns()
         MallocSig = ("4C 8B C9 48 8B 0D ? ? ? ? 48 85 C9 75 08 49 8B C9 E9 ? ? ? ?");
         ReallocSig = ("4C 8B D1 48 8B 0D ? ? ? ? 48 85 C9 75 08 49 8B CA E9 ? ? ? ? 48 8B 01 45 8B C8 4C 8B C2 49 8B D2 48 FF 60 18");
 
-
         ReceiveFStringSig = ("40 55 53 56 57 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 0F B6 41 28");
         ReceiveUniqueIdReplSig = ("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9 0F 84 ? ? ? ? F6 41 2B 02");
 
@@ -360,7 +360,6 @@ void InitializePatterns()
 
         StaticFindObjectSig = ("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 52 48 8B 05");
         HandleReloadCostSig = ("89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85");
-
 
         CollectGarbageSig = ("40 53 48 83 EC 40 48 8B D9 FF 15 ? ? ? ? 84 C0 75 76 33 D2 33 C9 E8 ? ? ? ? 84 C0 74 69 33 C0 88 44 24 58 48 8D 44 24 ?");
         NetDebugSig = ("40 55 56 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 01 48 8B F1 FF 90 ? ? ? ? 4C 8B F0 48 85 C0 0F");
@@ -410,6 +409,7 @@ void InitializePatterns()
         HandleReloadCostSig = ("89 54 24 10 55 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 B9 ? ? ? ? ? 4C 8B F1 0F 85");
         CanActivateAbilitySig = ("4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1");
         PlayMontageSig = ("40 55 56 41 54 41 56 48 8D 6C 24 D1");
+        StaticLoadObjectSig = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8B 85 ? ? ? ? 33 FF 89 44 24 54 4C 8B FA 48 8B 85 ? ? ? ? 4C 8B E9 48 89 45 A8 48 8D 4D 30 0F B6 85 ? ? ? ? 8B F7 88 44 24 51 4D";
 
         // paddin
 
@@ -815,11 +815,11 @@ void InitializePatterns()
     StaticLoadObjectAddr = FindPattern(StaticLoadObjectSig);
     CheckPattern(("StaticLoadObject"), StaticLoadObjectAddr, &StaticLoadObjectO);
 
-    /* if (Engine_Version != 424)
+    if (Engine_Version < 424)
     {
         KickPlayerAddr = FindPattern(KickPlayerSig);
         CheckPattern(("KickPlayer"), KickPlayerAddr, &KickPlayer);
-    } */
+    }
 
     /* if (Engine_Version >= 424)
     {

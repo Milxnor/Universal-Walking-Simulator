@@ -78,6 +78,12 @@ namespace LootingV2
 
 		auto LootPackages = GetLootPackages();
 
+		if (!LootPackages)
+		{
+			std::cout << "Failed to get LootPackages!\n";
+			return 1;
+		}
+
 		auto LootPackagesRowMap = GetRowMap(LootPackages);
 
 		auto fortnite = LootPackagesRowMap.Pairs.Elements.Data;

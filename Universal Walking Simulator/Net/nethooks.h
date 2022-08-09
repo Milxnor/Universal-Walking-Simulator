@@ -143,6 +143,17 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         }
     }
 
+    *PlayerController->Member<char>(("bReadyToStartMatch")) = true;
+    *PlayerController->Member<char>(("bClientPawnIsLoaded")) = true;
+    *PlayerController->Member<char>(("bHasInitiallySpawned")) = true;
+
+    *PlayerController->Member<bool>(("bHasServerFinishedLoading")) = true;
+    *PlayerController->Member<bool>(("bHasClientFinishedLoading")) = true;
+
+    *PlayerState->Member<char>(("bHasStartedPlaying")) = true;
+    *PlayerState->Member<char>(("bHasFinishedLoading")) = true;
+    *PlayerState->Member<char>(("bIsReadyToContinue")) = true;
+
     auto Pawn = Helper::InitPawn(PlayerController, true, Helper::GetPlayerStart(), true);
 
     if (!Pawn)
@@ -255,7 +266,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     else
         std::cout << ("Unable to grant abilities due to no GiveAbility!\n");
 
-    // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
+    if (std::floor(FnVerDouble) != 9 && std::floor(FnVerDouble) != 10) // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
     {
         static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
         static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -325,7 +336,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
         auto TeamIndex = PlayerState->Member<uint8_t>(("TeamIndex")); // AllTeams.Num();
         auto oldTeamIndex = *TeamIndex;
-        std::cout << "OldTeamIndex: " << oldTeamIndex << '\n';
+        std::cout << "OldTeamIndex: " << (int)oldTeamIndex << '\n';
 
         *TeamIndex = TeamIndex_;
 

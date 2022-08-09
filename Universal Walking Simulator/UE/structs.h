@@ -2008,5 +2008,7 @@ unsigned short UFunction::GetParmsSize()
 	else if (Engine_Version >= 425)
 		sizeofUStruct = sizeof(UClass_CT);
 
+	std::cout << "Off: " << (sizeofUStruct + additionalUFunctionOff) << '\n';
+
 	return *(short*)(__int64(this) + (sizeofUStruct + additionalUFunctionOff));
 }

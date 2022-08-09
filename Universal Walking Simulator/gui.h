@@ -355,6 +355,31 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 					}
 
+					// https://media.discordapp.net/attachments/998297579857137734/1006634482884939807/unknown.png
+					/* if (ImGui::Button("Spawn AI"))
+					{
+						static auto aiPCClass = FindObject("Class /Script/FortniteGame.FortAthenaAIBotController");
+						auto AiPC = Easy::SpawnActor(aiPCClass);
+
+						auto AIPawn = Helper::InitPawn(AiPC, false, Helper::GetPlayerStart(), false);
+						
+						TArray<UObject*>* SkillSets = AiPC->Member<TArray<UObject*>>("BotSkillSetClasses");
+
+						if (SkillSets)
+						{
+							std::cout << "skillSet Num: " << SkillSets->Num() << '\n';
+
+							static auto MovementSkillClass = FindObject("Class /Script/FortniteGame.FortAthenaAIBotMovementSkillSet");
+							auto MovementSkill = Easy::SpawnObject(MovementSkillClass, AiPC);
+
+							SkillSets->Add(MovementSkill);
+						}
+						else
+							std::cout << "Invalid SkillSets!\n";
+
+						std::cout << "Setup AI!\n";
+					} */
+
 					if (serverStatus == EServerStatus::Up)
 					{
 						if (Engine_Version < 423) // I do not know how to start the bus on S8+

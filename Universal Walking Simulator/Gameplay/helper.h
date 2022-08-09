@@ -727,9 +727,9 @@ namespace Helper
 
 		// here
 
-		PC->Exec("Possess", Pawn);
+		// PC->Exec("Possess", Pawn);
 
-		/* static auto PossessFn = PC->Function(("Possess"));
+		static auto PossessFn = PC->Function(("Possess"));
 
 		if (PossessFn)
 		{
@@ -739,20 +739,9 @@ namespace Helper
 			PC->ProcessEvent(PossessFn, &params);
 		}
 		else
-			std::cout << ("Could not find Possess!\n"); */
+			std::cout << ("Could not find Possess!\n");
 
 		Helper::SetOwner(Pawn, PC); // prob not needed
-
-		*PC->Member<char>(("bReadyToStartMatch")) = true;
-		*PC->Member<char>(("bClientPawnIsLoaded")) = true;
-		*PC->Member<char>(("bHasInitiallySpawned")) = true;
-
-		*PC->Member<bool>(("bHasServerFinishedLoading")) = true;
-		*PC->Member<bool>(("bHasClientFinishedLoading")) = true;
-
-		*PlayerState->Member<char>(("bHasStartedPlaying")) = true;
-		*PlayerState->Member<char>(("bHasFinishedLoading")) = true;
-		*PlayerState->Member<char>(("bIsReadyToContinue")) = true;
 
 		// *Pawn->Member<float>(("NetUpdateFrequency")) = 200;
 
