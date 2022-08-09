@@ -145,6 +145,16 @@ struct FPredictionKey
     unsigned char                                      UnknownData01[0x6];                                       // 0x0012(0x0006) MISSED OFFSET
 };
 
+struct FPredictionKeyFTS // 4.26
+{
+    UObject* PredictiveConnection;                                     // 0x0000(0x0008) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    int16_t                                            Current;                                                  // 0x0008(0x0002) (ZeroConstructor, IsPlainOldData)
+    int16_t                                            Base;                                                     // 0x000A(0x0002) (ZeroConstructor, IsPlainOldData)
+    bool                                               bIsStale;                                                 // 0x000C(0x0001) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    bool                                               bIsServerInitiated;                                       // 0x000D(0x0001) (ZeroConstructor, IsPlainOldData)
+    unsigned char                                      UnknownData00[0x2];                                       // 0x0012(0x0006) MISSED OFFSET
+};
+
 struct FGameplayEffectContextHandle
 {
     unsigned char                                      UnknownData00[0x18];                                      // 0x0000(0x0018) MISSED OFFSET
@@ -273,6 +283,26 @@ struct FGameplayAbilityActivationInfo
     FPredictionKey                              PredictionKeyWhenActivated;                               // 0x0008(0x0018)
 };
 
+struct FServerAbilityRPCBatchFTS
+{
+    FGameplayAbilitySpecHandle                  AbilitySpecHandle;                                        // 0x0000(0x0004)
+    unsigned char                                      UnknownData00[0x4];                                       // 0x0004(0x0004) MISSED OFFSET
+    FPredictionKeyFTS                              PredictionKey;                                            // 0x0008(0x0018)
+    FGameplayAbilityTargetDataHandleSE           TargetData;                                               // 0x0020(0x0020)
+    bool                                               InputPressed;                                             // 0x0040(0x0001) (ZeroConstructor, IsPlainOldData)
+    bool                                               Ended;                                                    // 0x0041(0x0001) (ZeroConstructor, IsPlainOldData)
+    bool                                               Started;                                                  // 0x0042(0x0001) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    unsigned char                                      UnknownData01[0x5];                                       // 0x0043(0x0005) MISSED OFFSET
+};
+
+struct FGameplayAbilityActivationInfoFTS
+{
+    TEnumAsByte<EGameplayAbilityActivationMode>        ActivationMode;                                           // 0x0000(0x0001) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+    unsigned char                                      bCanBeEndedByOtherInstance : 1;                           // 0x0001(0x0001)
+    unsigned char                                      UnknownData00[0x6];                                       // 0x0002(0x0006) MISSED OFFSET
+    FPredictionKeyFTS                              PredictionKeyWhenActivated;                               // 0x0008(0x0018)
+};
+
 struct FActiveGameplayEffectHandle
 {
     int                                                Handle;                                                   // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData)
@@ -280,6 +310,7 @@ struct FActiveGameplayEffectHandle
     unsigned char                                      UnknownData00[0x3];                                       // 0x0005(0x0003) MISSED OFFSET
 };
 
+template <typename ActivationInfoType>
 struct FGameplayAbilitySpec : public FFastArraySerializerItem
 {
     FGameplayAbilitySpecHandle                  Handle;                                                   // 0x000C(0x0004)
@@ -292,7 +323,7 @@ struct FGameplayAbilitySpec : public FFastArraySerializerItem
     unsigned char                                      RemoveAfterActivation : 1;                                // 0x0029(0x0001) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
     unsigned char                                      PendingRemove : 1;                                        // 0x0029(0x0001) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
     unsigned char                                      UnknownData00[0x6];                                       // 0x002A(0x0006) MISSED OFFSET
-    FGameplayAbilityActivationInfo              ActivationInfo;                                           // 0x0030(0x0020) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    ActivationInfoType              ActivationInfo;                                           // 0x0030(0x0020) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
     TArray<UObject*>                    NonReplicatedInstances; // UGameplayAbility*
     TArray<UObject*>                    ReplicatedInstances;   
     /*
@@ -306,13 +337,19 @@ struct FGameplayAbilitySpec : public FFastArraySerializerItem
 
 struct FGameplayAbilitySpecContainerSE : public FFastArraySerializerSE
 {
-    TArray<FGameplayAbilitySpec>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
+    TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
+    UObject* Owner; // ASC* // 0x0118
+};
+
+struct FGameplayAbilitySpecContainerFTS : public FFastArraySerializerSE
+{
+    TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
     UObject* Owner; // ASC* // 0x0118
 };
 
 struct FGameplayAbilitySpecContainerOL : public FFastArraySerializerOL
 {
-    TArray<FGameplayAbilitySpec>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
+    TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
     UObject* Owner; // ASC* // 0x0118
 };
 
@@ -353,10 +390,22 @@ public:
     TArray<TSharedRef<FAbilityReplicatedDataCache>> FreeData;
 };  */
 
-static FGameplayAbilitySpecHandle* (*GiveAbility)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec inSpec);
+static FGameplayAbilitySpecHandle* (*GiveAbility)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfo> inSpec);
+static FGameplayAbilitySpecHandle* (*GiveAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS> inSpec);
+
 static bool (*InternalTryActivateAbility)(UObject* comp, FGameplayAbilitySpecHandle Handle, FPredictionKey InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
-static void (*MarkAbilitySpecDirtyNew)(UObject* comp, FGameplayAbilitySpec& Spec, bool WasAddOrRemove);
-static void (*MarkAbilitySpecDirtyOld)(UObject* comp, FGameplayAbilitySpec& Spec);
+static bool (*InternalTryActivateAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle Handle, FPredictionKeyFTS InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
+
+static void (*MarkAbilitySpecDirtyOld)(UObject* comp, FGameplayAbilitySpec<FGameplayAbilityActivationInfo>& Spec);
+static void (*MarkAbilitySpecDirtyFTS)(UObject* comp, FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>& Spec);
+
+void MarkAbilitySpecDirty(UObject* ASC, void* Spec)
+{
+    if (Engine_Version < 426)
+        MarkAbilitySpecDirtyOld(ASC, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)Spec);
+    else
+        MarkAbilitySpecDirtyFTS(ASC, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)Spec);
+}
 
 uint64_t GiveAbilityAddr = 0;
 uint64_t InternalTryActivateAbilityAddr = 0;

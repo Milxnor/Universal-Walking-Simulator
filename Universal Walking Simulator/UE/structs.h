@@ -1351,9 +1351,80 @@ union TSparseArrayElementOrFreeListLink
 	};
 };
 
+template <typename ElementType>
+union TSparseArrayElementOrListLink
+{
+	TSparseArrayElementOrListLink(ElementType& InElement)
+		: ElementData(InElement)
+	{
+	}
+	TSparseArrayElementOrListLink(ElementType&& InElement)
+		: ElementData(InElement)
+	{
+	}
+
+	TSparseArrayElementOrListLink(int32_t InPrevFree, int32_t InNextFree)
+		: PrevFreeIndex(InPrevFree)
+		, NextFreeIndex(InNextFree)
+	{
+	}
+
+	TSparseArrayElementOrListLink<ElementType> operator=(const TSparseArrayElementOrListLink<ElementType>& Other)
+	{
+		return TSparseArrayElementOrListLink(Other.NextFreeIndex, Other.PrevFreeIndex);
+	}
+
+	/** If the element is allocated, its value is stored here. */
+	ElementType ElementData;
+
+	struct
+	{
+		/** If the element isn't allocated, this is a link to the previous element in the array's free list. */
+		int32_t PrevFreeIndex;
+
+		/** If the element isn't allocated, this is a link to the next element in the array's free list. */
+		int32_t NextFreeIndex;
+	};
+};
+
+template <int32_t NumElements>
+struct TInlineAllocator
+{
+	template <int32_t Size, int32_t Alignment>
+	struct alignas(Alignment) TAlligendBytes
+	{
+		uint8_t Pad[Size];
+	};
+
+	template <typename ElementType>
+	struct TTypeCompatibleBytes : public TAlligendBytes<sizeof(ElementType), alignof(ElementType)>
+	{
+	};
+
+	template <typename ElementType>
+	class ForElementType
+	{
+		friend class TBitArray;
+
+	private:
+		TTypeCompatibleBytes<ElementType> InlineData[NumElements];
+
+		ElementType* SecondaryData;
+	};
+};;
+
+class TBitArray
+{
+private:
+	TInlineAllocator<4>::ForElementType<uint32_t> Data;
+	int32_t NumBits;
+	int32_t MaxBits;
+};
+
 template<typename InElementType>//, typename Allocator /*= FDefaultSparseArrayAllocator */>
 class TSparseArray
 {
+public:
 	/*
 	using ElementType = InElementType;
 
@@ -1371,6 +1442,13 @@ class TSparseArray
 
 	int32_t NumFreeIndices;
 	*/
+
+	typedef TSparseArrayElementOrListLink<InElementType> FSparseArrayElement;
+
+	TArray<FSparseArrayElement> Data;
+	TBitArray AllocationFlags;
+	int32_t FirstFreeIndex;
+	int32_t NumFreeIndices;
 };
 
 class FSetElementId { int32_t Index; };
@@ -1402,6 +1480,7 @@ template<
 >
 class TSet
 {
+public:
 	typedef TSetElement<InElementType> SetElementType;
 
 	typedef TSparseArray<SetElementType/*, typename Allocator::SparseArrayAllocator*/>     ElementArrayType;
@@ -1679,7 +1758,7 @@ class FSoftObjectPtr : public TPersistentObjectPtr<FSoftObjectPath>
 
 };
 
-class TSoftObjectPtr : FSoftObjectPtr
+class TSoftObjectPtr : public FSoftObjectPtr
 {
 
 };

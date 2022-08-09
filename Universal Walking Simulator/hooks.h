@@ -103,40 +103,23 @@ inline void initStuff()
 
 					if (BasePlaylistOffset && OnRepPlaylist && Playlist)
 					{
-						if (Engine_Version <= 422)
+						static auto PlaylistInfo = gameState->Member<void>(("CurrentPlaylistInfo"));
+
+						auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
+						auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
+
+						if (BasePlaylist)
 						{
-							static auto PlaylistInfo = gameState->Member<FFastArraySerializerOL>(("CurrentPlaylistInfo"));
-
-							auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
-							auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
-
-							if (BasePlaylist)
-							{
-								*BasePlaylist = Playlist;
-								(*PlaylistReplicationKey)++;
-								PlaylistInfo->MarkArrayDirty();
-								std::cout << ("Set playlist to: ") << Playlist->GetFullName() << '\n';
-							}
+							*BasePlaylist = Playlist;
+							(*PlaylistReplicationKey)++;
+							if (Engine_Version <= 422)
+								((FFastArraySerializerOL*)PlaylistInfo)->MarkArrayDirty();
 							else
-								std::cout << ("Base Playlist is null!\n");
+								((FFastArraySerializerSE*)PlaylistInfo)->MarkArrayDirty();
+							std::cout << ("Set playlist to: ") << Playlist->GetFullName() << '\n';
 						}
 						else
-						{
-							static auto PlaylistInfo = gameState->Member<FFastArraySerializerSE>(("CurrentPlaylistInfo"));
-
-							auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
-							auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
-
-							if (BasePlaylist)
-							{
-								*BasePlaylist = Playlist;
-								(*PlaylistReplicationKey)++;
-								PlaylistInfo->MarkArrayDirty();
-								std::cout << ("Set playlist to: ") << Playlist->GetFullName() << '\n';
-							}
-							else
-								std::cout << ("Base Playlist is null!\n");
-						}
+							std::cout << ("Base Playlist is null!\n");
 					}
 					else
 					{
@@ -507,7 +490,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 		if (KillerPlayerState)
 		{
-			auto DeathInfo = DeadPlayerState->Member<__int64>(("DeathInfo"));
+			// somethings skunked
+			/* auto DeathInfo = DeadPlayerState->Member<__int64>(("DeathInfo"));
 
 			static auto TagsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("Tags"));
 			static auto DeathCauseOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathCause"));
@@ -525,7 +509,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			static auto OnRep_DeathInfo = DeadPlayerState->Function(("OnRep_DeathInfo"));
 
 			if (OnRep_DeathInfo)
-				DeadPlayerState->ProcessEvent(OnRep_DeathInfo);
+				DeadPlayerState->ProcessEvent(OnRep_DeathInfo); */
 
 			if (KillerPlayerState != DeadPlayerState)
 			{
@@ -554,6 +538,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 					KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
 
 				static auto OnRep_Kills = KillerPlayerState->Function(("OnRep_Kills"));
+
 				if (OnRep_Kills)
 					KillerPlayerState->ProcessEvent(OnRep_Kills);
 			}
@@ -605,14 +590,14 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 		{
 			EmoteAsset->ProcessEvent(fn, &GAHRParams);
 			auto Montage = GAHRParams.AnimMontage;
-			if (Montage)
+			if (Montage && Engine_Version < 426)
 			{
 				std::cout << ("Playing Montage: ") << Montage->GetFullName() << '\n';
 
 				auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
 				static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
-				TArray<FGameplayAbilitySpec> Specs;
+				TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Specs;
 
 				if (Engine_Version <= 422)
 					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
@@ -687,10 +672,30 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 					unsigned char                                      bAlreadySearched : 1;
 				};
 
+				struct BitField_Container2
+				{
+					uint8_t                                        bUseLootProperties_Athena : 1;                     // Mask : 0x1 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        bAlwaysShowContainer : 1;                          // Mask : 0x2 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        bAlwaysMaintainLoot : 1;                           // Mask : 0x4 0xC31(0x1)(Edit, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        bDestroyContainerOnSearch : 1;                     // Mask : 0x8 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        bForceHidePickupMinimapIndicator : 1;              // Mask : 0x10 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        bForceSpawnLootOnDestruction : 1;                  // Mask : 0x20 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        bForceTossLootOnSpawn : 1;                         // Mask : 0x40 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        bAlreadySearched : 1;                              // Mask : 0x80
+				};
+
 				// TODO: Implement bitfields better
 
-				auto BitField = ReceivingActor->Member<BitField_Container>(("bAlreadySearched"));
-				BitField->bAlreadySearched = true;
+				if (Engine_Version < 424)
+				{
+					auto BitField = ReceivingActor->Member<BitField_Container>(("bAlreadySearched"));
+					BitField->bAlreadySearched = true;
+				}
+				else
+				{
+					auto BitField = ReceivingActor->Member<BitField_Container2>(("bAlreadySearched"));
+					BitField->bAlreadySearched = true;
+				}
 
 				static auto AlreadySearchedFn = ReceivingActor->Function(("OnRep_bAlreadySearched"));
 				if (AlreadySearchedFn)
@@ -1207,7 +1212,8 @@ void InitializeHooks()
 
 	if (GetPlayerViewpointAddr) //Engine_Version == 423)
 	{
-		//Fixes Flashing
+		// fixes flashing
+
 		MH_CreateHook((PVOID)GetPlayerViewpointAddr, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
 		MH_EnableHook((PVOID)GetPlayerViewpointAddr);
 	}

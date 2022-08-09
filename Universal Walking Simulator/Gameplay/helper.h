@@ -6,6 +6,8 @@
 #include <Net/funcs.h>
 #include <dpp/nlohmann/json.hpp>
 
+static bool bPickupAnimsEnabled = false;
+
 UObject* GetWorldW(bool bReset = false)
 {
 	auto GameViewport = *GetEngine()->Member<UObject*>(("GameViewport"));
@@ -170,6 +172,49 @@ namespace Helper
 		return FVector();
 	}
 
+	void EnablePickupAnimation(UObject* Pawn, UObject* Pickup)
+	{
+		if (bPickupAnimsEnabled)
+		{
+			struct FFortPickupLocationData
+			{
+			public:
+				UObject* PickupTarget; // class AFortPawn* PickupTarget;                                      // 0x0(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				UObject* CombineTarget; // class AFortPickup* CombineTarget;                                     // 0x8(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				UObject* ItemOwner; // class AFortPawn* ItemOwner;                                         // 0x10(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				FVector                 LootInitialPosition;                               // 0x18(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				FVector                LootFinalPosition;                                 // 0x24(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				float                                        FlyTime;                                           // 0x30(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				FVector            StartDirection;                                    // 0x34(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				FVector                 FinalTossRestLocation;                             // 0x40(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				uint8_t TossState; // enum class EFortPickupTossState              TossState;                                         // 0x4C(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				bool                                         bPlayPickupSound;                                  // 0x4D(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				uint8_t                                        Pad_3687[0x2];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+				FGuid                                 PickupGuid;                                        // 0x50(0x10)(ZeroConstructor, IsPlainOldData, RepSkip, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+			};
+
+			auto PickupLocationData = Pickup->Member<FFortPickupLocationData>("PickupLocationData");
+
+			if (PickupLocationData)
+			{
+				PickupLocationData->PickupTarget = Pawn;
+				PickupLocationData->ItemOwner = Pawn; // wrong I think
+				PickupLocationData->LootInitialPosition = Helper::GetActorLocation(Pickup);
+				PickupLocationData->FlyTime = 1.0f;
+				static auto GuidOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemGuid"));
+				auto Guid = (FGuid*)(__int64(&*Pickup->Member<__int64>(_("PrimaryPickupItemEntry"))) + GuidOffset);
+				PickupLocationData->PickupGuid = *Guid; // *FFortItemEntry::GetGuid(Pickup->Member<__int64>(_("PrimaryPickupItemEntry")));
+			}
+		}
+
+		auto OnRep_PickupLocationData = Pickup->Function(_("OnRep_PickupLocationData"));
+
+		if (OnRep_PickupLocationData)
+			Pickup->ProcessEvent(OnRep_PickupLocationData);
+		else
+			std::cout << "Failed to find OnRep_PickupLocationData!\n";
+	}
+
 	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true)
 	{
 		static UObject* EffectClass = FindObject(("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C"));
@@ -177,6 +222,7 @@ namespace Helper
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location);
 		auto Effect = Easy::SpawnActor(EffectClass, Location);
+
 		if (Pickup && Definition)
 		{
 			auto ItemEntry = Pickup->Member<void>(("PrimaryPickupItemEntry"));
@@ -201,6 +247,7 @@ namespace Helper
 						UObject* ItemOwner;
 						int OverrideMaxStackCount;
 						bool bToss;
+						// bool bShouldCombinePickupsWhenTossCompletes
 						EFortPickupSourceTypeFlag InPickupSourceTypeFlags; // Do these even exist on older versions?
 						EFortPickupSpawnSource InPickupSpawnSource;
 					} TPParams{ Location, Pawn, 6, true, PickupSource, SpawnSource };
@@ -218,6 +265,8 @@ namespace Helper
 					if (OnRep_TossedFromContainer)
 						Pickup->ProcessEvent(OnRep_TossedFromContainer);
 				}
+
+				Helper::EnablePickupAnimation(Pawn, Pickup);
 			}
 		}
 
@@ -753,6 +802,28 @@ namespace Helper
 		return Pawn;
 	}
 	
+	UObject* SoftObjectToObject(TSoftObjectPtr SoftObject)
+	{
+		return FindObject(SoftObject.ObjectID.AssetPathName.ToString());
+	}
+
+	UObject* GetPlaylist()
+	{
+		auto world = Helper::GetWorld();
+		auto gameState = *world->Member<UObject*>(("GameState"));
+
+		static auto BasePlaylistOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("BasePlaylist"));
+		if (BasePlaylistOffset)
+		{
+			static auto PlaylistInfo = gameState->Member<void>(("CurrentPlaylistInfo"));
+
+			auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
+		
+			return BasePlaylist ? *BasePlaylist : nullptr;
+		}
+
+		return nullptr;
+	}
 	
 	namespace Conversion
 	{

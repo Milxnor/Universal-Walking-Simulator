@@ -19,16 +19,19 @@ namespace Items {
 		*Pawn->Member<UObject*>("AnimBPOverride") = FindObject("AnimBlueprintGeneratedClass /Game/Characters/Player/Male/Male_Avg_Base/Gauntlet_Player_AnimBlueprint.Gauntlet_Player_AnimBlueprint_C");
 		UObject* AS = FindObject("FortAbilitySet /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AS_CarminePack.AS_CarminePack");
 		auto GrantedAbilities = AS->Member<TArray<UObject*>>("GameplayAbilities");
+
 		for (int i = 0; i < GrantedAbilities->Num(); i++) {
 			GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
 		}
+
 		UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
-		if (Montage && PlayMontage)
+
+		if (Montage && PlayMontage && Engine_Version < 426)
 		{
 			auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
 			static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
-			TArray<FGameplayAbilitySpec> Specs;
+			TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Specs;
 
 			if (Engine_Version <= 422)
 				Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
@@ -664,7 +667,7 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (Engine_Version >= 426 && FlooredVer < 15) // idk if right
+		else if (Engine_Version >= 426 && FlooredVer < 15)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x160]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);

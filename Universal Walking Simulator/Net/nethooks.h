@@ -11,6 +11,7 @@
 
 #include <discord.h>
 #include <Net/replication.h>
+#include <datatables.h>
 
 static bool bTraveled = false;
 
@@ -82,6 +83,8 @@ bool bMyPawn = false; // UObject*
 UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole RemoteRole, FURL& URL, void* UniqueId, FString& Error, uint8_t NetPlayerIndex)
 {
     static bool bSpawnedFloorLoot = false;
+
+    GetLootPackages();
 
     if (!bSpawnedFloorLoot)
     {
@@ -258,12 +261,19 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         else
             std::cout << "Invalid PrivateInfo!\n";
 
+        static auto OnRep_ChangeTeamInfo = PlayerState->Function(_("OnRep_ChangeTeamInfo"));
+
+        if (OnRep_ChangeTeamInfo)
+            PlayerState->ProcessEvent(OnRep_ChangeTeamInfo);
+        else
+            std::cout << ("Unable to find OnRep_ChangeTeamInfo!\n");
+
         static auto OnRepSquadIdFn = PlayerState->Function(("OnRep_SquadId"));
 
         if (OnRepSquadIdFn)
             PlayerState->ProcessEvent(OnRepSquadIdFn);
         else
-            std::cout << ("Unable to find OnRepSquadIdFn!\n");
+            std::cout << ("Unable to find OnRep_SquadId!\n");
 
         if (PlayerTeam && *PlayerTeam)
         {
@@ -307,11 +317,11 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (!Pawn)
         return PlayerController;
 
-    if (GiveAbility)
+    if (GiveAbility || GiveAbilityFTS)
     {
         auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
 
-        if (AbilitySystemComponent && FnVerDouble < 15 && Engine_Version >= 424)
+        if (AbilitySystemComponent && FnVerDouble < 14 && Engine_Version >= 424)
         {
             std::cout << ("Granting abilities!\n");
             if (FnVerDouble < 8)
@@ -669,7 +679,7 @@ char __fastcall NoReserveDetour(__int64* a1, __int64 a2, char a3, __int64* a4)
     return 0;
 }
 
-UObject* __fastcall CreateNetDriver_LocalDetour(UObject* Engine, __int64 a2, FName NetDriverDefinition) // Fortnite stripped out the actualy spawning part I think.
+UObject* __fastcall CreateNetDriver_LocalDetour(UObject* Engine, __int64 a2, FName NetDriverDefinition)
 {
     UObject* ReturnVal = nullptr; // UNetDriver
     // FNetDriverDefinition* Definition = nullptr;
@@ -720,6 +730,10 @@ bool TryCollectGarbageHook()
     return 0;
 }
 
+int __fastcall ReceivedPacketDetour(__int64* a1, LARGE_INTEGER a2, char a3)
+{
+}
+
 void InitializeNetHooks()
 {
     static const auto FnVerDouble = std::stod(FN_Version);
@@ -733,7 +747,7 @@ void InitializeNetHooks()
     MH_CreateHook((PVOID)World_NotifyControlMessageAddr, World_NotifyControlMessageDetour, (void**)&World_NotifyControlMessage);
     MH_EnableHook((PVOID)World_NotifyControlMessageAddr);
 
-    if (Engine_Version < 425 && GetNetModeAddr)
+    if (Engine_Version < 424 && GetNetModeAddr) // i dont even think we have to hook this
     {
         MH_CreateHook((PVOID)GetNetModeAddr, GetNetModeDetour, (void**)&GetNetMode);
         MH_EnableHook((PVOID)GetNetModeAddr);
@@ -758,6 +772,12 @@ void InitializeNetHooks()
     {
         MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
         MH_EnableHook((PVOID)LP_SpawnPlayActorAddr);
+    }
+
+    if (NoReserveAddr)
+    {
+        MH_CreateHook((PVOID)NoReserveAddr, NoReserveDetour,  (void**)&NoReserve);
+        MH_EnableHook((PVOID)NoReserveAddr);
     }
 
     // if (NetDebug)
@@ -786,20 +806,5 @@ void InitializeNetHooks()
         }
         else
             std::cout << ("[WARNING] Unable to hook CollectGarbage!\n");
-    }
-
-    if (Engine_Version >= 425)
-    {
-        MH_CreateHook((PVOID)CreateNetDriver_LocalAddr, CreateNetDriver_LocalDetour, (void**)&CreateNetDriver_Local);
-        MH_EnableHook((PVOID)CreateNetDriver_LocalAddr);
-    }
-
-    if (Engine_Version == 423)
-    {
-        /* MH_CreateHook((PVOID)HasClientLoadedCurrentWorldAddr, HasClientLoadedCurrentWorldDetour, (void**)&HasClientLoadedCurrentWorld);
-        MH_EnableHook((PVOID)HasClientLoadedCurrentWorldAddr);
-
-        MH_CreateHook((PVOID)malformedAddr, malformedDetour, (void**)&malformed);
-        MH_EnableHook((PVOID)malformedAddr); */
     }
 }

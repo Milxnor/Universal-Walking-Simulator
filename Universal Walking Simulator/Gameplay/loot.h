@@ -423,6 +423,10 @@ namespace Looting
 		static void HandleSearch(UObject* BuildingContainer)
 		{
 			auto GetCorrectLocation = [BuildingContainer]() -> FVector {
+				// TODO: LootFinalLocation
+				/* auto LootSpawnLocation = *BuildingContainer->Member<FVector>(_("LootSpawnLocation"));
+				auto ActualLocation = Helper::GetActorLocation(BuildingContainer);
+				return LootSpawnLocation + ActualLocation; */
 				auto Location = Helper::GetActorLocation(BuildingContainer);
 				auto Rotation = Helper::GetActorRotation(BuildingContainer);
 

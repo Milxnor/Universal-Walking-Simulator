@@ -112,7 +112,11 @@ void Listen(int Port = 7777)
 
         std::cout << ("Spawned Beacon!\n");
 
-        *BeaconHost->Member<int>(("ListenPort")) = Port - 1;
+        if (Engine_Version < 426)
+            *BeaconHost->Member<int>(("ListenPort")) = Port - 1;
+        else
+            *BeaconHost->Member<int>(("ListenPort")) = Port;
+
         bool bInitBeacon = false;
 
         // *BeaconHost->Member<FName>(("NetDriverName")) = FName(282);
@@ -161,9 +165,6 @@ void Listen(int Port = 7777)
     }
     else
     {
-        if (BeaconHost)
-            *BeaconHost->Member<int>(("ListenPort")) = Port;
-
         FString string;
         string.Set(L"GameNetDriver");
         auto GameNetDriverName = Helper::StringToName(string);
