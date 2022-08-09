@@ -302,57 +302,31 @@ inline Fn GetVFunction(const void* instance, std::size_t index)
 
 struct light
 {
-	std::vector<size_t> sizes;
+	int finalSize = 0;
+	std::vector<int> Offsets;
 	void* addr = nullptr;
-	int currentRead = 0;
-	int sizeOfLastType = 0;
-
-	template <typename T> void calcSize(const T& t) {
-		sizes.push_back(sizeof(t));
-	}
-
-	template <typename First, typename... Rest> void calcSize(const First& first, const Rest&... rest) {
-		sizes.push_back(sizeof(first));
-		calcSize(rest...); // recursive call using pack expansion syntax
-	}
+	int onOffset = 0;
 
 	template <typename T> void set(const T& t) { // This function gets called for the last argument.
-		*(T*)(__int64(addr) + currentRead) = t;
-		currentRead += sizeof(T);
+		auto OffsetToUse = onOffset == 0 ? 0 : Offsets.at(onOffset);
+		*(T*)(__int64(addr) + OffsetToUse) = t;
+		onOffset++;
 	}
 
 	template <typename First, typename... Rest> void set(const First& first, const Rest&... rest) {
 		if (addr)
 		{
-			std::cout << "First: " << first << " with currentRead as: " << currentRead << " Setting to: " << __int64(&*(First*)(__int64(addr) + (currentRead == 0 ? 0 : currentRead))) << '\n';
-			*(First*)(__int64(addr) + (currentRead == 0 ? 0 : currentRead)) = first;
-			currentRead += sizeof(First);
-			std::cout << "\nPadding: " << (sizeof(First) > sizeOfLastType ? sizeof(First) - sizeOfLastType : sizeOfLastType - sizeof(First)) << "\n\n";
-			sizeOfLastType = sizeof(First);
+			auto OffsetToUse = onOffset == 0 ? 0 : Offsets.at(onOffset);
+			std::cout << std::format("Setting {} at offset: {}", first, OffsetToUse) // << " with currentRead as: " << currentRead << " Setting to: " << __int64(&*(First*)(__int64(addr) + (currentRead == 0 ? 0 : currentRead))) << '\n';
+			*(First*)(__int64(addr) + OffsetToUse) = first;
+			onOffset++;
+			// std::cout << "\nPadding: " << (sizeof(First) > sizeOfLastType ? sizeof(First) - sizeOfLastType : sizeOfLastType - sizeof(First)) << "\n\n";
+			// sizeOfLastType = sizeof(First);
 			set(rest...); // recursive call using pack expansion 
 		}
 	}
 
-	size_t getSize()
-	{
-		size_t Size = 0;
-
-		for (auto size : sizes)
-			Size += size;
-
-		return Size;
-	}
-
 	template <typename First, typename... Rest> void execute(const std::string& funcName, const First& first, const Rest&... rest) {
-		calcSize(first, rest...);
-		auto finalSize = getSize();
-
-		// if (finalSize > 8 : !(((finalSize >> 3) << 3) == finalSize) ? false) // checks if the size is divisible by 8.
-		{
-			std::cout << std::format("Unable to execute {} because it requires padding!\n", funcName);
-			return;
-		}
-
 		addr = malloc(finalSize);
 
 		set(first, rest...);
@@ -401,9 +375,6 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 
 		return temp + this->GetName();
 	}
-
-	template <typename MemberType>
-	INL MemberType* Member(const std::string& MemberName, int extraOffset = 0);
 
 	bool IsA(UObject* cmp) const;
 
@@ -469,6 +440,8 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 		if (fn)
 		{
 			auto Params = light();
+			Params.finalSize = fn->GetParmsSize();
+			Params.Offsets = fn->GetAllParamOffsets();
 
 			Params.execute(FunctionName, first, rest...);
 
@@ -476,11 +449,24 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 				this->ProcessEvent(fn, Params.addr);
 		}
 	}
+
+	// protected:
+		template <typename MemberType>
+		INL MemberType* Member(const std::string& MemberName, int extraOffset = 0); // DONT USE FOR SCRIPTSTRUCTS
 };
 
 	
 
-struct UFunction : UObject {}; // TODO: Add acutal stuff to this
+struct UFunction : UObject
+{
+	template <typename T>
+	T* GetParam(const std::string& ParameterName, void* Params);
+
+	std::vector<int> GetAllParamOffsets();
+
+	unsigned short GetParmsSize();
+}; 
+
 
 struct FUObjectItem // https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Source/Runtime/CoreUObject/Public/UObject/UObjectArray.h#L26
 {
@@ -570,6 +556,24 @@ static UObject* (*StaticFindObjectO)(
 	UObject* InOuter,
 	const TCHAR* Name,
 	bool ExactClass);
+
+static UObject* (*StaticLoadObjectO)(
+	UObject* Class, // UClass*
+	UObject* InOuter,
+	const TCHAR* Name,
+	const TCHAR* Filename,
+	uint32_t LoadFlags,
+	UObject* Sandbox, // UPackageMap*
+	bool bAllowObjectReconciliation,
+	void* InSerializeContext // FUObjectSerializeContext
+	);
+
+// Class and name are required
+static UObject* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name)
+{
+	auto Name = std::wstring(name.begin(), name.end()).c_str();
+	return StaticLoadObjectO(Class, Outer, Name, nullptr, 0, nullptr, false, nullptr);
+}
 
 template <typename ReturnType = UObject>
 static ReturnType* StaticFindObject(const std::string& str)
@@ -1888,4 +1892,121 @@ int GetEnumValue(UObject* Enum, const std::string& EnumMemberName)
 	}
 
 	return 0;
+}
+
+template <typename T>
+T* UFunction::GetParam(const std::string& ParameterName, void* Params)
+{
+	auto off = FindOffsetStruct(this->GetFullName(), ParameterName);
+	return (T*)(__int64(Params) + off);
+}
+
+struct UScriptStruct : UObject
+{
+	template <typename MemberType>
+	INL MemberType* MemberStruct(const std::string& MemberName, int extraOffset = 0) 
+	{
+		std::cout << "ClassPrivate: " << this->ClassPrivate << '\n';
+
+		std::cout << "Name: " << this->GetName() << '\n';
+
+		// auto off = FindOffsetStruct(this->GetFullName(), MemberName);
+		// return (MemberType*)(__int64(this) + off);
+		return nullptr;
+	}
+};
+
+std::vector<int> UFunction::GetAllParamOffsets()
+{
+	{
+		if (Engine_Version <= 420)
+		{
+			auto Members = GetMembers<UClass_FT, UProperty_UE>(this);
+			std::vector<int> offs;
+
+			for (auto Member : Members)
+			{
+				if (Member)
+					offs.push_back(Member->Offset_Internal);
+			}
+
+			return offs;
+		}
+
+		else if (Engine_Version == 421)
+		{
+			auto Members = GetMembers<UClass_FTO, UProperty_FTO>(this);
+			std::vector<int> offs;
+
+			for (auto Member : Members)
+			{
+				if (Member)
+					offs.push_back(Member->Offset_Internal);
+			}
+
+			return offs;
+		}
+
+		else if (Engine_Version >= 422 && Engine_Version <= 424)
+		{
+			auto Members = GetMembers<UClass_FTT, UProperty_FTO>(this);
+			std::vector<int> offs;
+
+			for (auto Member : Members)
+			{
+				if (Member)
+					offs.push_back(Member->Offset_Internal);
+			}
+
+			return offs;
+		}
+
+		else if (Engine_Version >= 425 && Engine_Version < 500)
+		{
+			auto Members = GetMembers<UClass_CT, FProperty>(this);
+			std::vector<int> offs;
+
+			for (auto Member : Members)
+			{
+				if (Member)
+					offs.push_back(Member->Offset_Internal);
+			}
+
+			return offs;
+		}
+
+		else if (std::stod(FN_Version) >= 19)
+		{
+			auto Members = GetMembers<UClass_CT, FProperty>(this);
+			std::vector<int> offs;
+
+			for (auto Member : Members)
+			{
+				if (Member)
+					offs.push_back(Member->Offset_Internal);
+			}
+
+			return offs;
+		}
+	}
+}
+
+unsigned short UFunction::GetParmsSize()
+{
+	auto additionalUFunctionOff = sizeof(EFunctionFlags) + sizeof(unsigned char); // funcflags and numparms
+	int sizeofUStruct = 0;
+
+	if (Engine_Version <= 420)
+		sizeofUStruct = sizeof(UClass_FT);
+
+	else if (Engine_Version == 421) // && Engine_Version <= 424)
+		sizeofUStruct = sizeof(UClass_FTO);
+
+	else if (Engine_Version >= 422 && Engine_Version <= 424)
+		sizeofUStruct = sizeof(UClass_FTT);
+
+	else if (Engine_Version >= 425)
+		sizeofUStruct = sizeof(UClass_CT);
+
+	return *(short*)(__int64(this) + (sizeofUStruct + additionalUFunctionOff));
 }

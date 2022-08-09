@@ -3,6 +3,332 @@
 #include <random>
 
 #include <Gameplay/helper.h>
+#include <UE/DataTables.h>
+
+enum class ItemType
+{
+	None,
+	Weapon,
+	Consumable,
+	Ammo
+};
+
+std::string ItemTypeToString(ItemType type)
+{
+	switch (type)
+	{
+		using enum ItemType;
+	case Weapon:
+		return "Weapon";
+	case Consumable:
+		return "Consumable";
+	case Ammo:
+		return "Ammo";
+	default:
+		return "NULL ItemType";
+	}
+}
+
+struct DefinitionInRow // 50 bytes
+{
+	UObject* Definition = nullptr;
+	float Weight;
+	int DropCount = 1;
+	std::string RowName;
+	ItemType Type = ItemType::None;
+
+	std::string Describe(bool bNewLines = false)
+	{
+		if (bNewLines)
+			return std::format("{}\n{}\n{}\n{}\n{}\n", Definition ? Definition->GetFullName() : "NULL Definition", std::to_string(Weight), std::to_string(DropCount), RowName, ItemTypeToString(Type));
+		else
+			return std::format("{} {} {} {} {}", Definition ? Definition->GetFullName() : "NULL Definition", std::to_string(Weight), std::to_string(DropCount), RowName, ItemTypeToString(Type));
+	}
+};
+
+bool weight(float v) {
+	float f = rand() * 1.0f / 100;
+	float vv = (v * 10) / 10.0f;
+	return f < vv;
+}
+
+namespace LootingV2
+{
+	static std::vector<std::vector<DefinitionInRow>> Items; // best way? Probably not
+	static bool bInitialized = false;
+
+	// Position in Items
+	int LootItems = 0;
+	int SupplyDropItems = 1;
+
+	static DWORD WINAPI InitializeWeapons(LPVOID)
+	{
+		if (LootingV2::bInitialized)
+		{
+			std::cout << "[WARNING] Loot is already initialized!\n";
+			return 0;
+		}
+
+		LootingV2::bInitialized = true;
+
+		for (int i = 0; i < 2; i++)
+		{
+			Items.push_back(std::vector<DefinitionInRow>());
+		}
+
+		auto LootPackages = GetLootPackages();
+
+		auto LootPackagesRowMap = GetRowMap(LootPackages);
+
+		auto fortnite = LootPackagesRowMap.Pairs.Elements.Data;
+
+		std::cout << "Amount of rows: " << fortnite.Num() << '\n';
+
+		for (int i = 0; i < fortnite.Num(); i++)
+		{
+			auto& Man = fortnite.At(i);
+			auto& Pair = Man.ElementData.Value;
+			auto RowFName = Pair.First;
+
+			if (!RowFName.ComparisonIndex)
+				continue;
+
+			auto RowName = RowFName.ToString();
+			auto LootPackageDataOfRow = Pair.Second; // ScriptStruct FortniteGame.FortLootPackageData
+
+			if (LootPackageDataOfRow && RowName.starts_with("WorldList.AthenaLoot"))
+			{
+				static auto off = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "ItemDefinition");
+				static auto countOff = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "Count");
+				static auto weightOff = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "Weight");
+
+				auto ItemDef = (TSoftObjectPtr*)(__int64(LootPackageDataOfRow) + off);
+				auto Count = (int*)(__int64(LootPackageDataOfRow) + countOff);
+				auto Weight = (float*)(__int64(LootPackageDataOfRow) + weightOff);
+
+				// std::cout << std::format("Count: {} ItemDef: {}\n", *Count, ItemDef->ObjectID.AssetPathName.ToString());
+
+				DefinitionInRow currentItem;
+
+				if (ItemDef)
+				{
+					auto DefinitionString = ItemDef->ObjectID.AssetPathName.ToString();
+					currentItem.Definition = FindObject(DefinitionString);
+
+					if (Count)
+						currentItem.DropCount = *Count;
+					if (Weight)
+						currentItem.Weight = *Weight;
+
+					currentItem.RowName = RowName;
+
+					if (DefinitionString.contains("Weapon"))
+						currentItem.Type = ItemType::Weapon;
+					else if (DefinitionString.contains("Consumable"))
+						currentItem.Type = ItemType::Consumable;
+					else if (DefinitionString.contains("Ammo"))
+						currentItem.Type = ItemType::Ammo;
+
+					Items[0].push_back(currentItem);
+				}
+
+				// std::cout << "Item funny!\n";
+
+				/*
+
+					"LootPackageID": "WorldList.AthenaLoot.Weapon.HighAssaultAuto",
+					"Weight": 0.4,
+					"NamedWeightMult": "None",
+					"PotentialNamedWeights": [],
+					"Count": 1,
+					"LootPackageCategory": 0,
+					"GameplayTags": [],
+					"RequiredTag": "None",
+					"LootPackageCall": "",
+					"ItemDefinition": {
+					  "AssetPathName": "/Game/Athena/Items/Weapons/WID_Assault_SemiAuto_Athena_UC_Ore_T03.WID_Assault_SemiAuto_Athena_UC_Ore_T03",
+					  "SubPathString": ""
+					},
+					"PersistentLevel": "",
+					"MinWorldLevel": -1,
+					"MaxWorldLevel": -1,
+					"bAllowBonusDrops": true,
+					"Annotation": ";List:WorldList.AthenaLoot.Weapon.HighAssaultAuto.C0;Item:WID.Assault.SemiAuto.Athena.UC.Ore.T03"
+
+				*/
+			}
+		}
+
+		std::cout << "Initialized Looting V2!\n";
+
+		return 0;
+	}
+
+	static DefinitionInRow* GetRandomItem(ItemType Type, int LootType = LootItems)
+	{
+		if (LootType <= Items.size() ? Items[LootType].empty() : true)
+		{
+			std::cout << std::format("[WARNING] Tried getting a {} with loot type {} but the table is null!\n", ItemTypeToString(Type), std::to_string(LootType));
+			return nullptr;
+		}
+
+		auto& TableToUse = Items[LootType];
+
+		int current = 0;
+
+		while (current < 5000) // it shouldnt even be this much
+		{
+			auto& Item = TableToUse[rand() % (TableToUse.size())];
+
+			if (Item.Type == Type && Item.Definition)
+				return &Item;
+
+			current++;
+		}
+	}
+
+	static void HandleSearch(UObject* BuildingContainer)
+	{
+		auto GetCorrectLocation = [BuildingContainer]() -> FVector {
+			// TODO: LootFinalLocation
+			/* auto LootSpawnLocation = *BuildingContainer->Member<FVector>(_("LootSpawnLocation"));
+			auto ActualLocation = Helper::GetActorLocation(BuildingContainer);
+			return LootSpawnLocation + ActualLocation; */
+			auto Location = Helper::GetActorLocation(BuildingContainer);
+			auto Rotation = Helper::GetActorRotation(BuildingContainer);
+
+			if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
+			{
+				Location.X -= 170;
+				std::cout << ("Removed 170 from the X!\n");
+			}
+			else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
+			{
+				Location.Y -= 170;
+				std::cout << ("Removed 170 from the Y!\n");
+			}
+			else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
+			{
+				Location.Y += 170;
+				std::cout << ("Added 170 to the Y!\n");
+			}
+			else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
+			{
+				Location.X += 170;
+				std::cout << ("Added 170 to the X!\n");
+			}
+			else
+			{
+				std::cout << ("Unhandled rotation!\n");
+			}
+
+			return Location;
+		};
+
+		if (BuildingContainer)
+		{
+			auto BuildingContainerName = BuildingContainer->GetName();
+
+			if (BuildingContainerName.contains(("Tiered_Chest"))) //  LCD_ToolBox
+			{
+				auto DefInRow = GetRandomItem(ItemType::Weapon);
+				auto WeaponDef = DefInRow->Definition;
+				{
+					static auto GetAmmoWorldItemDefinition_BP = WeaponDef->Function(("GetAmmoWorldItemDefinition_BP"));
+					if (GetAmmoWorldItemDefinition_BP)
+					{
+						struct { UObject* AmmoDefinition; }GetAmmoWorldItemDefinition_BP_Params{};
+						WeaponDef->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
+						auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
+
+						// if (AmmoDef)
+						{
+							auto Location = GetCorrectLocation();
+
+							if (WeaponDef)
+								Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DefInRow->DropCount);
+
+							if (AmmoDef)
+							{
+								auto DropCount = *AmmoDef->Member<int>(("DropCount"));
+								Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DropCount);
+							}
+
+							if (auto ConsumableInRow = GetRandomItem(ItemType::Consumable))
+							{
+								Helper::SummonPickup(nullptr, ConsumableInRow->Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow->DropCount); // *Consumable->Member<int>(("DropCount")));
+							}
+						}
+					}
+				}
+			}
+
+			else if (BuildingContainerName.contains(("Ammo")))
+			{
+				auto AmmoInRow = GetRandomItem(ItemType::Ammo);
+				auto AmmoDef = AmmoInRow->Definition;
+
+				if (AmmoDef)
+				{
+					auto Location = GetCorrectLocation();
+
+					auto DropCount = AmmoInRow->DropCount; // *AmmoDef->Member<int>(("DropCount"));
+					Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount);
+				}
+			}
+
+			else if (BuildingContainerName.contains(("AthenaSupplyDrop_Llama_C")))
+			{
+				static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+				static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+				auto Location = GetCorrectLocation();
+
+				{
+					static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
+
+					Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
+					Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
+					Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
+					Helper::SummonPickup(nullptr, Minis, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 6);
+				}
+			}
+
+			if (Engine_Version >= 424) // chapter 2 specific stuff
+			{
+				if (BuildingContainerName.contains("Barrel") && BuildingContainerName.contains("Rod"))
+				{
+					static auto FishingRodWID = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/FloppingRabbit/WID_Athena_FloppingRabbit.WID_Athena_FloppingRabbit"));
+
+					if (FishingRodWID)
+					{
+						// todo: make amount random
+
+						Helper::SummonPickup(nullptr, FishingRodWID, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset, 1);
+						Helper::SummonPickup(nullptr, FishingRodWID, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset, 1);
+						Helper::DestroyActor(BuildingContainer);
+					}
+				}
+
+				else if (BuildingContainerName.contains("FactionChest")) // IO Chests
+				{
+
+				}
+
+				else if (BuildingContainerName.contains("Wumba")) // Workbench/Upgrade Bench
+				{
+
+				}
+			}
+
+			else if (!BuildingContainerName.contains(("Door")) && !BuildingContainerName.contains(("Wall")))
+			{
+				std::cout << ("Container: ") << BuildingContainerName << "!\n";
+			}
+		}
+	}
+}
 
 namespace Looting
 {

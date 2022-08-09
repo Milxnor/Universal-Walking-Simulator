@@ -3,32 +3,35 @@
 #include <UE/structs.h>
 #include <Gameplay/helper.h>
 
-/*
-
-
-
-*/
-
-TMap<FName, uint8_t*> GetRowMap(UObject* DataTable)
+static TMap<FName, uint8_t*> GetRowMap(UObject* DataTable)
 {
 	static auto RowStructOffset = GetOffset(DataTable, "RowStruct");
 	return *(TMap<FName, uint8_t*>*)(__int64(DataTable) + (RowStructOffset + sizeof(UObject*))); // because after rowstruct is rowmap
 }
 
-UObject* GetLootPackages()
+static uint8_t* FindRow(UObject* DataTable, const std::string& RowName)
+{
+
+}
+
+// this dont really berlong here
+static UObject* GetLootPackages()
 {
 	UObject* Playlist = Helper::GetPlaylist();
 
 	auto LootPackagesSoft = Playlist->Member<TSoftObjectPtr>(_("LootPackages"));
 	std::cout << "AssetPathName: " << LootPackagesSoft->ObjectID.AssetPathName.ToString() << '\n';
 
-	auto LootPackages = FindObject(LootPackagesSoft->ObjectID.AssetPathName.ToString());
+	static auto CompositeDataTableClass = FindObject("Class /Script/Engine.CompositeDataTable");
+	auto LootPackages = StaticLoadObjectO ? StaticLoadObject(CompositeDataTableClass, nullptr, LootPackagesSoft->ObjectID.AssetPathName.ToString()) : nullptr; // some versions its loaded idk why but some not
 	std::cout << "LootPackages: " << LootPackages << '\n';
 
 	if (LootPackages)
 		std::cout << "LootPackages Name: " << LootPackages->GetFullName() << '\n';
 	else
 		return nullptr;
+
+	return LootPackages;
 
 	auto LootPackagesRowMap = GetRowMap(LootPackages);
 	

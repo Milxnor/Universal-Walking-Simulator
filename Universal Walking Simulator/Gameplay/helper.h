@@ -273,6 +273,26 @@ namespace Helper
 		return Pickup;
 	}
 
+	bool RandomBoolWithWeight(float Weight)
+	{
+		static auto KSM = FindObject("KismetMathLibrary /Script/Engine.Default__KismetMathLibrary");
+
+		struct {
+			float weight;
+			bool Ret;
+		} parms{ Weight };
+
+		if (KSM)
+		{
+			static auto RandomBoolWithWeight = KSM->Function("RandomBoolWithWeight");
+
+			if (RandomBoolWithWeight)
+				KSM->ProcessEvent(RandomBoolWithWeight, &parms);
+		}
+
+		return parms.Ret;
+	}
+
 	UObject* GetOwnerOfComponent(UObject* Component)
 	{
 		static auto fn = Component->Function(("GetOwner"));
@@ -707,7 +727,9 @@ namespace Helper
 
 		// here
 
-		static auto PossessFn = PC->Function(("Possess"));
+		PC->Exec("Possess", Pawn);
+
+		/* static auto PossessFn = PC->Function(("Possess"));
 
 		if (PossessFn)
 		{
@@ -717,7 +739,7 @@ namespace Helper
 			PC->ProcessEvent(PossessFn, &params);
 		}
 		else
-			std::cout << ("Could not find Possess!\n");
+			std::cout << ("Could not find Possess!\n"); */
 
 		Helper::SetOwner(Pawn, PC); // prob not needed
 

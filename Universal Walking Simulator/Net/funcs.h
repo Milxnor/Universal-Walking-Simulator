@@ -44,6 +44,7 @@ uint64_t PlayMontageAddr = 0;
 uint64_t ValidENameAddr = 0;
 uint64_t ReplicationGraph_EnableAddr = 0;
 uint64_t RequestExitWSAddr = 0;
+uint64_t StaticLoadObjectAddr = 0;
 
 static void (*RequestExitWithStatus)(bool Force, uint8_t ReturnCode);
 

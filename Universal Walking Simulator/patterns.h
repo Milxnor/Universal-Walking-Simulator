@@ -323,6 +323,7 @@ void InitializePatterns()
         std::string PostRenderSig = "";
         std::string ReplicationGraph_EnableSig = "";
         std::string ValidENameSig = "";
+        std::string StaticLoadObjectSig = "";
     // }
 
     if (Engine_Version == 420)
@@ -478,6 +479,7 @@ void InitializePatterns()
         SetWorldSig = ("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 30 48 8B 99 ? ? ? ? 45 33 F6 48 8B F2 48 8B F9 48 85 DB 0F 84 ? ? ? ? 48 8B 97 ? ? ? ? 48 8D 8B ? ? ? ? E8 ? ? ? ? 48 8B 97 ? ? ? ? 48 8D 8B ? ? ? ? E8 ? ? ? ? 48 8B 97 ? ? ? ?");
         StaticFindObjectSig = ("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 2F 48 8D 05 ? ? ? ? 41 B9 ? ? ? ? 4C 8D 05 ? ? ? ? 48 89 44 24 ? BA ? ? ? ? 48 8D 0D");
         GetPlayerViewpointSig = ("40 55 56 57 41 57 48 8B EC 48 83 EC 48 48 8B 81 ? ? ? ? 4D 8B F8 48 8B F2 48 8B F9 48 85 C0 0F 84 ? ? ? ? F6 80 ? ? ? ? ? 0F 84 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9 74 23 0F 10 89 ? ? ? ? 0F 28 C1 F3 0F 11 4D ? 0F C6 C1 55 0F C6 C9 AA");
+        StaticLoadObjectSig = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8B 85 ? ? ? ? 4C 8B FA 89 45 88 4C 8B E9 48 8B 85 ? ? ? ? 48 8D";
     }
 
     if (Engine_Version == 426)
@@ -809,6 +811,9 @@ void InitializePatterns()
         std::cout << ("[WARNING] Unable to find HandleReloadCost! Will not be able to deplete ammo.\n");
     else
         HandleReloadCost = decltype(HandleReloadCost)(HandleReloadCostAddr);
+    
+    StaticLoadObjectAddr = FindPattern(StaticLoadObjectSig);
+    CheckPattern(("StaticLoadObject"), StaticLoadObjectAddr, &StaticLoadObjectO);
 
     /* if (Engine_Version != 424)
     {

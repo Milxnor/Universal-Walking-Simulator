@@ -124,7 +124,7 @@
     <ClInclude Include="finder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="datatables.h">
+    <ClInclude Include="UE\DataTables.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
   </ItemGroup>

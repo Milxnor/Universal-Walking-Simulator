@@ -127,6 +127,12 @@ namespace QuickBars
 	}
 }
 
+static UObject* GetPickaxeDef(UObject* Controller)
+{
+	static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+	return PickaxeDef;
+}
+
 namespace Inventory
 {
 	__int64* GetInventory(UObject* Controller)
@@ -168,7 +174,7 @@ namespace Inventory
 				else
 					std::cout << ("No GetBulletsPerClip!\n");
 			}
-
+			 
 			// Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
 
 			static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");

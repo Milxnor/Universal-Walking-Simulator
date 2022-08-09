@@ -103,8 +103,9 @@ inline void initStuff()
 
 					if (BasePlaylistOffset && OnRepPlaylist && Playlist)
 					{
-						static auto PlaylistInfo = gameState->Member<void>(("CurrentPlaylistInfo"));
+						static auto PlaylistInfo = gameState->Member<UScriptStruct>(("CurrentPlaylistInfo"));
 
+						PlaylistInfo->MemberStruct<UObject*>("BasePlaylist");
 						auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
 						auto PlaylistReplicationKey = (int*)(__int64(PlaylistInfo) + PlaylistReplicationKeyOffset);
 
@@ -183,6 +184,10 @@ inline void initStuff()
 			Events::LoadEvents();
 			Helper::FixPOIs();
 		}
+		 
+		LootingV2::InitializeWeapons(nullptr);
+
+		//CreateThread(0, 0, LootingV2::InitializeWeapons, 0, 0, 0); // doesnt work??
 	}
 }
 
@@ -436,6 +441,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		{
 			// PlayersLeft--;
 
+			// DeadPC->ClientSendMatchStatsForPlayer(DeadPC->GetMatchReport()->MatchStats);
+
 			if (Engine_Version >= 423) // wrong
 			{
 				auto Chip = Helper::SpawnChip(DeadPC);
@@ -477,70 +484,73 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			}
 		}
 
-		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
-		static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
-
-		auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
-		auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
-
-		UObject* KillerController = nullptr;
-
-		if (KillerPawn)
-			KillerController = *KillerPawn->Member<UObject*>(("Controller"));
-
-		if (KillerPlayerState)
+		if (false)
 		{
-			// somethings skunked
-			/* auto DeathInfo = DeadPlayerState->Member<__int64>(("DeathInfo"));
+			static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
+			static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
 
-			static auto TagsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("Tags"));
-			static auto DeathCauseOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathCause"));
-			static auto FinisherOrDownerOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("FinisherOrDowner"));
-			static auto bDBNOOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("bDBNO"));
+			auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
+			auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
 
-			// /Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamKillScore
+			UObject* KillerController = nullptr;
 
-			auto Tags = (FGameplayTagContainer*)(__int64(&*DeathInfo) + TagsOffset);
+			if (KillerPawn)
+				KillerController = *KillerPawn->Member<UObject*>(("Controller"));
 
-			*(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) = Tags ? GetDeathCause(*Tags) : (uint8_t)EDeathCause::Cube;
-			*(UObject**)(__int64(&*DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
-			*(bool*)(__int64(&*DeathInfo) + bDBNOOffset) = false;
-
-			static auto OnRep_DeathInfo = DeadPlayerState->Function(("OnRep_DeathInfo"));
-
-			if (OnRep_DeathInfo)
-				DeadPlayerState->ProcessEvent(OnRep_DeathInfo); */
-
-			if (KillerPlayerState != DeadPlayerState)
+			if (KillerPlayerState)
 			{
-				if (KillerController)
+				// somethings skunked
+				/* auto DeathInfo = DeadPlayerState->Member<__int64>(("DeathInfo"));
+
+				static auto TagsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("Tags"));
+				static auto DeathCauseOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathCause"));
+				static auto FinisherOrDownerOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("FinisherOrDowner"));
+				static auto bDBNOOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("bDBNO"));
+
+				// /Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamKillScore
+
+				auto Tags = (FGameplayTagContainer*)(__int64(&*DeathInfo) + TagsOffset);
+
+				*(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) = Tags ? GetDeathCause(*Tags) : (uint8_t)EDeathCause::Cube;
+				*(UObject**)(__int64(&*DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
+				*(bool*)(__int64(&*DeathInfo) + bDBNOOffset) = false; */
+
+				static auto OnRep_DeathInfo = DeadPlayerState->Function(("OnRep_DeathInfo"));
+
+				if (OnRep_DeathInfo)
+					DeadPlayerState->ProcessEvent(OnRep_DeathInfo);
+
+				if (KillerPlayerState != DeadPlayerState)
 				{
-					static auto ClientReceiveKillNotification = KillerController->Function(("ClientReceiveKillNotification"));
+					if (KillerController)
+					{
+						static auto ClientReceiveKillNotification = KillerController->Function(("ClientReceiveKillNotification"));
 
-					struct {
-						// Both playerstates
-						UObject* Killer;
-						UObject* Killed;
-					} ClientReceiveKillNotification_Params{ KillerPlayerState, DeadPlayerState };
+						struct {
+							// Both playerstates
+							UObject* Killer;
+							UObject* Killed;
+						} ClientReceiveKillNotification_Params{ KillerPlayerState, DeadPlayerState };
 
-					if (ClientReceiveKillNotification)
-						KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
+						if (ClientReceiveKillNotification)
+							KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
+					}
+
+					// *DeadPlayerState->Member<__int64>(("DeathInfo")) = *(__int64*)malloc(GetSizeOfStruct(FindObject(("ScriptStruct /Script/FortniteGame.DeathInfo"))));
+
+					(*KillerPlayerState->Member<int>(("KillScore")))++;
+					(*KillerPlayerState->Member<int>(("TeamKillScore")))++;
+
+					static auto ClientReportKill = KillerPlayerState->Function(("ClientReportKill"));
+					struct { UObject* PlayerState; }ClientReportKill_Params{ DeadPlayerState };
+					if (ClientReportKill)
+						KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
+
+					static auto OnRep_Kills = KillerPlayerState->Function(("OnRep_Kills"));
+
+					if (OnRep_Kills)
+						KillerPlayerState->ProcessEvent(OnRep_Kills);
 				}
-
-				// *DeadPlayerState->Member<__int64>(("DeathInfo")) = *(__int64*)malloc(GetSizeOfStruct(FindObject(("ScriptStruct /Script/FortniteGame.DeathInfo"))));
-
-				(*KillerPlayerState->Member<int>(("KillScore")))++;
-				(*KillerPlayerState->Member<int>(("TeamKillScore")))++;
-
-				static auto ClientReportKill = KillerPlayerState->Function(("ClientReportKill"));
-				struct { UObject* PlayerState; }ClientReportKill_Params{ DeadPlayerState };
-				if (ClientReportKill)
-					KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
-
-				static auto OnRep_Kills = KillerPlayerState->Function(("OnRep_Kills"));
-
-				if (OnRep_Kills)
-					KillerPlayerState->ProcessEvent(OnRep_Kills);
 			}
 		}
 	}
@@ -729,7 +739,8 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				// Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
 			}
 
-			Looting::Tables::HandleSearch(ReceivingActor);
+			// Looting::Tables::HandleSearch(ReceivingActor);
+			LootingV2::HandleSearch(ReceivingActor);
 		}
 	}
 
