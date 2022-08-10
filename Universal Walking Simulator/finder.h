@@ -126,6 +126,8 @@ namespace Finder
 				else
 					std::cout << "Unable to find Beginning of NCM_Beacon";
 			}
+
+			return "";
 		}
 
 		std::string GetTickFlush(int length = 35, uintptr_t* Addr = nullptr)
@@ -148,6 +150,8 @@ namespace Finder
 				else
 					std::cout << "Unable to find Beginning of TickFlush";
 			}
+
+			return "";
 		}
 
 		std::string GetStaticLoadObject(int length = 35, uintptr_t* Addr = nullptr)
@@ -172,7 +176,8 @@ namespace Finder
 			}
 			else
 				std::cout << "Unable to find StaticLoadObject string!\n";
-		}
 
+			return "";
+		}
 	}
 }

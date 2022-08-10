@@ -6,7 +6,7 @@
 #include <Net/funcs.h>
 #include <dpp/nlohmann/json.hpp>
 
-static bool bPickupAnimsEnabled = false;
+static bool bPickupAnimsEnabled = true;
 
 UObject* GetWorldW(bool bReset = false)
 {
@@ -206,8 +206,8 @@ namespace Helper
 			{
 				PickupLocationData->PickupTarget = Pawn;
 				PickupLocationData->ItemOwner = Pawn; // wrong I think
-				PickupLocationData->LootInitialPosition = Helper::GetActorLocation(Pickup);
-				PickupLocationData->FlyTime = 1.0f;
+				// PickupLocationData->LootInitialPosition = Helper::GetActorLocation(Pickup);
+				PickupLocationData->FlyTime = 0.75f;
 				static auto GuidOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemGuid"));
 				auto Guid = (FGuid*)(__int64(&*Pickup->Member<__int64>(_("PrimaryPickupItemEntry"))) + GuidOffset);
 				PickupLocationData->PickupGuid = *Guid; // *FFortItemEntry::GetGuid(Pickup->Member<__int64>(_("PrimaryPickupItemEntry")));
@@ -297,7 +297,7 @@ namespace Helper
 				static auto Rep_ReplicateMovement = Pickup->Function(("OnRep_ReplicateMovement"));
 				Pickup->ProcessEvent(Rep_ReplicateMovement);
 
-				Helper::EnablePickupAnimation(Pawn, Pickup);
+				// Helper::EnablePickupAnimation(Pawn, Pickup);
 			}
 		}
 
@@ -365,7 +365,14 @@ namespace Helper
 		return FRotator();
 	}
 
-	static TArray<UObject*> GetAllActorsOfClass(UObject* Class)
+	UObject* GetPawnFromController(UObject* PC)
+	{
+		static auto PawnOffset = GetOffset(PC, "Pawn");
+
+		return *(UObject**)(__int64(PC) + PawnOffset);
+	}
+
+	static TArray<UObject*> GetAllActorsOfClass(UObject* Class, UObject* World = nullptr)
 	{
 		static auto GSCClass = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
 
@@ -378,7 +385,7 @@ namespace Helper
 			TArray<UObject*> ReturnValue;
 		} Params;
 
-		Params.World = GetWorld();
+		Params.World = World ? World : GetWorld();
 		Params.Class = Class;
 
 		ProcessEventO(GSCClass, GetAllActorsOfClass, &Params);
@@ -792,11 +799,15 @@ namespace Helper
 		else
 			std::cout << ("Unable to find setMaxShieldFn!\n");
 
+		/*
+
 		static const auto HeroType = FindObject(("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
 
 		*PlayerState->Member<UObject*>(("HeroType")) = HeroType;
 		static auto OnRepHeroType = PlayerState->Function(("OnRep_HeroType"));
 		PlayerState->ProcessEvent(OnRepHeroType);
+
+		*/
 
 		/*static auto FortCustomizationAssetLoader = FindObject(("FortCustomizationAssetLoader /Script/FortniteGame.Default__FortCustomizationAssetLoader"));
 		auto PawnCustomizationAssetLoader = Pawn->Member<UObject*>("CustomizationAssetLoader");

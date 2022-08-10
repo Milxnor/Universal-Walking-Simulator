@@ -11,12 +11,23 @@ static int GetEntrySize()
 	return GetSizeOfStruct(FortItemEntryClass);
 }
 
+template <typename EntryType = __int64>
+inline EntryType* GetItemEntryFromInstance(UObject* Instance)
+{
+	static auto ItemEntryOffset = GetOffset(Instance, "ItemEntry");
+	return (EntryType*)(__int64(Instance) + ItemEntryOffset);
+}
+
 namespace Items {
 	void HandleCarmine(UObject* Controller) {
-		UObject* Pawn = *Controller->Member<UObject*>("Pawn");
+		if (!Controller)
+			return;
+
+		UObject* Pawn = Helper::GetPawnFromController(Controller);
 		Helper::ChoosePart(Pawn, EFortCustomPartType::Body, FindObject("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/Dev_TestAsset_Body_M_XL.Dev_TestAsset_Body_M_XL"));
 		Helper::ChoosePart(Pawn, EFortCustomPartType::Head, FindObject("CustomCharacterPart /Game/Athena/Heroes/Meshes/Heads/Dev_TestAsset_Head_M_XL.Dev_TestAsset_Head_M_XL"));
 		*Pawn->Member<UObject*>("AnimBPOverride") = FindObject("AnimBlueprintGeneratedClass /Game/Characters/Player/Male/Male_Avg_Base/Gauntlet_Player_AnimBlueprint.Gauntlet_Player_AnimBlueprint_C");
+		
 		UObject* AS = FindObject("FortAbilitySet /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AS_CarminePack.AS_CarminePack");
 		auto GrantedAbilities = AS->Member<TArray<UObject*>>("GameplayAbilities");
 
@@ -355,7 +366,7 @@ namespace Inventory
 	inline UObject* EquipInventoryItem(UObject* Controller, const FGuid& Guid)
 	{
 		auto ItemInstances = GetItemInstances(Controller);
-		auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+		auto Pawn = Helper::GetPawnFromController(Controller);
 
 		for (int i = 0; i < ItemInstances->Num(); i++)
 		{
@@ -487,7 +498,7 @@ namespace Inventory
 
 			static auto CountOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("Count"));
 
-			auto GunCount = (int*)(__int64(&*itemInstance->Member<__int64>(("ItemEntry"))) + CountOffset);
+			auto GunCount = (int*)(__int64(&*GetItemEntryFromInstance(itemInstance)) + CountOffset);
 			*GunCount = Count;
 
 			auto OwnerInventory = itemInstance->Member<UObject*>(("OwnerInventory")); // We should probably set this?
@@ -505,7 +516,7 @@ namespace Inventory
 		if (!Controller || !FortItem)
 			return -1;
 
-		auto ItemEntry = FortItem->Member<EntryStruct>(("ItemEntry"));
+		auto ItemEntry = GetItemEntryFromInstance<EntryStruct>(FortItem); // FortItem->Member<EntryStruct>(("ItemEntry"));
 
 		// std::cout << ("ItemEntryStruct Size: ") << GetEntrySize() << '\n';
 
@@ -618,7 +629,7 @@ namespace Inventory
 
 		// auto Inventory = GetInventory(Controller);
 
-		auto ItemEntry = FortItem->Member<__int64>(("ItemEntry"));
+		auto ItemEntry = GetItemEntryFromInstance(FortItem);
 		*FFortItemEntry::GetCount(ItemEntry) = Count;
 
 		if (Engine_Version < 424) // chapter two momentum
@@ -711,7 +722,7 @@ namespace Inventory
 	UObject* FindItemInInventory(UObject* Controller, UObject* Definition) // TODO: Return a vector.
 	{
 		auto ItemInstances = GetItemInstances(Controller);
-		auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+		auto Pawn = Helper::GetPawnFromController(Controller);
 
 		for (int i = 0; i < ItemInstances->Num(); i++)
 		{
@@ -801,7 +812,7 @@ namespace Inventory
 
 		if (Controller && Instance)
 		{
-			auto ItemEntry = Instance->Member<__int64>(("ItemEntry")); // Keep as pointer!
+			auto ItemEntry = GetItemEntryFromInstance(Instance);
 			auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
 
 			// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
@@ -861,7 +872,7 @@ namespace Inventory
 				auto CurrentDefinition = GetItemDefinition(ItemInstance);
 				if (CurrentDefinition == Definition)
 				{
-					auto ItemEntry = ItemInstance->Member<__int64>(("ItemEntry")); // Keep as pointer!
+					auto ItemEntry = GetItemEntryFromInstance(ItemInstance); // Keep as pointer!
 					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
 
 					// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
@@ -893,7 +904,7 @@ namespace Inventory
 				bDontCreateNewStack = true;
 
 			auto ItemInstances = GetItemInstances(Controller);
-			auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+			auto Pawn = Helper::GetPawnFromController(Controller);
 
 			UObject* ItemInstance = nullptr;
 			int OverStack = 0;
@@ -920,7 +931,7 @@ namespace Inventory
 					{
 						if (InstanceOfItem)
 						{
-							auto ItemEntry = InstanceOfItem->Member<__int64>(("ItemEntry"));
+							auto ItemEntry = GetItemEntryFromInstance(InstanceOfItem);
 
 							if (ItemEntry)
 							{
@@ -937,7 +948,7 @@ namespace Inventory
 
 					if (ItemInstance)
 					{
-						auto ItemEntry = ItemInstance->Member<__int64>(("ItemEntry"));
+						auto ItemEntry = GetItemEntryFromInstance(ItemInstance);
 
 						if (ItemEntry)
 						{
@@ -1061,7 +1072,7 @@ inline bool ServerExecuteInventoryWeaponHook(UObject* Controller, UFunction* Fun
 
 	if (Weapon && *Weapon)
 	{
-		auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+		auto Pawn = Helper::GetPawnFromController(Controller);
 		auto Guid = *(*Weapon)->Member<FGuid>(("ItemEntryGuid"));
 		auto Def = *(*Weapon)->Member<UObject*>(("WeaponData"));
 
@@ -1095,13 +1106,13 @@ inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Funct
 		auto Params = (AFortPlayerController_ServerAttemptInventoryDrop_Params*)Parameters;
 
 		auto Definition = Inventory::RemoveItem(Controller, Params->ItemGuid, Params->Count);
-		auto Pawn = Controller->Member<UObject*>(("Pawn"));
+		auto Pawn = Helper::GetPawnFromController(Controller);
 
-		if (Pawn && *Pawn)
+		if (Pawn)
 		{
-			auto loc = Helper::GetActorLocation(*Pawn);
+			auto loc = Helper::GetActorLocation(Pawn);
 
-			auto Pickup = Helper::SummonPickup(*Pawn, Definition, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count);
+			auto Pickup = Helper::SummonPickup(Pawn, Definition, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count);
 		}
 	}
 
@@ -1200,7 +1211,8 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 						}
 					}
 
-					Helper::DestroyActor(Params->Pickup);
+					// Helper::DestroyActor(Params->Pickup);
+					Helper::EnablePickupAnimation(Pawn, Params->Pickup);
 					*bPickedUp = true;
 
 					static auto bPickedUpFn = Params->Pickup->Function(("OnRep_bPickedUp"));

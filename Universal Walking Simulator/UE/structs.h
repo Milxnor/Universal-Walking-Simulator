@@ -900,7 +900,7 @@ UFunction* FindFunction(const std::string& Name, UObject* Object) // might as we
 }
 
 template <typename ClassType, typename PropertyType>
-int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int offset = 0)
+PropertyType* LoopMembersAndGetProperty(UObject* Object, const std::string& MemberName)
 {
 	// We loop through the whole class hierarchy to find the offset.
 
@@ -913,15 +913,25 @@ int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int
 			if (Member->GetName() == MemberName)
 			// if (Member->NamePrivate == MemberFName)
 			{
-				if (!offset)
-					return ((PropertyType*)Member)->Offset_Internal;
-				else
-					return *(int*)(__int64(Member) + offset);
+				return ((PropertyType*)Member);
 			}
 		}
 	}
 
 	return 0;
+}
+
+template <typename ClassType, typename PropertyType>
+int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int offset = 0)
+{
+	// We loop through the whole class hierarchy to find the offset.
+
+	// auto MemberFName = StringToName(MemberName);
+
+	if (offset)
+		return *(int*)(__int64(LoopMembersAndGetProperty<ClassType, PropertyType>(Object, MemberName)) + offset);
+	else
+		return LoopMembersAndGetProperty<ClassType, PropertyType>(Object, MemberName)->Offset_Internal;
 }
 
 static int GetOffset(UObject* Object, const std::string& MemberName)
@@ -1835,6 +1845,41 @@ public:
 };
 
 template <class ObjectType>
+class TSharedPtrOld
+{
+public:
+	ObjectType* Object;
+
+	int WeakReferenceCount;
+
+	inline ObjectType* Get()
+	{
+		return Object;
+	}
+	inline ObjectType* Get() const
+	{
+		return Object;
+	}
+	inline ObjectType& operator*()
+	{
+		return *Object;
+	}
+	inline const ObjectType& operator*() const
+	{
+		return *Object;
+	}
+	inline ObjectType* operator->()
+	{
+		return Object;
+	}
+
+	inline TSharedRef<ObjectType> ToSharedRef()
+	{
+		return TSharedRef<ObjectType>(Object);
+	}
+};
+
+template <class ObjectType>
 class TSharedPtr
 {
 public:
@@ -2012,3 +2057,38 @@ unsigned short UFunction::GetParmsSize()
 
 	return *(short*)(__int64(this) + (sizeofUStruct + additionalUFunctionOff));
 }
+
+struct FNetworkObjectInfo
+{
+	UObject* Actor; // AActor*
+
+	TWeakObjectPtr<UObject> WeakActor; // AActor
+
+	double NextUpdateTime;
+
+	double LastNetReplicateTime;
+
+	float OptimalNetUpdateDelta;
+
+	float LastNetUpdateTime;
+
+	uint32_t bPendingNetUpdate : 1;
+
+	uint32_t bForceRelevantNextUpdate : 1;
+
+	TSet<TWeakObjectPtr<UObject>> DormantConnections; // UNetConnection
+
+	TSet<TWeakObjectPtr<UObject>> RecentlyDormantConnections; // UNetConnection
+};
+
+class FNetworkObjectList
+{
+public:
+	using FNetworkObjectSet = TSet<TSharedPtr<FNetworkObjectInfo>>;
+
+	FNetworkObjectSet AllNetworkObjects;
+	FNetworkObjectSet ActiveNetworkObjects;
+	FNetworkObjectSet ObjectsDormantOnAllConnections;
+
+	TMap<TWeakObjectPtr<UObject>, int32_t> NumDormantObjectsPerConnection;
+};

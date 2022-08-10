@@ -117,10 +117,13 @@ void Listen(int Port = 7777)
 
         std::cout << ("Spawned Beacon!\n");
 
-        if (Engine_Version < 426)
-            *BeaconHost->Member<int>(("ListenPort")) = Port - 1;
-        else
-            *BeaconHost->Member<int>(("ListenPort")) = Port;
+        if (std::stod(FN_Version) < 16.00)
+        {
+            if (Engine_Version < 426)
+                *BeaconHost->Member<int>(("ListenPort")) = Port - 1;
+            else
+                *BeaconHost->Member<int>(("ListenPort")) = Port;
+        }
 
         bool bInitBeacon = false;
 
@@ -140,11 +143,12 @@ void Listen(int Port = 7777)
             std::cout << dye::red(("[ERROR] ")) << ("Unable to initialize Beacon!\n");
             return;
         }
-
-        std::cout << ("Initialized Beacon!\n");
+        else
+        {
+            std::cout << ("Initialized Beacon!\n");
+            NetDriver = *BeaconHost->Member<UObject*>(("NetDriver"));
+        }
         
-        NetDriver = *BeaconHost->Member<UObject*>(("NetDriver"));
-
         /* FName GameNetDriverName = FName(282);
 
         *BeaconHost->Member<FName>(("NetDriverName")) = GameNetDriverName;
@@ -182,6 +186,7 @@ void Listen(int Port = 7777)
         InURL.Port = Port;
 
         std::cout << "InitListen: " << InitListen(NetDriver, World, InURL, false, Error) << '\n';
+
         if (Engine_Version < 426)
         {
             if (SetWorld)

@@ -349,6 +349,7 @@ void InitializePatterns()
         InitListenSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0";// ud
         CreateNetDriverSig = "4C 89 44 24 ? 53 48 83 EC 20 48 8B D9 E8 ? ? ? ? 4C 8B 44 24 ? 48 8B D0 48 8B CB E8 ? ? ? ? 48 83 C4 20 5B C3"; // ud
         CallPreReplicationSig = "48 85 D2 0F 84 ? ? ? ? 48 8B C4 55 57 41 54 48 8D 68 A1 48 81 EC ? ? ? ? 48 89 58 08 4C 8B E2 48 89";
+        SendClientAdjustmentSig = "40 53 48 83 EC 20 48 8B 99 ? ? ? ? 48 39 99 ? ? ? ? 74 0A 48 83 B9 ? ? ? ? ? 74 78 48 85 DB 75 0C 48 8B 99 ? ? ? ? 48 85 DB 74 67 80 BB ? ? ? ? ? 75 5E 48 8B 81 ? ? ? ? 33 D2 48 89 54 24 ? 48 3B C2 74 09 48 C7 44 24 ? ? ? ? ?";
 
         // paddin
 
@@ -531,7 +532,9 @@ void InitializePatterns()
         PlayMontageSig = "40 55 56 41 54 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B F1 0F 29 7C 24 ? 48 8B 89 ? ? ? ? 4D 8B F1 F3 0F 10 3D ? ? ? ? 4C 8B E2 48 85 C9 0F 84 ? ? ? ? 4C 89 BC 24 ? ? ? ? E8 ? ? ? ? 4C 8B F8 48 85 C0";
     }
 
-    if (Engine_Version == 426)
+    static const auto FnVerDouble = std::stod(FN_Version);
+
+    if (Engine_Version >= 426)
     {
         TickFlushSig = ("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 7B C8");
         World_NotifyControlMessageSig = ("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 45 0F B6 E0");
@@ -549,7 +552,20 @@ void InitializePatterns()
         CollectGarbageSig = "40 55 57 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 3D ? ? ? ? ? 0F B6 FA 44 8B F9 74 3B 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 48 8D";
     }
 
-    static const auto FnVerDouble = std::stod(FN_Version);
+    if (FnVerDouble >= 16.00)
+    {
+        TickFlushSig = ("48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B F9 48 89 4D 38 48");
+        World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89";
+        ReceiveFStringSig = "48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 00 F6 41 28 01 48 8B F2 48 8B F9 0F 84";
+        ReceiveUniqueIdReplSig = "40 55 53 57 48 8B EC 48 83 EC 40 80 79 28 00 48 8B FA 48 8B D9 7C 1A 4C 8D 4D 20 48 8B D3 48 8B CF E8 ? ? ? ? 48 8B C3 48 83 C4 40 5F 5B 5D C3 F6 41 2B 08 75 E0 48 8B CF E8 ? ? ? ? 84 C0 0F 85 ? ? ? ?";
+        WelcomePlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 60 48 8B 71 30";
+        SpawnPlayActorSig = "48 8B C4 48 89 58 20 44 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8D 68 B9 48 81 EC ? ? ? ? 33 DB 4C 8D 35 ? ? ? ? 89 5D";
+        NetDebugSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 01 48 8B F9 FF 90 ? ? ? ? 45 33 E4 48 8B F0 48 85 C0 0F 84 ? ? ? ? 4C 39 60 38 0F 84 ? ? ? ? 44 38";
+        GetPlayerViewpointSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 40 49 8B F0 4C 8B F2 48 8B D9 E8 ? ? ? ? 83 65 24 00 44 8B 88 ? ? ? ? 44 89 4D 20 48 8B 45 20 48 39 83 ? ? ? ? 75 1D 80 BB ? ? ? ? ? 75 14 48 8B 03 48 8B CB";
+        PauseBeaconRequestsSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 30 33 F6 48 8B F9 84 D2 74 42 80 3D ? ? ? ? ? 72 20 48 8D 05 ? ? ? ? 33 D2 44 8D 4E 06 48 89 44 24 ? 4C 8D 05";
+        InitHostSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B F1 4C 8D 05 ? ? ? ? 48 8D 4D D7 45 33 C9 33 D2 E8 ? ? ? ? E8 ? ? ? ? 48 8B C8 4C 8D 45 67 48 8D 15 ? ? ? ? E8 ? ? ? ? 33 FF 84 C0 74 0D 8B 45 67 85 C0 74 06 89 86 ? ? ? ?";
+        Beacon_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D 68 88 48 81 EC ? ? ? ? 45 33 E4 49 8B D9 44 89 64 24 ? 41 8A F0 48 8B 41 10 48 8B";
+    }
 
     static auto ReallocAddr = FindPattern(ReallocSig);
     // FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddr); // we don't need this I think
@@ -875,5 +891,18 @@ void InitializePatterns()
 
         CallPreReplicationAddr = FindPattern(CallPreReplicationSig);
         CheckPattern(("CallPreReplication"), CallPreReplicationAddr, &CallPreReplication);
+    }
+
+    if (std::stod(FN_Version) == 4.5)
+    {
+        uintptr_t CrashFix = FindPattern(CrashPatchSig);
+        if (CrashFix) {
+            std::cout << "Applying crash fix!\n";
+            *reinterpret_cast<char*>(CrashFix) = 0xE9;
+            *reinterpret_cast<char*>(CrashFix + 1) = 0x39;
+            *reinterpret_cast<char*>(CrashFix + 2) = 0x02;
+            *reinterpret_cast<char*>(CrashFix + 3) = 0x00;
+            *reinterpret_cast<char*>(CrashFix + 4) = 0x00;
+        }
     }
 }

@@ -61,18 +61,6 @@ DWORD WINAPI Main(LPVOID)
         std::cout << std::format("Failed to initialize MinHook! Error: {}\n", MH_StatusToString(stat));
         return 1;
     }
-#ifdef T_F
-    //For Server Only.
-    uintptr_t CrashFix = FindPattern(Patterns::CrashPatch);
-    if (CrashFix) {
-        printf("Applying 4.5 Fix!\n");
-        *reinterpret_cast<char*>(CrashFix) = 0xE9;
-        *reinterpret_cast<char*>(CrashFix + 1) = 0x39;
-        *reinterpret_cast<char*>(CrashFix + 2) = 0x02;
-        *reinterpret_cast<char*>(CrashFix + 3) = 0x00;
-        *reinterpret_cast<char*>(CrashFix + 4) = 0x00;
-    }
-#endif
 
     if (!Setup())
     {

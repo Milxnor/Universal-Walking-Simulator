@@ -40,8 +40,10 @@ bool CanBuild(UObject* BuildingActor)
 		// if (Building->Member<IsDestroyedBitField>(("bDestroyed"))->bDestroyed)
 			// sExistingBuildings.erase(ExistingBuildings.begin() + i);
 
+		static auto BuildingTypeOffset = GetOffset(Building, "BuildingType");
+
 		if ((Helper::GetActorLocation(Building) == Helper::GetActorLocation(BuildingActor)) &&
-			(*Building->Member<EFortBuildingType>(("BuildingType")) == *BuildingActor->Member<EFortBuildingType>(("BuildingType"))))
+			(*(EFortBuildingType*)(__int64(Building) + BuildingTypeOffset) == *(EFortBuildingType*)(__int64(BuildingActor) + BuildingTypeOffset)))
 		{
 			bCanBuild = false;
 		}
@@ -97,19 +99,21 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 				static auto BuildingClassOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.BuildingClassData"), ("BuildingClass"));
 
-				auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+				auto Pawn = Helper::GetPawnFromController(Controller);
 
 				// auto BuildingClassData = Get<__int64>(BuildingClassDataOffset, CreateBuildingData);
 
 				// if (BuildingClassData)
 				{
 					// auto BuildingClass = Get<UObject*>(BuildingClassOffset, *BuildingClassData);
-					auto RemoteClientInfo = Controller->Member<UObject*>(("BroadcastRemoteClientInfo"));
+					static auto BroadcastRemoteClientInfoOffset = GetOffset(Controller, "BroadcastRemoteClientInfo");
+					auto RemoteClientInfo = (UObject**)(__int64(Controller) + BroadcastRemoteClientInfoOffset);
 
 					if (RemoteClientInfo && *RemoteClientInfo)
 					{
 						// auto BuildingClass = Controller->Member<UObject*>(("CurrentBuildableClass"));
-						auto BuildingClass = (*RemoteClientInfo)->Member<UObject*>(("RemoteBuildableClass"));
+						auto RemoteBuildableClassOffset = GetOffset(*RemoteClientInfo, "RemoteBuildableClass");
+						auto BuildingClass = (UObject**)(__int64(*RemoteClientInfo) + RemoteBuildableClassOffset);
 
 						// std::cout << ("BuildLocation Offset: ") << BuildLocOffset << '\n';
 						auto BuildLoc = Params->CreateBuildingData.BuildLoc; // (FVector*)(__int64(Params->CreateBuildingData) + BuildLocOffset)// Get<FVector>(BuildLocOffset, Params->CreateBuildingData);
@@ -139,7 +143,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 							{
 								auto MatInstance = Inventory::FindItemInInventory(Controller, MatDefinition);
 
-								if (*FFortItemEntry::GetCount(MatInstance->Member<__int64>(("ItemEntry"))) < 10)
+								if (*FFortItemEntry::GetCount(GetItemEntryFromInstance(MatInstance)) < 10)
 									return false;
 
 								// std::cout << ("Goofy class: ") << (*BuildingClass)->GetFullName();
@@ -153,8 +157,8 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 										bSuccessful = true;
 
-										if (!Helper::IsStructurallySupported(BuildingActor))
-											bSuccessful = false;
+										// if (!Helper::IsStructurallySupported(BuildingActor))
+											// bSuccessful = false;
 									}
 									else
 										bSuccessful = false;
@@ -224,7 +228,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 					{
 						auto MatInstance = Inventory::FindItemInInventory(Controller, MatDefinition);
 
-						if (*FFortItemEntry::GetCount(MatInstance->Member<__int64>(("ItemEntry"))) < 10)
+						if (*FFortItemEntry::GetCount(GetItemEntryFromInstance(MatInstance)) < 10)
 							return false;
 
 						UObject* BuildingActor = Easy::SpawnActor(BuildingClass, Params->BuildLoc, Params->BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
@@ -385,6 +389,8 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 			}
 
 			Rotation.Yaw += 90 * RotationIterations;
+
+			static auto TeamOffset = GetOffset(Params->BuildingActorToEdit, "Team");
 
 			auto Team = *Params->BuildingActorToEdit->Member<TEnumAsByte<uint8_t>>(("Team"));
 

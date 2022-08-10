@@ -45,11 +45,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>UWSac</TargetName>
+    <TargetName>gdeas3q</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>Project Reboot</TargetName>
+    <TargetName>gdeas3q</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -115,6 +115,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="anticheat.h" />
+    <ClInclude Include="offsets.h" />
     <ClInclude Include="UE\DataTables.h" />
     <ClInclude Include="discord.h" />
     <ClInclude Include="finder.h" />

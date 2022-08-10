@@ -17,6 +17,9 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 		auto DamageTagsOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("DamageTags"));
 		auto DamageTags = (FGameplayTagContainer*)(__int64(Parameters) + DamageTagsOffset);
 
+		auto DamageOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("Damage"));
+		auto Damage = (float*)(__int64(Parameters) + DamageOffset);
+
 		struct Bitfield
 		{
 			unsigned char                                      UnknownData09 : 1;                                        // 0x0544(0x0001)
@@ -43,13 +46,27 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 			// TODO: Not hardcode the PickaxeDef, do like slot 0  or something
 			static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 			auto CurrentWeapon = *(*InstigatedBy->Member<UObject*>(("MyFortPawn")))->Member<UObject*>(("CurrentWeapon"));
+
 			if (CurrentWeapon && *CurrentWeapon->Member<UObject*>(("WeaponData")) == PickaxeDef)
 			{
 				std::random_device rd; // obtain a random number from hardware
 				std::mt19937 gen(rd()); // seed the generator
-				std::uniform_int_distribution<> distr(3, 6); // define the range
+				std::uniform_int_distribution<> distr(4, 6); // define the range
 
 				auto Random = distr(gen);
+
+				auto HitWeakspot = (*Damage) == 100.f;
+
+				auto funne = distr(gen);
+
+				if (HitWeakspot)
+				{
+					std::random_device rd; // obtain a random number from hardware
+					std::mt19937 gen(rd()); // seed the generator
+					std::uniform_int_distribution<> distr(4, 5); // define the range
+
+					funne += distr(gen);
+				}
 
 				struct
 				{
@@ -59,7 +76,7 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 					bool                                               bDestroyed;                                               // (Parm, ZeroConstructor, IsPlainOldData)
 					bool                                               bJustHitWeakspot;                                         // (Parm, ZeroConstructor, IsPlainOldData)
 				} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(("ResourceType")),
-					 distr(gen), false, false };
+					 funne, false, HitWeakspot }; // ender weakspotrs
 
 				static auto ClientReportDamagedResourceBuilding = InstigatedBy->Function(("ClientReportDamagedResourceBuilding"));
 

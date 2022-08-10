@@ -102,6 +102,9 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     auto PlayerState = *PlayerController->Member<UObject*>(("PlayerState"));
 
+    if (!PlayerState) // this happened somehow
+        return PlayerController;
+
     if (Helper::Banning::IsBanned(Helper::GetfIP(PlayerState).Data.GetData()))
     {
         FString Reason;
@@ -303,12 +306,15 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         Inventory::GiveMats(PlayerController);
     }
 
-    if (std::stod(FN_Version) >= 7.40)
+    // ?????!?!?!?!?!?!!~:!:?!?!?!??!?!?!??!!??!>R":LQ#L>OLGQKigh0y3i1t-q2 BRAIN ARDS
+    
+    if (false && std::stod(FN_Version) >= 7.40)
     {
         static auto world = Helper::GetWorld();
         static auto gameState = *world->Member<UObject*>(("GameState"));
 
-        auto TeamIndex_ = 1;
+        static int TeamIDX = 3;
+
         auto AllTeams = gameState->Member<TArray<UObject*>>(("Teams"));
 
         std::cout << "AllTeams: " << AllTeams << '\n';
@@ -346,7 +352,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         auto oldTeamIndex = *TeamIndex;
         std::cout << "OldTeamIndex: " << (int)oldTeamIndex << '\n';
 
-        *TeamIndex = TeamIndex_;
+        *TeamIndex = TeamIDX;
 
         static int intdababy = 1;
 
@@ -381,6 +387,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         if (PlayerTeam)
         {
             (PlayerTeam->Member<TArray<UObject*>>("TeamMembers"))->Add(PlayerController);
+            *PlayerTeam->Member<uint8_t>("Team") = TeamIDX;
             static auto OnRepPlayerFn = PlayerState->Function(("OnRep_PlayerTeam"));
 
             if (OnRepPlayerFn)
@@ -437,36 +444,40 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         auto TeamDataArr = FPrivateTeamDataArray();
         auto TeamDataItem = FPrivateTeamDataItem();
 
-        if (false) // (privTeamInfo)
+        // if (false) // (privTeamInfo)
         {
             auto RepData = privTeamInfo->Member<FPrivateTeamDataArray>("RepData");
-            *RepData = TeamDataArr;
-            std::cout << "RepData: " << RepData << '\n';
+            std::cout << "OG RepData: " << RepData << '\n';
+
+            if (!RepData)
+                RepData = &TeamDataArr;
+
+            std::cout << "New RepData: " << RepData << '\n';
 
             static auto ItemsOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PrivateTeamDataArray", "Items");
 
-            FPrivateTeamDataItem currentItem = TeamDataItem;
-            std::cout << "currentitem: " << &currentItem << '\n';
+            // FPrivateTeamDataItem currentItem = TeamDataItem;
+            // std::cout << "currentitem: " << &currentItem << '\n';
 
-            currentItem.Value = intdababy; // ???
-            static auto PrivateTeamDataItemClass = FindObject("ScriptStruct /Script/FortniteGame.PrivateTeamDataItem");
-            std::cout << "Sizeof PrivateTeamIdataitem: " << GetSizeOfStruct(PrivateTeamDataItemClass) << '\n';
-            static auto PlayerIdOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PrivateTeamDataItem", "PlayerID");
+            // currentItem.Value = intdababy; // ???
+            // static auto PrivateTeamDataItemClass = FindObject("ScriptStruct /Script/FortniteGame.PrivateTeamDataItem");
+            // std::cout << "Sizeof PrivateTeamIdataitem: " << GetSizeOfStruct(PrivateTeamDataItemClass) << '\n';
+            // static auto PlayerIdOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PrivateTeamDataItem", "PlayerID");
 
-            std::cout << "PlayerIdoffset: " << PlayerIdOffset << '\n';
+            // std::cout << "PlayerIdoffset: " << PlayerIdOffset << '\n';
 
             // i dont think this is right
-            *(__int64*)(__int64(&currentItem) + PlayerIdOffset) = *PlayerState->Member<__int64>(("UniqueId"));
+            // *(__int64*)(__int64(&currentItem) + PlayerIdOffset) = *PlayerState->Member<__int64>(("UniqueId"));
 
             auto Items = (TArray<FPrivateTeamDataItem>*)(__int64(&*RepData) + ItemsOffset); // &RepData->Items;
 
-            std::cout << "ITems: " << Items << '\n';
+            // std::cout << "ITems: " << Items << '\n';
 
             if (Items)
             {
-                Items->Add(currentItem);
+                // Items->Add(currentItem);
                 MarkArrayDirty(RepData);
-                MarkItemDirty(RepData, &currentItem);
+                // MarkItemDirty(RepData, &currentItem);
             }
 
             std::cout << "did funn\n";
@@ -627,7 +638,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
         return;
     case 9: // NMT_Join
     {
-        if (Engine_Version == 421)
+        if (Engine_Version == 421 || Engine_Version < 420)
         {
             auto ConnectionPC = Connection->Member<UObject*>(("PlayerController"));
             if (!*ConnectionPC)

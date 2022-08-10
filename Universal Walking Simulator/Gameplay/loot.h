@@ -69,6 +69,12 @@ namespace LootingV2
 			return 0;
 		}
 
+		if (!StaticFindObjectO)
+		{
+			std::cout << "Not going to initialize looting because it will be too slow!\n";
+			return 0;
+		}
+
 		LootingV2::bInitialized = true;
 
 		for (int i = 0; i < 2; i++)
@@ -102,7 +108,7 @@ namespace LootingV2
 			auto RowName = RowFName.ToString();
 			auto LootPackageDataOfRow = Pair.Second; // ScriptStruct FortniteGame.FortLootPackageData
 
-			if (LootPackageDataOfRow && RowName.starts_with("WorldList.AthenaLoot")) // pretty sure this is wrong
+			if (LootPackageDataOfRow && RowName.starts_with("WorldList.AthenaLoot")) // pretty sure this is wrong // todo: check rowisa athenaloot package or something io think
 			{
 				static auto off = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "ItemDefinition");
 				static auto countOff = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "Count");
@@ -123,6 +129,7 @@ namespace LootingV2
 
 					if (Count)
 						currentItem.DropCount = *Count;
+
 					if (Weight)
 						currentItem.Weight = *Weight;
 
@@ -315,7 +322,7 @@ namespace LootingV2
 
 						Helper::SummonPickup(nullptr, FishingRodWID, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset, 1);
 						Helper::SummonPickup(nullptr, FishingRodWID, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset, 1);
-						Helper::DestroyActor(BuildingContainer);
+						Helper::DestroyActor(BuildingContainer); // todo: not
 					}
 				}
 
@@ -330,7 +337,7 @@ namespace LootingV2
 				}
 			}
 
-			else if (!BuildingContainerName.contains(("Door")) && !BuildingContainerName.contains(("Wall")))
+			if (!BuildingContainerName.contains(("Door")) && !BuildingContainerName.contains(("Wall")))
 			{
 				std::cout << ("Container: ") << BuildingContainerName << "!\n";
 			}

@@ -102,41 +102,111 @@ TArray<UObject*> GetAllActors(UObject* World)
 
     if (!*OwningWorld || !OwningWorld) return nullptr;
 
-    return (TArray<UObject*>*)(&*OwningWorld - 2); */
+    return (TArray<UObject*>*)(__int64(&*OwningWorld) - 32); */
 
-    static auto ActorsClass = FindObject(("Class /Script/Engine.Actor"));
-    auto AllActors = Helper::GetAllActorsOfClass(ActorsClass);
+    static auto ActorsClass = FindObjectOld("Class /Script/Engine.Actor", true);
+    auto AllActors = Helper::GetAllActorsOfClass(ActorsClass, World);
     return AllActors;
 }
 
+FNetworkObjectList* GetNetworkObjectList(UObject* NetDriver)
+{
+    auto Offset = 0;
+
+    if (Engine_Version == 419) // got on 2.4.2
+        Offset = 0x490;
+
+    if (Engine_Version < 420)
+        return ((TSharedPtr<FNetworkObjectList>*)(__int64(NetDriver) + Offset))->Get();
+    else
+        return ((TSharedPtrOld<FNetworkObjectList>*)(__int64(NetDriver) + Offset))->Get();
+}
+
+struct Bitfield_242
+{
+    unsigned char                                      bHidden : 1;                                              // 0x0084(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, Net)
+    unsigned char                                      bNetTemporary : 1;                                        // 0x0084(0x0001)
+    unsigned char                                      bNetStartup : 1;                                          // 0x0084(0x0001)
+    unsigned char                                      bOnlyRelevantToOwner : 1;                                 // 0x0084(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
+    unsigned char                                      bAlwaysRelevant : 1;                                      // 0x0084(0x0001) (Edit, BlueprintVisible, DisableEditOnInstance)
+    unsigned char                                      bReplicateMovement : 1;                                   // 0x0084(0x0001) (Edit, Net, DisableEditOnInstance)
+    unsigned char                                      bTearOff : 1;                                             // 0x0084(0x0001) (Net)
+    unsigned char                                      bExchangedRoles : 1;                                      // 0x0084(0x0001) (Transient)
+};
+
+struct Bitfield2_242
+{
+    unsigned char                                      AutoDestroyWhenFinished : 1;                             // 0x013C(0x0001) (BlueprintVisible)
+    unsigned char                                      bCanBeDamaged : 1;                                        // 0x013C(0x0001) (Edit, BlueprintVisible, Net, SaveGame)
+    unsigned char                                      bActorIsBeingDestroyed : 1;                               // 0x013C(0x0001) (Transient, DuplicateTransient)
+    unsigned char                                      bCollideWhenPlacing : 1;                                  // 0x013C(0x0001)
+    unsigned char                                      bFindCameraComponentWhenViewTarget : 1;                   // 0x013C(0x0001) (Edit, BlueprintVisible)
+    unsigned char                                      bRelevantForNetworkReplays : 1;                           // 0x013C(0x0001)
+    unsigned char                                      bGenerateOverlapEventsDuringLevelStreaming : 1;           // 0x013C(0x0001) (Edit, BlueprintVisible)
+    unsigned char                                      bCanBeInCluster : 1;
+};
+
 void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderList)
 {
-    static auto World = *NetDriver->Member<UObject*>(("World"));
+    static auto WorldOffset = GetOffset(NetDriver, "World");
+    auto World = *(UObject**)(__int64(NetDriver) + WorldOffset);
 
-    if (!World || !NetDriver)
+    if (!World)
         return;
 
-    // auto& List = ObjectList;
+    /* auto ObjectList = GetNetworkObjectList(NetDriver);
+    auto ActiveNetworkObjects = ObjectList->ActiveNetworkObjects;
+
+    std::cout << ("NumActors: ") << ActiveNetworkObjects.Elements.Data.Num() << '\n';
+
+    for (int j = 0; j < ActiveNetworkObjects.Elements.Data.Num(); j++)
+    {
+        auto& ActorIdk = ActiveNetworkObjects.Elements.Data.At(j);
+        auto ActorInfo = ActorIdk.ElementData.Value.Get();
+        auto Actor = ActorInfo->Actor; */
 
     TArray<UObject*> Actors = GetAllActors(World);
 
     std::cout << ("NumActors: ") << Actors.Num() << '\n';
 
-    for (int j = 0; j < Actors.Num(); j++)
+    for (int i = 0; i < Actors.Num(); i++)
     {
-        auto Actor = Actors.At(j);
+        auto Actor = Actors.At(i);
 
-        if (!Actor || *Actor->Member<ENetRole>(("RemoteRole")) == ENetRole::ROLE_None)
+        if (!Actor)
             continue;
 
-        // TODO: Fix because bitfields makes it replicate A LOT of actors that should NOT be replicated
-        if (*Actor->Member<ENetDormancy>(("NetDormancy")) == ENetDormancy::DORM_Initial && *Actor->Member<char>(("bNetStartup")))
-            continue;
+        // std::cout << "RemoteRoleOffset: " << RemoteRoleOffset << '\n';
+
+        static auto RemoteRoleOffset = GetOffset(Actor, "RemoteRole");
+
+        if (((TEnumAsByte<ENetRole>*)(__int64(Actor) + RemoteRoleOffset))->Get() == ENetRole::ROLE_None)
         {
-            CallPreReplication(Actor, NetDriver);
-            OutConsiderList.push_back(Actor);
+            // std::cout << "actor: " << Actor << '\n';
+            continue;
         }
+
+        static auto bActorIsBeingDestroyedOffset = GetOffset(Actor, "bActorIsBeingDestroyed");
+
+        if ((((Bitfield2_242*)(__int64(Actor) + bActorIsBeingDestroyedOffset))->bActorIsBeingDestroyed))
+        {
+            std::cout << "bActorIsBeingDestroyed!\n";
+            continue;
+        }
+
+        static auto NetDormancyOffset = GetOffset(Actor, "NetDormancy");
+        static auto bNetStartupOffset = GetOffset(Actor, "bNetStartup");
+
+        if ((*(ENetDormancy*)(__int64(Actor) + NetDormancyOffset) == ENetDormancy::DORM_Initial) && ((Bitfield_242*)(__int64(Actor) + bNetStartupOffset))->bNetStartup)
+        {
+            continue;
+        }
+
+        CallPreReplication(Actor, NetDriver);
+        OutConsiderList.push_back(Actor);
     }
+
+    Actors.Free();
 }
 
 
@@ -149,7 +219,8 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 
     if (Engine_Version >= 420)
     {
-        auto ReplicationDriver = NetDriver->Member<UObject*>(("ReplicationDriver"));
+        static auto ReplicationDriverOffset = GetOffset(NetDriver, "ReplicationDriver");
+        auto ReplicationDriver = (UObject**)(__int64(NetDriver) + ReplicationDriverOffset);
 
         if (ReplicationDriver && *ReplicationDriver)
         {
@@ -164,12 +235,10 @@ int32_t ServerReplicateActors(UObject* NetDriver)
     }
 
     // ReplicationFrame
-#ifdef N_T
-    ++*(int32_t*)(NetDriver + 0x2C8);
-#endif
-#ifdef F_TF
-    ++*(int32_t*)(NetDriver + 0x410);
-#endif
+    if (Engine_Version == 419)
+        ++*(int32_t*)(NetDriver + 0x2C8);
+    if (Engine_Version == 424)
+        ++*(int32_t*)(NetDriver + 0x410);
 
     auto NumClientsToTick = PrepConnections(NetDriver);
 
@@ -191,10 +260,13 @@ int32_t ServerReplicateActors(UObject* NetDriver)
         if (!Connection)
             continue;
 
+        static auto ViewTargetOffset = GetOffset(Connection, "ViewTarget");
+        auto ViewTarget = (UObject**)(__int64(Connection) + ViewTargetOffset);
+
         if (i >= NumClientsToTick)
             break; // Only tick on ready connections
 
-        else if (*Connection->Member<UObject*>(("ViewTarget")))
+        else if (ViewTarget && *ViewTarget)
         {
             /*
             static auto ConnectionViewers = GetWorld()->PersistentLevel->WorldSettings->ReplicationViewers;
@@ -210,7 +282,8 @@ int32_t ServerReplicateActors(UObject* NetDriver)
             }
             */
 
-            auto PlayerController = *Connection->Member<UObject*>(("PlayerController"));
+            static auto PlayerControllerOffset = GetOffset(Connection, "PlayerController");
+            auto PlayerController = *(UObject**)(__int64(Connection) + PlayerControllerOffset);
 
             if (SendClientAdjustment && PlayerController)
                 SendClientAdjustment(PlayerController); // Sending adjustments to children is for splitscreen
@@ -243,17 +316,20 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 
                    //  FName ActorName = FName(ActorEName);
 
-                    FName ActorName(102);
+                    FName ActorName(102); // Helper::StringToName(idk)
 
-                    std::cout << ("Comparison Index: ") << ActorName.ComparisonIndex << '\n';
-                    std::cout << ("Number: ") << ActorName.Number << '\n';
+                    // std::cout << ("Comparison Index: ") << ActorName.ComparisonIndex << '\n';
+                    // std::cout << ("Number: ") << ActorName.Number << '\n';
 
-                    Channel = CreateChannelByName(Connection, &ActorName, EChannelCreateFlags::OpenedLocally, -1);
+                    if (Engine_Version >= 422)
+                        Channel = CreateChannelByName(Connection, &ActorName, EChannelCreateFlags::OpenedLocally, -1);
+                    else
+                        Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
 #endif
                     if (Channel)
                     {
                         SetChannelActor(Channel, Actor);
-                        std::cout << ("Created Channel for Actor => ") << Actor->GetFullName() << '\n';
+                        // std::cout << ("Created Channel for Actor => ") << Actor->GetFullName() << '\n';
                     }
                     else
                     {
