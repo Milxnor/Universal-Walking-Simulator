@@ -23,20 +23,16 @@ static UObject* GetLootPackages()
 
 	std::string Default = "/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
-	auto LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
-
-	if (!LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex)
-	{
-		std::cout << std::format("[WARNING] LootPackages comparison index is null! Defaulting to {}.\n", Default);
-		LootPackagesName = Default;
-		// return nullptr;
+	auto LootPackagesName = Default; 
+	if (LootPackagesSoft) {
+		LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
 	}
 
 	std::cout << "AssetPathName: " << LootPackagesName << '\n';
 
 	static auto ClassToUse = LootPackagesName.ends_with("_Client") ? FindObject("Class /Script/Engine.DataTable") : FindObject("Class /Script/Engine.CompositeDataTable"); // cursed
 
-	auto LootPackages = StaticLoadObjectO ? StaticLoadObject(ClassToUse, nullptr, LootPackagesSoft->ObjectID.AssetPathName.ToString()) : nullptr; // some versions its loaded idk why but some not
+	auto LootPackages = StaticLoadObjectO ? StaticLoadObject(ClassToUse, nullptr, LootPackagesName) : nullptr; // some versions its loaded idk why but some not
 	std::cout << "LootPackages: " << LootPackages << '\n';
 
 	if (LootPackages)

@@ -324,7 +324,7 @@ void InitializePatterns()
         std::string PostRenderSig = "";
         std::string ReplicationGraph_EnableSig = "";
         std::string ValidENameSig = "";
-        std::string StaticLoadObjectSig = "";
+        std::string StaticLoadObjectSig = "4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 78 45 33 F6 48 8D 05 ? ? ? ?";
     // }
 
     if (Engine_Version == 420)
@@ -373,6 +373,7 @@ void InitializePatterns()
         malformedSig = ("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 40 32 F6 0F 29 7C 24 ? 48 8B FA 44 0F 29 44 24 ? 48 8B D9 40 38 72 28 7C 51 4C 8B 92 ? ? ? ? 4C 3B 92 ? ? ? ? 7C 0F");
         SetReplicationDriverSig = ("40 56 41 56 48 83 EC 28 48 8B F1 4C 8B F2 48 8B 89 ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 8B 01 48 89 5C 24 ? 48 89 6C 24 ? 4C 89 7C 24 ? FF 90 ? ? ? ? 48 8B 9E ? ? ? ? 45 33 FF");
         FixCrashSig = ("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 8B 41 0C 45 33 F6");
+        StaticLoadObjectSig = "4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 48 8B EC";
         NoReserveSig = ("aaaaa");
         ValidationFailureSig = ("bbbb");
     }
@@ -813,6 +814,9 @@ void InitializePatterns()
         HandleReloadCost = decltype(HandleReloadCost)(HandleReloadCostAddr);
     
     StaticLoadObjectAddr = FindPattern(StaticLoadObjectSig);
+    if (!StaticLoadObjectAddr) {
+        StaticLoadObjectAddr = FindPattern("4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 33 D2");
+    }
     CheckPattern(("StaticLoadObject"), StaticLoadObjectAddr, &StaticLoadObjectO);
 
     if (Engine_Version < 424)

@@ -470,6 +470,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
             std::cout << ("Unable to find OnRep_TeamIndex!\n");
     }
 
+    Inventory::Update(PlayerController);
+
     std::cout << ("Spawned Player!\n");
 
     return PlayerController;

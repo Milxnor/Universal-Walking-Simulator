@@ -50,7 +50,14 @@ inline void initStuff()
 			*gameState->Member<float>(("AircraftStartTime")) = 99999.0f;
 			*gameState->Member<float>(("WarmupCountdownEndTime")) = 99999.0f;
 
-			*gameState->Member<EFriendlyFireType>(("FriendlyFireType")) = EFriendlyFireType::On;
+			EFriendlyFireType* FFT = gameState->Member<EFriendlyFireType>(("FriendlyFireType"));
+			//Super scuffed way of checking if its valid.
+			if (FFT && __int64(FFT) != __int64(gameState)) {
+				*gameState->Member<EFriendlyFireType>(("FriendlyFireType")) = EFriendlyFireType::On;
+			}
+			else {
+				std::cout << "FriendlyFireType is not valid!" << std::endl;
+			}
 
 			if (Engine_Version >= 420)
 			{
@@ -92,6 +99,7 @@ inline void initStuff()
 				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
 				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
 				static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
+				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Carmine/Playlist_Carmine.Playlist_Carmine"));
 				// static auto Playlist = FindObject(("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
 				 
 				if (std::stod(FN_Version) >= 7.00)
