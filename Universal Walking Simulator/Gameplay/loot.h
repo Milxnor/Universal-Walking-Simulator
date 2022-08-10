@@ -102,7 +102,7 @@ namespace LootingV2
 			auto RowName = RowFName.ToString();
 			auto LootPackageDataOfRow = Pair.Second; // ScriptStruct FortniteGame.FortLootPackageData
 
-			if (LootPackageDataOfRow && RowName.starts_with("WorldList.AthenaLoot"))
+			if (LootPackageDataOfRow && RowName.starts_with("WorldList.AthenaLoot")) // pretty sure this is wrong
 			{
 				static auto off = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "ItemDefinition");
 				static auto countOff = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "Count");
@@ -191,6 +191,8 @@ namespace LootingV2
 
 			current++;
 		}
+
+		return nullptr;
 	}
 
 	static void HandleSearch(UObject* BuildingContainer)

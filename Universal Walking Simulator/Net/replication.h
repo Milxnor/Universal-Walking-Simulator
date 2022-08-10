@@ -145,22 +145,24 @@ int32_t ServerReplicateActors(UObject* NetDriver)
     if (!NetDriver)
         return -1;
 
-#if !defined(N_T) // && !defined(F_TF)
 	// Supports replicationgraph
 
-	auto ReplicationDriver = NetDriver->Member<UObject*>(("ReplicationDriver"));
+    if (Engine_Version >= 420)
+    {
+        auto ReplicationDriver = NetDriver->Member<UObject*>(("ReplicationDriver"));
 
-	if (ReplicationDriver && *ReplicationDriver)
-	{
-		if (RepGraph_ServerReplicateActors)
-		{
-			RepGraph_ServerReplicateActors(*ReplicationDriver);
-			return 50; // pretty sure replicationdriver ticks like 50 connections max
-		}
-	}
+        if (ReplicationDriver && *ReplicationDriver)
+        {
+            if (RepGraph_ServerReplicateActors)
+            {
+                RepGraph_ServerReplicateActors(*ReplicationDriver);
+                return 50; // pretty sure replicationdriver ticks like 50 connections max
+            }
+        }
 
-	return 0;
-#endif
+        return -1;
+    }
+
     // ReplicationFrame
 #ifdef N_T
     ++*(int32_t*)(NetDriver + 0x2C8);

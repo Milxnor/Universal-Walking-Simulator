@@ -14,17 +14,24 @@ static uint8_t* FindRow(UObject* DataTable, const std::string& RowName)
 
 }
 
-// this dont really berlong here
+// this dont really belong here
 static UObject* GetLootPackages()
 {
+	if (Engine_Version < 420)
+		return nullptr;
+
 	UObject* Playlist = Helper::GetPlaylist();
+
+	if (!Playlist)
+		return nullptr;
 
 	auto LootPackagesSoft = Playlist->Member<TSoftObjectPtr>(_("LootPackages"));
 
 	std::string Default = "/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
-	auto LootPackagesName = Default; 
-	if (LootPackagesSoft) {
+	auto& LootPackagesName = Default;
+
+	if (LootPackagesSoft && LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex) {
 		LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
 	}
 

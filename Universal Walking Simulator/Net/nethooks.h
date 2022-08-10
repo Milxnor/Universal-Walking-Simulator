@@ -163,7 +163,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     {
         auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
 
-        if (AbilitySystemComponent && FnVerDouble < 14 && Engine_Version >= 424)
+        if (AbilitySystemComponent && FnVerDouble < 14)
         {
             std::cout << ("Granting abilities!\n");
             if (FnVerDouble < 8)
@@ -248,14 +248,16 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                     GrantGameplayAbility(Pawn, ExitVehicleAbility);
                 if (InVehicleAbility)
                     GrantGameplayAbility(Pawn, InVehicleAbility);
-            // if (FnVerDouble < 9)
+            */
+
+            }
+
+            if (Engine_Version < 424)
             {
                 static auto EmoteAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
                 if (EmoteAbility)
                     GrantGameplayAbility(Pawn, EmoteAbility);
-            } */
-
             }
 
             std::cout << ("Granted Abilities!\n");
@@ -266,7 +268,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     else
         std::cout << ("Unable to grant abilities due to no GiveAbility!\n");
 
-    if (std::floor(FnVerDouble) != 9 && std::floor(FnVerDouble) != 10) // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
+    if (Engine_Version != 421 && std::floor(FnVerDouble) != 9 && std::floor(FnVerDouble) != 10 && Engine_Version >= 420) // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
     {
         static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
         static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -314,6 +316,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         static auto teaminfclass = FindObject("Class /Script/FortniteGame.FortTeamInfoAthena");
         static auto teaminfo = Easy::SpawnActor(teaminfclass);
 
+        auto privTeamInfo = *PlayerState->Member<UObject*>(("PlayerTeamPrivate")); // *(*PlayerTeam)->Member<UObject*>(("PrivateInfo"));
+
+        auto PlayerTeam = *privTeamInfo->Member<UObject*>(_("TeamInfo")); // PlayerState->Member<UObject*>(("PlayerTeam"));
+        // auto teaminfo = PlayerTeam;
+        // auto teaminfo = *PlayerTeam;
+
         std::cout << "teaminfo: " << teaminfo << '\n';
 
         static bool bDidAdd = false;
@@ -327,7 +335,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         }
 
         static auto privteaminfclass = FindObject("Class /Script/FortniteGame.FortTeamPrivateInfo");
-        static auto privTeamInfo = FindObject(".FortTeamPrivateInfo_"); // Easy::SpawnActor(privteaminfclass);
+        // static auto privTeamInfo = Easy::SpawnActor(privteaminfclass);
 
         std::cout << "privTeamInfo: " << privTeamInfo << '\n';
 
@@ -346,6 +354,73 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
         std::cout << "Squad Id: " << intdababy << '\n';
 
+        ++intdababy;
+
+        *PlayerState->Member<ETeamMemberState>(("TeamMemberState")) = ETeamMemberState::None;
+        *PlayerState->Member<ETeamMemberState>(("ReplicatedTeamMemberState")) = ETeamMemberState::None;
+
+        // *PlayerTeam = teaminfo; // ->At(*TeamIndex); // TArray<class AFortTeamInfo*>
+        std::cout << "PlayerTeam: " << PlayerTeam << '\n';
+
+        if (PlayerTeam)
+            std::cout << "PlayerTeam Name: " << (PlayerTeam)->GetFullName() << '\n';
+
+        // *(*PlayerTeam)->Member<uint8_t>(_("Team")) = *TeamIndex;
+
+        *(PlayerTeam)->Member<UObject*>(("PrivateInfo")) = privTeamInfo;
+        auto PrivateInfo = (PlayerTeam)->Member<UObject*>(("PrivateInfo"));
+
+        if (PrivateInfo && *PrivateInfo)
+            *PlayerState->Member<UObject*>(("PlayerTeamPrivate")) = *PrivateInfo;
+        else
+            std::cout << "Invalid PrivateInfo!\n";
+
+        if (privTeamInfo)
+            *privTeamInfo->Member<UObject*>(_("TeamInfo")) = teaminfo;
+
+        if (PlayerTeam)
+        {
+            (PlayerTeam->Member<TArray<UObject*>>("TeamMembers"))->Add(PlayerController);
+            static auto OnRepPlayerFn = PlayerState->Function(("OnRep_PlayerTeam"));
+
+            if (OnRepPlayerFn)
+                PlayerState->ProcessEvent(OnRepPlayerFn);
+            else
+                std::cout << ("Unable to find OnRepPlayerFn!\n");
+        }
+
+        static auto OnRep_TeamIndex = PlayerState->Function(("OnRep_TeamIndex"));
+
+        unsigned char OldVal = oldTeamIndex;
+
+        if (OnRep_TeamIndex)
+            PlayerState->ProcessEvent(OnRep_TeamIndex, &OldVal);
+        else
+            std::cout << ("Unable to find OnRep_TeamIndex!\n");
+
+        /* static auto OnRep_ChangeTeamInfo = PlayerState->Function(_("OnRep_ChangeTeamInfo"));
+
+        if (OnRep_ChangeTeamInfo)
+            PlayerState->ProcessEvent(OnRep_ChangeTeamInfo);
+        else
+            std::cout << ("Unable to find OnRep_ChangeTeamInfo!\n"); */
+
+        static auto OnRepSquadIdFn = PlayerState->Function(("OnRep_SquadId"));
+
+        if (OnRepSquadIdFn)
+            PlayerState->ProcessEvent(OnRepSquadIdFn);
+        else
+            std::cout << ("Unable to find OnRep_SquadId!\n");
+
+        // onrepplayerteamprivate
+
+        static auto OnRep_PlayerTeamPrivate = PlayerState->Function("OnRep_PlayerTeamPrivate");
+
+        if (OnRep_PlayerTeamPrivate)
+            PlayerState->ProcessEvent(OnRep_PlayerTeamPrivate);
+        else
+            std::cout << "Unable to find OnRep_PlayerTeamPrivate!\n";
+
         struct FPrivateTeamDataItem : FFastArraySerializerItem {
             float Value; // 0x0c(0x04)
             char PlayerId[0x28];
@@ -362,112 +437,45 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         auto TeamDataArr = FPrivateTeamDataArray();
         auto TeamDataItem = FPrivateTeamDataItem();
 
-        if (privTeamInfo)
+        if (false) // (privTeamInfo)
         {
-            *privTeamInfo->Member<UObject*>(_("TeamInfo")) = teaminfo;
+            auto RepData = privTeamInfo->Member<FPrivateTeamDataArray>("RepData");
+            *RepData = TeamDataArr;
+            std::cout << "RepData: " << RepData << '\n';
 
-            // idk whats wrong
-            // if (false)
+            static auto ItemsOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PrivateTeamDataArray", "Items");
+
+            FPrivateTeamDataItem currentItem = TeamDataItem;
+            std::cout << "currentitem: " << &currentItem << '\n';
+
+            currentItem.Value = intdababy; // ???
+            static auto PrivateTeamDataItemClass = FindObject("ScriptStruct /Script/FortniteGame.PrivateTeamDataItem");
+            std::cout << "Sizeof PrivateTeamIdataitem: " << GetSizeOfStruct(PrivateTeamDataItemClass) << '\n';
+            static auto PlayerIdOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PrivateTeamDataItem", "PlayerID");
+
+            std::cout << "PlayerIdoffset: " << PlayerIdOffset << '\n';
+
+            // i dont think this is right
+            *(__int64*)(__int64(&currentItem) + PlayerIdOffset) = *PlayerState->Member<__int64>(("UniqueId"));
+
+            auto Items = (TArray<FPrivateTeamDataItem>*)(__int64(&*RepData) + ItemsOffset); // &RepData->Items;
+
+            std::cout << "ITems: " << Items << '\n';
+
+            if (Items)
             {
-
-                auto RepData = privTeamInfo->Member<FPrivateTeamDataArray>("RepData");
-                *RepData = TeamDataArr;
-                std::cout << "RepData: " << RepData << '\n';
-
-                static auto ItemsOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PrivateTeamDataArray", "Items");
-
-                FPrivateTeamDataItem currentItem = TeamDataItem;
-                std::cout << "currentitem: " << &currentItem << '\n';
-
-                currentItem.Value = intdababy; // ???
-                static auto PrivateTeamDataItemClass = FindObject("ScriptStruct /Script/FortniteGame.PrivateTeamDataItem");
-                std::cout << "Sizeof PrivateTeamIdataitem: " << GetSizeOfStruct(PrivateTeamDataItemClass) << '\n';
-                static auto PlayerIdOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.PrivateTeamDataItem", "PlayerID");
-
-                std::cout << "PlayerIdoffset: " << PlayerIdOffset << '\n';
-
-                // i dont think this is right
-                *(__int64*)(__int64(&currentItem) + PlayerIdOffset) = *PlayerState->Member<__int64>(("UniqueId"));
-
-                auto Items = (TArray<FPrivateTeamDataItem>*)(__int64(&*RepData) + ItemsOffset); // &RepData->Items;
-
-                std::cout << "ITems: " << Items << '\n';
-
-                if (Items)
-                {
-                    Items->Add(currentItem);
-                    MarkArrayDirty(RepData);
-                    MarkItemDirty(RepData, &currentItem);
-                }
-
-                static auto OnRep_RepData = privTeamInfo->Function(("OnRep_RepData"));
-
-                if (OnRep_RepData)
-                    privTeamInfo->ProcessEvent(OnRep_RepData);
-
-                std::cout << "did funn\n";
+                Items->Add(currentItem);
+                MarkArrayDirty(RepData);
+                MarkItemDirty(RepData, &currentItem);
             }
+
+            std::cout << "did funn\n";
         }
 
-        ++intdababy;
+        static auto OnRep_RepData = privTeamInfo->Function(("OnRep_RepData"));
 
-        *PlayerState->Member<ETeamMemberState>(("TeamMemberState")) = ETeamMemberState::None;
-        *PlayerState->Member<ETeamMemberState>(("ReplicatedTeamMemberState")) = ETeamMemberState::None;
-
-        auto PlayerTeam = PlayerState->Member<UObject*>(("PlayerTeam"));
-
-        *PlayerTeam = teaminfo; // ->At(*TeamIndex); // TArray<class AFortTeamInfo*>
-        std::cout << "PlayerTeam: " << PlayerTeam << '\n';
-        std::cout << "PlayerTeam DeRef: " << *PlayerTeam << '\n';
-
-        if (PlayerTeam && *PlayerTeam)
-            std::cout << "PlayerTeam Name: " << (*PlayerTeam)->GetFullName() << '\n';
-
-        // *(*PlayerTeam)->Member<uint8_t>(_("Team")) = *TeamIndex;
-
-        *(*PlayerTeam)->Member<UObject*>(("PrivateInfo")) = privTeamInfo;
-        auto PrivateInfo = (*PlayerTeam)->Member<UObject*>(("PrivateInfo"));
-
-        if (PrivateInfo && *PrivateInfo)
-            *PlayerState->Member<UObject*>(("PlayerTeamPrivate")) = *PrivateInfo;
-        else
-            std::cout << "Invalid PrivateInfo!\n";
-
-        static auto OnRep_ChangeTeamInfo = PlayerState->Function(_("OnRep_ChangeTeamInfo"));
-
-        if (OnRep_ChangeTeamInfo)
-            PlayerState->ProcessEvent(OnRep_ChangeTeamInfo);
-        else
-            std::cout << ("Unable to find OnRep_ChangeTeamInfo!\n");
-
-        static auto OnRepSquadIdFn = PlayerState->Function(("OnRep_SquadId"));
-
-        if (OnRepSquadIdFn)
-            PlayerState->ProcessEvent(OnRepSquadIdFn);
-        else
-            std::cout << ("Unable to find OnRep_SquadId!\n");
-
-        if (PlayerTeam && *PlayerTeam)
-        {
-            (*PlayerTeam)->Member<TArray<UObject*>>(("TeamMembers"))->Add(PlayerController);
-            static auto OnRepPlayerFn = PlayerState->Function(("OnRep_PlayerTeam"));
-
-            if (OnRepPlayerFn)
-                PlayerState->ProcessEvent(OnRepPlayerFn);
-            else
-                std::cout << ("Unable to find OnRepPlayerFn!\n");
-        }
-
-        // onrepplayerteamprivate
-
-        static auto OnRep_TeamIndex = PlayerState->Function(("OnRep_TeamIndex"));
-
-        unsigned char OldVal = oldTeamIndex;
-
-        if (OnRep_TeamIndex)
-            PlayerState->ProcessEvent(OnRep_TeamIndex, &OldVal);
-        else
-            std::cout << ("Unable to find OnRep_TeamIndex!\n");
+        if (OnRep_RepData)
+            privTeamInfo->ProcessEvent(OnRep_RepData);
     }
 
     Inventory::Update(PlayerController);

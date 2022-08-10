@@ -33,6 +33,30 @@ inline void initStuff()
 		auto world = Helper::GetWorld();
 		auto gameState = *world->Member<UObject*>(("GameState"));
 
+		/*
+		
+		if (Engine_Version == 422) // works for 7.3 by android
+		{
+			struct test {
+				uint8_t _idk0 : 1;
+				uint8_t bIsRunningConstructionScript : 1;
+				uint8_t _idk2 : 1;
+				uint8_t _idk3 : 1;
+				uint8_t _idk4 : 1;
+				uint8_t _idk5 : 1;
+				uint8_t _idk6 : 1;
+				uint8_t _idk7 : 1;
+			};
+
+			// fixes the crash on floor loot
+
+			auto aa = *(test*)(world + 0x10C);
+			aa.bIsRunningConstructionScript = false;
+			*(test*)(world + 0x10C) = aa;
+		}
+
+		*/
+
 		if (gameState)
 		{
 			auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
@@ -84,6 +108,7 @@ inline void initStuff()
 					//If This is called on Seasons 4, 6, or 7 then Setting The Playlist Crashes.
 					AuthGameMode->ProcessEvent(AuthGameMode->Function(("StartMatch")), nullptr);
 				}
+
 				// *AuthGameMode->Member<bool>(("bAlwaysDBNO")) = true;
 
 				// Is this correct?
@@ -96,13 +121,13 @@ inline void initStuff()
 				auto SSVFn = *AuthGameMode->Member<bool>(("ShouldSpawnVehicle")) = true;*/
 				
 				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
-				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
+				static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
 				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
-				static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
+				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
 				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Carmine/Playlist_Carmine.Playlist_Carmine"));
 				// static auto Playlist = FindObject(("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
 				 
-				if (std::stod(FN_Version) >= 7.00)
+				if (std::stod(FN_Version) >= 6.10) // WRONG
 				{
 					auto OnRepPlaylist = gameState->Function(("OnRep_CurrentPlaylistInfo"));
 
@@ -194,6 +219,10 @@ inline void initStuff()
 		}
 		 
 		LootingV2::InitializeWeapons(nullptr);
+
+		/* auto bUseDistanceBasedRelevancy = (*world->Member<UObject*>("NetworkManager"))->Member<bool>("bUseDistanceBasedRelevancy");
+		std::cout << "bUseDistanceBasedRelevancy: " << *bUseDistanceBasedRelevancy << '\n';
+		*bUseDistanceBasedRelevancy = !(*bUseDistanceBasedRelevancy); */
 
 		//CreateThread(0, 0, LootingV2::InitializeWeapons, 0, 0, 0); // doesnt work??
 	}
@@ -639,6 +668,16 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 							// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
 
 							std::cout << ("Played for: ") << Dura << '\n';
+
+							static auto OnRep_LastReplicatedEmoteExecuted = Pawn->Function(_("OnRep_LastReplicatedEmoteExecuted")); // this isnt in all versions
+
+							if (OnRep_LastReplicatedEmoteExecuted)
+								Pawn->ProcessEvent(OnRep_LastReplicatedEmoteExecuted);
+
+							static auto OnRep_CharPartAnimMontageInfo = Pawn->Function("OnRep_CharPartAnimMontageInfo");
+
+							if (OnRep_CharPartAnimMontageInfo)
+								Pawn->ProcessEvent(OnRep_CharPartAnimMontageInfo);
 						}
 					}
 				}

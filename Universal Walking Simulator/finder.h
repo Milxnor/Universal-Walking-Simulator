@@ -150,5 +150,29 @@ namespace Finder
 			}
 		}
 
+		std::string GetStaticLoadObject(int length = 35, uintptr_t* Addr = nullptr)
+		{
+			auto Ref = Memcury::Scanner::FindStringRef(L"Failed to find object '{ClassName} {OuterName}.{ObjectName}'"); // it doesnt like the closer pattern
+
+			if (Ref.Get())
+			{
+				std::vector<uint8_t> BytesToFind = { 0x40, 0x55 };
+
+				auto Start = FindBytes(Ref, BytesToFind, 3000, 10, true);
+
+				if (Start)
+				{
+					if (Addr)
+						*Addr = Start;
+
+					return GetBytes(Start, length);
+				}
+				else
+					std::cout << "Couldn't find start!\n";
+			}
+			else
+				std::cout << "Unable to find StaticLoadObject string!\n";
+		}
+
 	}
 }

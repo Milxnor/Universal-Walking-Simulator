@@ -14,8 +14,13 @@ void AllowConnections(UObject* NetDriver)
 
     if (BeaconHost)
     {
-        PauseBeaconRequests(BeaconHost, false);
+        if (Engine_Version == 421) // idfk
+            *(int*)(BeaconHost + 0x340) = 0;
+        else
+            PauseBeaconRequests(BeaconHost, false);
     }
+    else
+        std::cout << "No BeaconHost!\n";
 
     if (NetDriver)
     {
@@ -184,8 +189,6 @@ void Listen(int Port = 7777)
         }
         else
         {
-            // index = 0x72
-
             auto SetWorldAAddr = NetDriver->VFTable[0x72];
             SetWorld = decltype(SetWorld)(SetWorldAAddr);
             std::cout << "SetWorld Sig: " << GetBytes(__int64(SetWorldAAddr), 50) << '\n';

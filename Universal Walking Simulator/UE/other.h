@@ -751,6 +751,13 @@ enum EFunctionFlags
 	FUNC_AllFlags = 0xFFFFFFFF,
 };
 
+enum class EFortGliderType : uint8_t
+{
+	Glider = 0,
+	Umbrella = 1,
+	EFortGliderType_MAX = 2,
+};
+
 enum EObjectFlags
 {
 	RF_NoFlags = 0x00000000,

@@ -101,8 +101,15 @@ namespace Helper
 		}
 		//Loot Lake
 		if (Season == 6) {
-			*FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"))->Member<uint8_t>(("DynamicFoundationType")) = 0;
-			*FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"))->Member<uint8_t>(("DynamicFoundationType")) = 0;
+			return;
+			static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
+			if (FloatingIsland)
+				*FloatingIsland->Member<uint8_t>(("DynamicFoundationType")) = 0;
+
+			static auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
+
+			if (Lake)
+				*Lake->Member<uint8_t>(("DynamicFoundationType")) = 0;
 		}
 	}
 	
@@ -242,18 +249,35 @@ namespace Helper
 				{
 					static auto TossPickupFn = Pickup->Function(("TossPickup"));
 
-					struct {
-						FVector FinalLocation;
-						UObject* ItemOwner;
-						int OverrideMaxStackCount;
-						bool bToss;
-						// bool bShouldCombinePickupsWhenTossCompletes
-						EFortPickupSourceTypeFlag InPickupSourceTypeFlags; // Do these even exist on older versions?
-						EFortPickupSpawnSource InPickupSpawnSource;
-					} TPParams{ Location, Pawn, 6, true, PickupSource, SpawnSource };
+					if (Engine_Version < 426)
+					{
+						struct {
+							FVector FinalLocation;
+							UObject* ItemOwner;
+							int OverrideMaxStackCount;
+							bool bToss;
+							EFortPickupSourceTypeFlag InPickupSourceTypeFlags; // Do these even exist on older versions?
+							EFortPickupSpawnSource InPickupSpawnSource;
+						} TPParams{ Location, Pawn, 6, true, PickupSource, SpawnSource };
 
-					if (TossPickupFn)
-						Pickup->ProcessEvent(TossPickupFn, &TPParams);
+						if (TossPickupFn)
+							Pickup->ProcessEvent(TossPickupFn, &TPParams);
+					}
+					else
+					{
+						struct {
+							FVector FinalLocation;
+							UObject* ItemOwner;
+							int OverrideMaxStackCount;
+							bool bToss;
+							bool bShouldCombinePickupsWhenTossCompletes;
+							EFortPickupSourceTypeFlag InPickupSourceTypeFlags; // Do these even exist on older versions?
+							EFortPickupSpawnSource InPickupSpawnSource;
+						} TPParams{ Location, Pawn, 6, true, true, PickupSource, SpawnSource };
+
+						if (TossPickupFn)
+							Pickup->ProcessEvent(TossPickupFn, &TPParams);
+					}
 				}
 
 				if (PickupSource == EFortPickupSourceTypeFlag::Container)
@@ -265,6 +289,13 @@ namespace Helper
 					if (OnRep_TossedFromContainer)
 						Pickup->ProcessEvent(OnRep_TossedFromContainer);
 				}
+
+				static auto SetReplicateMovementFn = Pickup->Function(("SetReplicateMovement"));
+				struct { bool b; } bruh{ false };
+				Pickup->ProcessEvent(SetReplicateMovementFn, &bruh);
+
+				static auto Rep_ReplicateMovement = Pickup->Function(("OnRep_ReplicateMovement"));
+				Pickup->ProcessEvent(Rep_ReplicateMovement);
 
 				Helper::EnablePickupAnimation(Pawn, Pickup);
 			}
@@ -802,6 +833,7 @@ namespace Helper
 		{
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
+
 			static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
 
 			if (OnRep_Parts)
@@ -823,15 +855,20 @@ namespace Helper
 		auto world = Helper::GetWorld();
 		auto gameState = *world->Member<UObject*>(("GameState"));
 
-		static auto BasePlaylistOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("BasePlaylist"));
-		if (BasePlaylistOffset)
+		if (std::stod(FN_Version) >= 6.10) // WRONG
 		{
-			static auto PlaylistInfo = gameState->Member<void>(("CurrentPlaylistInfo"));
+			static auto BasePlaylistOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("BasePlaylist"));
+			if (BasePlaylistOffset)
+			{
+				static auto PlaylistInfo = gameState->Member<void>(("CurrentPlaylistInfo"));
 
-			auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
-		
-			return BasePlaylist ? *BasePlaylist : nullptr;
+				auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
+
+				return BasePlaylist ? *BasePlaylist : nullptr;
+			}
 		}
+		else
+			return *gameState->Member<UObject*>(("CurrentPlaylistData"));
 
 		return nullptr;
 	}
