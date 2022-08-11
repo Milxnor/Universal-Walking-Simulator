@@ -130,5 +130,8 @@
     <ClInclude Include="offsets.h">
       <Filter>Header Files\Other</Filter>
     </ClInclude>
+    <ClInclude Include="AI.h">
+      <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

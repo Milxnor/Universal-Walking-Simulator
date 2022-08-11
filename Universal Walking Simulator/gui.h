@@ -21,6 +21,7 @@
 #include <Gameplay/events.h>
 #include <hooks.h>
 #include "Gameplay/inventory.h"
+#include <AI.h>
 
 // THE BASE CODE IS FROM IMGUI GITHUB
 
@@ -460,8 +461,16 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					if (ImGui::Button(("Dump Objects (Win64/Objects.log)")))
 					{
+						std::cout << "Creating DumpObjects Thread \n";
 						CreateThread(0, 0, Helper::DumpObjects, 0, 0, 0);
 					}
+					if (ImGui::Button(("SetupTurrets"))) {
+						Henchmans::SpawnHenchmans();
+					}
+					if (ImGui::Button(("OpenVaults"))) {
+						Henchmans::OpenVaults();
+					}
+				
 
 					break;
 				}
@@ -609,7 +618,12 @@ DWORD WINAPI GuiThread(LPVOID)
 						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_B.AshtonRockItemDef_B"), RandLocation, {});
 					}
 					break;
+
+				
 				}
+				
+
+
 			}
 			else
 			{
