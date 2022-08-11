@@ -754,9 +754,10 @@ namespace Helper
 		if (!Pawn)
 			return nullptr;
 
-		static auto SetReplicateMovementFn = Pawn->Function(("SetReplicateMovement"));
+		/* static auto SetReplicateMovementFn = Pawn->Function(("SetReplicateMovement"));
 		struct { bool b; } bruh{true};
-		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh);
+		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh); */
+		Pawn->Member<bool>("bReplicateMovement", 1);
 
 		// prob not needed here from
 

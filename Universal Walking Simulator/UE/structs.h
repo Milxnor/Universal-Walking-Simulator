@@ -456,7 +456,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 
 	// protected:
 		template <typename MemberType>
-		INL MemberType* Member(const std::string& MemberName, int extraOffset = 0); // DONT USE FOR SCRIPTSTRUCTS
+		INL MemberType* Member(const std::string& MemberName, uint8_t BitfieldVal = 0); // DONT USE FOR SCRIPTSTRUCTS
 };
 
 	
@@ -943,9 +943,54 @@ int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int
 	}
 }
 
+int GetOffsetFromProp(void* Prop)
+{
+	if (!Prop)
+		return -1;
+
+	if (Engine_Version <= 420)
+		return ((UProperty_UE*)Prop)->Offset_Internal;
+
+	else if (Engine_Version >= 421 && Engine_Version <= 424)
+		return ((UProperty_FTO*)Prop)->Offset_Internal;
+
+	else if (Engine_Version >= 425 && Engine_Version < 500)
+		return ((FProperty*)Prop)->Offset_Internal;
+
+	else if (std::stod(FN_Version) >= 19)
+		return *(int*)(__int64(Prop) + 0x44);
+}
+
+static void* GetProperty(UObject* Object, const std::string& MemberName)
+{
+	if (Object && !MemberName.contains(_(" ")))
+	{
+		if (Engine_Version <= 420)
+			return LoopMembersAndGetProperty<UClass_FT, UProperty_UE>(Object, MemberName);
+
+		else if (Engine_Version == 421) // && Engine_Version <= 424)
+			return LoopMembersAndGetProperty<UClass_FTO, UProperty_FTO>(Object, MemberName);
+
+		else if (Engine_Version >= 422 && Engine_Version <= 424)
+			return LoopMembersAndGetProperty<UClass_FTT, UProperty_FTO>(Object, MemberName);
+
+		else if (Engine_Version >= 425 && Engine_Version < 500)
+			return LoopMembersAndGetProperty<UClass_CT, FProperty>(Object, MemberName);
+
+		else if (std::stod(FN_Version) >= 19)
+			return LoopMembersAndGetProperty<UClass_CT, FProperty>(Object, MemberName);
+	}
+	else
+	{
+		std::cout << std::format(("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, Object->GetFullName());
+	}
+
+	return nullptr;
+}
+
 static int GetOffset(UObject* Object, const std::string& MemberName)
 {
-	if (Object && !MemberName.contains((" ")))
+	if (Object && !MemberName.contains(_(" ")))
 	{
 		if (Engine_Version <= 420)
 			return LoopMembersAndFindOffset<UClass_FT, UProperty_UE>(Object, MemberName);
@@ -964,7 +1009,7 @@ static int GetOffset(UObject* Object, const std::string& MemberName)
 	}
 	else
 	{
-		// std::cout << std::format(("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, __int64(Object));
+		std::cout << std::format(("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, Object->GetFullName());
 	}
 
 	return 0;
@@ -1347,15 +1392,72 @@ int FindOffsetStruct(const std::string& ClassName, const std::string& MemberName
 	return 0;
 }
 
+uint8_t GetFieldMask(void* Property)
+{
+	uint8_t FieldMask = *(uint8_t*)(__int64(Property) + (sizeof(FProperty) + 3));
+	return FieldMask;
+}
+
+uint8_t GetBitIndex(void* Property)
+{
+	auto FieldMask = GetFieldMask(Property);
+
+	if (FieldMask == 0xFF)
+		return FieldMask;
+
+	if (FieldMask == 1)
+		return 1;
+	if (FieldMask == 2)
+		return 2;
+	if (FieldMask == 4)
+		return 3;
+	if (FieldMask == 8)
+		return 4;
+	if (FieldMask == 16)
+		return 5;
+	if (FieldMask == 32)
+		return 6;
+	if (FieldMask == 64)
+		return 7;
+	if (FieldMask == 128)
+		return 8;
+}
+
 template <typename MemberType>
-INL MemberType* UObject::Member(const std::string& MemberName, int extraOffset)
+INL MemberType* UObject::Member(const std::string& MemberName, uint8_t BitfieldVal)
 {
 	// MemberName.erase(0, MemberName.find_last_of(".", MemberName.length() - 1) + 1); // This would be getting the short name of the member if you did like ObjectProperty /Script/stuff
 
-	// if (!bIsStruct)
-	return (MemberType*)(__int64(this) + (GetOffset(this, MemberName) - extraOffset));
-	// else
-		// return (MemberType*)(__int64(this) + FindOffsetStruct(this->GetFullName(), MemberName));
+	// auto Offset = GetOffset(this, MemberName);
+	// auto ret = (MemberType*)(__int64(this) + Offset);
+	auto Property = GetProperty(this, MemberName);
+
+	if (!Property)
+		return nullptr;
+
+	auto Offset = GetOffsetFromProp(Property);
+
+	if (Offset == -1)
+		return nullptr;
+
+	auto ret = (MemberType*)(__int64(this) + Offset);
+
+	if (std::is_same<MemberType, bool>())
+	{
+		const auto FieldMask = GetFieldMask(Property);
+		const auto BitIndex = GetBitIndex(Property);
+
+		if (BitIndex != 0xFF) // if it is 0xFF then its just a normal bool
+		{
+			// creds fischsalat
+			// uint8_t& Byte = *(uint8*)(__int64(this) + (OFFSET(Child) + OffsetToStruct));
+			uint8_t* Byte = (uint8_t*)ret;
+			*Byte = (*Byte & ~FieldMask) | (BitfieldVal == 1 ? FieldMask : 0);
+			return (MemberType*)&BitfieldVal;
+		}
+	}
+
+	return ret;
 }
 
 template<typename ElementType>

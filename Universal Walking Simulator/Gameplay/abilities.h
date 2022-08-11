@@ -101,6 +101,79 @@ UObject** GetAbilityFromSpec(void* Spec)
         return &((FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)Spec)->Ability;
 }
 
+// template return and base the func and actual ret of fof that maybe?
+void LoopSpecs(UObject* ASC, std::function<void(__int64*)> func)
+{
+    auto ActivatableAbilities = ASC->Member<__int64>(("ActivatableAbilities"));
+
+    auto ItemsOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer", "Items");
+    auto Items = (TArray<__int64>*)(__int64(ActivatableAbilities) + ItemsOffset);
+
+    static auto SpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
+    static auto SpecSize = GetSizeOfStruct(SpecStruct);
+
+    if (ActivatableAbilities)
+    {
+        for (int i = 0; i < Items->Num(); i++)
+        {
+            auto CurrentSpec = (__int64*)(__int64(Items) + (static_cast<long long>(SpecSize) * i));
+            func(CurrentSpec);
+        }
+    }
+}
+
+FGameplayAbilitySpecHandle* GetHandleFromSpec(__int64* Spec)
+{
+    auto temp = FGameplayAbilitySpecHandle();
+    return &temp;
+}
+
+int GetHandleFromHandle(FGameplayAbilitySpecHandle& handle)
+{
+    return handle.Handle;
+}
+
+__int64* FindAbilitySpecFromHandle2(UObject* ASC, FGameplayAbilitySpecHandle Handle)
+{
+    __int64* SpecToReturn = nullptr;
+
+    auto compareHandles = [&Handle, &SpecToReturn](__int64* Spec) {
+        auto CurrentHandle = GetHandleFromSpec(Spec);
+        
+        if (GetHandleFromHandle(*CurrentHandle) == Handle.Handle)
+        {
+            SpecToReturn = Spec;
+            return;
+        }
+    };
+
+    LoopSpecs(ASC, compareHandles);
+
+    return SpecToReturn;
+}
+
+UObject* DoesASCHaveAbility(UObject* ASC, UObject* Ability)
+{
+    if (!ASC || !Ability)
+        return nullptr;
+
+    UObject* AbilityToReturn = nullptr;
+
+    auto compareAbilities = [&AbilityToReturn, &Ability](__int64* Spec) {
+        auto CurrentAbility = GetAbilityFromSpec(Spec);
+
+        if (*CurrentAbility == Ability)
+        {
+            AbilityToReturn = *CurrentAbility;
+            return;
+        }
+    };
+
+    LoopSpecs(ASC, compareAbilities);
+
+    return AbilityToReturn;
+}
+
 void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle Handle, bool InputPressed, FPredictionKey* PredictionKey, __int64* TriggerEventData, bool bConsumeData = false)
 {
     if (!PredictionKey)
@@ -154,8 +227,9 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     if (!res)
     {
-        auto InternalTryActivateAbilityFailureTags = ASC->Member<FGameplayTagContainer>(("ClientDebugStrings"), sizeof(FGameplayTagContainer));
-        std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed: {}\n", (*GetAbilityFromSpec(Spec))->GetName(), InternalTryActivateAbilityFailureTags->ToStringSimple(true));
+        // auto InternalTryActivateAbilityFailureTags = ASC->Member<FGameplayTagContainer>(("ClientDebugStrings"), sizeof(FGameplayTagContainer));
+        // std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed: {}\n", (*GetAbilityFromSpec(Spec))->GetName(), InternalTryActivateAbilityFailureTags->ToStringSimple(true));
+        std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}.\n", (*GetAbilityFromSpec(Spec))->GetName());
         Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, *GetCurrent(PredictionKey));
 
         if (Engine_Version < 426)
@@ -186,8 +260,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     if (!DefaultObject)
     {
-        std::cout << "Failed to create defaultobject!\n";
-        std::cout << "GameplayAbilityClass: " << GameplayAbilityClass->GetFullName() << '\n';
+        std::cout << "Failed to create defaultobject for GameplayAbilityClass: " << GameplayAbilityClass->GetFullName() << '\n';
         return nullptr;
     }
 
@@ -280,6 +353,8 @@ inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunct
     };
 
     auto Params = (UAbilitySystemComponent_ServerTryActivateAbility_Params*)Parameters;
+
+    auto AbilityToActivate = Function->GetParam<FGameplayAbilitySpecHandle>("AbilityToActivate");// FindOffsetStruct("")
 
     InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, &Params->PredictionKey, nullptr);
 

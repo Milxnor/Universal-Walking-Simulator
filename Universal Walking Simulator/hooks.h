@@ -461,12 +461,20 @@ void RequestExitWithStatusHook(bool Force, uint8_t ReturnCode)
 	return;
 }
 
+DWORD WINAPI WinThread(LPVOID)
+{
+
+
+	return 0;
+}
+
 inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Parameters)
 {
 	if (DeadPC && Parameters)
 	{
 		auto DeadPawn = *DeadPC->Member<UObject*>(("Pawn"));
 		auto DeadPlayerState = *DeadPC->Member<UObject*>(("PlayerState"));
+		auto GameState = Helper::GetGameState();
 
 		struct parms { __int64 DeathReport; };
 
@@ -475,7 +483,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		static auto DeathLocationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathLocation"));	
 		auto DeathInfo = DeadPlayerState->Member<__int64>(("DeathInfo"));
 
-		auto DeathLocation = Helper::GetActorLocation(DeadPC); // *(FVector*)(__int64(&*DeathInfo) + DeathLocationOffset);
+		auto DeathLocation = Helper::GetActorLocation(DeadPawn); // *(FVector*)(__int64(&*DeathInfo) + DeathLocationOffset);
 
 		if (Helper::IsRespawnEnabled())
 			Player::RespawnPlayer(DeadPC);
@@ -563,6 +571,16 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 					std::cout << ("Spawned Chip!\n");
 				}
+			}
+
+			auto PlayersLeft = GameState->Member<int>(("PlayersLeft"));
+
+			(*PlayersLeft)--;
+
+			if (*PlayersLeft == 1)
+			{
+				// win
+				CreateThread(0, 0, WinThread, 0, 0, 0);
 			}
 		}
 
