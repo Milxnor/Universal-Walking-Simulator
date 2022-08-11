@@ -179,7 +179,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     UObject* DefaultObject = nullptr;
 
-    if (!GameplayAbilityClass->GetFullName().starts_with("Class ") && !GameplayAbilityClass->GetFullName().starts_with("BlueprintGeneratedClass "))
+    if (!GameplayAbilityClass->GetFullName().contains("Class "))
         DefaultObject = GameplayAbilityClass; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
     else
         DefaultObject = GameplayAbilityClass->CreateDefaultObject();

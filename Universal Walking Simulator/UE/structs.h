@@ -927,11 +927,16 @@ int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int
 	// We loop through the whole class hierarchy to find the offset.
 
 	// auto MemberFName = StringToName(MemberName);
-
-	if (offset)
-		return *(int*)(__int64(LoopMembersAndGetProperty<ClassType, PropertyType>(Object, MemberName)) + offset);
-	else
-		return LoopMembersAndGetProperty<ClassType, PropertyType>(Object, MemberName)->Offset_Internal;
+	PropertyType* Prop = LoopMembersAndGetProperty<ClassType, PropertyType>(Object, MemberName);
+	if (Prop != nullptr) {
+		if (offset)
+			return *(int*)(__int64(Prop) + offset);
+		else
+			return Prop->Offset_Internal;
+	}
+	else {
+		return 0;
+	}
 }
 
 static int GetOffset(UObject* Object, const std::string& MemberName)

@@ -37,36 +37,36 @@ namespace Items {
 
 		UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
 
-		if (Montage && PlayMontage && Engine_Version < 426)
-		{
-			auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
-			static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+		//if (Montage && PlayMontage && Engine_Version < 426)
+		//{
+		//	auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
+		//	static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
-			TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Specs;
+		//	TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Specs;
 
-			if (Engine_Version <= 422)
-				Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
-			else
-				Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))).Items;
+		//	if (Engine_Version <= 422)
+		//		Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
+		//	else
+		//		Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))).Items;
 
-			UObject* DefaultObject = EmoteClass->CreateDefaultObject();
+		//	UObject* DefaultObject = EmoteClass->CreateDefaultObject();
 
-			for (int i = 0; i < Specs.Num(); i++)
-			{
-				auto& CurrentSpec = Specs[i];
+		//	for (int i = 0; i < Specs.Num(); i++)
+		//	{
+		//		auto& CurrentSpec = Specs[i];
 
-				if (CurrentSpec.Ability == DefaultObject)
-				{
-					auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(("CurrentActivationInfo"));
+		//		if (CurrentSpec.Ability == DefaultObject)
+		//		{
+		//			auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(("CurrentActivationInfo"));
 
-					// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
-					auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
-					// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
+		//			// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
+		//			auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
+		//			// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
 
-					std::cout << ("Played for: ") << Dura << '\n';
-				}
-			}
-		}
+		//			std::cout << ("Played for: ") << Dura << '\n';
+		//		}
+		//	}
+		//}
 	}
 }
 
