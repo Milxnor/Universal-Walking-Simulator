@@ -34,6 +34,13 @@ namespace Player
 				NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
 		}
 
+		*NewPawn->Member<bool>("bIsDBNO") = false;
+
+		static auto OnRep_DBNOFn = NewPawn->Function("OnRep_IsDBNO");
+
+		if (OnRep_DBNOFn)
+			NewPawn->ProcessEvent(OnRep_DBNOFn);
+
 		// PlayerController->ProcessEvent(("RespawnPlayer"));
 	}
 }

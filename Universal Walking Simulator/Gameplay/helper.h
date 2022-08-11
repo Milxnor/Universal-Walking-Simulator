@@ -494,11 +494,17 @@ namespace Helper
 		return params.Res;
 	}
 
-	EAthenaGamePhase* GetGamePhase()
+	UObject* GetGameState()
 	{
 		auto world = Helper::GetWorld();
 		auto gameState = *world->Member<UObject*>(("GameState"));
-		return gameState->Member<EAthenaGamePhase>(("GamePhase"));
+
+		return gameState;
+	}
+
+	EAthenaGamePhase* GetGamePhase()
+	{
+		return GetGameState()->Member<EAthenaGamePhase>(("GamePhase"));
 	}
 
 	FVector GetPlayerStart()

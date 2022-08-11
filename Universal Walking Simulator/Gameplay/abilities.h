@@ -187,6 +187,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     if (!DefaultObject)
     {
         std::cout << "Failed to create defaultobject!\n";
+        std::cout << "GameplayAbilityClass: " << GameplayAbilityClass->GetFullName() << '\n';
         return nullptr;
     }
 
@@ -299,17 +300,6 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
 
         InternalServerTryActivateAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.InputPressed, &BatchInfo.PredictionKey, nullptr);
         // PrintExplicitTags(AbilitySystemComponent);
-
-        Helper::Abilities::ServerSetReplicatedTargetData(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.PredictionKey, BatchInfo.TargetData, FGameplayTag(), BatchInfo.PredictionKey);
-
-        if (BatchInfo.Ended)
-        {
-            // This FakeInfo is probably bogus for the general case but should work for the limited use of batched RPCs
-            FGameplayAbilityActivationInfo FakeInfo;
-            // FakeInfo.ServerSetActivationPredictionKey(BatchInfo.PredictionKey);
-            FakeInfo.PredictionKeyWhenActivated = BatchInfo.PredictionKey;
-            Helper::Abilities::ServerEndAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, FakeInfo, BatchInfo.PredictionKey);
-        }
     }
     else
     {

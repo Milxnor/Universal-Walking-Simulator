@@ -569,7 +569,7 @@ void InitializePatterns()
 
     static auto ReallocAddr = FindPattern(ReallocSig);
     // FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddr); // we don't need this I think
-    //CheckPattern(("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
+    CheckPattern(("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
 
     static auto StaticFindObjectAddr = FindPattern(StaticFindObjectSig);
 

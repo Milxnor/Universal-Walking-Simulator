@@ -763,6 +763,7 @@ namespace Looting
 
 		static void HandleSearch(UObject* BuildingContainer)
 		{
+			// SOMEONE FIX THIS FUNCTION PLEASEEEEEEEE
 			auto GetCorrectLocation = [BuildingContainer]() -> FVector {
 				// TODO: LootFinalLocation
 				/* auto LootSpawnLocation = *BuildingContainer->Member<FVector>(_("LootSpawnLocation"));

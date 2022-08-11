@@ -4,6 +4,13 @@
 #include <Gameplay/helper.h>
 #include <Gameplay/abilities.h>
 
+/*
+
+GiveItem - Creates a new item and or stacks
+TakeItem - Decreases and or removes if requested
+
+*/
+
 static int GetEntrySize()
 {
 	static auto FortItemEntryClass = FindObject(("ScriptStruct /Script/FortniteGame.FortItemEntry"), true);
@@ -93,6 +100,9 @@ namespace FFortItemEntry
 
 	UObject* GetItemDefinition(__int64* Entry)
 	{
+		if (!Entry)
+			return nullptr;
+
 		static auto ItemDefinitionOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
 		auto Definition = (UObject**)(__int64(&*Entry) + ItemDefinitionOffset);
 
@@ -738,7 +748,7 @@ namespace Inventory
 		return nullptr;
 	}
 
-	UObject* RemoveItem(UObject* Controller, const FGuid& Guid, int Count = 1)
+	UObject* RemoveItem(UObject* Controller, const FGuid& Guid)
 	{
 		auto ItemInstances = GetItemInstances(Controller);
 		UObject* ItemDefinition = nullptr;
@@ -801,9 +811,27 @@ namespace Inventory
 		return ItemDefinition;
 	}
 
-	void TakeItem(UObject* Controller, const FGuid& Guid, int Count = 1) // Use this, this removes from a definition
+	UObject* GetDefinitionFromGuid(UObject* Controller, const FGuid& Guid)
 	{
+		auto ItemInstances = GetItemInstances(Controller);
+		UObject* ItemDefinition = nullptr;
 
+		for (int j = 0; j < ItemInstances->Num(); j++)
+		{
+			auto ItemInstance = ItemInstances->At(j);
+
+			if (!ItemInstance)
+				continue;
+
+			auto CurrentGuid = GetItemGuid(ItemInstance);
+
+			if (CurrentGuid == Guid)
+			{
+				return GetItemDefinition(ItemInstance);
+			}
+		}
+
+		return nullptr;
 	}
 
 	bool IncreaseItemCountInstance(UObject* Controller, UObject* Instance, int Count) // stack
@@ -856,6 +884,7 @@ namespace Inventory
 		return false;
 	}
 
+	// TODO: Change defintion to instance
 	bool DecreaseItemCount(UObject* Controller, UObject* Definition, int Count, __int64** OutItemEntry = nullptr)
 	{
 		if (Controller && Definition)
@@ -872,11 +901,15 @@ namespace Inventory
 				auto CurrentDefinition = GetItemDefinition(ItemInstance);
 				if (CurrentDefinition == Definition)
 				{
-					auto ItemEntry = GetItemEntryFromInstance(ItemInstance); // Keep as pointer!
+					auto ItemEntry = GetItemEntryFromInstance(ItemInstance);
 					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
 
 					// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
 					auto NewCount = *CurrentCount - Count;
+
+					if (NewCount < 0)
+						NewCount = 0;
+
 					*CurrentCount = NewCount;
 
 					ChangeItemInReplicatedEntries<int>(Controller, Definition, ("Count"), NewCount);
@@ -894,7 +927,24 @@ namespace Inventory
 		return false;
 	}
 
-	static UObject* GiveItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1, bool bDontCreateNewStack = false) // Use this, it stacks if it finds an item, if not, then it adds
+	// RETURNS DEFINITION
+	UObject* TakeItem(UObject* Controller, const FGuid& Guid, int Count = 1, bool bDestroyIfEmpty = false) // Use this, this removes from a definition
+	{
+		__int64* Entry = nullptr;
+
+		if (DecreaseItemCount(Controller, GetDefinitionFromGuid(Controller, Guid), Count, &Entry) && Entry) // it successfully decreased
+		{
+			if (*FFortItemEntry::GetCount(Entry) == 0 && bDestroyIfEmpty)
+				RemoveItem(Controller, Guid);
+		}
+		else
+			RemoveItem(Controller, Guid);
+
+		return FFortItemEntry::GetItemDefinition(Entry);
+	}
+
+	// dont use bDidStack unless you know what ur doing
+	static UObject* GiveItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1, bool bDontCreateNewStack = false, bool* skunk = false) // Use this, it stacks if it finds an item, if not, then it adds
 	{
 		if (Controller && Definition)
 		{
@@ -927,7 +977,8 @@ namespace Inventory
 				{
 					auto MaxStackCount = *Definition->Member<int>(("MaxStackSize"));
 
-					for (auto InstanceOfItem : InstancesOfItem) // we need this because if we have 2 stacks and lets say a half and pickup another half it'll make another stack and a half
+					// We need this skunked thing because if they have 2 full stacks and half a stack then we want to find the lowest stack and stack to there.
+					for (auto InstanceOfItem : InstancesOfItem)
 					{
 						if (InstanceOfItem)
 						{
@@ -956,18 +1007,27 @@ namespace Inventory
 
 							if (currentCount)
 							{
+								//			      3	      +   2   -      6       =   -1
 								OverStack = *currentCount + Count - MaxStackCount;
 
+								// checks if it is going to overstack, if it is then we subtract the incoming count by the overstack, but its not then we just use the incoming count.
 								int AmountToStack = OverStack > 0 ? Count - OverStack : Count;
 
 								std::cout << ("MaxStackCount: ") << MaxStackCount << '\n';
+								std::cout << ("OverStack: ") << OverStack << '\n';
 								std::cout << ("AmountToStack: ") << AmountToStack << '\n';
 								std::cout << ("currentCount: ") << *currentCount << '\n';
 
 								IncreaseItemCountInstance(Controller, ItemInstance, AmountToStack);
 
-								if (!(OverStack > 0))
+								if (skunk)
+									*skunk = false;
+
+								if (OverStack <= 0) // there is no overstack, we can now return peacefully.
 									return ItemInstance;
+
+								if (skunk)
+									*skunk = true;
 							}
 						}
 					}
@@ -997,7 +1057,7 @@ namespace Inventory
 
 		static const auto FnVerDouble = std::stod(FN_Version);
 
-		if (Engine_Version < 422)
+		if (Engine_Version <= 420) // wrong I think
 		{
 			static UObject* AthenaAmmoDataRockets = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
 			static UObject* AthenaAmmoDataShells = FindObject(("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
@@ -1018,6 +1078,9 @@ namespace Inventory
 			static UObject* AthenaAmmoDataBulletsMedium = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
 			static UObject* AthenaAmmoDataBulletsLight = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
 			static UObject* AthenaAmmoDataBulletsHeavy = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+
+			if (!AthenaAmmoDataRockets || !AthenaAmmoDataShells || !AthenaAmmoDataBulletsMedium || !AthenaAmmoDataBulletsLight || !AthenaAmmoDataBulletsHeavy)
+				std::cout << "Some ammo is invalid!\n";
 
 			CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 999);
 			CreateAndAddItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, 999);
@@ -1105,7 +1168,7 @@ inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Funct
 
 		auto Params = (AFortPlayerController_ServerAttemptInventoryDrop_Params*)Parameters;
 
-		auto Definition = Inventory::RemoveItem(Controller, Params->ItemGuid, Params->Count);
+		auto Definition = Inventory::TakeItem(Controller, Params->ItemGuid, Params->Count, true);
 		auto Pawn = Helper::GetPawnFromController(Controller);
 
 		if (Pawn)
@@ -1156,6 +1219,8 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 				bool shouldGoInSecondaryBar = QuickBars::WhatQuickBars(*Definition) == EFortQuickBars::Secondary;
 
 				bool bShouldSwap = false;
+
+				// TODO: For >7.40 check all quickbar slots until we find a empty one.
  
 				if (!shouldGoInSecondaryBar)
 				{
@@ -1174,26 +1239,38 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 							PrimaryQuickBarSlotsFilled++;
 					}
 
-					bShouldSwap = (PrimaryQuickBarSlotsFilled -= 6) >= 5;
+					bShouldSwap = (PrimaryQuickBarSlotsFilled -= 6) >= 5; // so for some reason the primary quickbar are 11 with a full primary quickbar
 				}
 
 				// std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
 
 				bool bSucceededSwap = true;
 
-				if (bShouldSwap)
-				{
-					auto CurrentWeapon = (*Pawn->Member<UObject*>(("CurrentWeapon")));
-					auto ItemToDropDef = *CurrentWeapon->Member<UObject*>(("WeaponData"));
+				auto CurrentWeapon = (*Pawn->Member<UObject*>(("CurrentWeapon")));
+				auto HeldWeaponDef = *CurrentWeapon->Member<UObject*>(("WeaponData"));
 
+				bool bDidStack = false;
+
+				if (Definition && *Definition && Count)
+				{
+					auto NewInstance = Inventory::GiveItem(Controller, *Definition, EFortQuickBars::Primary, 1, *Count, &bDidStack); // TODO: Figure out what quickbars are supposed to be used.
+
+					if (bShouldSwap)
+					{
+						// Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(NewInstance));
+					}
+				}
+
+				if (bShouldSwap && !bDidStack)
+				{
 					static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
-					if (ItemToDropDef != PickaxeDef) // ahh
+					if (HeldWeaponDef != PickaxeDef) // ahh
 					{
 						Inventory::RemoveItem(Controller, *CurrentWeapon->Member<FGuid>(("ItemEntryGuid")));
 						auto loc = Helper::GetActorLocation(Pawn);
 
-						auto DroppedPickup = Helper::SummonPickup(Pawn, ItemToDropDef, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, 1);
+						auto DroppedPickup = Helper::SummonPickup(Pawn, HeldWeaponDef, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, 1);
 					}
 					else
 						bSucceededSwap = false;
@@ -1201,21 +1278,13 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 				if (bSucceededSwap)
 				{
-					if (Definition && *Definition && Count)
-					{
-						auto NewInstance = Inventory::GiveItem(Controller, *Definition, EFortQuickBars::Primary, 1, *Count); // TODO: Figure out what quickbars are supposed to be used.
-
-						if (bShouldSwap)
-						{
-							// Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(NewInstance));
-						}
-					}
 
 					// Helper::DestroyActor(Params->Pickup);
 					Helper::EnablePickupAnimation(Pawn, Params->Pickup);
+
 					*bPickedUp = true;
 
-					static auto bPickedUpFn = Params->Pickup->Function(("OnRep_bPickedUp"));
+					static auto bPickedUpFn = Params->Pickup->Function(("OnRep_bPickedUp")); 
 
 					if (bPickedUpFn)
 						Params->Pickup->ProcessEvent(bPickedUpFn);

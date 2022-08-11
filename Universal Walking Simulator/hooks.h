@@ -80,7 +80,7 @@ inline void initStuff()
 				*gameState->Member<EFriendlyFireType>(("FriendlyFireType")) = EFriendlyFireType::On;
 			}
 			else {
-				std::cout << "FriendlyFireType is not valid!" << std::endl;
+				std::cout << "FriendlyFireType is not valid!\n";
 			}
 
 			if (Engine_Version >= 420)
@@ -474,7 +474,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 		if (Helper::IsRespawnEnabled())
 			Player::RespawnPlayer(DeadPC);
-		else
+		// else
 		{
 			// PlayersLeft--;
 
@@ -521,14 +521,14 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			}
 		}
 
+		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
+		static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
+
+		auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
+		auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
+
 		if (false)
 		{
-			static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
-			static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
-
-			auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
-			auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
-
 			UObject* KillerController = nullptr;
 
 			if (KillerPawn)
@@ -575,20 +575,25 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 					// *DeadPlayerState->Member<__int64>(("DeathInfo")) = *(__int64*)malloc(GetSizeOfStruct(FindObject(("ScriptStruct /Script/FortniteGame.DeathInfo"))));
 
-					(*KillerPlayerState->Member<int>(("KillScore")))++;
-					(*KillerPlayerState->Member<int>(("TeamKillScore")))++;
-
 					static auto ClientReportKill = KillerPlayerState->Function(("ClientReportKill"));
 					struct { UObject* PlayerState; }ClientReportKill_Params{ DeadPlayerState };
 					if (ClientReportKill)
 						KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
-
-					static auto OnRep_Kills = KillerPlayerState->Function(("OnRep_Kills"));
-
-					if (OnRep_Kills)
-						KillerPlayerState->ProcessEvent(OnRep_Kills);
 				}
 			}
+		}
+
+		if (KillerPlayerState && KillerPlayerState != DeadPlayerState) // make sure if they didnt die of like falling or rejoining they dont get their kill
+		{
+			(*KillerPlayerState->Member<int>(("KillScore")))++;
+
+			if (Engine_Version >= 423) // idgaf wrong
+				(*KillerPlayerState->Member<int>(("TeamKillScore")))++;
+
+			static auto OnRep_Kills = KillerPlayerState->Function(("OnRep_Kills"));
+
+			if (OnRep_Kills)
+				KillerPlayerState->ProcessEvent(OnRep_Kills);
 		}
 	}
 	
@@ -1091,7 +1096,7 @@ void FinishInitializeUHooks()
 	AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
 	//AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
-	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
+	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
 	// AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateUnreliable"), ServerUpdateVehicleInputStateUnreliableHook)

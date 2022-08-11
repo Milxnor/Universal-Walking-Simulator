@@ -91,29 +91,33 @@ public:
 
 	void Reserve(int Number, int Size = sizeof(ElementType))
 	{
-		/* if (!FMemory::Realloc)
+		if (!FMemory::Realloc)
 		{
-			MessageBoxA(0, ("How are you expecting to reserve with no Realloc?"), ("Universal Walking Simulator"), MB_ICONERROR);
+			MessageBoxA(0, ("How are you expecting to reserve with no Realloc?"), ("Project Reboot"), MB_ICONERROR);
 			return;
-		} */
+		}
 
 		// if (Number > ArrayMax)
 		{
 			// Data = (ElementType*)realloc(Data, Size * (ArrayNum + 1));
 			// Data = Slack() >= Number ? Data : (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + Number) * Size, 0);
-			Data = (ElementType*)realloc(Data, sizeof(ElementType) * (ArrayNum + 1));
+			// Data = (ElementType*)realloc(Data, sizeof(ElementType) * (ArrayNum + 1));
+			Data = (ElementType*)FMemory::Realloc(Data, (ArrayMax = ArrayNum + Number) * Size, 0);
 		}
 	}
 
 	int Add(const ElementType& New, int Size = sizeof(ElementType))
 	{
 		Reserve(1, Size);
+
 		if (Data)
 		{
 			Data[ArrayNum] = New;
 			++ArrayNum;
+			++ArrayMax;
 			return ArrayNum; // - 1;
 		}
+
 		std::cout << ("Invalid Data when adding!\n");
 
 		/*
@@ -406,7 +410,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 		{
 			if (Engine_Version < 421)
 				Index = 101;
-			else if (Engine_Version > 420 && FnVerDouble < 7.40)
+			else if (Engine_Version >= 420 && FnVerDouble < 7.40)
 				Index = 102;
 			else if (FnVerDouble >= 7.40)
 				Index = 103;
@@ -1561,10 +1565,12 @@ struct FFastArraySerializerItem
 	int                                                MostRecentArrayReplicationKey;                            // 0x0008(0x0004) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
 };
 
-#define INDEX_NONE 0
+#define INDEX_NONE -1
+#define IDK -1
 
 struct FFastArraySerializerSE // 264
 {
+	// TMap<int32_t, int32_t> ItemMap;
 	char ItemMap[0x50];
 
 	int32_t IDCounter;
@@ -1592,7 +1598,7 @@ struct FFastArraySerializerSE // 264
 			}
 			else
 			{
-				// *TheseDeltaFlags = !EFastArraySerializerDeltaFlags::HasDeltaBeenRequested;// &= ~EFastArraySerializerDeltaFlags::HasDeltaBeenRequested;
+				//*TheseDeltaFlags = !EFastArraySerializerDeltaFlags::HasDeltaBeenRequested;// &= ~EFastArraySerializerDeltaFlags::HasDeltaBeenRequested;
 			}
 		}
 	}
@@ -1614,10 +1620,10 @@ struct FFastArraySerializerSE // 264
 
 	void MarkItemDirty(FFastArraySerializerItem* Item)
 	{
-		if (Item->ReplicationID == -1)
+		if (Item->ReplicationID == IDK)
 		{
 			Item->ReplicationID = ++IDCounter;
-			if (IDCounter == -1)
+			if (IDCounter == IDK)
 				IDCounter++;
 		}
 
@@ -1633,20 +1639,32 @@ struct FFastArraySerializerSE // 264
 	void MarkArrayDirty()
 	{
 		// ItemMap.Reset();		// This allows to clients to add predictive elements to arrays without affecting replication.
+
+		/*
+		
+		ItemMap.Pairs.Elements.Data.Reset();
+		ItemMap.Pairs.Elements.FirstFreeIndex = -1;
+		ItemMap.Pairs.Elements.NumFreeIndices = 0;
+		ItemMap.Pairs.Elements.AllocationFlags.Reset();
+
+		*/
+
 		IncrementArrayReplicationKey();
 
 		// Invalidate the cached item counts so that they're recomputed during the next write
-		CachedNumItems = -1;
-		CachedNumItemsToConsiderForWriting = -1;
+		CachedNumItems = IDK;
+		CachedNumItemsToConsiderForWriting = IDK;
 	}
 
 	void IncrementArrayReplicationKey()
 	{
 		ArrayReplicationKey++;
-		if (ArrayReplicationKey == -1)
+		if (ArrayReplicationKey == IDK)
 			ArrayReplicationKey++;
 	}
 };
+
+
 
 struct FFastArraySerializerOL
 {	
@@ -1662,10 +1680,10 @@ struct FFastArraySerializerOL
 
 	void MarkItemDirty(FFastArraySerializerItem* Item)
 	{
-		if (Item->ReplicationID == -1)
+		if (Item->ReplicationID == IDK)
 		{
 			Item->ReplicationID = ++IDCounter;
-			if (IDCounter == -1)
+			if (IDCounter == IDK)
 				IDCounter++;
 		}
 
@@ -1679,14 +1697,15 @@ struct FFastArraySerializerOL
 		IncrementArrayReplicationKey();
 
 		// Invalidate the cached item counts so that they're recomputed during the next write
-		CachedNumItems = -1;
-		CachedNumItemsToConsiderForWriting = -1;
+		CachedNumItems = IDK;
+		CachedNumItemsToConsiderForWriting = IDK;
 	}
 
 	void IncrementArrayReplicationKey()
 	{
 		ArrayReplicationKey++;
-		if (ArrayReplicationKey == -1)
+
+		if (ArrayReplicationKey == IDK)
 			ArrayReplicationKey++;
 	}
 };
