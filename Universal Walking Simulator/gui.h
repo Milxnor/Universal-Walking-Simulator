@@ -448,6 +448,16 @@ DWORD WINAPI GuiThread(LPVOID)
 						CreateThread(0, 0, Looting::Tables::SpawnFloorLoot, 0, 0, 0);
 					} */
 
+					if (ImGui::Button("Restart"))
+					{
+						DisableNetHooks();
+
+						if (BeaconHost)
+							Helper::DestroyActor(BeaconHost);
+
+						LoadInMatch();
+					}
+
 					if (ImGui::Button(("Dump Objects (Win64/Objects.log)")))
 					{
 						CreateThread(0, 0, Helper::DumpObjects, 0, 0, 0);

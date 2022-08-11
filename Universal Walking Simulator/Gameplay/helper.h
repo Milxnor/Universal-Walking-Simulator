@@ -395,7 +395,7 @@ namespace Helper
 
 	static bool IsRespawnEnabled()
 	{
-		static bool Respawning = true;
+		bool Respawning = bIsPlayground;
 		return Respawning;
 	}
 
@@ -417,7 +417,7 @@ namespace Helper
 		}
 	}
 
-	static UObject* SpawnChip(UObject* Controller)
+	static UObject* SpawnChip(UObject* Controller, FVector ChipLocation)
 	{
 		static auto ChipClass = FindObject(("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip"));
 
@@ -431,7 +431,7 @@ namespace Helper
 			{
 				std::cout << ("Spawning Chip!\n");
 
-				auto Chip = Easy::SpawnActor(ChipClass, Helper::GetActorLocation(*Pawn), Helper::GetActorRotation(*Pawn));
+				auto Chip = Easy::SpawnActor(ChipClass, ChipLocation, Helper::GetActorRotation(*Pawn));
 
 				std::cout << ("Initializing Chip!\n");
 

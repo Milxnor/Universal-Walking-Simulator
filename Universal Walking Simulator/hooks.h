@@ -472,17 +472,55 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 		auto Params = (parms*)Parameters;
 
+		static auto DeathLocationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathLocation"));	
+		auto DeathInfo = DeadPlayerState->Member<__int64>(("DeathInfo"));
+
+		auto DeathLocation = Helper::GetActorLocation(DeadPC); // *(FVector*)(__int64(&*DeathInfo) + DeathLocationOffset);
+
 		if (Helper::IsRespawnEnabled())
 			Player::RespawnPlayer(DeadPC);
-		// else
+		else
 		{
 			// PlayersLeft--;
 
 			// DeadPC->ClientSendMatchStatsForPlayer(DeadPC->GetMatchReport()->MatchStats);
 
+			auto ItemInstances = Inventory::GetItemInstances(DeadPC);
+
+			if (ItemInstances)
+			{
+				for (int i = 1; i < ItemInstances->Num(); i++)
+				{
+					auto ItemInstance = ItemInstances->At(i);
+
+					if (ItemInstance)
+					{
+						struct
+						{
+							FGuid                                       ItemGuid;                                                 // (Parm, ZeroConstructor, IsPlainOldData)
+							int                                                Count;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
+						} AFortPlayerController_ServerAttemptInventoryDrop_Params{ Inventory::GetItemGuid(ItemInstance), *FFortItemEntry::GetCount(GetItemEntryFromInstance<__int64>(ItemInstance)) };
+
+						// ServerAttemptInventoryDropHook(DeadPC, nullptr, &AFortPlayerController_ServerAttemptInventoryDrop_Params);
+
+						auto Params = &AFortPlayerController_ServerAttemptInventoryDrop_Params;
+
+						auto Definition = Inventory::TakeItem(DeadPC, Params->ItemGuid, Params->Count, true);
+						auto Pawn = Helper::GetPawnFromController(DeadPC);
+
+						if (Pawn && Definition)
+						{
+							auto loc = Helper::GetActorLocation(Pawn);
+
+							auto Pickup = Helper::SummonPickup(Pawn, Definition, DeathLocation, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count);
+						}
+					}
+				}
+			}
+
 			if (Engine_Version >= 423) // wrong
 			{
-				auto Chip = Helper::SpawnChip(DeadPC);
+				auto Chip = Helper::SpawnChip(DeadPC, DeathLocation);
 
 				if (Chip)
 				{
@@ -507,10 +545,17 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 					else
 						std::cout << ("No FortResurrectionData!\n");
 
+					/*
+					
+					[13980] FloatProperty /Script/FortniteGame.FortPlayerDeathReport.ServerTimeForResurrect
+					[13981] FloatProperty /Script/FortniteGame.FortPlayerDeathReport.ServerTimeForRespawn
+
+					*/
+
 					auto ResurrectionData = FFortResurrectionData{};
 					ResurrectionData.bResurrectionChipAvailable = true;
-					ResurrectionData.ResurrectionExpirationLength = 99999.f;
-					ResurrectionData.ResurrectionExpirationTime = 99999.f;
+					ResurrectionData.ResurrectionExpirationLength = 9999.f;
+					ResurrectionData.ResurrectionExpirationTime = 9999.f;
 					ResurrectionData.WorldLocation = Helper::GetActorLocation(Chip);
 
 					if (FortResurrectionData)

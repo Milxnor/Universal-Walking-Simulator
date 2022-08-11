@@ -745,3 +745,64 @@ void InitializeNetHooks()
             std::cout << ("[WARNING] Unable to hook CollectGarbage!\n");
     }
 }
+
+void DisableNetHooks()
+{
+    static const auto FnVerDouble = std::stod(FN_Version);
+
+    MH_DisableHook((PVOID)SpawnPlayActorAddr);
+    MH_DisableHook((PVOID)Beacon_NotifyControlMessageAddr);
+    MH_DisableHook((PVOID)World_NotifyControlMessageAddr);
+
+    if (Engine_Version < 424 && GetNetModeAddr) // i dont even think we have to hook this
+    {
+        MH_DisableHook((PVOID)GetNetModeAddr);
+    }
+
+    if (Engine_Version > 423)
+    {
+        MH_DisableHook((PVOID)ValidationFailureAddr);
+    }
+
+    MH_DisableHook((PVOID)TickFlushAddr);
+
+    if (KickPlayer)
+    {
+        MH_DisableHook((PVOID)KickPlayerAddr);
+    }
+
+    if (LP_SpawnPlayActorAddr)
+    {
+        MH_DisableHook((PVOID)LP_SpawnPlayActorAddr);
+    }
+
+    if (NoReserveAddr)
+    {
+        MH_DisableHook((PVOID)NoReserveAddr);
+    }
+
+    // if (NetDebug)
+    {
+        if (NetDebugAddr)
+        {
+            MH_DisableHook((PVOID)NetDebugAddr);
+        }
+
+        if (CollectGarbageAddr)
+        {
+            // if (Engine_Version < 424)
+            {
+                if (Engine_Version >= 422 && Engine_Version < 424)
+                {
+                    MH_DisableHook((PVOID)CollectGarbageAddr);
+                }
+                else
+                {
+                    MH_DisableHook((PVOID)CollectGarbageAddr);
+                }
+            }
+        }
+        else
+            std::cout << ("[WARNING] Unable to hook CollectGarbage!\n");
+    }
+}

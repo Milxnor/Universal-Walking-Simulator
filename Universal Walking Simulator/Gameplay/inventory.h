@@ -174,7 +174,10 @@ namespace Inventory
 
 		// ItemInstancesOffset = 0x110;
 
-		return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
+		if (Inventory)
+			return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
+		else
+			return nullptr;
 	}
 
 	inline void EquipWeapon(UObject* Pawn, UObject* FortWeapon, const FGuid& Guid, int Ammo = 0)

@@ -530,6 +530,7 @@ void InitializePatterns()
         GetPlayerViewpointSig = ("40 55 56 57 41 57 48 8B EC 48 83 EC 48 48 8B 81 ? ? ? ? 4D 8B F8 48 8B F2 48 8B F9 48 85 C0 0F 84 ? ? ? ? F6 80 ? ? ? ? ? 0F 84 ? ? ? ? 48 8B 88 ? ? ? ? 48 85 C9 74 23 0F 10 89 ? ? ? ? 0F 28 C1 F3 0F 11 4D ? 0F C6 C1 55 0F C6 C9 AA");
         StaticLoadObjectSig = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8B 85 ? ? ? ? 4C 8B FA 89 45 88 4C 8B E9 48 8B 85 ? ? ? ? 48 8D";
         PlayMontageSig = "40 55 56 41 54 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B F1 0F 29 7C 24 ? 48 8B 89 ? ? ? ? 4D 8B F1 F3 0F 10 3D ? ? ? ? 4C 8B E2 48 85 C9 0F 84 ? ? ? ? 4C 89 BC 24 ? ? ? ? E8 ? ? ? ? 4C 8B F8 48 85 C0";
+        CanActivateAbilitySig = "48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 49 8B F0";
     }
 
     static const auto FnVerDouble = std::stod(FN_Version);
