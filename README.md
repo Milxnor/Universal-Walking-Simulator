@@ -10,9 +10,9 @@ WIP: 1.7.2-2.4.2, S11
 Add an auto pattern finder, this was in development and it's easy to make, it's just time consuming.<br>
 Add Chapter 2 Support<br>
 Clean up Project and add comments to the code.<br>
+
 # CURRENT ISSUES
 
-S10 (10.40) has a movement issue + Event crashes<br>
 Battle Bus Crashes on ~S8+<br>
 
 Code is everywhere.<br>
@@ -28,7 +28,7 @@ Give a descriptive summary of what your code does and how its beneficial to the 
 ## NOTICE
 Pull Requests WILL NOT be accepted if they do not follow the provided criteria
 <br>
-This Project was made for fun and was Open Sourced for Educational Purposes. If you are an Epic Employee and want this project taken down contact me on Discord: GD#8099
+This Project was made for fun and was Open Sourced for Educational Purposes. If you are an Epic Employee and want this project taken down contact me on Discord: Milxnor#3531
 # CREDITS
 
 If you are to use this base for your own project, please credit us and link the repository.<br>

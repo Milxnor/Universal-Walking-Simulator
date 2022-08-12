@@ -357,8 +357,6 @@ inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunct
 
     auto Params = (UAbilitySystemComponent_ServerTryActivateAbility_Params*)Parameters;
 
-    // auto AbilityToActivate = Function->GetParam<FGameplayAbilitySpecHandle>("AbilityToActivate", Parameters);// FindOffsetStruct("")
-
     InternalServerTryActivateAbility(AbilitySystemComponent, Params->AbilityToActivate, Params->InputPressed, &Params->PredictionKey, nullptr);
 
     return false;
