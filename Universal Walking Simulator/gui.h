@@ -482,6 +482,18 @@ DWORD WINAPI GuiThread(LPVOID)
 						CreateThread(0, 0, Looting::Tables::SpawnFloorLoot, 0, 0, 0);
 					} */
 
+					/*
+					
+					if (Engine_Version >= 423 && bStarted)
+					{
+						if (ImGui::Button("Spawn Vehicles"))
+						{
+							CreateThread(0, 0, Looting::Tables::SpawnVehicles, 0, 0, 0);
+						}
+					}
+
+					*/
+
 					if (ImGui::Button("Restart"))
 					{
 						DisableNetHooks();

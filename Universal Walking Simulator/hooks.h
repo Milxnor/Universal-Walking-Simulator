@@ -70,7 +70,12 @@ inline void initStuff()
 				*AuthGameMode->Member<UObject*>(("PlayerControllerClass")) = PlayerControllerClass;
 			}
 
-			*gameState->Member<char>(("bGameModeWillSkipAircraft")) = false;
+			auto WillSkipAircraft = gameState->Member<char>(("bGameModeWillSkipAircraft"));
+
+			if (!WillSkipAircraft) // we are in like frontend or some gamestate that is not athena
+				return;
+
+			*WillSkipAircraft = false;
 			*gameState->Member<float>(("AircraftStartTime")) = 99999.0f;
 			*gameState->Member<float>(("WarmupCountdownEndTime")) = 99999.0f;
 
@@ -230,6 +235,33 @@ inline void initStuff()
 	}
 }
 
+bool ServerReviveFromDBNOHook(UObject* DownedPawn, UFunction*, void* Parameters)
+{
+	if (DownedPawn)
+	{
+		auto DownedController = *DownedPawn->Member<UObject*>(("Controller"));
+		*DownedPawn->Member<bool>(("bIsDBNO")) = false;
+
+		static auto OnRep_IsDBNO = DownedPawn->Function("OnRep_IsDBNO");
+		DownedPawn->ProcessEvent(OnRep_IsDBNO);
+
+		struct parms { UObject* EventInstigator; }; // AController*
+
+		auto Params = (parms*)Parameters;
+
+		auto Instigator = Params->EventInstigator;
+
+		static auto ClientOnPawnRevived = DownedController->Function("ClientOnPawnRevived");
+
+		if (ClientOnPawnRevived)
+			DownedController->ProcessEvent(ClientOnPawnRevived, &Instigator);
+
+		Helper::SetHealth(DownedPawn, 30);
+	}
+
+	return false;
+}
+
 bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction*, void* Parameters)
 {
 	std::cout << "OnSafeZoneStateChange!\n";
@@ -298,7 +330,9 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 			std::cout << ("Yaw: ") << rot.Yaw << '\n';
 			std::cout << ("Roll: ") << rot.Roll << '\n';
 
-			Helper::SetActorLocationAndRotation(Vehicle, *Translation, rot);
+			auto OGRot = Helper::GetActorRotation(Vehicle);
+
+			Helper::SetActorLocation(Vehicle, *Translation);
 
 			UObject* RootComp = nullptr;
 			static auto GetRootCompFunc = Vehicle->Function("K2_GetRootComponent");
@@ -790,15 +824,118 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 					if (CurrentSpec.Ability == DefaultObject)
 					{
-						auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(("CurrentActivationInfo"));
+						auto EmoteAbility = CurrentSpec.Ability;
+
+						*EmoteAbility->Member<UObject*>("PlayerPawn") = Pawn;
+
+						auto ActivationInfo = EmoteAbility->Member<FGameplayAbilityActivationInfo>(("CurrentActivationInfo"));
 
 						// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
 						if (PlayMontage)
 						{
-							auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
+							// STATIC_CreatePlayMontageAndWaitProxy
+
+							static auto def = FindObject("AbilityTask_PlayMontageAndWait /Script/GameplayAbilities.Default__AbilityTask_PlayMontageAndWait");
+
+							struct
+							{
+							public:
+								UObject* OwningAbility;                                     // 0x0(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+								FName                                  TaskInstanceName;                                  // 0x8(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+								UObject* MontageToPlay;                                     // 0x10(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+								float                                        Rate;                                              // 0x18(0x4)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+								FName                                  StartSection;                                      // 0x1C(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+								bool                                         bStopWhenAbilityEnds;                              // 0x24(0x1)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+								uint8_t                                        Pad_1103[0x3];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+								float                                        AnimRootMotionTranslationScale;                    // 0x28(0x4)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+								uint8_t                                        Pad_1104[0x4];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+								UObject* ReturnValue;        //UAbilityTask_PlayMontageAndWait                                // 0x30(0x8)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+							} UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params;
+
+							UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params.OwningAbility = EmoteAbility;
+							UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params.TaskInstanceName = FName();
+							UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params.MontageToPlay = Montage;
+							UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params.Rate = 1.0f;
+							UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params.StartSection = FName(0);
+							UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params.bStopWhenAbilityEnds = false;
+							UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params.AnimRootMotionTranslationScale = 1.0f;
+
+							static auto CreatePlayMontageAndWaitProxy = FindObject("Function /Script/GameplayAbilities.AbilityTask_PlayMontageAndWait.CreatePlayMontageAndWaitProxy");
+
+							/* if (CreatePlayMontageAndWaitProxy)
+								def->ProcessEvent(CreatePlayMontageAndWaitProxy, &UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params);
+							else
+								std::cout << "Unable to find CreatePlayMontageAndWaitProxy!\n"; */
+
+							// IMPORTANT: https://ibb.co/H7RBBms
+							// auto Dura = PlayMontage(AbilitySystemComponent, EmoteAbility, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0)); // TODO: Use PlayMontageAndWait
 							// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
 
-							std::cout << ("Played for: ") << Dura << '\n';
+							// std::cout << ("Played for: ") << Dura << '\n';
+							
+							std::cout << "Played montage!\n";
+
+							struct FFortGameplayAbilityMontageInfo
+							{
+								UObject* MontageToPlay;                                            // 0x0000(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+								float                                              AnimPlayRate;
+							};
+
+							struct FFortCharacterPartMontageInfo
+							{
+								TEnumAsByte<EFortCustomPartType>                   CharacterPart;                                            // 0x0000(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+								unsigned char                                      UnknownData00[0x7];                                       // 0x0001(0x0007) MISSED OFFSET
+								UObject* AnimMontage;                                              // 0x0008(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+							};
+
+							auto MontageInfo = EmoteAbility->Member<__int64>("MontageInfo");
+
+							static auto CharacterPartMontagesOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAbilityMontageInfo", "CharacterPartMontages");
+
+							((FFortGameplayAbilityMontageInfo*)MontageInfo)->MontageToPlay = Montage;
+							((FFortGameplayAbilityMontageInfo*)MontageInfo)->AnimPlayRate = 1.0f;
+
+							// AbilityActorInfo->GetAnimInstance()
+
+							struct { UObject* clientAnimMontage; float inPlayRate; } ServerCurrentMontageSetPlayRate_Params{ Montage, 1.0f };
+							AbilitySystemComponent->ProcessEvent("ServerCurrentMontageSetPlayRate", &ServerCurrentMontageSetPlayRate_Params);
+
+							auto CharacterPartMontages = (TArray< FFortCharacterPartMontageInfo>*)(__int64(MontageInfo) + CharacterPartMontagesOffset);
+							FFortCharacterPartMontageInfo inf;
+							inf.CharacterPart = EFortCustomPartType::Body;
+							inf.AnimMontage = Montage;
+							CharacterPartMontages->Add(inf);
+
+							Pawn->ProcessEvent("OnMontageStarted", &Montage);
+
+							static auto OnMontageStartedPlaying = EmoteAbility->Function("OnMontageStartedPlaying");
+							/* static auto PlayInitialEmoteMontage = EmoteAbility->Function("PlayInitialEmoteMontage");
+
+							if (PlayInitialEmoteMontage)
+								EmoteAbility->ProcessEvent(PlayInitialEmoteMontage); // CRASHES
+							else
+								std::cout << "No PlayInitialEmoteMontage!\n"; */
+
+							if (OnMontageStartedPlaying)
+								EmoteAbility->ProcessEvent(OnMontageStartedPlaying);
+							else
+								std::cout << "No OnMontageStartedPlaying!\n";
+
+							/*
+
+							struct
+							{
+								UObject* OwningAbility;                                            // (Parm, ZeroConstructor, IsPlainOldData)
+								FName                                       TaskInstanceName;                                         // (Parm, ZeroConstructor, IsPlainOldData)
+								UObject* MontageToPlay;                                            // (Parm, ZeroConstructor, IsPlainOldData)
+								float                                              PlayRate;                                                 // (Parm, ZeroConstructor, IsPlainOldData)
+								FName                                       StartSection;                                             // (Parm, ZeroConstructor, IsPlainOldData)
+								bool                                               bStopWhenAbilityEnds;                                     // (Parm, ZeroConstructor, IsPlainOldData)
+								float                                              RootMotionTranslationScale;                               // (Parm, ZeroConstructor, IsPlainOldData)
+								UObject* ReturnValue;     // UFortAbilityTask_PlayMontageWaitNotify                                          // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
+							} UFortAbilityTask_PlayMontageWaitNotify_PlayMontageAndWaitNotify_Params{EmoteAbility, FName(-1), Montage, 1.0f, FName(-1), false, 1.0f};
+
+							*/
 
 							static auto OnRep_LastReplicatedEmoteExecuted = Pawn->Function(_("OnRep_LastReplicatedEmoteExecuted")); // this isnt in all versions
 
@@ -809,6 +946,8 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 							if (OnRep_CharPartAnimMontageInfo)
 								Pawn->ProcessEvent(OnRep_CharPartAnimMontageInfo);
+
+							AbilitySystemComponent->ProcessEvent("OnRep_ReplicatedAnimMontage");
 						}
 					}
 				}
@@ -1245,6 +1384,8 @@ void FinishInitializeUHooks()
 	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerChoosePart"), ServerChoosePartHook);
 
 	AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
+
+	AddHook("Function /Script/FortniteGame.FortPlayerPawn.ServerReviveFromDBNO", ServerReviveFromDBNOHook);
 
 	for (auto& Func : FunctionsToHook)
 	{

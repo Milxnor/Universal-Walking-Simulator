@@ -97,7 +97,7 @@ namespace LootingV2
 
 	void AddItemAndWeight(int Index, const DefinitionInRow& Item, float Weight)
 	{
-		if (Items.size() > Index || Weights.size() > Index)
+		if (Index > Items.size() || Index > Weights.size())
 			return;
 
 		Items[Index].push_back(Item);
@@ -225,15 +225,17 @@ namespace LootingV2
 
 		std::cout << "Initialized Looting V2!\n";
 
+		// std::cout << "[0] Size: " << Items[0].size() << '\n';
+
 		return 0;
 	}
 
-	static const DefinitionInRow* GetRandomItem(ItemType Type, int LootType = LootItems)
+	static const DefinitionInRow GetRandomItem(ItemType Type, int LootType = LootItems)
 	{
 		if (LootType <= Items.size() ? Items[LootType].empty() : true)
 		{
 			std::cout << std::format("[WARNING] Tried getting a {} with loot type {} but the table is null!\n", ItemTypeToString(Type), std::to_string(LootType));
-			return nullptr;
+			return DefinitionInRow();
 		}
 
 		auto& TableToUse = Items[LootType];
@@ -246,13 +248,11 @@ namespace LootingV2
 		{
 			auto& Item = TableToUse[rand() % (TableToUse.size())];
 
-			if (/* RandomBoolWithWeight(Item.Weight) && */ Item.Type == Type && Item.Definition)
-				return &Item;
+			if (RandomBoolWithWeight(Item.Weight) && Item.Type == Type && Item.Definition)
+				return Item;
 
 			current++;
 		}
-
-		return nullptr;
 	}
 
 	DWORD WINAPI SummonFloorLoot(LPVOID)
@@ -305,8 +305,9 @@ namespace LootingV2
 			if (BuildingContainerName.contains(("Tiered_Chest"))) //  LCD_ToolBox
 			{
 				auto DefInRow = GetRandomItem(ItemType::Weapon);
-				auto WeaponDef = DefInRow->Definition;
 				{
+					auto WeaponDef = DefInRow.Definition;
+
 					static auto GetAmmoWorldItemDefinition_BP = WeaponDef->Function(("GetAmmoWorldItemDefinition_BP"));
 					if (GetAmmoWorldItemDefinition_BP)
 					{
@@ -314,12 +315,11 @@ namespace LootingV2
 						WeaponDef->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
 						auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
 
-						// if (AmmoDef)
 						{
 							auto Location = GetCorrectLocation();
 
 							if (WeaponDef)
-								Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DefInRow->DropCount);
+								Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DefInRow.DropCount);
 
 							if (AmmoDef)
 							{
@@ -327,9 +327,10 @@ namespace LootingV2
 								Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DropCount);
 							}
 
-							if (auto ConsumableInRow = GetRandomItem(ItemType::Consumable))
+							auto ConsumableInRow = GetRandomItem(ItemType::Consumable);
+							if (ConsumableInRow.Definition)
 							{
-								Helper::SummonPickup(nullptr, ConsumableInRow->Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow->DropCount); // *Consumable->Member<int>(("DropCount")));
+								Helper::SummonPickup(nullptr, ConsumableInRow.Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow.DropCount); // *Consumable->Member<int>(("DropCount")));
 							}
 						}
 					}
@@ -339,13 +340,13 @@ namespace LootingV2
 			else if (BuildingContainerName.contains(("Ammo")))
 			{
 				auto AmmoInRow = GetRandomItem(ItemType::Ammo);
-				auto AmmoDef = AmmoInRow->Definition;
+				auto AmmoDef = AmmoInRow.Definition;
 
 				if (AmmoDef)
 				{
 					auto Location = GetCorrectLocation();
 
-					auto DropCount = AmmoInRow->DropCount; // *AmmoDef->Member<int>(("DropCount"));
+					auto DropCount = AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
 					Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount);
 				}
 			}
@@ -474,14 +475,53 @@ namespace Looting
 			}
 		}
 
-		static DWORD SpawnVehicles()
+		static DWORD WINAPI SpawnVehicles(LPVOID)
 		{
+			if (!StaticLoadObjectO)
+				return 1;
+
 			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_QuadSpawner.Athena_QuadSpawner_C
 			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_OctopusSpawner.Athena_OctopusSpawner_C
 			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_BiplaneSpawner.Athena_BiplaneSpawner_C
 			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_JackalSpawner.Athena_JackalSpawner_C
 			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_CartSpawner.Athena_CartSpawner_C
 			// World /Game/Athena/Maps/Athena_DroneSpawners.Athena_DroneSpawners
+
+			static auto FortVehicleSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_QuadSpawner.Athena_QuadSpawner_C"); // FindObject("Class /Script/FortniteGame.FortAthenaVehicleSpawner");
+
+			auto Spawners = Helper::GetAllActorsOfClass(FortVehicleSpawnerClass);
+
+			std::cout << "Spawning: " << Spawners.Num() << " vehicles\n";
+
+			for (int i = 0; i < Spawners.Num(); i++)
+			{
+				auto Spawner = Spawners[i];
+
+				if (Spawner)
+				{
+					auto VehicleClassSoft = Spawner->Member<TSoftClassPtr>("VehicleClass");
+
+					if (VehicleClassSoft && VehicleClassSoft->ObjectID.AssetPathName.ComparisonIndex > 0)
+					{
+						auto VehicleName = VehicleClassSoft->ObjectID.AssetPathName.ToString();
+						auto SpawnerLoc = Helper::GetActorLocation(Spawner);
+						std::cout << std::format("Spawning {} at {} {} {}", VehicleName, SpawnerLoc.X, SpawnerLoc.Y, SpawnerLoc.Z);
+						static auto BPC = FindObject("Class /Script/Engine.BlueprintGeneratedClass");
+						auto VehicleClass = StaticLoadObject(BPC, nullptr, VehicleName);
+
+						if (VehicleClass)
+						{
+							Easy::SpawnActor(VehicleClass, SpawnerLoc, Helper::GetActorRotation(Spawner));
+						}
+						else
+							std::cout << "No vehicle class!\n";
+					}
+					else
+						std::cout << "No soft vehicle class!\n";
+				}
+			}
+
+			std::cout << "Spawned vehicles!\n";
 
 			return 0;
 		}

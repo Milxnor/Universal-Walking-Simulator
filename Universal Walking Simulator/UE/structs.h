@@ -582,7 +582,7 @@ static UObject* (*StaticLoadObjectO)(
 static UObject* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name)
 {
 	auto Name = std::wstring(name.begin(), name.end()).c_str();
-	return StaticLoadObjectO(Class, Outer, Name, nullptr, 0, nullptr, false, nullptr);
+	return StaticLoadObjectO ? StaticLoadObjectO(Class, Outer, Name, nullptr, 0, nullptr, false, nullptr) : nullptr;
 }
 
 template <typename ReturnType = UObject>
@@ -1908,7 +1908,7 @@ class TSoftObjectPtr : public FSoftObjectPtr
 {
 
 };
-class TSoftClassPtr : FSoftObjectPtr
+class TSoftClassPtr : public FSoftObjectPtr
 {
 
 };

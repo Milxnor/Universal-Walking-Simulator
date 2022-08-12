@@ -85,6 +85,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (!bSpawnedFloorLoot)
     {
         // CreateThread(0, 0, Looting::Tables::SpawnFloorLoot, 0, 0, 0);
+        // CreateThread(0, 0, Looting::Tables::SpawnVehicles, 0, 0, 0);
         bSpawnedFloorLoot = true;
     }
 
@@ -263,12 +264,14 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
             }
 
-            if (Engine_Version < 424)
+            if (Engine_Version < 424) // i dont think needed
             {
                 static auto EmoteAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
                 if (EmoteAbility)
+                {
                     GrantGameplayAbility(Pawn, EmoteAbility);
+                }
             }
 
             std::cout << ("Granted Abilities!\n");

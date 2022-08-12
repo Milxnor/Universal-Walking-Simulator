@@ -783,6 +783,14 @@ namespace Helper
 		return 0;
 	}
 
+	void SetHealth(UObject* Pawn, float Health)
+	{
+		static auto SetHealth = Pawn->Function("SetHealth");
+
+		if (SetHealth)
+			Pawn->ProcessEvent(SetHealth, &Health);
+	}
+
 	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart(), bool bResetTeams = false)
 	{
 		static const auto FnVerDouble = std::stod(FN_Version);
@@ -1045,7 +1053,7 @@ namespace Helper
 			BuildingActor->ProcessEvent(fn);
 	}
 
-	bool SetActorLocation(UObject* Actor, FVector& Location)
+	bool SetActorLocation(UObject* Actor, const FVector& Location)
 	{
 		static auto fn = Actor->Function(("K2_SetActorLocation"));
 
@@ -1057,6 +1065,7 @@ namespace Helper
 			bool                                               bTeleport;                                                // (Parm, ZeroConstructor, IsPlainOldData)
 			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
 		} parms{ Location, false, 0, true };
+
 		if (fn)
 			Actor->ProcessEvent(fn, &parms);
 
@@ -1078,7 +1087,7 @@ namespace Helper
 		return params.ReturnValue;
 	}
 
-	bool SetActorLocationAndRotation(UObject* Actor, FVector& Location, FRotator& Rotation)
+	bool SetActorLocationAndRotation(UObject* Actor, FVector& Location, const FRotator& Rotation)
 	{
 		static auto fn = Actor->Function(("K2_SetActorLocationAndRotation"));
 

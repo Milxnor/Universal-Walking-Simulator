@@ -560,7 +560,7 @@ namespace Inventory
 
 			if (FFortItemEntry::GetItemDefinition((__int64*)&ItemEntry) == Definition && (Count == -1 ? true : *FFortItemEntry::GetCount((__int64*)&ItemEntry) == Count))
 			{
-				auto Offset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), Name);
+				auto Offset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), Name); // todo: idk like make this faster
 				*(Type*)(__int64(&ItemEntry) + Offset) = NewVal;
 				bSuccessful = true;
 				auto Inventory = GetInventory(Controller);
@@ -1263,6 +1263,7 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 				if (Definition && *Definition && Count)
 				{
 					auto NewInstance = Inventory::GiveItem(Controller, *Definition, EFortQuickBars::Primary, 1, *Count, &bDidStack); // TODO: Figure out what quickbars are supposed to be used.
+					Helper::EnablePickupAnimation(Pawn, Params->Pickup);
 
 					if (bShouldSwap)
 					{
@@ -1289,7 +1290,6 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 				{
 
 					// Helper::DestroyActor(Params->Pickup);
-					Helper::EnablePickupAnimation(Pawn, Params->Pickup);
 
 					*bPickedUp = true;
 
