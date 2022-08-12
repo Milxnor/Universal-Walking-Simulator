@@ -159,9 +159,15 @@ namespace Inventory
 	__int64* GetInventory(UObject* Controller)
 	{
 		auto WorldInventory = *Controller->Member<UObject*>(("WorldInventory"));
-		auto Inventorya = WorldInventory->Member<__int64>(("Inventory"));
 
-		return Inventorya;
+		if (WorldInventory)
+		{
+			auto Inventorya = WorldInventory->Member<__int64>(("Inventory"));
+
+			return Inventorya;
+		}
+
+		return nullptr;
 	}
 
 	TArray<UObject*>* GetItemInstances(UObject* Controller)

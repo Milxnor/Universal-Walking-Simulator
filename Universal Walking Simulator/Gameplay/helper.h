@@ -111,6 +111,14 @@ namespace Helper
 			if (Lake)
 				*Lake->Member<uint8_t>(("DynamicFoundationType")) = 0;
 		}
+
+		/*
+		
+		[51709] Function /Script/FortniteGame.BuildingFoundation.OnLevelShown
+		[51710] Function /Script/FortniteGame.BuildingFoundation.OnLevelStreamedIn
+		[51711] Function /Script/FortniteGame.BuildingFoundation.OnRep_DynamicFoundationRepData
+		
+		*/
 	}
 	
 	UObject* GetWorld()
@@ -290,14 +298,19 @@ namespace Helper
 						Pickup->ProcessEvent(OnRep_TossedFromContainer);
 				}
 
+				// physics go brr
+
 				static auto SetReplicateMovementFn = Pickup->Function(("SetReplicateMovement"));
-				struct { bool b; } bruh{ false };
+				struct { bool b; } bruh{ true };
 				Pickup->ProcessEvent(SetReplicateMovementFn, &bruh);
 
 				static auto Rep_ReplicateMovement = Pickup->Function(("OnRep_ReplicateMovement"));
 				Pickup->ProcessEvent(Rep_ReplicateMovement);
+				
+				static auto ProjectileMovementComponentClass = FindObject("Class /Script/Engine.ProjectileMovementComponent");
 
-				// Helper::EnablePickupAnimation(Pawn, Pickup);
+				auto MovementComponent = Pickup->Member<UObject*>("MovementComponent");
+				*MovementComponent = Easy::SpawnObject(ProjectileMovementComponentClass, Pickup);
 			}
 		}
 
@@ -689,6 +702,34 @@ namespace Helper
 		return Name;
 	}
 
+	static bool IsSmallZoneEnabled()
+	{
+		return bIsLateGame;
+	}
+
+	static UObject* GetRandomPOIActor()
+	{
+		if (Helper::IsSmallZoneEnabled())
+		{
+			auto POIManager = *Helper::GetGameState()->Member<UObject*>("PoiManager");
+
+			if (POIManager)
+			{
+				auto AllPois = POIManager->Member<TArray<UObject*>>("AllPoiVolumes");
+
+				if (AllPois)
+				{
+					auto POI = AllPois->At(rand() % (AllPois->Num()));
+
+					if (POI)
+						return POI;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
 	static std::string GetPlayerName(UObject* PlayerState)
 	{
 		auto name = GetfPlayerName(PlayerState);
@@ -754,10 +795,10 @@ namespace Helper
 		if (!Pawn)
 			return nullptr;
 
-		/* static auto SetReplicateMovementFn = Pawn->Function(("SetReplicateMovement"));
+		static auto SetReplicateMovementFn = Pawn->Function(("SetReplicateMovement"));
 		struct { bool b; } bruh{true};
-		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh); */
-		Pawn->Member<bool>("bReplicateMovement", 1);
+		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh);
+		// Pawn->Member<bool>("bReplicateMovement", 1);
 
 		// prob not needed here from
 

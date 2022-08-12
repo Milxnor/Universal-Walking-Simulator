@@ -81,6 +81,12 @@ public:
 
 	INL ElementType& At(int Index) const 
 	{
+		if (Index > ArrayNum)
+		{
+			std::cout << std::format("Out of range index: {}", Index);
+			return Data[ArrayNum];
+		}
+
 		return Data[Index]; 
 	}
 
@@ -624,7 +630,7 @@ static ReturnType* FindObjectOld(const std::string& str, bool bIsEqual = false, 
 template <typename ReturnType = UObject>
 static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, bool bIsName = false, bool bDoNotUseStaticFindObject = false, bool bSkipIfSFOFails = true)
 {
-	if (StaticFindObjectO && !bDoNotUseStaticFindObject)
+	if (StaticFindObjectO && !bDoNotUseStaticFindObject && !bIsEqual) // TODO: Implement bIsEqual for StaticFindObject
 	{
 		auto Object = StaticFindObject<ReturnType>(str.substr(str.find(" ") + 1));
 		if (Object)
@@ -1442,7 +1448,7 @@ INL MemberType* UObject::Member(const std::string& MemberName, uint8_t BitfieldV
 
 	auto ret = (MemberType*)(__int64(this) + Offset);
 
-	if (std::is_same<MemberType, bool>())
+	/* if (std::is_same<MemberType, bool>())
 	{
 		const auto FieldMask = GetFieldMask(Property);
 		const auto BitIndex = GetBitIndex(Property);
@@ -1455,7 +1461,7 @@ INL MemberType* UObject::Member(const std::string& MemberName, uint8_t BitfieldV
 			*Byte = (*Byte & ~FieldMask) | (BitfieldVal == 1 ? FieldMask : 0);
 			return (MemberType*)&BitfieldVal;
 		}
-	}
+	} */
 
 	return ret;
 }

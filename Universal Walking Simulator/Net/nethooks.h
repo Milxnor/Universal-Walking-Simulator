@@ -346,7 +346,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         static auto GameState = Helper::GetGameState();
         auto GameMemberInfoArray = GameState->Member<FGameMemberInfoArray>("GameMemberInfoArray");
 
-        static int TeamIDX = 0;
+        static int TeamIDX = 4;
 
         *PlayerState->Member<uint8_t>("TeamIndex") = TeamIDX;
         *PlayerState->Member<uint8_t>("SquadId") = TeamIDX;
@@ -371,10 +371,10 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
         // MarkArrayDirty(GameMemberInfoArray);
         // ((TArray<FGameMemberInfo>*)(__int64(&*GameMemberInfoArray) + MembersOffset))->Add(NewInfo); // ,SizeOfGameMemberInfo);
+        MarkArrayDirty(GameMemberInfoArray);
         (*GameMemberInfoArray).Members.Add(NewInfo);
         // MarkArrayDirty(GameMemberInfoArray);
         // MarkItemDirty(GameMemberInfoArray, (FFastArraySerializerItem*)&NewInfo);
-        MarkArrayDirty(GameMemberInfoArray);
 
         auto PlayerTeam = PlayerState->Member<UObject*>("PlayerTeam");
 

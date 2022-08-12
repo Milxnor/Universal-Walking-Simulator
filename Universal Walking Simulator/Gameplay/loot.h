@@ -46,20 +46,63 @@ struct DefinitionInRow // 50 bytes
 	}
 };
 
-bool weight(float v) {
-	float f = rand() * 1.0f / 100;
-	float vv = (v * 10) / 10.0f;
-	return f < vv;
+const DefinitionInRow* cumulative_weighted_choice(const std::vector<float>& weights, const std::vector<DefinitionInRow>& values) {
+	static std::random_device hardware_seed;
+	static std::mt19937_64 engine{ hardware_seed() };
+	if (weights.size() != values.size())
+	{
+		MessageBoxA(0, "Weights and values size mismatch!", "Reboot", MB_ICONERROR);
+		return nullptr;
+	}
+	assert(weights.size() == values.size());
+	const auto max_weight{ weights.back() };
+	std::uniform_real_distribution < float > distribution{ 0.0, max_weight };
+	const auto raw_weight{ distribution(engine) };
+	const auto valid_weight{ std::lower_bound(weights.cbegin(), weights.cend(), raw_weight) };
+	const auto result_idx{ std::distance(weights.cbegin(), valid_weight) };
+	return &values[result_idx];
+}
+
+bool RandomBoolWithWeight(float Weight)
+{
+	//If the Weight equals to 0.0f then always return false
+	if (Weight <= 0.0f)
+	{
+		return false;
+	}
+	else
+	{
+		//If the Weight is higher or equal to the random number then return true
+		std::random_device rd; // obtain a random number from hardware
+		std::mt19937 gen(rd()); // seed the generator
+
+		// CHAPTER 1
+
+		std::uniform_int_distribution<> distr(0.0f, 1.0f);
+		return Weight >= distr(gen);
+	}
+
 }
 
 namespace LootingV2
 {
+	// static std::vector<std::map<std::vector<DefinitionInRow>, std::vector<float>>> Items; // best way? Probably not
 	static std::vector<std::vector<DefinitionInRow>> Items; // best way? Probably not
+	static std::vector<std::vector<float>> Weights;
 	static bool bInitialized = false;
 
 	// Position in Items
 	int LootItems = 0;
 	int SupplyDropItems = 1;
+
+	void AddItemAndWeight(int Index, const DefinitionInRow& Item, float Weight)
+	{
+		if (Items.size() > Index || Weights.size() > Index)
+			return;
+
+		Items[Index].push_back(Item);
+		Weights[Index].push_back(Weight);
+	}
 
 	static DWORD WINAPI InitializeWeapons(LPVOID)
 	{
@@ -81,6 +124,13 @@ namespace LootingV2
 		{
 			Items.push_back(std::vector<DefinitionInRow>());
 		}
+
+		for (int i = 0; i < 2; i++)
+		{
+			Weights.push_back(std::vector<float>());
+		}
+
+		// Items.reserve(2);
 
 		auto LootPackages = GetLootPackages();
 
@@ -142,7 +192,8 @@ namespace LootingV2
 					else if (DefinitionString.contains("Ammo"))
 						currentItem.Type = ItemType::Ammo;
 
-					Items[0].push_back(currentItem);
+					if (Weight)
+						AddItemAndWeight(0, currentItem, *Weight);
 				}
 
 				// std::cout << "Item funny!\n";
@@ -177,7 +228,7 @@ namespace LootingV2
 		return 0;
 	}
 
-	static DefinitionInRow* GetRandomItem(ItemType Type, int LootType = LootItems)
+	static const DefinitionInRow* GetRandomItem(ItemType Type, int LootType = LootItems)
 	{
 		if (LootType <= Items.size() ? Items[LootType].empty() : true)
 		{
@@ -187,19 +238,26 @@ namespace LootingV2
 
 		auto& TableToUse = Items[LootType];
 
+		// auto Item = cumulative_weighted_choice(Weights[LootType], TableToUse);
+
 		int current = 0;
 
 		while (current < 5000) // it shouldnt even be this much
 		{
 			auto& Item = TableToUse[rand() % (TableToUse.size())];
 
-			if (Item.Type == Type && Item.Definition)
+			if (/* RandomBoolWithWeight(Item.Weight) && */ Item.Type == Type && Item.Definition)
 				return &Item;
 
 			current++;
 		}
 
 		return nullptr;
+	}
+
+	DWORD WINAPI SummonFloorLoot(LPVOID)
+	{
+
 	}
 
 	static void HandleSearch(UObject* BuildingContainer)
@@ -414,6 +472,18 @@ namespace Looting
 				if (Consumable)
 					return Consumable;
 			}
+		}
+
+		static DWORD SpawnVehicles()
+		{
+			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_QuadSpawner.Athena_QuadSpawner_C
+			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_OctopusSpawner.Athena_OctopusSpawner_C
+			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_BiplaneSpawner.Athena_BiplaneSpawner_C
+			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_JackalSpawner.Athena_JackalSpawner_C
+			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_CartSpawner.Athena_CartSpawner_C
+			// World /Game/Athena/Maps/Athena_DroneSpawners.Athena_DroneSpawners
+
+			return 0;
 		}
 
 		static DWORD WINAPI Init(LPVOID)
@@ -693,7 +763,9 @@ namespace Looting
 		{
 			Init(nullptr);
 
-			static auto FloorLootClass = FindObject(("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"));
+
+
+			/* static auto FloorLootClass = FindObject(("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"));
 
 			if (FloorLootClass)
 			{
@@ -756,7 +828,7 @@ namespace Looting
 				WarmupFloorLootActors.Free();
 			}
 			else
-				std::cout << ("[WARNING] Unable to spawn warump floor loot actors!\n");
+				std::cout << ("[WARNING] Unable to spawn warump floor loot actors!\n"); */
 
 			return 0;
 		}

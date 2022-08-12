@@ -17,7 +17,7 @@ static uint8_t* FindRow(UObject* DataTable, const std::string& RowName)
 // this dont really belong here
 static UObject* GetLootPackages()
 {
-	if (Engine_Version < 420) // TSOFTOBJECTPTR CHANGED
+	if (Engine_Version < 420) // TSOFTOBJECTPTR CHANGED or soemthing
 		return nullptr;
 
 	UObject* Playlist = Helper::GetPlaylist();
@@ -31,9 +31,9 @@ static UObject* GetLootPackages()
 
 	auto& LootPackagesName = Default;
 
-	if (LootPackagesSoft && LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex) {
+	/* if (LootPackagesSoft && LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex) {
 		LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
-	}
+	} */
 
 	std::cout << "AssetPathName: " << LootPackagesName << '\n';
 

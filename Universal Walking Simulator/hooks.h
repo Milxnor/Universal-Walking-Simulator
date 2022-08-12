@@ -196,14 +196,6 @@ inline void initStuff()
 				if (OnRep_PlayersLeft)
 					gameState->ProcessEvent(OnRep_PlayersLeft);
 			}
-
-			if (Helper::IsRespawnEnabled())
-			{
-				// Enable glider redeploy (idk if this works)
-				FString GliderRedeployCmd;
-				GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 1");
-				Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
-			}
 		}
 
 		Listen(7777);
@@ -225,7 +217,41 @@ inline void initStuff()
 		*bUseDistanceBasedRelevancy = !(*bUseDistanceBasedRelevancy); */
 
 		//CreateThread(0, 0, LootingV2::InitializeWeapons, 0, 0, 0); // doesnt work??
+
+		// GAMEMODE STUFF HERE
+
+		if (Helper::IsRespawnEnabled())
+		{
+			// Enable glider redeploy (idk if this works)
+			FString GliderRedeployCmd;
+			GliderRedeployCmd.Set(L"Athena.EnableParachuteEverywhere 1");
+			Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
+		}
 	}
+}
+
+bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction*, void* Parameters)
+{
+	std::cout << "OnSafeZoneStateChange!\n";
+
+	if (Indicator && Helper::IsSmallZoneEnabled() && false)
+	{
+		static auto GameState = *Helper::GetWorld()->Member<UObject*>(("GameState"));
+
+		if (!GameState)
+			return false;
+
+		auto Aircraft = GameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
+
+		if (!Aircraft)
+			return false;
+
+		*Indicator->Member<FVector>("NextCenter") = Helper::GetActorLocation(Aircraft);
+
+		*Indicator->Member<float>("Radius") = 15000;
+	}
+
+	return true;
 }
 
 bool ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Function, void* Parameters)
@@ -251,6 +277,12 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 		static auto RotationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), ("Rotation"));
 		auto Rotation = (FQuat*)(__int64(&Params->InState) + RotationOffset);
 
+		static auto LinearVelocityOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), ("LinearVelocity"));
+		auto LinearVelocity = (FVector*)(__int64(&Params->InState) + LinearVelocityOffset);
+
+		static auto AngularVelocityOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.ReplicatedAthenaVehiclePhysicsState"), ("AngularVelocity"));
+		auto AngularVelocity = (FVector*)(__int64(&Params->InState) + AngularVelocityOffset);
+
 		if (Translation && Rotation)
 		{
 			std::cout << ("X: ") << Translation->X << '\n';
@@ -267,6 +299,37 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 			std::cout << ("Roll: ") << rot.Roll << '\n';
 
 			Helper::SetActorLocationAndRotation(Vehicle, *Translation, rot);
+
+			UObject* RootComp = nullptr;
+			static auto GetRootCompFunc = Vehicle->Function("K2_GetRootComponent");
+
+			if (GetRootCompFunc)
+				Vehicle->ProcessEvent(GetRootCompFunc, &RootComp);
+
+			if (RootComp)
+			{
+				static auto SetPhysicsLinearVelocity = RootComp->Function("SetPhysicsLinearVelocity");
+
+				struct {
+					FVector                                     NewVel;                                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					bool                                        bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					FName                                       BoneName;
+				} SetPhysicsLinearVelocity_Params{*LinearVelocity, false, FName()};
+
+				if (SetPhysicsLinearVelocity)
+					RootComp->ProcessEvent(SetPhysicsLinearVelocity, &SetPhysicsLinearVelocity);
+
+				static auto SetPhysicsAngularVelocity = RootComp->Function("SetPhysicsAngularVelocity");
+
+				struct {
+					FVector                                     NewAngVel;                                                // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					bool                                               bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					FName                                       BoneName;
+				} SetPhysicsAngularVelocity_Params{*AngularVelocity, false, FName()};
+
+				if (SetPhysicsLinearVelocity)
+					RootComp->ProcessEvent(SetPhysicsAngularVelocity, &SetPhysicsAngularVelocity_Params);
+			}
 
 			return true;
 		}
@@ -1180,6 +1243,8 @@ void FinishInitializeUHooks()
 	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ServerAttemptExitVehicle"), ServerAttemptExitVehicleHook);
 
 	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerChoosePart"), ServerChoosePartHook);
+
+	AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 
 	for (auto& Func : FunctionsToHook)
 	{

@@ -391,6 +391,39 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 
+								if (Helper::IsSmallZoneEnabled())
+								{
+									static auto GameState = *Helper::GetWorld()->Member<UObject*>(("GameState"));
+
+									// if (!GameState)
+										// return false;
+
+									auto Aircraft = GameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
+									auto FlightInfo = Aircraft->Member<__int64>("FlightInfo");
+
+									static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
+									static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
+
+									auto FlightSpeed = (float*)(__int64(FlightInfo) + FlightSpeedOffset);
+									auto FlightStartLocation = (FVector*)(__int64(FlightInfo) + FlightStartLocationOffset);
+
+									*FlightSpeed = 0;
+
+									auto RandomPOI = Helper::GetRandomPOIActor();
+									
+									if (RandomPOI)
+									{
+										auto RandomPOILocation = Helper::GetActorLocation(RandomPOI);
+										*FlightStartLocation = RandomPOILocation;
+										// Helper::SetActorLocation(Aircraft, RandomPOILocation);
+										std::cout << std::format("Set aircraft location to {} {} {}\n", RandomPOILocation.X, RandomPOILocation.Y, RandomPOILocation.Z);
+									}
+									else
+										std::cout << "No POI!\n";
+
+									*GameState->Member<bool>("bAircraftIsLocked") = false;
+								}
+
 								std::cout << ("Started aircraft!\n");
 
 								// TODO: Hook a func for this
@@ -476,7 +509,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						if (!Player.first || !PlayerState)
 							continue;
 
-						if (ImGui::Button(Helper::GetPlayerName(PlayerState).c_str()))
+						if (ImGui::Button(Helper::GetfPlayerName(PlayerState).ToString().c_str()))
 						{
 							PlayerTab = i;
 						}
@@ -487,6 +520,9 @@ DWORD WINAPI GuiThread(LPVOID)
 					static std::string CurrentPlaylist;
 					ImGui::InputText(("Playlist"), &CurrentPlaylist);
 					ImGui::Checkbox(("Playground"), &bIsPlayground);
+
+					// if (!bStarted) // couldnt we wqait till aircraft start
+					ImGui::Checkbox(("Lategame"), &bIsLateGame);
 
 					// TODO: default character parts
 					break;
