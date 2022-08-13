@@ -33,26 +33,6 @@ inline void initStuff()
 		auto world = Helper::GetWorld();
 		auto gameState = *world->Member<UObject*>(("GameState"));
 
-		/* if (Engine_Version == 422) // works for 7.3 by android
-		{
-			struct test {
-				uint8_t bDoDelayedUpdateCullDistanceVolumes : 1;
-				uint8_t bIsRunningConstructionScript : 1;
-				uint8_t bShouldSimulatePhysics : 1;
-				uint8_t bDropDetail : 1;
-				uint8_t bAggressiveLOD : 1;
-				uint8_t bIsDefaultLevel : 1;
-				uint8_t bRequestedBlockOnAsyncLoading : 1;
-				uint8_t bActorsInitialized : 1;
-			};
-
-			// fixes the crash on floor loot
-
-			auto aa = *(test*)(world + 0x10C);
-			aa.bIsRunningConstructionScript = false;
-			*(test*)(world + 0x10C) = aa;
-		} */
-
 		if (gameState)
 		{
 			auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
@@ -229,6 +209,26 @@ inline void initStuff()
 			Helper::Console::ExecuteConsoleCommand(GliderRedeployCmd);
 		}
 	}
+}
+
+bool ServerSendSquadFriendHook(UObject* Controller, UFunction*, void* Parameters)
+{
+	struct parms { UObject* Friend; }; // playerstate
+
+	auto Params = (parms*)Parameters;
+
+	if (Controller && Params)
+	{
+		if (Params->Friend)
+		{
+			std::cout << "Valid Friend!\n";
+			std::wcout << Helper::GetfPlayerName(Params->Friend).Data.GetData() << '\n';
+		}
+		else
+			std::cout << "No Friend!\n";
+	}
+
+	return false;
 }
 
 bool ServerReviveFromDBNOHook(UObject* DownedPawn, UFunction*, void* Parameters)
@@ -1383,6 +1383,8 @@ void FinishInitializeUHooks()
 	AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 
 	AddHook("Function /Script/FortniteGame.FortPlayerPawn.ServerReviveFromDBNO", ServerReviveFromDBNOHook);
+
+	AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerSendSquadFriend", ServerSendSquadFriendHook)
 
 	// GameplayAbility.K2_CommitExecute We probably have to hook this for consumables
 

@@ -766,6 +766,11 @@ namespace Helper
 		return params.Ret;
 	}
 
+	void PlayMontageReplicated(UObject* Controller, UObject* Montage)
+	{
+
+	}
+
 	DWORD WINAPI DumpObjects(LPVOID)
 	{
 		std::ofstream objects("Objects.log");
