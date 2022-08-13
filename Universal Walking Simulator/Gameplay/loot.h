@@ -257,7 +257,25 @@ namespace LootingV2
 
 	DWORD WINAPI SummonFloorLoot(LPVOID)
 	{
+		static auto BuildingContainerClass = FindObject("Class /Script/FortniteGame.BuildingContainer");
 
+		if (BuildingContainerClass)
+		{
+			auto BuildingContainers = Helper::GetAllActorsOfClass(BuildingContainerClass);
+
+			for (int i = 0; i < BuildingContainers.Num(); i++)
+			{
+				auto BuildingContainer = BuildingContainers.At(i);
+
+				if (BuildingContainer && BuildingContainer->GetFullName().contains("Tiered_Athena_FloorLoot_"))
+				{
+					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon).Definition, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
+						EFortPickupSpawnSource::Unset);
+				}
+			}
+		}
+
+		return 0;
 	}
 
 	static void HandleSearch(UObject* BuildingContainer)

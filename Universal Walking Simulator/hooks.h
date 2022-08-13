@@ -33,19 +33,17 @@ inline void initStuff()
 		auto world = Helper::GetWorld();
 		auto gameState = *world->Member<UObject*>(("GameState"));
 
-		/*
-		
-		if (Engine_Version == 422) // works for 7.3 by android
+		/* if (Engine_Version == 422) // works for 7.3 by android
 		{
 			struct test {
-				uint8_t _idk0 : 1;
+				uint8_t bDoDelayedUpdateCullDistanceVolumes : 1;
 				uint8_t bIsRunningConstructionScript : 1;
-				uint8_t _idk2 : 1;
-				uint8_t _idk3 : 1;
-				uint8_t _idk4 : 1;
-				uint8_t _idk5 : 1;
-				uint8_t _idk6 : 1;
-				uint8_t _idk7 : 1;
+				uint8_t bShouldSimulatePhysics : 1;
+				uint8_t bDropDetail : 1;
+				uint8_t bAggressiveLOD : 1;
+				uint8_t bIsDefaultLevel : 1;
+				uint8_t bRequestedBlockOnAsyncLoading : 1;
+				uint8_t bActorsInitialized : 1;
 			};
 
 			// fixes the crash on floor loot
@@ -53,9 +51,7 @@ inline void initStuff()
 			auto aa = *(test*)(world + 0x10C);
 			aa.bIsRunningConstructionScript = false;
 			*(test*)(world + 0x10C) = aa;
-		}
-
-		*/
+		} */
 
 		if (gameState)
 		{
@@ -868,7 +864,8 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 								std::cout << "Unable to find CreatePlayMontageAndWaitProxy!\n"; */
 
 							// IMPORTANT: https://ibb.co/H7RBBms
-							// auto Dura = PlayMontage(AbilitySystemComponent, EmoteAbility, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0)); // TODO: Use PlayMontageAndWait
+							// 
+							auto Dura = PlayMontage(AbilitySystemComponent, EmoteAbility, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0)); // TODO: Use PlayMontageAndWait
 							// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
 
 							// std::cout << ("Played for: ") << Dura << '\n';
@@ -1386,6 +1383,8 @@ void FinishInitializeUHooks()
 	AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 
 	AddHook("Function /Script/FortniteGame.FortPlayerPawn.ServerReviveFromDBNO", ServerReviveFromDBNOHook);
+
+	// GameplayAbility.K2_CommitExecute We probably have to hook this for consumables
 
 	for (auto& Func : FunctionsToHook)
 	{

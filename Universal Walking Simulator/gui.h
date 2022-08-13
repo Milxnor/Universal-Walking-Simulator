@@ -381,6 +381,11 @@ DWORD WINAPI GuiThread(LPVOID)
 						std::cout << "Setup AI!\n";
 					} */
 
+					if (ImGui::Button("Summon Floorloot (V2) (don't use)"))
+					{
+						CreateThread(0, 0, LootingV2::SummonFloorLoot, 0, 0, 0);
+					}
+
 					if (serverStatus == EServerStatus::Up)
 					{
 						if (Engine_Version < 423) // I do not know how to start the bus on S8+
