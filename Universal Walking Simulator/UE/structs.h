@@ -592,10 +592,9 @@ static ReturnType* StaticFindObject(const std::string& str)
 	return (ReturnType*)StaticFindObjectO(nullptr, nullptr, Name, false);
 }
 
-template <typename ReturnType = UObject>
-static ReturnType* GetByIndex(int Index)
+static UObject* GetByIndex(int Index)
 {
-	return (ReturnType*)(ObjObjects ? ObjObjects->GetObjectById(Index) : OldObjects->GetObjectById(Index));
+	return (ObjObjects ? ObjObjects->GetObjectById(Index) : OldObjects->GetObjectById(Index));
 }
 
 template <typename ReturnType = UObject>

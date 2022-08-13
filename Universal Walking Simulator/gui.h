@@ -381,6 +381,11 @@ DWORD WINAPI GuiThread(LPVOID)
 						std::cout << "Setup AI!\n";
 					} */
 
+					if (ImGui::Button("Summon Floorloot (V2) (don't use)"))
+					{
+						CreateThread(0, 0, LootingV2::SummonFloorLoot, 0, 0, 0);
+					}
+
 					if (serverStatus == EServerStatus::Up)
 					{
 						if (Engine_Version < 423) // I do not know how to start the bus on S8+
@@ -515,6 +520,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (ImGui::Button(("OpenVaults"))) {
 						Henchmans::OpenVaults();
 					}
+					
 				
 
 					break;
@@ -684,6 +690,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					{
 						if (!bInformationTab)
 						{
+							static std::string VehicleClass;
 							static std::string WID;
 							static int Count = 1;
 
@@ -710,6 +717,14 @@ DWORD WINAPI GuiThread(LPVOID)
 							if (ImGui::Button(ICON_FA_CROSSHAIRS " Kill"))
 							{
 
+							}
+							ImGui::InputText(("VehicleClass"), &VehicleClass);
+							if (ImGui::Button("Spawn Vehicle"))
+							{
+								auto Pawn = Controller->Member<UObject*>("Pawn");
+								auto vehicleClass = FindObject(VehicleClass);
+								auto Location = Helper::GetActorLocation(*Pawn);
+								Helper::SpawnVehicle(vehicleClass, Location);
 							}
 
 							// TODO: Add teleport to location

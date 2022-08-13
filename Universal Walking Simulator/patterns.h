@@ -375,6 +375,18 @@ void InitializePatterns()
         CreateNetDriver_LocalSig = "4C 89 44 24 ? 53 56 57 41 56 41 57 48 83 EC 70 48 8B B9 ? ? ? ? 48 8D 1D ? ? ? ? 48 63 81 ? ? ? ? 45 33 FF 4C 8B F2 48 8D 0C 40 4C 8D 0C CF 49 3B F9 74 22 44 8B 94 24 ? ? ? ? 44 39 57 04 0F 94 C1 44 39 07 0F 94 C0";
     }
 
+    if (Engine_Version == 416)
+    {
+        TickFlushSig = "4C 8B DC 55 53 56 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 41 0F 29 7B ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 70 48 8B 01 48 8B F1";
+        World_NotifyControlMessageSig = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 F6 48 89 4D 90 44 89 74 24 ? 49 8B D9 48 8B 41 10 45 0F B6 E0 48 8B F2 4C 8B E9";
+        SpawnPlayActorSig = "44 89 44 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 33 F6 48 8D 05 ? ? ? ? 89 75 67 4D 8B E9 4C 8B 65 77 49 39 04";
+        PauseBeaconRequestsSig = "40 53 48 83 EC 30 48 8B D9 84 D2 74 6F 80 3D ? ? ? ? ? 72 33 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 41 B9 ? ? ? ? 48 89 44 24 ? 48 8D 05 ? ? ? ? 48 8D";
+        Beacon_NotifyControlMessageSig = "40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 33 FF 48 89 4C";
+        SetChannelActorSig = "4C 8B DC 55 53 57 41 54 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 45 33 E4 4D 89 73 D0 44 89 A5 ? ? ? ? 4C 8D 35 ? ? ? ? 48 8B 41 28 48 8B D9 4D";
+        CreateChannelSig = "40 56 57 41 54 41 55 41 57 48 83 EC 60 48 8B 01 41 8B F9 45 0F B6 E0 4C 63 FA 48 8B F1 FF 90 ? ? ? ? 45 33 ED 83 FF FF 75 52 41 8B FD 48 8D 8E ? ? ? ? 41 83 FF 01 B8";
+        ReplicateActorSig = "40 55 53 57 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8D 59 68 4C 8B F1 48 8B 0B 48 8B 01 FF 90 ? ? ? ? 41 8B 4E 30 48 8D 3D";
+    }
+
     if (Engine_Version == 420)
     {
         CrashPatchSig = ("0F 29 78 D8 44 0F 29 40 ? F3 45 0F 10 80 ? ? ? ? F3 41 0F 10 B0 ? ? ? ? F3 41 0F 10 88 ? ? ? ? F3 41 0F 10 A0 ? ? ? ? 44 0F 29 58 ? 44 0F 29 60 ? 45 0F 57 E4 48 8B 81 ? ? ? ? 48 05 ? ? ? ? F3 0F 58 48 ? F3 44 0F 10 18 F3 0F 10 78 ? 41 0F 28 D3 F3 0F 10 68 ? F3 41 0F 5C D0 0F 28 DF 0F 28 C5 F3 0F 58 0D E0 FA 75 02"); //4.5 Only
@@ -568,6 +580,19 @@ void InitializePatterns()
         Beacon_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D 68 88 48 81 EC ? ? ? ? 45 33 E4 49 8B D9 44 89 64 24 ? 41 8A F0 48 8B 41 10 48 8B";
     }
 
+    if (FnVerDouble >= 17.00)
+    {
+        TickFlushSig = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8A 81 ? ? ? ? 48";
+        GetPlayerViewpointSig = "48 8B C4 48 89 58 10 48 89 70 18 55 57 41 54 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 0F 29 70 C8 45 33 E4 0F 29 78 B8 49 8B F0 44 0F 29 40 ? 48 8B FA 44 0F 29 48";
+        Beacon_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 45 33 ED 4D 8B F1 44 89 6C 24 ? 41 8A F0 48 8B 41 10";
+        // IDK WHY THIS DOESNT WORK ^
+    }
+
+    if (FnVerDouble >= 18.00)
+    {
+
+    }
+
     static auto ReallocAddr = FindPattern(ReallocSig);
     // FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddr); // we don't need this I think
     CheckPattern(("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
@@ -704,7 +729,9 @@ void InitializePatterns()
     CheckPattern(("SpawnPlayActor"), SpawnPlayActorAddr, &SpawnPlayActor);
 
     NetDebugAddr = FindPattern(NetDebugSig);
-    CheckPattern(("NetDebug"), NetDebugAddr, &NetDebug);
+
+    if (Engine_Version >= 419 && FnVerDouble < 17.00)
+        CheckPattern(("NetDebug"), NetDebugAddr, &NetDebug);
 
     if (Engine_Version >= 420)
     {
@@ -760,7 +787,8 @@ void InitializePatterns()
         if (!GetPlayerViewpointAddr)
             GetPlayerViewpointAddr = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 38 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB"));
 
-        CheckPattern(("GetPlayerViewPoint"), GetPlayerViewpointAddr, &GetPlayerViewPoint);
+        if (FnVerDouble < 17.00)
+            CheckPattern(("GetPlayerViewPoint"), GetPlayerViewpointAddr, &GetPlayerViewPoint);
     }
 
     if (Engine_Version >= 421 && Engine_Version <= 423)
@@ -804,7 +832,8 @@ void InitializePatterns()
             if (!SetWorldAddr)
                 SetWorldAddr = FindPattern(("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
 
-            CheckPattern(("SetWorld"), SetWorldAddr, &SetWorld);
+            if (Engine_Version >= 419)
+                CheckPattern(("SetWorld"), SetWorldAddr, &SetWorld);
         }
     }
 

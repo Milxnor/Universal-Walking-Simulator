@@ -257,7 +257,47 @@ namespace LootingV2
 
 	DWORD WINAPI SummonFloorLoot(LPVOID)
 	{
+		static auto BuildingContainerClass = FindObject("Class /Script/FortniteGame.BuildingContainer");
 
+		auto world = Helper::GetWorld();
+
+		if (BuildingContainerClass)
+		{
+			auto BuildingContainers = Helper::GetAllActorsOfClass(BuildingContainerClass);
+
+			for (int i = 0; i < BuildingContainers.Num(); i++)
+			{
+				auto BuildingContainer = BuildingContainers.At(i);
+
+				if (BuildingContainer && BuildingContainer->GetFullName().contains("Tiered_Athena_FloorLoot_"))
+				{
+					// https://ibb.co/Ny7yHjF
+
+					/* if (Engine_Version == 422 || Engine_Version == 423) // works for 7.3 by android
+					{
+						struct test {
+							uint8_t bDoDelayedUpdateCullDistanceVolumes : 1;
+							uint8_t bIsRunningConstructionScript : 1;
+							uint8_t bShouldSimulatePhysics : 1;
+							uint8_t bDropDetail : 1;
+							uint8_t bAggressiveLOD : 1;
+							uint8_t bIsDefaultLevel : 1;
+							uint8_t bRequestedBlockOnAsyncLoading : 1;
+							uint8_t bActorsInitialized : 1;
+						};
+
+						// fixes the crash on floor loot
+
+						((test*)world + 0x10C)->bIsRunningConstructionScript = false;
+					} */
+
+					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon).Definition, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
+						EFortPickupSpawnSource::Unset);
+				}
+			}
+		}
+
+		return 0;
 	}
 
 	static void HandleSearch(UObject* BuildingContainer)

@@ -397,6 +397,24 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     }
 
+    auto AthenaProfile = PlayerController->Member<UObject*>("AthenaProfile");
+
+    if (AthenaProfile && *AthenaProfile)
+    {
+        std::cout << "Valid AthneaProfile!\n";
+
+        static auto GetRandomDefaultAthenaCharacterDefinition = PlayerController->Function("GetRandomDefaultAthenaCharacterDefinition");
+
+        struct { UObject* McpAthenaProfile; UObject* Def; } GetRandomDefaultAthenaCharacterDefinition_params{ *AthenaProfile };
+
+        if (GetRandomDefaultAthenaCharacterDefinition)
+            PlayerController->ProcessEvent(GetRandomDefaultAthenaCharacterDefinition, &GetRandomDefaultAthenaCharacterDefinition_params);
+
+        std::cout << "Def: " << GetRandomDefaultAthenaCharacterDefinition_params.Def << '\n';
+        if (GetRandomDefaultAthenaCharacterDefinition_params.Def)
+            std::cout << "Def Name: " << GetRandomDefaultAthenaCharacterDefinition_params.Def->GetFullName() << '\n';
+    }
+
     Inventory::Update(PlayerController);
 
     std::cout << ("Spawned Player!\n");
@@ -722,7 +740,7 @@ void InitializeNetHooks()
 
     // if (NetDebug)
     {
-        if (NetDebugAddr)
+        if (NetDebugAddr && Engine_Version >= 419 && FnVerDouble < 17.00)
         {
             MH_CreateHook((PVOID)NetDebugAddr, NetDebugDetour, (void**)&NetDebug);
             MH_EnableHook((PVOID)NetDebugAddr);

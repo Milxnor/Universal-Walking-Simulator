@@ -34,6 +34,11 @@ DWORD WINAPI InputThread(LPVOID)
             }
         }
 
+        else if (GetAsyncKeyState(VK_F8) & 1)
+        {
+            Listen(7777);
+        }
+
         else if (GetAsyncKeyState(VK_F9) & 1)
         {
             InitializeNetHooks();

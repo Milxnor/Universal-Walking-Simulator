@@ -50,7 +50,7 @@ FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>* FindAbilitySpecFromHand
 {
     FAbilityReplicatedDataCache OutData;
     auto ReplicatedDataContainer = (FGameplayAbilityReplicatedDataContainer*)(__int64(AbilitySystemComponent) + 1312); // Found at uhm serverseetreplicaqteddata
-    
+
     if (ReplicatedDataContainer)
         return ReplicatedDataContainer->Find(FGameplayAbilitySpecHandleAndPredictionKey{ Handle, PredictionKey.Current }).Get();
 
@@ -101,79 +101,6 @@ UObject** GetAbilityFromSpec(void* Spec)
         return &((FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)Spec)->Ability;
 }
 
-// template return and base the func and actual ret of fof that maybe?
-void LoopSpecs(UObject* ASC, std::function<void(__int64*)> func)
-{
-    auto ActivatableAbilities = ASC->Member<__int64>(("ActivatableAbilities"));
-
-    auto ItemsOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer", "Items");
-    auto Items = (TArray<__int64>*)(__int64(ActivatableAbilities) + ItemsOffset);
-
-    static auto SpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
-    static auto SpecSize = GetSizeOfStruct(SpecStruct);
-
-    if (ActivatableAbilities)
-    {
-        for (int i = 0; i < Items->Num(); i++)
-        {
-            auto CurrentSpec = (__int64*)(__int64(Items) + (static_cast<long long>(SpecSize) * i));
-            func(CurrentSpec);
-        }
-    }
-}
-
-FGameplayAbilitySpecHandle* GetHandleFromSpec(__int64* Spec)
-{
-    static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
-    return (FGameplayAbilitySpecHandle*)(__int64(Spec) + HandleOffset);
-}
-
-int GetHandleFromHandle(FGameplayAbilitySpecHandle& handle)
-{
-    return handle.Handle;
-}
-
-__int64* FindAbilitySpecFromHandle2(UObject* ASC, FGameplayAbilitySpecHandle Handle)
-{
-    __int64* SpecToReturn = nullptr;
-
-    auto compareHandles = [&Handle, &SpecToReturn](__int64* Spec) {
-        auto CurrentHandle = GetHandleFromSpec(Spec);
-        
-        if (GetHandleFromHandle(*CurrentHandle) == Handle.Handle)
-        {
-            SpecToReturn = Spec;
-            return;
-        }
-    };
-
-    LoopSpecs(ASC, compareHandles);
-
-    return SpecToReturn;
-}
-
-UObject* DoesASCHaveAbility(UObject* ASC, UObject* Ability)
-{
-    if (!ASC || !Ability)
-        return nullptr;
-
-    UObject* AbilityToReturn = nullptr;
-
-    auto compareAbilities = [&AbilityToReturn, &Ability](__int64* Spec) {
-        auto CurrentAbility = GetAbilityFromSpec(Spec);
-
-        if (*CurrentAbility == Ability)
-        {
-            AbilityToReturn = *CurrentAbility;
-            return;
-        }
-    };
-
-    LoopSpecs(ASC, compareAbilities);
-
-    return AbilityToReturn;
-}
-
 void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle Handle, bool InputPressed, FPredictionKey* PredictionKey, __int64* TriggerEventData, bool bConsumeData = false)
 {
     if (!PredictionKey)
@@ -181,8 +108,13 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
         std::cout << ("InternalServerTryActivateAbility. Rejecting ClientActivation of ability with invalid PredictionKey!\n"); // me but this will probably never happen
         return;
     }
-    
-    void* Spec = FindAbilitySpecFromHandle(ASC, Handle);
+
+    void* Spec = nullptr;
+
+    if (Engine_Version < 426)
+        Spec = FindAbilitySpecFromHandle(ASC, Handle);
+    else
+        Spec = FindAbilitySpecFromHandleFTS(ASC, Handle);
 
     if (!Spec)
     {
@@ -206,16 +138,10 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     UObject* InstancedAbility = nullptr;
 
-    struct hahah
-    {
-        unsigned char                                      InputPressed : 1;                                         // 0x0029(0x0001) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
-        unsigned char                                      RemoveAfterActivation : 1;                                // 0x0029(0x0001) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
-        unsigned char                                      PendingRemove : 1;
-    };
-
-    static auto InputPressedOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputPressed");
-   
-    ((hahah*)(__int64(Spec) + InputPressedOffset))->InputPressed = true;
+    if (Engine_Version < 426)
+        ((FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)Spec)->InputPressed = true;
+    else
+        ((FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)Spec)->InputPressed = true;
 
     // Attempt to activate the ability (server side) and tell the client if it succeeded or failed.
 
@@ -228,12 +154,14 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     if (!res)
     {
-        // auto InternalTryActivateAbilityFailureTags = ASC->Member<FGameplayTagContainer>(("ClientDebugStrings"), sizeof(FGameplayTagContainer));
-        // std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed: {}\n", (*GetAbilityFromSpec(Spec))->GetName(), InternalTryActivateAbilityFailureTags->ToStringSimple(true));
-        std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}.\n", (*GetAbilityFromSpec(Spec))->GetName());
+        auto InternalTryActivateAbilityFailureTags = ASC->Member<FGameplayTagContainer>(("ClientDebugStrings"), sizeof(FGameplayTagContainer));
+        std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed: {}\n", (*GetAbilityFromSpec(Spec))->GetName(), InternalTryActivateAbilityFailureTags->ToStringSimple(true));
         Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, *GetCurrent(PredictionKey));
 
-        ((hahah*)(__int64(Spec) + InputPressedOffset))->InputPressed = false;
+        if (Engine_Version < 426)
+            ((FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)Spec)->InputPressed = false;
+        else
+            ((FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)Spec)->InputPressed = false;
 
         MarkItemDirty(ASC->Member<void>(("ActivatableAbilities")), (FFastArraySerializerItem*)Spec); // TODO: Start using the proper function again
     }
@@ -258,7 +186,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     if (!DefaultObject)
     {
-        std::cout << "Failed to create defaultobject for GameplayAbilityClass: " << GameplayAbilityClass->GetFullName() << '\n';
+        std::cout << "Failed to create defaultobject!\n";
         return nullptr;
     }
 
@@ -282,44 +210,9 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
         return Spec;
     };
 
-    auto GenerateNewSpecNew = [&]() -> void* {
-        static auto GameplayAbilitySpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
-        static auto GameplayAbilitySpecSize = GetSizeOfStruct(GameplayAbilitySpecStruct);
+    void* NewSpec = nullptr;
 
-        std::cout << "Size of GameplayAbilitySpec: " << GameplayAbilitySpecSize << '\n';
-
-        auto ptr = malloc(GameplayAbilitySpecSize);
-
-        if (!ptr)
-            return ptr;
-
-        RtlSecureZeroMemory(ptr, GameplayAbilitySpecSize);
-
-        FGameplayAbilitySpecHandle Handle{};
-        Handle.GenerateNewHandle();
-
-        ((FFastArraySerializerItem*)ptr)->MostRecentArrayReplicationKey = -1;
-        ((FFastArraySerializerItem*)ptr)->ReplicationID = -1;
-        ((FFastArraySerializerItem*)ptr)->ReplicationKey = -1;
-
-        static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
-        static auto AbilityOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
-        static auto LevelOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Level");
-        static auto InputIDOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputID");
-        static auto SourceObjectOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "SourceObject");
-
-        *(FGameplayAbilitySpecHandle*)(__int64(ptr) + HandleOffset) = Handle;
-        *(UObject**)(__int64(ptr) + AbilityOffset) = DefaultObject;
-        *(int*)(__int64(ptr) + LevelOffset) = 1;
-        *(int*)(__int64(ptr) + InputIDOffset) = -1;
-        // *(UObject**)(__int64(ptr) + SourceObjectOffset) = nullptr;
-
-        return ptr;
-    };
-
-    void* NewSpec = GenerateNewSpecNew(); // nullptr;
-
-    /* if (Engine_Version < 426)
+    if (Engine_Version < 426)
     {
         auto spec = GenerateNewSpec();
         NewSpec = &spec;
@@ -328,16 +221,46 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     {
         auto spec = GenerateNewSpecFTS();
         NewSpec = &spec;
-    } */
+    }
 
-    if (!NewSpec || DoesASCHaveAbility(AbilitySystemComponent, *GetAbilityFromSpec(NewSpec)))
-        return nullptr;
+    if (Engine_Version <= 422)
+    {
+        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"));
+
+        for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
+        {
+            auto& CurrentSpec = ActivatableAbilities.Items[i];
+
+            if (CurrentSpec.Ability == *GetAbilityFromSpec(NewSpec))
+                return nullptr;
+        }
+    }
+    else if (Engine_Version < 426)
+    {
+        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"));
+
+        for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
+        {
+            auto& CurrentSpec = ActivatableAbilities.Items[i];
+
+            if (CurrentSpec.Ability == *GetAbilityFromSpec(NewSpec))
+                return nullptr;
+        }
+    }
+    else
+    {
+        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerFTS>(("ActivatableAbilities"));
+
+        for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
+        {
+            auto& CurrentSpec = ActivatableAbilities.Items[i];
+
+            if (CurrentSpec.Ability == *GetAbilityFromSpec(NewSpec))
+                return nullptr;
+        }
+    }
 
     // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232
-
-    /* GiveAbilityTest = decltype(GiveAbilityTest)(__int64(GiveAbility));
-
-    GiveAbilityTest(AbilitySystemComponent, &((FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)NewSpec)->Handle, *(__int64*)NewSpec); */
 
     if (Engine_Version < 426)
         GiveAbility(AbilitySystemComponent, &((FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)NewSpec)->Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)NewSpec);
@@ -376,6 +299,17 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
 
         InternalServerTryActivateAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.InputPressed, &BatchInfo.PredictionKey, nullptr);
         // PrintExplicitTags(AbilitySystemComponent);
+
+        Helper::Abilities::ServerSetReplicatedTargetData(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.PredictionKey, BatchInfo.TargetData, FGameplayTag(), BatchInfo.PredictionKey);
+
+        if (BatchInfo.Ended)
+        {
+            // This FakeInfo is probably bogus for the general case but should work for the limited use of batched RPCs
+            FGameplayAbilityActivationInfo FakeInfo;
+            // FakeInfo.ServerSetActivationPredictionKey(BatchInfo.PredictionKey);
+            FakeInfo.PredictionKeyWhenActivated = BatchInfo.PredictionKey;
+            Helper::Abilities::ServerEndAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, FakeInfo, BatchInfo.PredictionKey);
+        }
     }
     else
     {

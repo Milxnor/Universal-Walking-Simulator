@@ -766,6 +766,11 @@ namespace Helper
 		return params.Ret;
 	}
 
+	void PlayMontageReplicated(UObject* Controller, UObject* Montage)
+	{
+
+	}
+
 	DWORD WINAPI DumpObjects(LPVOID)
 	{
 		std::ofstream objects("Objects.log");
@@ -1105,6 +1110,10 @@ namespace Helper
 			Actor->ProcessEvent(fn, &parms);
 
 		return parms.ReturnValue;
+	}
+	void SpawnVehicle(UObject* VehicleClass, FVector& Location, FRotator& Rotation = ())
+	{
+		Easy::SpawnActor(VehicleClass, Location, Rotation);
 	}
 
 	namespace Abilities

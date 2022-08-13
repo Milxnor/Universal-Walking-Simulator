@@ -3,7 +3,7 @@
 namespace Events {
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 12.61f || /* Version == 12.41f || */ Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
+		return (Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
@@ -21,13 +21,19 @@ namespace Events {
 
 			if (Version == 12.41f) {
 				static auto JL = FindObject(("BP_Jerky_Loader_C /CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2"));
+				//static auto JS = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
 
 				static auto JerkyLoadLevel = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.LoadJerkyLevel"));
+				//static auto LoadPOI = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.LoadPOI"));
 
 				bool CO = true;
 
 				if (JL)
+				{
 					JL->ProcessEvent(JerkyLoadLevel, &CO);
+					//JS->ProcessEvent(LoadPOI, &CO);
+				}
+					
 			}
 			if (Version == 10.40f) {
 				//The End C1
@@ -83,9 +89,24 @@ namespace Events {
 
 			if (Version == 12.41f) {
 				static auto JL = FindObject(("BP_Jerky_Loader_C /CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2"));
+				//static auto JS = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
+				//static auto KismetSystem = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
 
-				static auto Function = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.CallStartEventOnScripting"));
-				JL->ProcessEvent(Function);
+				//static auto Function1 = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.StartLoadBeforeKnockback"));
+				//static auto Function2 = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.startevent"));
+				/*if (JS)
+				{
+					JS->ProcessEvent(Function1);
+					JS->ProcessEvent(Function2);
+
+
+				}*/
+				/*static auto Function = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.CallStartEventOnScripting"));
+				JL->ProcessEvent(Function);*/
+				//auto executeconsolecommand = KismetSystem->Function(("ExecuteConsoleCommand"));
+				FString Command;
+				Command.Set(L"streammap /CycloneJerky/Levels/JerkySequenceMap");
+				Helper::Console::ExecuteConsoleCommand(Command);
 				// static auto JS = FindObject(("LevelSequencePlayer /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.Jerky.AnimationPlayer"));
 			}
 
