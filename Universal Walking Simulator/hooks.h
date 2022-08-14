@@ -90,9 +90,9 @@ inline void initStuff()
 					AuthGameMode->ProcessEvent(AuthGameMode->Function(("StartMatch")), nullptr);
 				}
 
-				auto BotManagerClass = FindObject("FortServerBotManagerAthena /Script/FortniteGame.Default__FortServerBotManagerAthena");
+				//auto BotManagerClass = FindObject("FortServerBotManagerAthena /Script/FortniteGame.Default__FortServerBotManagerAthena");
 
-				*AuthGameMode->Member<UObject*>("ServerBotManagerClass") = BotManagerClass;
+				//*AuthGameMode->Member<UObject*>("ServerBotManagerClass") = BotManagerClass;
 				// *AuthGameMode->Member<bool>(("bAlwaysDBNO")) = true;
 
 				// Is this correct?

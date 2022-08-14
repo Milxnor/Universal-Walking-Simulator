@@ -101,12 +101,12 @@ namespace Events {
 
 
 				}*/
-				/*static auto Function = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.CallStartEventOnScripting"));
-				JL->ProcessEvent(Function);*/
+				static auto Function = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.CallStartEventOnScripting"));
+				JL->ProcessEvent(Function);
 				//auto executeconsolecommand = KismetSystem->Function(("ExecuteConsoleCommand"));
-				FString Command;
+				/*FString Command;
 				Command.Set(L"streammap /CycloneJerky/Levels/JerkySequenceMap");
-				Helper::Console::ExecuteConsoleCommand(Command);
+				Helper::Console::ExecuteConsoleCommand(Command);*/
 				// static auto JS = FindObject(("LevelSequencePlayer /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.Jerky.AnimationPlayer"));
 			}
 

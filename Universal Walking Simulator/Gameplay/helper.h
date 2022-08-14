@@ -1111,7 +1111,7 @@ namespace Helper
 
 		return parms.ReturnValue;
 	}
-	void SpawnVehicle(UObject* VehicleClass, FVector& Location, FRotator& Rotation = ())
+	void SpawnVehicle(UObject* VehicleClass, const FVector& Location, const FRotator& Rotation = FRotator())
 	{
 		Easy::SpawnActor(VehicleClass, Location, Rotation);
 	}
