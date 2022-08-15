@@ -2,13 +2,12 @@
 ### FYI: This isn't 100% universal, there are bugs on almost every season and some seasons have no support at all.<br> <a href="https://discord.gg/reboot">Discord Server</a>.
 
 # Supported Versions
-Currently Supported: ~S2-S9<br>
-WIP: 1.7.2-2.4.2, S11
+Currently Supported: ~S3-S15<br>
+
 
 # PLANS
 
 Add an auto pattern finder, this was in development and it's easy to make, it's just time consuming.<br>
-Add Chapter 2 Support<br>
 Clean up Project and add comments to the code.<br>
 
 # CURRENT ISSUES
@@ -37,5 +36,5 @@ Some of this code is from or inspired by <a href="https://github.com/kem0x/raide
 <br>
 The flashing fix (hooking GetPlayerViewpoint) was found by  <a href="https://github.com/biggest-d">danii</a>.
 <br>
-The ability fix (hooking K2_CanActivateAbility) was found by  <a href="https://github.com/android1337">android</a>.
+The ability fix (hooking CanActivateAbility) was found by  <a href="https://github.com/android1337">android</a>.
 
