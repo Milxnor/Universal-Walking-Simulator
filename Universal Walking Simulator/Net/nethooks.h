@@ -397,65 +397,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     }
 
-    auto AthenaProfile = PlayerController->Member<UObject*>("AthenaProfile");
 
-    if (AthenaProfile && *AthenaProfile)
-    {
-        std::cout << "Valid AthneaProfile!\n";
-
-        static auto GetRandomDefaultAthenaCharacterDefinition = PlayerController->Function("GetRandomDefaultAthenaCharacterDefinition");
-
-        struct { UObject* McpAthenaProfile; UObject* Def; } GetRandomDefaultAthenaCharacterDefinition_params{ *AthenaProfile };
-
-        if (GetRandomDefaultAthenaCharacterDefinition)
-            PlayerController->ProcessEvent(GetRandomDefaultAthenaCharacterDefinition, &GetRandomDefaultAthenaCharacterDefinition_params);
-
-        std::cout << "Def: " << GetRandomDefaultAthenaCharacterDefinition_params.Def << '\n';
-        if (GetRandomDefaultAthenaCharacterDefinition_params.Def)
-            std::cout << "Def Name: " << GetRandomDefaultAthenaCharacterDefinition_params.Def->GetFullName() << '\n';
-        auto HeroDefinition = *GetRandomDefaultAthenaCharacterDefinition_params.Def->Member<UObject*>("HeroDefinition");
-        if (HeroDefinition)
-            std::cout << "HeroDef Name: " << HeroDefinition->GetFullName() << '\n';
-
-        
-        auto HeroSpecializations = HeroDefinition->Member<TArray<TSoftObjectPtr>>("Specializations");
-        
-           
-
-        for (int i = 0; i < HeroSpecializations->Num(); i++)
-        {
-            auto SpecializationClass = FindObject("Class /Script/FortniteGame.FortHeroSpecialization");
-            
-            auto Specialization = StaticLoadObject(SpecializationClass, nullptr, HeroSpecializations->At(i).ObjectID.AssetPathName.ToString());
-
-            if (Specialization)
-                std::cout << "Specialization name: " << Specialization->GetFullName() << '\n';
-
-            auto CharacterParts = Specialization->Member<TArray<TSoftObjectPtr>>("CharacterParts");
-           
-
-            for (int i = 0; i < CharacterParts->Num(); i++)
-            {
-               
-                auto CCPClass = FindObject("Class /Script/FortniteGame.CustomCharacterPart");
-                
-                
-                auto CharacterPart = StaticLoadObject(CCPClass, nullptr, CharacterParts->At(i).ObjectID.AssetPathName.ToString());
-
-                if (CharacterPart)
-                {
-                    std::cout << "CharacterPart Name: " << CharacterPart->GetFullName() << '\n';
-                    auto PartType = *CharacterPart->Member<TEnumAsByte<EFortCustomPartType>>("CharacterPartType");
-                    Helper::ChoosePart(Pawn, PartType, CharacterPart);
-                }
-                else
-                    std::cout << std::format("Unable to find CharacterParts {}\n!", CharacterParts->At(i).ObjectID.AssetPathName.ToString());
-             
-            }
-
-        }
-        
-    }
 
     Inventory::Update(PlayerController);
 
