@@ -25,7 +25,7 @@ static UObject* GetLootPackages()
 	if (!Playlist)
 		return nullptr;
 
-	auto LootPackagesSoft = Playlist->Member<TSoftObjectPtr>(_("LootPackages"));
+	auto LootPackagesSoft = Playlist->Member<TSoftObjectPtr>(("LootPackages"));
 
 	std::string Default = "/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
@@ -55,7 +55,7 @@ static UObject* GetLootPackages()
 
 	std::cout << "Men Num: " << Men.Num() << '\n';
 
-	std::cout << "RowStructName: " << (*LootPackages->Member<UObject*>(_("RowStruct")))->GetFullName() << '\n';
+	std::cout << "RowStructName: " << (*LootPackages->Member<UObject*>(("RowStruct")))->GetFullName() << '\n';
 
 	for (int i = 0; i < Men.Num(); i++)
 	{

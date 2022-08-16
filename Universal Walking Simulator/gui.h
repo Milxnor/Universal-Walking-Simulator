@@ -35,6 +35,15 @@ void CleanupDeviceD3D();
 void ResetDevice();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+std::string wstring_to_utf8(const std::wstring& str)
+{
+	if (str.empty()) return {};
+	const auto size_needed = WideCharToMultiByte(CP_UTF8, 0, &str[0], static_cast<int>(str.size()), nullptr, 0, nullptr, nullptr);
+	std::string str_to(size_needed, 0);
+	WideCharToMultiByte(CP_UTF8, 0, &str[0], static_cast<int>(str.size()), &str_to[0], size_needed, nullptr, nullptr);
+	return str_to;
+}
+
 void InitStyle()
 {
 	ImGui::GetIO().Fonts->AddFontFromFileTTF("Reboot Resources/fonts/ruda-bold.ttf", 17);
@@ -501,12 +510,15 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					if (ImGui::Button("Restart"))
 					{
+						bStarted = false;
 						DisableNetHooks();
-
+						
 						if (BeaconHost)
 							Helper::DestroyActor(BeaconHost);
 
 						LoadInMatch();
+
+						ExistingBuildings.empty();
 					}
 
 					if (ImGui::Button(("Dump Objects (Win64/Objects.log)")))
@@ -536,7 +548,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						if (!Player.first || !PlayerState)
 							continue;
 
-						if (ImGui::Button(Helper::GetfPlayerName(PlayerState).ToString().c_str()))
+						if (ImGui::Button(wstring_to_utf8(std::wstring(Helper::GetfPlayerName(PlayerState).Data.GetData())).c_str()))
 						{
 							PlayerTab = i;
 						}

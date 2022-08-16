@@ -320,9 +320,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         Inventory::GiveMats(PlayerController);
     }
 
-    // ?????!?!?!?!?!?!!~:!:?!?!?!??!?!?!??!!??!>R":LQ#L>OLGQKigh0y3i1t-q2 BRAIN ARDS
-
-    if (std::stod(FN_Version) /* > */ == 7.40)
+    if (false && std::stod(FN_Version) /* > */ == 7.40) // idk why this dopesnt work
     {
         struct FUniqueNetIdRepl // : public FUniqueNetIdWrapper
         {

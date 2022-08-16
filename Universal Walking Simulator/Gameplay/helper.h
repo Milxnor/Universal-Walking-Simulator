@@ -217,12 +217,12 @@ namespace Helper
 				// PickupLocationData->LootInitialPosition = Helper::GetActorLocation(Pickup);
 				PickupLocationData->FlyTime = 0.75f;
 				static auto GuidOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemGuid"));
-				auto Guid = (FGuid*)(__int64(&*Pickup->Member<__int64>(_("PrimaryPickupItemEntry"))) + GuidOffset);
-				PickupLocationData->PickupGuid = *Guid; // *FFortItemEntry::GetGuid(Pickup->Member<__int64>(_("PrimaryPickupItemEntry")));
+				auto Guid = (FGuid*)(__int64(&*Pickup->Member<__int64>(("PrimaryPickupItemEntry"))) + GuidOffset);
+				PickupLocationData->PickupGuid = *Guid; // *FFortItemEntry::GetGuid(Pickup->Member<__int64>(("PrimaryPickupItemEntry")));
 			}
 		}
 
-		auto OnRep_PickupLocationData = Pickup->Function(_("OnRep_PickupLocationData"));
+		auto OnRep_PickupLocationData = Pickup->Function(("OnRep_PickupLocationData"));
 
 		if (OnRep_PickupLocationData)
 			Pickup->ProcessEvent(OnRep_PickupLocationData);
@@ -1208,6 +1208,32 @@ namespace Helper
 			else
 				std::cout << ("Invalid component!\n");
 		}
+	}
+
+	auto GetStructuralSupportSystem()
+	{
+		auto GameState = Helper::GetGameState();
+
+		return *GameState->Member<UObject*>("StructuralSupportSystem");
+	}
+
+	FBuildingSupportCellIndex GetCellIndexFromLocation(const FVector& Location)
+	{
+		auto StructuralSupportSystem = GetStructuralSupportSystem();
+
+		struct
+		{
+			FVector                                     WorldLoc;                                                 // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
+			FBuildingSupportCellIndex                   OutGridIndices;                                           // (Parm, OutParm)
+			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
+		} UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params{Location};
+
+		static auto K2_GetGridIndicesFromWorldLoc = StructuralSupportSystem->Function("K2_GetGridIndicesFromWorldLoc");
+
+		if (K2_GetGridIndicesFromWorldLoc)
+			StructuralSupportSystem->ProcessEvent(K2_GetGridIndicesFromWorldLoc, &UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params);
+
+		return UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params.OutGridIndices;
 	}
 
 	void KickController(UObject* Controller, FString Reason)

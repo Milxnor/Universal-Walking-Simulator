@@ -253,6 +253,8 @@ namespace LootingV2
 
 			current++;
 		}
+
+		return DefinitionInRow();
 	}
 
 	DWORD WINAPI SummonFloorLoot(LPVOID)
@@ -273,7 +275,7 @@ namespace LootingV2
 				{
 					// https://ibb.co/Ny7yHjF
 
-					/* if (Engine_Version == 422 || Engine_Version == 423) // works for 7.3 by android
+					if (Engine_Version == 422 || Engine_Version == 423) // works for 7.3 by android
 					{
 						struct test {
 							uint8_t bDoDelayedUpdateCullDistanceVolumes : 1;
@@ -289,7 +291,7 @@ namespace LootingV2
 						// fixes the crash on floor loot
 
 						((test*)world + 0x10C)->bIsRunningConstructionScript = false;
-					} */
+					}
 
 					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon).Definition, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
 						EFortPickupSpawnSource::Unset);
@@ -304,7 +306,7 @@ namespace LootingV2
 	{
 		auto GetCorrectLocation = [BuildingContainer]() -> FVector {
 			// TODO: LootFinalLocation
-			/* auto LootSpawnLocation = *BuildingContainer->Member<FVector>(_("LootSpawnLocation"));
+			/* auto LootSpawnLocation = *BuildingContainer->Member<FVector>(("LootSpawnLocation"));
 			auto ActualLocation = Helper::GetActorLocation(BuildingContainer);
 			return LootSpawnLocation + ActualLocation; */
 			auto Location = Helper::GetActorLocation(BuildingContainer);
@@ -413,7 +415,7 @@ namespace LootingV2
 			{
 				if (BuildingContainerName.contains("Barrel") && BuildingContainerName.contains("Rod"))
 				{
-					static auto FishingRodWID = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/FloppingRabbit/WID_Athena_FloppingRabbit.WID_Athena_FloppingRabbit"));
+					static auto FishingRodWID = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/FloppingRabbit/WID_Athena_FloppingRabbit.WID_Athena_FloppingRabbit"));
 
 					if (FishingRodWID)
 					{
@@ -918,7 +920,7 @@ namespace Looting
 			// SOMEONE FIX THIS FUNCTION PLEASEEEEEEEE
 			auto GetCorrectLocation = [BuildingContainer]() -> FVector {
 				// TODO: LootFinalLocation
-				/* auto LootSpawnLocation = *BuildingContainer->Member<FVector>(_("LootSpawnLocation"));
+				/* auto LootSpawnLocation = *BuildingContainer->Member<FVector>(("LootSpawnLocation"));
 				auto ActualLocation = Helper::GetActorLocation(BuildingContainer);
 				return LootSpawnLocation + ActualLocation; */
 				auto Location = Helper::GetActorLocation(BuildingContainer);
@@ -1026,7 +1028,7 @@ namespace Looting
 				{
 					if (BuildingContainerName.contains("Barrel") && BuildingContainerName.contains("Rod"))
 					{
-						static auto FishingRodWID = FindObject(_("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/FloppingRabbit/WID_Athena_FloppingRabbit.WID_Athena_FloppingRabbit"));
+						static auto FishingRodWID = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/FloppingRabbit/WID_Athena_FloppingRabbit.WID_Athena_FloppingRabbit"));
 
 						if (FishingRodWID)
 						{

@@ -218,7 +218,7 @@ void Listen(int Port = 7777)
 
         if (Engine_Version >= 424)
         {
-            if (SetReplicationDriver)
+            if (true) // SetReplicationDriver)
             {
                 if (!(*ReplicationDriver))
                 {

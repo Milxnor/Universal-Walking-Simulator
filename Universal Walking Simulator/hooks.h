@@ -676,7 +676,9 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			if (*PlayersLeft == 1)
 			{
 				// win
-				CreateThread(0, 0, WinThread, 0, 0, 0);
+				// CreateThread(0, 0, WinThread, 0, 0, 0);
+
+
 			}
 		}
 
@@ -937,7 +939,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 							*/
 
-							static auto OnRep_LastReplicatedEmoteExecuted = Pawn->Function(_("OnRep_LastReplicatedEmoteExecuted")); // this isnt in all versions
+							static auto OnRep_LastReplicatedEmoteExecuted = Pawn->Function(("OnRep_LastReplicatedEmoteExecuted")); // this isnt in all versions
 
 							if (OnRep_LastReplicatedEmoteExecuted)
 								Pawn->ProcessEvent(OnRep_LastReplicatedEmoteExecuted);
@@ -1252,7 +1254,7 @@ inline bool ServerChoosePartHook(UObject* Pawn, UFunction* Function, void* Param
 
 inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void* Parameters) // credits: Pro100kat
 {
-	if (BuildingActor)
+	if (BuildingActor && bStarted)
 	{
 		static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
 		if (BuildingActor->IsA(BuildingSMActorClass))

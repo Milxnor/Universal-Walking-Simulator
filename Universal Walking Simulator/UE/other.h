@@ -180,6 +180,11 @@ struct FRotator
 
 		return Angle;
 	}
+
+	bool operator==(const FRotator& A)
+	{
+		return Yaw == A.Yaw && Pitch == A.Pitch && Roll == A.Roll;
+	}
 };
 
 struct FText
@@ -1185,4 +1190,42 @@ enum class EChannelCreateFlags : uint32_t
 {
 	None = (1 << 0),
 	OpenedLocally = (1 << 1)
+};
+
+struct FBuildingGridActorFilter
+{
+	bool                                               bIncludeWalls;                                            // 0x0000(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	bool                                               bIncludeFloors;                                           // 0x0001(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	bool                                               bIncludeFloorInTop;                                       // 0x0002(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	bool                                               bIncludeCenterCell;                                       // 0x0003(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+};
+
+struct FBuildingSupportCellIndex
+{
+	int                                                X;                                                        // 0x0000(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	int                                                Y;                                                        // 0x0004(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	int                                                Z;                                                        // 0x0008(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+
+	bool operator==(const FBuildingSupportCellIndex& A)
+	{
+		return X == A.X && Y == A.Y && Z == A.Z;
+	}
+};
+
+enum class EStructuralFloorPosition : uint8_t
+{
+	Top = 0,
+	Bottom = 1,
+	EStructuralFloorPosition_MAX = 2
+};
+
+
+// Enum FortniteGame.EStructuralWallPosition
+enum class EStructuralWallPosition : uint8_t
+{
+	Left = 0,
+	Right = 1,
+	Front = 2,
+	Back = 3,
+	EStructuralWallPosition_MAX = 4
 };

@@ -21,42 +21,122 @@ struct IsDestroyedBitField {
 
 bool CanBuild(UObject* BuildingActor)
 {
-	return true;
-
 	if (!BuildingActor)
 		return false;
 
-	bool bCanBuild = true;
+	auto StructuralSupportSystem = Helper::GetStructuralSupportSystem();
 
-	for (int i = 0; i < ExistingBuildings.size(); i++) // (const auto Building : ExistingBuildings)
+	static auto K2_GetBuildingActorsInGridCell = StructuralSupportSystem->Function("K2_GetBuildingActorsInGridCell");
+
+	struct
 	{
-		auto Building = ExistingBuildings[i];
+		struct FVector                                     WorldLocation;                                            // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
+		FBuildingGridActorFilter                    Filter;                                                   // (ConstParm, Parm, OutParm, ReferenceParm)
+		FBuildingNeighboringActorInfo               OutActorsInGridCell;                                      // (Parm, OutParm)
+		bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
+	} UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params{ Helper::GetActorLocation(BuildingActor), FBuildingGridActorFilter{true, true, true, true}};
 
-		if (!Building)
-			continue;
+	if (K2_GetBuildingActorsInGridCell)
+		StructuralSupportSystem->ProcessEvent(K2_GetBuildingActorsInGridCell, &UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params);
 
-		// TODO: Test the code below!
+	std::cout << "Neighboring Wall Size: " << UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params.OutActorsInGridCell.NeighboringWallInfos.Num() << '\n';
+	std::cout << "Neighboring Floor Size: " << UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params.OutActorsInGridCell.NeighboringFloorInfos.Num() << '\n';
+	std::cout << "Neighboring CenterCell Size: " << UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params.OutActorsInGridCell.NeighboringCenterCellInfos.Num() << '\n';
 
-		// if (Building->Member<IsDestroyedBitField>(("bDestroyed"))->bDestroyed)
-			// sExistingBuildings.erase(ExistingBuildings.begin() + i);
+	static auto BuildingTypeOffset = GetOffset(BuildingActor, "BuildingType");
+	auto BuildingType = *(EFortBuildingType*)(__int64(BuildingActor) + BuildingTypeOffset);
 
-		static auto BuildingTypeOffset = GetOffset(Building, "BuildingType");
+	auto MainLocation = Helper::GetActorLocation(BuildingActor);
+	auto MainRot = Helper::GetActorRotation(BuildingActor);
+	auto MainCellIdx = Helper::GetCellIndexFromLocation(MainLocation);
 
-		if ((Helper::GetActorLocation(Building) == Helper::GetActorLocation(BuildingActor)) &&
-			(*(EFortBuildingType*)(__int64(Building) + BuildingTypeOffset) == *(EFortBuildingType*)(__int64(BuildingActor) + BuildingTypeOffset)))
+	auto HandleNeighbor = [](UObject* NeighboringActor) -> bool {
+
+	};
+
+	auto NewBuildingType = *(EFortBuildingType*)(__int64(BuildingActor) + BuildingTypeOffset);
+
+	if (NewBuildingType == EFortBuildingType::Wall)
+	{
+		auto& WallInfos = UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params.OutActorsInGridCell.NeighboringWallInfos;
+		for (int i = 0; i < WallInfos.Num(); i++)
 		{
-			bCanBuild = false;
+			auto& CurrentWallInfo = WallInfos.At(i);
+
+			auto WallActor = CurrentWallInfo.NeighboringActor.Get();
+
+			if (CurrentWallInfo.NeighboringCellIdx == MainCellIdx)
+			{
+				// auto bSameRotation = CurrentWallInfo.WallPosition == BuildingActor->WallPosition;
+				auto bSameRotation = Helper::GetActorRotation(WallActor) == MainRot;
+
+				if (bSameRotation)
+					return false;
+			}
 		}
 	}
-
-	if (bCanBuild || ExistingBuildings.size() == 0)
+	else if (NewBuildingType == EFortBuildingType::Floor) // depending on the like rotation or idfk it osmetiems double builds
 	{
-		ExistingBuildings.push_back(BuildingActor);
+		auto& FloorInfos = UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params.OutActorsInGridCell.NeighboringFloorInfos;
+		for (int i = 0; i < FloorInfos.Num(); i++)
+		{
+			auto& CurrentFloorInfo = FloorInfos.At(i);
 
-		return true;
+			auto FloorActor = CurrentFloorInfo.NeighboringActor.Get();
+
+			if (CurrentFloorInfo.NeighboringCellIdx == MainCellIdx)
+			{
+				// auto bSameRotation = CurrentWallInfo.WallPosition == BuildingActor->WallPosition;
+				auto bSameRotation = Helper::GetActorRotation(FloorActor) == MainRot;
+
+				if (bSameRotation)
+					return false;
+			}
+		}
+	}
+	else // if (NewBuildingType == EFortBuildingType::GenericCenterCellActor)
+	{
+		bool bCanBuild = true;
+
+		for (int i = 0; i < ExistingBuildings.size(); i++) // (const auto Building : ExistingBuildings)
+		{
+			auto Building = ExistingBuildings[i];
+
+			if (!Building)
+				continue;
+
+			// TODO: Test the code below!
+
+			// if (Building->Member<IsDestroyedBitField>(("bDestroyed"))->bDestroyed)
+				// sExistingBuildings.erase(ExistingBuildings.begin() + i);
+
+			if ((Helper::GetActorLocation(Building) == Helper::GetActorLocation(BuildingActor)) &&
+				(*(EFortBuildingType*)(__int64(Building) + BuildingTypeOffset) == BuildingType))
+			{
+				bCanBuild = false;
+			}
+		}
+
+		if (bCanBuild || ExistingBuildings.size() == 0)
+		{
+			ExistingBuildings.push_back(BuildingActor);
+
+			return true;
+		}
+
+		return false;
+
+		/* auto& CenterCellInfos = UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params.OutActorsInGridCell.NeighboringCenterCellInfos;
+		for (int i = 0; i < CenterCellInfos.Num(); i++)
+		{
+			auto& CurrentCenterInfo = CenterCellInfos.At(i);
+
+			if (CurrentCenterInfo.NeighboringCellIdx == MainCellIdx)
+				return false;
+		} */
 	}
 
-	return false;
+	return true;
 }
 
 inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
@@ -153,6 +233,8 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 								{
 									if (CanBuild(BuildingActor))
 									{
+										ExistingBuildings.push_back(BuildingActor);
+
 										Helper::InitializeBuildingActor(Controller, BuildingActor, true);
 
 										bSuccessful = true;
@@ -237,6 +319,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 						{
 							if (CanBuild(BuildingActor))
 							{
+								ExistingBuildings.push_back(BuildingActor);
 								Helper::InitializeBuildingActor(Controller, BuildingActor, true);
 
 								bSuccessful = true;
@@ -494,9 +577,13 @@ void InitializeBuildHooks()
 {
 	if (Engine_Version < 426)
 	{
-		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook)
-		/*AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
-		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), ServerEditBuildingActorHook);
-		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), ServerEndEditingBuildingActorHook);*/
+		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
+
+		if (Engine_Version < 424)
+		{
+			AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
+			AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), ServerEditBuildingActorHook);
+			AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEndEditingBuildingActor"), ServerEndEditingBuildingActorHook);
+		}
 	}
 }

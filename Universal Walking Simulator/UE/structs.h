@@ -11,7 +11,6 @@
 #include <thread>
 
 #include "other.h"
-#include "xorstr.hpp" 
 #include <regex>
 
 using namespace std::chrono;
@@ -964,11 +963,13 @@ int GetOffsetFromProp(void* Prop)
 
 	else if (std::stod(FN_Version) >= 19)
 		return *(int*)(__int64(Prop) + 0x44);
+
+	return -1;
 }
 
 static void* GetProperty(UObject* Object, const std::string& MemberName)
 {
-	if (Object && !MemberName.contains(_(" ")))
+	if (Object && !MemberName.contains((" ")))
 	{
 		if (Engine_Version <= 420)
 			return LoopMembersAndGetProperty<UClass_FT, UProperty_UE>(Object, MemberName);
@@ -995,7 +996,7 @@ static void* GetProperty(UObject* Object, const std::string& MemberName)
 
 static int GetOffset(UObject* Object, const std::string& MemberName)
 {
-	if (Object && !MemberName.contains(_(" ")))
+	if (Object && !MemberName.contains((" ")))
 	{
 		if (Engine_Version <= 420)
 			return LoopMembersAndFindOffset<UClass_FT, UProperty_UE>(Object, MemberName);
@@ -1431,6 +1432,19 @@ uint8_t GetBitIndex(void* Property)
 template <typename MemberType>
 INL MemberType* UObject::Member(const std::string& MemberName, uint8_t BitfieldVal)
 {
+
+	/* 
+	* 
+		// CREDIT ANDROID AND ENDER
+
+		// this doewsnt work because if lets say its a APawn and your trying to get something from AActor I think it tries to get it from APawn instead of AActor
+
+	static auto PropertyClass = FindObject("/Script/CoreUObject.Property");
+	auto property = FindObject(MemberName, PropertyClass, this);
+	auto offset = GetOffsetFromProp(property); // *(uint32_t*)(__int64(Property) + 0x44);
+
+	return (MemberType*)(__int64(this) + offset); */
+
 	// MemberName.erase(0, MemberName.find_last_of(".", MemberName.length() - 1) + 1); // This would be getting the short name of the member if you did like ObjectProperty /Script/stuff
 
 	// auto Offset = GetOffset(this, MemberName);
@@ -1879,7 +1893,7 @@ struct TWeakObjectPtr : public FWeakObjectPtr
 public:
 
 	inline T* Get() {
-		return GetByIndex<T>(ObjectIndex);
+		return GetByIndex(ObjectIndex);
 	}
 };
 
@@ -2222,4 +2236,37 @@ public:
 	FNetworkObjectSet ObjectsDormantOnAllConnections;
 
 	TMap<TWeakObjectPtr<UObject>, int32_t> NumDormantObjectsPerConnection;
+};
+
+struct FNeighboringWallInfo
+{
+	TWeakObjectPtr<UObject>             NeighboringActor;                                         // 0x0000(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	FBuildingSupportCellIndex                   NeighboringCellIdx;                                       // 0x0008(0x000C) (Edit, BlueprintVisible)
+	EStructuralWallPosition                            WallPosition;                                             // 0x0014(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	unsigned char                                      UnknownData00[0x3];                                       // 0x0015(0x0003) MISSED OFFSET
+};
+
+// ScriptStruct FortniteGame.NeighboringFloorInfo
+// 0x0018
+struct FNeighboringFloorInfo
+{
+	TWeakObjectPtr<UObject>             NeighboringActor;                                         // 0x0000(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	FBuildingSupportCellIndex                   NeighboringCellIdx;                                       // 0x0008(0x000C) (Edit, BlueprintVisible)
+	EStructuralFloorPosition                           FloorPosition;                                            // 0x0014(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	unsigned char                                      UnknownData00[0x3];                                       // 0x0015(0x0003) MISSED OFFSET
+};
+
+// ScriptStruct FortniteGame.NeighborifngCenterCellInfo
+// 0x0014
+struct FNeighboringCenterCellInfo
+{
+	TWeakObjectPtr<class ABuildingSMActor>             NeighboringActor;                                         // 0x0000(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	FBuildingSupportCellIndex                   NeighboringCellIdx;                                       // 0x0008(0x000C) (Edit, BlueprintVisible)
+};
+
+struct FBuildingNeighboringActorInfo
+{
+	TArray<FNeighboringWallInfo>                NeighboringWallInfos;                                     // 0x0000(0x0010) (Edit, BlueprintVisible, ZeroConstructor)
+	TArray<FNeighboringFloorInfo>               NeighboringFloorInfos;                                    // 0x0010(0x0010) (Edit, BlueprintVisible, ZeroConstructor)
+	TArray<FNeighboringCenterCellInfo>          NeighboringCenterCellInfos;                               // 0x0020(0x0010) (Edit, BlueprintVisible, ZeroConstructor)
 };

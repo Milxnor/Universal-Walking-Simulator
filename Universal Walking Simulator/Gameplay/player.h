@@ -19,6 +19,7 @@ namespace Player
 
 		if (setHealthFn)
 			Pawn->ProcessEvent(setHealthFn, &healthParams);
+
 		static auto PickaxeDefinition = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
 		// TODO: StructProperty /Script/FortniteGame.FortPlaylistAthena.RespawnHeight

@@ -650,7 +650,7 @@ void InitializePatterns()
     if (!NoReserveAddr)
     {
         if (Engine_Version < 424)
-            std::cout << _("[WARNING] Unable to find No Reserve! Players will probably get kicked on join!\n");
+            std::cout << ("[WARNING] Unable to find No Reserve! Players will probably get kicked on join!\n");
     }
     else
         NoReserve = decltype(NoReserve)(NoReserveAddr);
@@ -746,7 +746,7 @@ void InitializePatterns()
                 GiveAbilityAddr = FindPattern(("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 51 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01"));
 
                 if (!GiveAbilityAddr)
-                    GiveAbilityAddr = FindPattern(_("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 52 48 63 9F"));
+                    GiveAbilityAddr = FindPattern(("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 52 48 63 9F"));
             }
         }
 
@@ -764,7 +764,7 @@ void InitializePatterns()
             InternalTryActivateAbilityAddr = FindPattern(InternalTryActivateAbilitySig);
             
             if (!InternalTryActivateAbilityAddr)
-                InternalTryActivateAbilityAddr = FindPattern(_("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 8B DA 4C 8B F1 E8 ? ? ? ? 4D 8D BE ? ? ? ? 33 D2 49"));
+                InternalTryActivateAbilityAddr = FindPattern(("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 8B DA 4C 8B F1 E8 ? ? ? ? 4D 8D BE ? ? ? ? 33 D2 49"));
 
             if (Engine_Version < 426)
                 CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbility);
@@ -774,7 +774,7 @@ void InitializePatterns()
             MarkAbilitySpecDirtyAddr = FindPattern(MarkAbilitySpecDirtySig);
 
             if (!MarkAbilitySpecDirtyAddr)
-                MarkAbilitySpecDirtyAddr = FindPattern(_("48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 D8 4C 8B F2 48 8B F9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 46 10 48 89 6C 24 ? 48 89 74"));
+                MarkAbilitySpecDirtyAddr = FindPattern(("48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 D8 4C 8B F2 48 8B F9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 46 10 48 89 6C 24 ? 48 89 74"));
 
             if (Engine_Version < 426)
                 CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyOld);
