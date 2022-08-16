@@ -1460,7 +1460,8 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), ("OnDayPhaseChanged")) &&
 					!strstr(FunctionName.c_str(), ("Chime")) && 
 					!strstr(FunctionName.c_str(), ("ServerMove")) &&
-					!strstr(FunctionName.c_str(), ("OnVisibilitySetEvent")))
+					!strstr(FunctionName.c_str(), ("OnVisibilitySetEvent")) &&
+					!strstr(FunctionName.c_str(), "ReceiveHit"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}
