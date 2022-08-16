@@ -1256,20 +1256,23 @@ inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void*
 {
 	if (BuildingActor && bStarted)
 	{
-		static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
-		if (BuildingActor->IsA(BuildingSMActorClass))
+		if (bDoubleBuildFix)
 		{
-			for (int i = 0; i < ExistingBuildings.size(); i++)
+			static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
+			if (ExistingBuildings.size() > 0 && BuildingActor->IsA(BuildingSMActorClass))
 			{
-				auto Building = ExistingBuildings[i];
-
-				if (!Building)
-					continue;
-
-				if (Building == BuildingActor)
+				for (int i = 0; i < ExistingBuildings.size(); i++)
 				{
-					ExistingBuildings.erase(ExistingBuildings.begin() + i);
-					break;
+					auto Building = ExistingBuildings[i];
+
+					if (!Building)
+						continue;
+
+					if (Building == BuildingActor)
+					{
+						ExistingBuildings.erase(ExistingBuildings.begin() + i);
+						break;
+					}
 				}
 			}
 		}

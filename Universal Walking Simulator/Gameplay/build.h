@@ -21,6 +21,9 @@ struct IsDestroyedBitField {
 
 bool CanBuild(UObject* BuildingActor)
 {
+	if (!bDoubleBuildFix)
+		return true;
+
 	if (!BuildingActor)
 		return false;
 
@@ -233,7 +236,8 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 								{
 									if (CanBuild(BuildingActor))
 									{
-										ExistingBuildings.push_back(BuildingActor);
+										if (bDoubleBuildFix)
+											ExistingBuildings.push_back(BuildingActor);
 
 										Helper::InitializeBuildingActor(Controller, BuildingActor, true);
 

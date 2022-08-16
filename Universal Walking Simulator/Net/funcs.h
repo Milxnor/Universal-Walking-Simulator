@@ -431,8 +431,8 @@ EServerStatus serverStatus = EServerStatus::Down;
 static bool bIsPlayground = false;
 static bool bIsLateGame = false;
 
-static bool bDoubleBuildFix1 = false;
-
 static std::vector<UObject*> ExistingBuildings;
 
 static bool bUseBeacons = true;
+
+static bool bDoubleBuildFix = false;

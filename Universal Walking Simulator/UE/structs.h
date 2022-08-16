@@ -74,19 +74,13 @@ public:
 		ArrayMax = 0;
 	}
 
-	INL auto Num() const { return ArrayNum;  }
+	INL auto Num() const { return ArrayNum; }
 
 	INL ElementType& operator[](int Index) const { return Data[Index]; }
 
-	INL ElementType& At(int Index) const 
+	INL ElementType& At(int Index) const
 	{
-		if (Index > ArrayNum)
-		{
-			std::cout << std::format("Out of range index: {}", Index);
-			return Data[ArrayNum];
-		}
-
-		return Data[Index]; 
+		return Data[Index];
 	}
 
 	INL int32_t Slack() const
@@ -126,7 +120,7 @@ public:
 		std::cout << ("Invalid Data when adding!\n");
 
 		/*
-		
+
 		if (Data)
 		{
 			Data = (ElementType*)realloc(Data, sizeof(ElementType) * (ArrayNum + 1));
@@ -252,7 +246,7 @@ public:
 #define NAME_NO_NUMBER_INTERNAL 0
 #define NAME_None 0
 
-struct FNameEntryId (*FromValidEName)(EName Ename);
+struct FNameEntryId(*FromValidEName)(EName Ename);
 
 struct FNameEntryId
 {
@@ -327,7 +321,7 @@ struct light
 		{
 			auto OffsetToUse = onOffset == 0 ? 0 : Offsets.at(onOffset);
 			std::cout << std::format("Setting {} at offset: {}", first, OffsetToUse) // << " with currentRead as: " << currentRead << " Setting to: " << __int64(&*(First*)(__int64(addr) + (currentRead == 0 ? 0 : currentRead))) << '\n';
-			*(First*)(__int64(addr) + OffsetToUse) = first;
+				* (First*)(__int64(addr) + OffsetToUse) = first;
 			onOffset++;
 			// std::cout << "\nPadding: " << (sizeof(First) > sizeOfLastType ? sizeof(First) - sizeOfLastType : sizeOfLastType - sizeof(First)) << "\n\n";
 			// sizeOfLastType = sizeof(First);
@@ -422,7 +416,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 			else if (Engine_Version == 424)
 				Index = 106; // got on 11.01
 			else if (Engine_Version >= 425)
-				Index = 114; 
+				Index = 114;
 			else
 				std::cout << ("Unable to determine CreateDefaultObject Index!\n");
 		}
@@ -445,7 +439,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	// DO NOT USE, VERY VERY VERY unsafe
 	template <typename strType = std::string, typename First, typename... Rest> void Exec(const strType& FunctionName, const First& first, const Rest&... rest) {
 		static auto fn = this->Function(FunctionName);
-		
+
 		if (fn)
 		{
 			auto Params = light();
@@ -460,11 +454,11 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	}
 
 	// protected:
-		template <typename MemberType>
-		INL MemberType* Member(const std::string& MemberName, uint8_t BitfieldVal = 0); // DONT USE FOR SCRIPTSTRUCTS
+	template <typename MemberType>
+	INL MemberType* Member(const std::string& MemberName, int extraOffset = 0); // DONT USE FOR SCRIPTSTRUCTS
 };
 
-	
+
 
 struct UFunction : UObject
 {
@@ -474,7 +468,7 @@ struct UFunction : UObject
 	std::vector<int> GetAllParamOffsets();
 
 	unsigned short GetParmsSize();
-}; 
+};
 
 
 struct FUObjectItem // https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Source/Runtime/CoreUObject/Public/UObject/UObjectArray.h#L26
@@ -581,7 +575,7 @@ static UObject* (*StaticLoadObjectO)(
 static UObject* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name)
 {
 	auto Name = std::wstring(name.begin(), name.end()).c_str();
-	return StaticLoadObjectO ? StaticLoadObjectO(Class, Outer, Name, nullptr, 0, nullptr, false, nullptr) : nullptr;
+	return StaticLoadObjectO(Class, Outer, Name, nullptr, 0, nullptr, false, nullptr);
 }
 
 template <typename ReturnType = UObject>
@@ -591,9 +585,10 @@ static ReturnType* StaticFindObject(const std::string& str)
 	return (ReturnType*)StaticFindObjectO(nullptr, nullptr, Name, false);
 }
 
-static UObject* GetByIndex(int Index)
+template <typename ReturnType = UObject>
+static ReturnType* GetByIndex(int Index)
 {
-	return (ObjObjects ? ObjObjects->GetObjectById(Index) : OldObjects->GetObjectById(Index));
+	return (ReturnType*)(ObjObjects ? ObjObjects->GetObjectById(Index) : OldObjects->GetObjectById(Index));
 }
 
 template <typename ReturnType = UObject>
@@ -628,7 +623,7 @@ static ReturnType* FindObjectOld(const std::string& str, bool bIsEqual = false, 
 template <typename ReturnType = UObject>
 static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, bool bIsName = false, bool bDoNotUseStaticFindObject = false, bool bSkipIfSFOFails = true)
 {
-	if (StaticFindObjectO && !bDoNotUseStaticFindObject && !bIsEqual) // TODO: Implement bIsEqual for StaticFindObject
+	if (StaticFindObjectO && !bDoNotUseStaticFindObject)
 	{
 		auto Object = StaticFindObject<ReturnType>(str.substr(str.find(" ") + 1));
 		if (Object)
@@ -903,7 +898,7 @@ UFunction* FindFunction(const std::string& Name, UObject* Object) // might as we
 		if (Member && Member->GetName() == Name) // dont use IsA cuz slower
 			return (UFunction*)Member;
 	}
-	
+
 	return nullptr;
 }
 
@@ -919,7 +914,7 @@ PropertyType* LoopMembersAndGetProperty(UObject* Object, const std::string& Memb
 		if (Member)
 		{
 			if (Member->GetName() == MemberName)
-			// if (Member->NamePrivate == MemberFName)
+				// if (Member->NamePrivate == MemberFName)
 			{
 				return ((PropertyType*)Member);
 			}
@@ -947,53 +942,6 @@ int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int
 	}
 }
 
-int GetOffsetFromProp(void* Prop)
-{
-	if (!Prop)
-		return -1;
-
-	if (Engine_Version <= 420)
-		return ((UProperty_UE*)Prop)->Offset_Internal;
-
-	else if (Engine_Version >= 421 && Engine_Version <= 424)
-		return ((UProperty_FTO*)Prop)->Offset_Internal;
-
-	else if (Engine_Version >= 425 && Engine_Version < 500)
-		return ((FProperty*)Prop)->Offset_Internal;
-
-	else if (std::stod(FN_Version) >= 19)
-		return *(int*)(__int64(Prop) + 0x44);
-
-	return -1;
-}
-
-static void* GetProperty(UObject* Object, const std::string& MemberName)
-{
-	if (Object && !MemberName.contains((" ")))
-	{
-		if (Engine_Version <= 420)
-			return LoopMembersAndGetProperty<UClass_FT, UProperty_UE>(Object, MemberName);
-
-		else if (Engine_Version == 421) // && Engine_Version <= 424)
-			return LoopMembersAndGetProperty<UClass_FTO, UProperty_FTO>(Object, MemberName);
-
-		else if (Engine_Version >= 422 && Engine_Version <= 424)
-			return LoopMembersAndGetProperty<UClass_FTT, UProperty_FTO>(Object, MemberName);
-
-		else if (Engine_Version >= 425 && Engine_Version < 500)
-			return LoopMembersAndGetProperty<UClass_CT, FProperty>(Object, MemberName);
-
-		else if (std::stod(FN_Version) >= 19)
-			return LoopMembersAndGetProperty<UClass_CT, FProperty>(Object, MemberName);
-	}
-	else
-	{
-		std::cout << std::format(("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, Object->GetFullName());
-	}
-
-	return nullptr;
-}
-
 static int GetOffset(UObject* Object, const std::string& MemberName)
 {
 	if (Object && !MemberName.contains((" ")))
@@ -1015,7 +963,7 @@ static int GetOffset(UObject* Object, const std::string& MemberName)
 	}
 	else
 	{
-		std::cout << std::format(("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, Object->GetFullName());
+		// std::cout << std::format(("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, __int64(Object));
 	}
 
 	return 0;
@@ -1202,7 +1150,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 	{
 		ToStringAddr = FindPattern(("48 89 5C 24 ? 57 48 83 EC 30 83 79 04 00 48 8B DA 48 8B F9"));
 		ProcessEventAddr = FindPattern(("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? ? ? ? 45 33 F6"));
-	
+
 		if (!ToStringAddr)
 			ToStringAddr = FindPattern(("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 30 8B 01 48 8B F1 44 8B 49 04 8B F8 C1 EF 10 48 8B DA 0F B7 C8 89 4D 24 89 7D 20 45 85 C9 75 50 44 38 0D ? ? ? ? 74 09 4C 8D 05 ? ? ? ?")); // s11
 	}
@@ -1398,85 +1346,15 @@ int FindOffsetStruct(const std::string& ClassName, const std::string& MemberName
 	return 0;
 }
 
-uint8_t GetFieldMask(void* Property)
-{
-	uint8_t FieldMask = *(uint8_t*)(__int64(Property) + (sizeof(FProperty) + 3));
-	return FieldMask;
-}
-
-uint8_t GetBitIndex(void* Property)
-{
-	auto FieldMask = GetFieldMask(Property);
-
-	if (FieldMask == 0xFF)
-		return FieldMask;
-
-	if (FieldMask == 1)
-		return 1;
-	if (FieldMask == 2)
-		return 2;
-	if (FieldMask == 4)
-		return 3;
-	if (FieldMask == 8)
-		return 4;
-	if (FieldMask == 16)
-		return 5;
-	if (FieldMask == 32)
-		return 6;
-	if (FieldMask == 64)
-		return 7;
-	if (FieldMask == 128)
-		return 8;
-}
-
 template <typename MemberType>
-INL MemberType* UObject::Member(const std::string& MemberName, uint8_t BitfieldVal)
+INL MemberType* UObject::Member(const std::string& MemberName, int extraOffset)
 {
-
-	/* 
-	* 
-		// CREDIT ANDROID AND ENDER
-
-		// this doewsnt work because if lets say its a APawn and your trying to get something from AActor I think it tries to get it from APawn instead of AActor
-
-	static auto PropertyClass = FindObject("/Script/CoreUObject.Property");
-	auto property = FindObject(MemberName, PropertyClass, this);
-	auto offset = GetOffsetFromProp(property); // *(uint32_t*)(__int64(Property) + 0x44);
-
-	return (MemberType*)(__int64(this) + offset); */
-
 	// MemberName.erase(0, MemberName.find_last_of(".", MemberName.length() - 1) + 1); // This would be getting the short name of the member if you did like ObjectProperty /Script/stuff
 
-	// auto Offset = GetOffset(this, MemberName);
-	// auto ret = (MemberType*)(__int64(this) + Offset);
-	auto Property = GetProperty(this, MemberName);
-
-	if (!Property)
-		return nullptr;
-
-	auto Offset = GetOffsetFromProp(Property);
-
-	if (Offset == -1)
-		return nullptr;
-
-	auto ret = (MemberType*)(__int64(this) + Offset);
-
-	/* if (std::is_same<MemberType, bool>())
-	{
-		const auto FieldMask = GetFieldMask(Property);
-		const auto BitIndex = GetBitIndex(Property);
-
-		if (BitIndex != 0xFF) // if it is 0xFF then its just a normal bool
-		{
-			// creds fischsalat
-			// uint8_t& Byte = *(uint8*)(__int64(this) + (OFFSET(Child) + OffsetToStruct));
-			uint8_t* Byte = (uint8_t*)ret;
-			*Byte = (*Byte & ~FieldMask) | (BitfieldVal == 1 ? FieldMask : 0);
-			return (MemberType*)&BitfieldVal;
-		}
-	} */
-
-	return ret;
+	// if (!bIsStruct)
+	return (MemberType*)(__int64(this) + (GetOffset(this, MemberName) - extraOffset));
+	// else
+		// return (MemberType*)(__int64(this) + FindOffsetStruct(this->GetFullName(), MemberName));
 }
 
 template<typename ElementType>
@@ -1762,7 +1640,7 @@ struct FFastArraySerializerSE // 264
 		// ItemMap.Reset();		// This allows to clients to add predictive elements to arrays without affecting replication.
 
 		/*
-		
+
 		ItemMap.Pairs.Elements.Data.Reset();
 		ItemMap.Pairs.Elements.FirstFreeIndex = -1;
 		ItemMap.Pairs.Elements.NumFreeIndices = 0;
@@ -1788,7 +1666,7 @@ struct FFastArraySerializerSE // 264
 
 
 struct FFastArraySerializerOL
-{	
+{
 	// TMap<int32_t, int32_t> ItemMap;
 	char ItemMap[0x50];
 	int32_t IDCounter;
@@ -1893,7 +1771,7 @@ struct TWeakObjectPtr : public FWeakObjectPtr
 public:
 
 	inline T* Get() {
-		return GetByIndex(ObjectIndex);
+		return GetByIndex<T>(ObjectIndex);
 	}
 };
 
@@ -2070,7 +1948,7 @@ struct FAbilityReplicatedData
 int GetEnumValue(UObject* Enum, const std::string& EnumMemberName)
 {
 	auto Names = (TArray<TPair<FName, __int64>>*)(__int64(Enum) + sizeof(UField) + sizeof(FString));
-	
+
 	for (int i = 0; i < Names->Num(); i++)
 	{
 		auto& Pair = Names->At(i);
@@ -2094,7 +1972,7 @@ T* UFunction::GetParam(const std::string& ParameterName, void* Params)
 struct UScriptStruct : UObject
 {
 	template <typename MemberType>
-	INL MemberType* MemberStruct(const std::string& MemberName, int extraOffset = 0) 
+	INL MemberType* MemberStruct(const std::string& MemberName, int extraOffset = 0)
 	{
 		std::cout << "ClassPrivate: " << this->ClassPrivate << '\n';
 
