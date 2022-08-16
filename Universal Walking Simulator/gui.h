@@ -548,7 +548,8 @@ DWORD WINAPI GuiThread(LPVOID)
 						if (!Player.first || !PlayerState)
 							continue;
 
-						if (ImGui::Button(wstring_to_utf8(std::wstring(Helper::GetfPlayerName(PlayerState).Data.GetData())).c_str()))
+						if (ImGui::Button(Helper::GetfPlayerName(PlayerState).ToString().c_str()))
+						// if (ImGui::Button(wstring_to_utf8(std::wstring(Helper::GetfPlayerName(PlayerState).Data.GetData())).c_str()))
 						{
 							PlayerTab = i;
 						}
