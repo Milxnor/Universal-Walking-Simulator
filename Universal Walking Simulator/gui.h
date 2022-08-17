@@ -267,7 +267,7 @@ DWORD WINAPI GuiThread(LPVOID)
 								auto Connection = ClientConnections->At(i);
 
 								if (!Connection)
-									return;
+									continue;
 
 								auto Controller = *Connection->Member<UObject*>(("PlayerController"));
 
@@ -406,10 +406,15 @@ DWORD WINAPI GuiThread(LPVOID)
 						{
 							if (ImGui::Button(("Start Aircraft")))
 							{
-								FString StartAircraftCmd;
+								/* FString StartAircraftCmd;
 								StartAircraftCmd.Set(L"startaircraft");
 
-								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd); */
+
+								auto gameState = Helper::GetGameState();
+
+								*gameState->Member<float>(("AircraftStartTime")) = 1.f;
+								*gameState->Member<float>(("WarmupCountdownEndTime")) = 1.f;
 
 								if (Helper::IsSmallZoneEnabled())
 								{
@@ -593,8 +598,9 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 				case 3:
 				{
-					static std::string CurrentPlaylist;
-					ImGui::InputText(("Playlist"), &CurrentPlaylist);
+					if (!bStarted)
+						ImGui::InputText(("Playlist"), &PlaylistToUse);
+					
 					ImGui::Checkbox(("Playground"), &bIsPlayground);
 
 					// if (!bStarted) // couldnt we wqait till aircraft start

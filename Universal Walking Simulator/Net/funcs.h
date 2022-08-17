@@ -111,7 +111,8 @@ static std::unordered_map<UFunction*, std::function<bool(UObject*, UFunction*, v
 
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func)
 {
-    auto funcObject = FindObjectOld<UFunction>(str, true);
+    // auto funcObject = FindObjectOld<UFunction>(str, true);
+    auto funcObject = FindObject<UFunction>(str);
 
     if (!funcObject)
         std::cout << "Unable to find Function: " << str << '\n';
@@ -446,3 +447,5 @@ static std::vector<UObject*> ExistingBuildings;
 static bool bUseBeacons = true;
 
 static bool bDoubleBuildFix = false;
+
+std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";

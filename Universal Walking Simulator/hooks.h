@@ -103,14 +103,9 @@ inline void initStuff()
 				} SSVParams{ VehicleClass };
 				
 				auto SSVFn = *AuthGameMode->Member<bool>(("ShouldSpawnVehicle")) = true;*/
-				
-				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo"));
-				static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo"));
-				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad"));
-				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"));
-				// static auto Playlist = FindObject(("FortPlaylistAthena /Game/Athena/Playlists/Carmine/Playlist_Carmine.Playlist_Carmine"));
-				// static auto Playlist = FindObject(("/Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo"));
 				 
+				auto Playlist = FindObject(PlaylistToUse);
+
 				if (std::stod(FN_Version) >= 6.10) // WRONG
 				{
 					auto OnRepPlaylist = gameState->Function(("OnRep_CurrentPlaylistInfo"));

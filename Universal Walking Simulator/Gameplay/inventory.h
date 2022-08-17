@@ -590,7 +590,8 @@ namespace Inventory
 
 		if (FlooredVer == 3)
 		{
-			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			// struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
 			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
 		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
@@ -694,7 +695,7 @@ namespace Inventory
 
 		if (FlooredVer == 3)
 		{
-			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
 		else if (std::stof(FN_Version) < 7.40f)
@@ -794,7 +795,7 @@ namespace Inventory
 
 		if (FlooredVer == 3)
 		{
-			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
