@@ -576,35 +576,41 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (ImGui::Button(("OpenVaults"))) {
 						Henchmans::OpenVaults();
 					}*/
-					if (ImGui::Button(("Spawn Volume(stay in 1 place to get creative inventory)"))) {
-						
-						auto World = Helper::GetWorld();
-						auto NetDriver = *World->Member<UObject*>(("NetDriver"));
+					static const auto FnVerDouble = std::stod(FN_Version);
+					if (FnVerDouble >= 3.5 && FnVerDouble > 10.40)
+					{
 
 
-						auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+						if (ImGui::Button(("Spawn Volume(stay in 1 place to get creative inventory)"))) {
+
+							auto World = Helper::GetWorld();
+							auto NetDriver = *World->Member<UObject*>(("NetDriver"));
+
+
+							auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
 
 
 
-						for (int i = 0; i < ClientConnections->Num(); i++)
-						{
-							auto Connection = ClientConnections->At(i);
-
-
-
-							auto Controller = *Connection->Member<UObject*>(("PlayerController"));
-
-							
-							auto Pawn = *Controller->Member<UObject*>(("Pawn"));
-							if (Pawn)
+							for (int i = 0; i < ClientConnections->Num(); i++)
 							{
-								auto Location = Helper::GetActorLocation(Pawn);
-								auto VolumeClass = FindObject("Class /Script/FortniteGame.FortVolume");
-								auto Volume = Easy::SpawnActor(VolumeClass, Location);
-							}
-							
-						}
+								auto Connection = ClientConnections->At(i);
 
+
+
+								auto Controller = *Connection->Member<UObject*>(("PlayerController"));
+
+
+								auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+								if (Pawn)
+								{
+									auto Location = Helper::GetActorLocation(Pawn);
+									auto VolumeClass = FindObject("Class /Script/FortniteGame.FortVolume");
+									auto Volume = Easy::SpawnActor(VolumeClass, Location);
+								}
+
+							}
+
+						}
 					}
 
 					
