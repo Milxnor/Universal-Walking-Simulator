@@ -974,31 +974,6 @@ namespace Helper
 			return params.ReturnValue;
 		}
 
-		std::string RarityToString(EFortRarity Rarity)
-		{
-			switch (Rarity)
-			{
-			case EFortRarity::Badass:
-				return ("Badass");
-			case EFortRarity::Elegant:
-				return ("Elegant");
-			case EFortRarity::Epic:
-				return ("Epic");
-			case EFortRarity::Masterwork:
-				return ("Masterwork");
-			case EFortRarity::Legendary:
-				return ("Legendary");
-			case EFortRarity::Sturdy:
-				return ("Sturdy");
-			case EFortRarity::Quality:
-				return ("Quality");
-			case EFortRarity::Ordinary:
-				return ("Ordinary");
-			default:
-				return ("InvalidRarity");
-			}
-		}
-
 		FText StringToText(FString String)
 		{
 			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));

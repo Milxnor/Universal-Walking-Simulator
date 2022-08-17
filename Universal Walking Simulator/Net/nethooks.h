@@ -106,12 +106,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (!PlayerState) // this happened somehow
         return PlayerController;
 
-    if (Helper::Banning::IsBanned(Helper::GetfIP(PlayerState).Data.GetData()))
+    /* if (Helper::Banning::IsBanned(Helper::GetfIP(PlayerState).Data.GetData()))
     {
         FString Reason;
         Reason.Set(L"You are banned!");
         Helper::KickController(PlayerController, Reason);
-    }
+    } */
 
     auto OPlayerName = Helper::GetPlayerName(PlayerState);
     std::string PlayerName = OPlayerName;
@@ -323,6 +323,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         std::cout << ("Unable to grant abilities due to no GiveAbility!\n");
 
     // if (FnVerDouble >= 4.0) // if (std::floor(FnVerDouble) != 9 && std::floor(FnVerDouble) != 10 && Engine_Version >= 420) // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
+    if (FnVerDouble < 16.00)
     {
         static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
         static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -389,7 +390,11 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
         static int TeamIDX = 4;
 
-        *PlayerState->Member<uint8_t>("TeamIndex") = TeamIDX;
+        auto teamIndexThing = PlayerState->Member<uint8_t>("TeamIndex");
+
+        auto oldTeamIDX = *teamIndexThing;
+
+        *teamIndexThing = TeamIDX;
         *PlayerState->Member<uint8_t>("SquadId") = TeamIDX;
 
         static auto SquadIdInfoOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.GameMemberInfo", "SquadId");
@@ -414,6 +419,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         // ((TArray<FGameMemberInfo>*)(__int64(&*GameMemberInfoArray) + MembersOffset))->Add(NewInfo); // ,SizeOfGameMemberInfo);
         MarkArrayDirty(GameMemberInfoArray);
         (*GameMemberInfoArray).Members.Add(NewInfo);
+        MarkArrayDirty(GameMemberInfoArray);
         // MarkArrayDirty(GameMemberInfoArray);
         // MarkItemDirty(GameMemberInfoArray, (FFastArraySerializerItem*)&NewInfo);
 
@@ -427,7 +433,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         static auto OnRep_PlayerTeam = PlayerState->Function("OnRep_PlayerTeam");
         static auto OnRep_TeamIndex = PlayerState->Function("OnRep_TeamIndex");
 
-        unsigned char OldVal = 0;
+        unsigned char OldVal = oldTeamIDX;
 
         PlayerState->ProcessEvent(OnRep_SquadId);
         PlayerState->ProcessEvent(OnRep_PlayerTeam);

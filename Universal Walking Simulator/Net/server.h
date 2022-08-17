@@ -97,7 +97,7 @@ void Listen(int Port = 7777)
 
     if (bUseBeacons)
     {
-        static UObject* BeaconHostClass = FindObject(("Class /Script/OnlineSubsystemUtils.OnlineBeaconHost"));
+        static UObject* BeaconHostClass = FindObjectOld("Class /Script/OnlineSubsystemUtils.OnlineBeaconHost", true);
 
         if (!BeaconHostClass)
         {
@@ -117,7 +117,7 @@ void Listen(int Port = 7777)
 
         std::cout << ("Spawned Beacon!\n");
 
-        if (std::stod(FN_Version) < 16.00)
+        // if (std::stod(FN_Version) < 16.00)
         {
             if (Engine_Version < 426)
                 *BeaconHost->Member<int>(("ListenPort")) = Port - 1;

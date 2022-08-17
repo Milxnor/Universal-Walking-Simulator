@@ -106,6 +106,8 @@ inline void initStuff()
 				 
 				auto Playlist = FindObject(PlaylistToUse);
 
+				bIsPlayground = PlaylistToUse == "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
+
 				if (std::stod(FN_Version) >= 6.10) // WRONG
 				{
 					auto OnRepPlaylist = gameState->Function(("OnRep_CurrentPlaylistInfo"));
@@ -963,6 +965,15 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 	return false;
 }
 
+void replace_all(std::string& input, const std::string& from, const std::string& to) {
+	size_t pos = 0;
+
+	while ((pos = input.find(from, pos)) != std::string::npos) {
+		input.replace(pos, from.size(), to);
+		pos += to.size();
+	}
+}
+
 inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function, void* Parameters)
 {
 	UObject* Controller = Controllera;
@@ -1061,6 +1072,62 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				// Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
 			}
 
+			if (Engine_Version >= 424 && ReceivingActorName.contains("Wumba")) // Workbench/Upgrade Bench
+			{
+				auto CurrentWeapon = *Pawn->Member<UObject*>(("CurrentWeapon"));
+				auto CurrentWeaponDefinition = *CurrentWeapon->Member<UObject*>(("WeaponData"));
+				auto CurrentRarity = CurrentWeaponDefinition->Member<EFortRarityC2>("Rarity");
+				 
+				// im stupid ok
+
+				std::pair<std::string, std::string> thingToReplace;
+				
+				switch (*CurrentRarity)
+				{
+				case EFortRarityC2::Common:
+					thingToReplace = std::make_pair("_C_", "_UC_");
+					break;
+				case EFortRarityC2::Uncommon:
+					thingToReplace = std::make_pair("_UC_", "_R_");
+					break;
+				case EFortRarityC2::Rare:
+					thingToReplace = std::make_pair("_R_", "_VR_");
+					break;
+				case EFortRarityC2::Epic:
+					thingToReplace = std::make_pair("_VR_", "_SR_");
+					break;
+				}
+
+				std::string newDefStr = CurrentWeaponDefinition->GetFullName();
+				// newDefStr.replace(newDefStr.find(thingToReplace.first), thingToReplace.first.size(), thingToReplace.second);
+				replace_all(newDefStr, thingToReplace.first, thingToReplace.second);
+
+				auto newDef = FindObject(newDefStr);
+
+				if (!newDef)
+				{
+					std::cout << "Unable to find to " << newDefStr << '\n';
+					return false;
+				}
+
+				auto CostPerMat = ((int)(*CurrentRarity) + 1) * 50;
+
+				static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+				static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+				auto WoodGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, WoodItemData));
+				auto StoneGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, StoneItemData));
+				auto MetalGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, MetalItemData));
+
+				Inventory::TakeItem(Controller, WoodGUID, CostPerMat);
+				Inventory::TakeItem(Controller, StoneGUID, CostPerMat);
+				Inventory::TakeItem(Controller, MetalGUID, CostPerMat);
+
+				Inventory::TakeItem(Controller, *CurrentWeapon->Member<FGuid>("ItemEntryGuid"), 1, true);
+				Inventory::GiveItem(Controller, newDef, EFortQuickBars::Primary, 1, 1);
+			}
+
 			// Looting::Tables::HandleSearch(ReceivingActor);
 			LootingV2::HandleSearch(ReceivingActor);
 		}
@@ -1099,6 +1166,18 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 inline bool PlayButtonHook(UObject* Object, UFunction* Function, void* Parameters)
 {
 	LoadInMatch();
+	return false;
+}
+
+inline bool ClientWasKickedHook(UObject* Controller, UFunction*, void* Params)
+{
+	std::cout << "ClientWasKicked!\n";
+
+	if (std::stod(FN_Version) >= 16.00)
+	{
+		return true;
+	}
+
 	return false;
 }
 
@@ -1373,6 +1452,7 @@ void FinishInitializeUHooks()
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
+	AddHook("Function /Script/Engine.PlayerController.ClientWasKicked", ClientWasKickedHook);
 	// AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateUnreliable"), ServerUpdateVehicleInputStateUnreliableHook)
 
 	if (Engine_Version >= 420)

@@ -414,6 +414,16 @@ namespace LootingV2
 				}
 			}
 
+			else if (BuildingContainerName.contains("AthenaSupplyDrop_C"))
+			{
+				static auto GoldAR = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"));
+				
+				for (int i = 0; i < 5; i++)
+				{
+					Helper::SummonPickup(nullptr, GoldAR, GetCorrectLocation(), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 1);
+				}
+			}
+
 			if (Engine_Version >= 424) // chapter 2 specific stuff
 			{
 				if (BuildingContainerName.contains("Barrel") && BuildingContainerName.contains("Rod"))
@@ -431,11 +441,6 @@ namespace LootingV2
 				}
 
 				else if (BuildingContainerName.contains("FactionChest")) // IO Chests
-				{
-
-				}
-
-				else if (BuildingContainerName.contains("Wumba")) // Workbench/Upgrade Bench
 				{
 
 				}

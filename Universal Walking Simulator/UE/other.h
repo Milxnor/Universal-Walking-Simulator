@@ -192,20 +192,18 @@ struct FText
 	char UnknownData[0x18];
 };
 
-enum class EFortRarity : uint8_t
+enum class EFortRarityC2 : uint8_t // C2
 {
-	Handmade = 0,
-	Ordinary = 1,
-	Sturdy = 2,
-	Quality = 3,
-	Fine = 4,
-	Elegant = 5,
-	Masterwork = 6,
-	Epic = 7,
-	Badass = 8,
-	Legendary = 9,
-	NumRarityValues = 10,
-	EFortRarity_MAX = 11
+	Common = 0,
+	Uncommon = 1,
+	Rare = 2,
+	Epic = 3,
+	Legendary = 4,
+	Mythic = 5,
+	Transcendent = 6,
+	Unattainable = 7,
+	NumRarityValues = 8,
+	EFortRarity_MAX = 9,
 };
 
 enum EName
