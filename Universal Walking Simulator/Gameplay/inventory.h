@@ -158,10 +158,10 @@ namespace Inventory
 {
 	UObject* GetWorldInventory(UObject* Controller)
 	{
-		static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
-		auto WorldInventory = *(UObject**)(__int64(Controller) + WorldInventoryOffset);
+		// static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
+		// auto WorldInventory = *(UObject**)(__int64(Controller) + WorldInventoryOffset);
 
-		return WorldInventory;
+		return *Controller->Member<UObject*>(("WorldInventory")); // WorldInventory;
 	}
 
 	__int64* GetInventory(UObject* Controller)
@@ -170,8 +170,8 @@ namespace Inventory
 
 		if (WorldInventory)
 		{
-			static auto InventoryOffset = GetOffset(WorldInventory, "Inventory");
-			auto Inventorya = (__int64*)(__int64(WorldInventory) + InventoryOffset);
+			// static auto InventoryOffset = GetOffset(WorldInventory, "Inventory");
+			auto Inventorya = WorldInventory->Member<__int64>(("Inventory")); // (__int64*)(__int64(WorldInventory) + InventoryOffset);
 
 			return Inventorya;
 		}
@@ -590,7 +590,8 @@ namespace Inventory
 
 		if (FlooredVer == 3)
 		{
-			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			// struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
 			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
 		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
@@ -694,7 +695,7 @@ namespace Inventory
 
 		if (FlooredVer == 3)
 		{
-			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
 		else if (std::stof(FN_Version) < 7.40f)
@@ -794,7 +795,7 @@ namespace Inventory
 
 		if (FlooredVer == 3)
 		{
-			struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
@@ -1394,6 +1395,8 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // n
 
 		__int64* ItemEntry = nullptr;
 
+		// Inventory::TakeItem(PlayerController, *FFortItemEntry::GetGuid(ItemEntry), AmountToRemove, true);
+
 		Inventory::DecreaseItemCount(PlayerController, AmmoDef, AmountToRemove, &ItemEntry);
 
 		if (ItemEntry)
@@ -1406,6 +1409,8 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // n
 
 		return HandleReloadCost(Weapon, AmountToRemove);
 	}
+
+	return;
 }
 
 void InitializeInventoryHooks()
@@ -1423,9 +1428,9 @@ void InitializeInventoryHooks()
 		AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupWithSwap"), ServerHandlePickupWithSwapHook);
 	}
 
-	/* if (HandleReloadCost)
+	if (HandleReloadCost)
 	{
 		MH_CreateHook((PVOID)HandleReloadCostAddr, HandleReloadCostDetour, (void**)&HandleReloadCost);
 		MH_EnableHook((PVOID)HandleReloadCostAddr);
-	} */
+	}
 }

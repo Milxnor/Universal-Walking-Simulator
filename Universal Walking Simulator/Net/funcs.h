@@ -109,7 +109,18 @@ char(__fastcall* NoReserve)(__int64* a1, __int64 a2, char a3, __int64* a4);
 
 static std::unordered_map<UFunction*, std::function<bool(UObject*, UFunction*, void*)>> FunctionsToHook;
 
-#define AddHook(str, func) FunctionsToHook.insert({FindObject<UFunction>(str), func});
+void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func)
+{
+    // auto funcObject = FindObjectOld<UFunction>(str, true);
+    auto funcObject = FindObject<UFunction>(str);
+
+    if (!funcObject)
+        std::cout << "Unable to find Function: " << str << '\n';
+    else
+        FunctionsToHook.insert({ funcObject, func });
+}
+
+static auto AircraftLocationToUse = FVector{ 3500, -9180, 10500 };
 
 const wchar_t* GetMapName()
 {
@@ -436,3 +447,5 @@ static std::vector<UObject*> ExistingBuildings;
 static bool bUseBeacons = true;
 
 static bool bDoubleBuildFix = false;
+
+std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";

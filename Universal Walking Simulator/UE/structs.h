@@ -391,11 +391,13 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	INL void* ProcessEvent(const std::string& FuncName, void* Params = nullptr)
 	{
 		auto fn = this->Function(FuncName); // static?
+
 		if (!fn)
 		{
 			std::cout << ("[ERROR] Unable to find ") << FuncName << '\n';
 			return nullptr;
 		}
+
 		return ProcessEvent((UObject*)fn, Params);
 	}
 
@@ -459,7 +461,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 
 	// ONLY USE IF YOU KNOW WHAT UR DOING
 	template <typename MemberType>
-	INL MemberType* FastMember(const std::string& ClassName, const std::string& MemberName); // DONT USE FOR SCRIPTSTRUCTS
+	INL MemberType* FastMember(const std::string& MemberName); // DONT USE FOR SCRIPTSTRUCTS
 };
 
 
@@ -1370,22 +1372,50 @@ int GetOffsetFromProp(void* Prop)
 	return -1;
 }
 
-template <typename MemberType>
-INL MemberType* UObject::FastMember(const std::string& ClassName, const std::string& MemberName)
+template <typename StructType = UObject>
+StructType* GetSuperStructOfClass(UObject* Class)
 {
+	if (!Class)
+		return nullptr;
+
+	if (Engine_Version <= 420)
+		return ((UClass_FT*)Class)->SuperStruct;
+
+	else if (Engine_Version == 421)
+		return ((UClass_FTO*)Class)->SuperStruct;
+
+	else if (Engine_Version >= 422 && Engine_Version <= 424)
+		return ((UClass_FTT*)Class)->SuperStruct;
+
+	else if (Engine_Version >= 425)
+		return ((UClass_CT*)Class)->SuperStruct;
+
+	return nullptr;
+}
+
+template <typename MemberType>
+INL MemberType* UObject::FastMember(const std::string& MemberName)
+{
+	if (!StaticFindObjectO)
+		return this->Member<MemberType>(MemberName);
+
 	// credit android and ender
 
 	static auto PropertyClass = FindObject("/Script/CoreUObject.Property");
 	auto die = std::wstring(MemberName.begin(), MemberName.end()).c_str();
-	auto property = StaticFindObjectO ? StaticFindObjectO(FindObject(ClassName), PropertyClass, die, false) : nullptr;
 
-	if (property)
+	for (auto CurrentClass = this->ClassPrivate; CurrentClass; CurrentClass = GetSuperStructOfClass(CurrentClass))
 	{
-		auto offset = GetOffsetFromProp(property); // *(uint32_t*)(__int64(Property) + 0x44);
-		return (MemberType*)(__int64(property) + offset);
+		auto property = StaticFindObjectO ? StaticFindObjectO(CurrentClass, PropertyClass, die, false) : nullptr;
+
+		if (property)
+		{
+			auto offset = GetOffsetFromProp(property); // *(uint32_t*)(__int64(Property) + 0x44);
+			return (MemberType*)(__int64(property) + offset);
+		}
 	}
-	else
-		std::cout << "Failed FastMember!\n";
+
+	std::cout << "Failed FastMember!\n";
 
 	return this->Member<MemberType>(MemberName);
 }

@@ -52,6 +52,55 @@ DWORD WINAPI InputThread(LPVOID)
     return 0;
 }
 
+UObject* __fastcall SpawnsAircraftDetour(__int64 a1, int a2)
+{
+    std::cout << "Spawns aircraft called!\n";
+    static auto aircraftClass = FindObject("BlueprintGeneratedClass /Game/Athena/Aircraft/AthenaAircraft.AthenaAircraft_C");
+    auto Aircraft = Easy::SpawnActor(aircraftClass, AircraftLocationToUse);
+
+    auto World = Helper::GetWorld();
+    if (World)
+    {
+        auto NetDriver = *World->Member<UObject*>(("NetDriver"));
+        if (NetDriver)
+        {
+            auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+
+            if (ClientConnections)
+            {
+                for (int i = 0; i < ClientConnections->Num(); i++)
+                {
+                    auto Connection = ClientConnections->At(i);
+
+                    if (!Connection)
+                        continue;
+
+                    auto Controller = *Connection->Member<UObject*>(("PlayerController"));
+
+                    if (Controller)
+                    {
+                        struct
+                        {
+                        public:
+                            UObject* A;                                                 // 0x0(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+                            char          TransitionParams[0x10];                                  // 0x8(0x10)(Parm, NoDestructor, NativeAccessSpecifierPublic)
+                        }APlayerController_ClientSetViewTarget_Params{ Aircraft };
+
+                        static auto ClientSetViewTarget = Controller->Function("ClientSetViewTarget");
+
+                        if (ClientSetViewTarget)
+                            Controller->ProcessEvent(ClientSetViewTarget, &APlayerController_ClientSetViewTarget_Params);
+                        else
+                            std::cout << "No ClientSetViewTarget!\n";
+                    }
+                }
+            }
+        }
+    }
+
+    return Aircraft;
+}
+
 DWORD WINAPI Main(LPVOID)
 {
     AllocConsole();
@@ -138,6 +187,36 @@ DWORD WINAPI Main(LPVOID)
 
     // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "DeltaFlags") << '\n'; // 256 12.41
     // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "ArrayReplicationKey") << '\n'; // 84 12.41
+
+    /* uint8_t* BusCrashAddr = (uint8_t*)FindPattern("0F 10 4C D1 ? 0F 11 88 ? ? ? ? F2 0F 10 44 D1 ? 48 8D 88 ? ? ? ? 48 8D 54 24 ? F2 0F 11 80 ? ? ? ? E8 ? ? ? ? 0F 28 44 24 ? 48 8D 54 24 ? 0F 29 44 24 ? 0F 57 C9 F3 0F 10 83 ? ? ? ?");
+
+    for (int i = 0; i < 11; i++)
+    {
+        BusCrashAddr[i] = 0;
+    } */
+
+    /* uintptr_t BusCrashAddr = FindPattern("0F 10 4C D1 ? 0F 11 88 ? ? ? ? F2 0F 10 44 D1 ? 48 8D 88 ? ? ? ? 48 8D 54 24 ? F2 0F 11 80 ? ? ? ? E8 ? ? ? ? 0F 28 44 24 ? 48 8D 54 24 ? 0F 29 44 24 ? 0F 57 C9 F3 0F 10 83 ? ? ? ?");
+    
+    if (BusCrashAddr) {
+        std::cout << "Applying bus crash fix!\n";
+
+        for (int i = 0; i < 11; i++)
+        {
+            *reinterpret_cast<char*>(BusCrashAddr + i) = 0x00;
+        }
+    }
+    else
+        std::cout << "No BusCrashAddr!\n"; */
+
+    /* auto SpawnAircraftAddr = FindPattern("48 89 74 24 ? 57 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 48 8B B9 ? ? ? ? 48 63 F2 48 85 FF 74 2D E8 ? ? ? ? 4C 8B 47 10 4C 8D 48 30 48 63 40 38 41 3B 40 38 7F 16 48 8B C8 49 8B 40 30");
+
+    if (SpawnAircraftAddr)
+    {
+        MH_CreateHook((PVOID)SpawnAircraftAddr, SpawnsAircraftDetour, nullptr);
+        MH_EnableHook((PVOID)SpawnAircraftAddr);
+    }
+    else
+        std::cout << "No SpawnAircraftAddr!\n"; */
 
     return 0;
 }

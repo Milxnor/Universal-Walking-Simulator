@@ -103,6 +103,7 @@ namespace Helper
 		if (Season == 6) {
 			return;
 			static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
+			
 			if (FloatingIsland)
 				*FloatingIsland->Member<uint8_t>(("DynamicFoundationType")) = 0;
 
@@ -110,6 +111,11 @@ namespace Helper
 
 			if (Lake)
 				*Lake->Member<uint8_t>(("DynamicFoundationType")) = 0;
+
+			FloatingIsland->ProcessEvent("OnRep_DynamicFoundationTransform");
+			Lake->ProcessEvent("OnRep_DynamicFoundationTransform");
+			FloatingIsland->ProcessEvent("OnRep_FoundationEnabledState");
+			Lake->ProcessEvent("OnRep_FoundationEnabledState");
 		}
 
 		/*
@@ -117,7 +123,7 @@ namespace Helper
 		[51709] Function /Script/FortniteGame.BuildingFoundation.OnLevelShown
 		[51710] Function /Script/FortniteGame.BuildingFoundation.OnLevelStreamedIn
 		[51711] Function /Script/FortniteGame.BuildingFoundation.OnRep_DynamicFoundationRepData
-		
+		// OnRep_DynamicFoundationTransform
 		*/
 	}
 	

@@ -399,7 +399,7 @@ namespace LootingV2
 				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
 				static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
-				auto Location = GetCorrectLocation();
+				auto Location = GetCorrectLocation(); // GetLootSpawnLocation
 
 				{
 					static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -408,6 +408,9 @@ namespace LootingV2
 					Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
 					Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
 					Helper::SummonPickup(nullptr, Minis, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 6);
+
+					// OnRep_Looted
+					// SpawnLoot
 				}
 			}
 
@@ -444,6 +447,78 @@ namespace LootingV2
 			}
 		}
 	}
+
+	static DWORD WINAPI FillVendingMachines(LPVOID)
+	{
+		// Some vending machines are empty. We have to get all of the vending machines and then set the slot manually?
+
+		static auto BuildingItemCollectorClass = FindObject(("Class /Script/FortniteGame.BuildingItemCollectorActor"));
+
+		if (BuildingItemCollectorClass)
+		{
+			auto Actors = Helper::GetAllActorsOfClass(BuildingItemCollectorClass);
+
+			std::cout << ("Filling ") << Actors.Num() << (" vending machines!\n");
+
+			for (int i = 0; i < Actors.Num(); i++)
+			{
+				auto Actor = Actors[i];
+
+				if (Actor)
+				{
+					struct FCollectorUnitInfo
+					{
+						UObject* InputItem;                                                // 0x0000(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+						char pad[0x0028];
+						UObject* OverrideInputItemTexture;                                 // 0x0028(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+						unsigned char                                      bUseDefinedOutputItem : 1;                                // 0x0030(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
+						unsigned char                                      UnknownData00[0x7];                                       // 0x0031(0x0007) MISSED OFFSET
+						UObject* OutputItem;                                               // 0x0038(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+						TArray<__int64>                      OutputItemEntry;                                          // 0x0040(0x0010) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, Transient)
+						FName                                       OverrideOutputItemLootTierGroupName;                      // 0x0050(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+						char pad1[0xA8];
+						UObject* OverrideOutputItemTexture;                                // 0x0100(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
+					};
+
+					TArray<FCollectorUnitInfo>* ItemCollections = Actor->Member<TArray<FCollectorUnitInfo>>(("ItemCollections")); // CollectorUnitInfo
+
+					if (ItemCollections)
+					{
+						static UObject* CollectorUnitInfoClass = FindObject(("ScriptStruct /Script/FortniteGame.CollectorUnitInfo"));
+						static std::string CollectorUnitInfoClassName = ("ScriptStruct /Script/FortniteGame.CollectorUnitInfo");
+
+						if (!CollectorUnitInfoClass)
+						{
+							CollectorUnitInfoClassName = ("ScriptStruct /Script/FortniteGame.ColletorUnitInfo"); // die fortnite
+							CollectorUnitInfoClass = FindObject(CollectorUnitInfoClassName); // Wedc what this value is
+						}
+
+						static auto OutputItemOffset = FindOffsetStruct(CollectorUnitInfoClassName, ("OutputItem"));
+
+						std::cout << ("Offset: ") << OutputItemOffset << '\n';
+						// ItemCollections->At(i).OutputItem = LootingTables::GetWeaponDef();
+						// So this is equal to Array[1] + OutputItemOffset, but since the array is __int64, it doesn't calcuate it properly so we have to implement it ourselves
+						std::cout << __int64(&ItemCollections->At(0).OutputItem) << '\n';
+						std::cout << __int64(&*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)) + OutputItemOffset)) << '\n';
+						*(UObject**)(*(__int64*)((__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						*(UObject**)(*(__int64*)((__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 1))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						*(UObject**)(*(__int64*)((__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 2))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+					}
+					else
+						std::cout << ("ItemCollections Invalid: ") << ItemCollections << '\n';
+				}
+				else
+					std::cout << ("Invalid Vending Actor! Index: ") << i << '\n';
+			}
+
+			Actors.Free();
+		}
+
+		std::cout << ("Finished filling vending machines!\n");
+
+		return 0;
+	}
+
 }
 
 namespace Looting
@@ -812,10 +887,6 @@ namespace Looting
 				{
 					FVector RandLocation;
 
-					// CHAPTER 1
-
-					// SKUNKED VERY
-
 					std::random_device rd; // obtain a random number from hardware
 					std::mt19937 gen(rd()); // seed the generator
 
@@ -834,7 +905,9 @@ namespace Looting
 					FRotator RandRotation;
 					// RandRotation.Yaw = RandomBetween(0, 360);
 
-					Easy::SpawnActor(LlamaClass, RandLocation, RandRotation);
+					auto LlamaActor = Easy::SpawnActor(LlamaClass, RandLocation, RandRotation);
+
+					// Multicast_ApplyGravityForFall
 				}
 			}
 

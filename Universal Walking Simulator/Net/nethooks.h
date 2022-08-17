@@ -138,7 +138,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (FnVerDouble < 7.4)
     {
         static const auto QuickBarsClass = FindObject("Class /Script/FortniteGame.FortQuickBars", true);
-        auto QuickBars = PlayerController->FastMember<UObject*>("Class /Script/FortniteGame.FortPlayerController", "QuickBars");
+        auto QuickBars = PlayerController->Member<UObject*>("QuickBars");
 
         if (QuickBars)
         {
@@ -188,11 +188,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                                 continue;
 
                             GrantGameplayAbility(Pawn, Ability);
+                            std::cout << "Granting ability " << Ability->GetFullName() << '\n';
                         }
                     }
                 }
 
-                static auto grapplerAbility = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Weapons/Abilities/HookGun/GA_Athena_HookPassive.GA_Athena_HookPassive_C");
+                /* static auto grapplerAbility = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Weapons/Abilities/HookGun/GA_Athena_HookPassive.GA_Athena_HookPassive_C");
                 static auto grapplerAbility2 = FindObject("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/Projectile/GA_Ranged_GenericProjectileImpact_HookGun.GA_Ranged_GenericProjectileImpact_HookGun_C");
 
                 if (grapplerAbility)
@@ -203,51 +204,77 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 if (grapplerAbility2)
                     GrantGameplayAbility(Pawn, grapplerAbility2);
                 else
-                    std::cout << "No grapplerAbility2!\n";
+                    std::cout << "No grapplerAbility2!\n"; */
             }
             else
             {
-                // static auto MatsAbility = FindObject(("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
-                //GrantGameplayAbility(Pawn, MatsAbility);
-
-                static auto SprintAbility = FindObject("FortGameplayAbility_Sprint /Script/FortniteGame.Default__FortGameplayAbility_Sprint");
-                static auto JumpAbility = FindObject("FortGameplayAbility_Jump /Script/FortniteGame.Default__FortGameplayAbility_Jump");
-                static auto InteractUseAbility = FindObject("GA_DefaultPlayer_InteractUse_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.Default__GA_DefaultPlayer_InteractUse_C");
-                static auto InteractSearchAbility = FindObject("GA_DefaultPlayer_InteractSearch_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.Default__GA_DefaultPlayer_InteractSearch_C");
-                
-                // GAB_CarryPlayer_C
-
-                if (Engine_Version >= 424)
+                if (FnVerDouble >= 8 && Engine_Version < 424)
                 {
-                    static auto JumpOutAbility = FindObject("GA_Athena_HidingProp_JumpOut_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_JumpOut.Default__GA_Athena_HidingProp_JumpOut_C");
-                    static auto HidingAbility = FindObject("GA_Athena_HidingProp_Hide_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_Hide.Default__GA_Athena_HidingProp_Hide_C");
-                    static auto LandedOnAbility = FindObject("GA_Athena_HidingProp_LandedOn_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_LandedOn.Default__GA_Athena_HidingProp_LandedOn_C");
+                    static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
 
-                    if (JumpOutAbility)
-                        GrantGameplayAbility(Pawn, JumpOutAbility);
-                    if (HidingAbility)
-                        GrantGameplayAbility(Pawn, HidingAbility);
-                    if (LandedOnAbility)
-                        GrantGameplayAbility(Pawn, LandedOnAbility);
+                    if (AbilitySet)
+                    {
+                        auto Abilities = AbilitySet->Member<TArray<UObject*>>(("GameplayAbilities"));
+
+                        if (Abilities)
+                        {
+                            for (int i = 0; i < Abilities->Num(); i++)
+                            {
+                                auto Ability = Abilities->At(i);
+
+                                if (!Ability)
+                                    continue;
+
+                                GrantGameplayAbility(Pawn, Ability);
+                                std::cout << "Granting ability " << Ability->GetFullName() << '\n';
+                            }
+                        }
+                    }
                 }
+                else
+                {
+                    // static auto MatsAbility = FindObject(("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
+//GrantGameplayAbility(Pawn, MatsAbility);
 
-                if (SprintAbility)
-                    GrantGameplayAbility(Pawn, SprintAbility);
-                else
-                    std::cout << "No SprintAbility!\n";
-                if (JumpAbility)
-                    GrantGameplayAbility(Pawn, JumpAbility);
-                else
-                    std::cout << "No JumpAbility!\n";
-                if (InteractUseAbility)
-                   GrantGameplayAbility(Pawn, InteractUseAbility);
-                else
-                    std::cout << "No InteractUseAbility!\n";
-                if (InteractSearchAbility)
-                   GrantGameplayAbility(Pawn, InteractSearchAbility);
-                else
-                    std::cout << "No InteractSearchAbility!\n";
+                    static auto SprintAbility = FindObject("FortGameplayAbility_Sprint /Script/FortniteGame.Default__FortGameplayAbility_Sprint");
+                    static auto JumpAbility = FindObject("FortGameplayAbility_Jump /Script/FortniteGame.Default__FortGameplayAbility_Jump");
+                    static auto InteractUseAbility = FindObject("GA_DefaultPlayer_InteractUse_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.Default__GA_DefaultPlayer_InteractUse_C");
+                    static auto InteractSearchAbility = FindObject("GA_DefaultPlayer_InteractSearch_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.Default__GA_DefaultPlayer_InteractSearch_C");
 
+                    // GAB_CarryPlayer_C
+
+                    if (Engine_Version >= 424)
+                    {
+                        static auto JumpOutAbility = FindObject("GA_Athena_HidingProp_JumpOut_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_JumpOut.Default__GA_Athena_HidingProp_JumpOut_C");
+                        static auto HidingAbility = FindObject("GA_Athena_HidingProp_Hide_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_Hide.Default__GA_Athena_HidingProp_Hide_C");
+                        static auto LandedOnAbility = FindObject("GA_Athena_HidingProp_LandedOn_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_LandedOn.Default__GA_Athena_HidingProp_LandedOn_C");
+
+                        if (JumpOutAbility)
+                            GrantGameplayAbility(Pawn, JumpOutAbility);
+                        if (HidingAbility)
+                            GrantGameplayAbility(Pawn, HidingAbility);
+                        if (LandedOnAbility)
+                            GrantGameplayAbility(Pawn, LandedOnAbility);
+                    }
+
+                    if (SprintAbility)
+                        GrantGameplayAbility(Pawn, SprintAbility);
+                    else
+                        std::cout << "No SprintAbility!\n";
+                    if (JumpAbility)
+                        GrantGameplayAbility(Pawn, JumpAbility);
+                    else
+                        std::cout << "No JumpAbility!\n";
+                    if (InteractUseAbility)
+                        GrantGameplayAbility(Pawn, InteractUseAbility);
+                    else
+                        std::cout << "No InteractUseAbility!\n";
+                    if (InteractSearchAbility)
+                        GrantGameplayAbility(Pawn, InteractSearchAbility);
+                    else
+                        std::cout << "No InteractSearchAbility!\n";
+
+                }
             /*    static auto SprintAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Sprint"));
                 static auto ReloadAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Reload"));
                 static auto JumpAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Jump"));
@@ -295,7 +322,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     else
         std::cout << ("Unable to grant abilities due to no GiveAbility!\n");
 
-    if (Engine_Version >= 420) // if (std::floor(FnVerDouble) != 9 && std::floor(FnVerDouble) != 10 && Engine_Version >= 420) // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
+    // if (FnVerDouble >= 4.0) // if (std::floor(FnVerDouble) != 9 && std::floor(FnVerDouble) != 10 && Engine_Version >= 420) // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
     {
         static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
         static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -329,8 +356,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         Inventory::CreateAndAddItem(PlayerController, SlurpJuice, EFortQuickBars::Primary, 5, 1);
 
         Inventory::GiveAllAmmo(PlayerController);
-        Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
         Inventory::GiveMats(PlayerController);
+        Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
     }
 
     if (false && std::stod(FN_Version) /* > */ == 7.40) // idk why this dopesnt work
