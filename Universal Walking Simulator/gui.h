@@ -567,16 +567,40 @@ DWORD WINAPI GuiThread(LPVOID)
 						std::cout << "Creating DumpObjects Thread \n";
 						CreateThread(0, 0, Helper::DumpObjects, 0, 0, 0);
 					}
-					if (ImGui::Button(("SetupTurrets"))) {
+					/*if (ImGui::Button(("SetupTurrets"))) {
 						Henchmans::SpawnHenchmans();
 					}
 					if (ImGui::Button(("OpenVaults"))) {
 						Henchmans::OpenVaults();
-					}
-					
-				
+					}*/
+					if (ImGui::Button(("Spawn Volume(stay in 1 place to get creative inventory)"))) {
+						
+						auto World = Helper::GetWorld();
+						auto NetDriver = *World->Member<UObject*>(("NetDriver"));
 
-					break;
+
+						auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+
+
+
+						for (int i = 0; i < ClientConnections->Num(); i++)
+						{
+							auto Connection = ClientConnections->At(i);
+
+
+
+							auto Controller = *Connection->Member<UObject*>(("PlayerController"));
+
+							auto PlayerState = *Controller->Member<UObject*>(("PlayerState"));
+							auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+							auto Location = Helper::GetActorLocation(Pawn);
+							auto VolumeClass = FindObject("Class /Script/FortniteGame.FortVolume");
+							auto Volume = Easy::SpawnActor(VolumeClass, Location);
+						}
+
+					}
+
+					
 				}
 				case 2:
 					// ImGui::Text("Players Connected: ")
