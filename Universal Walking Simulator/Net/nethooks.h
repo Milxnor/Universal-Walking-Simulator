@@ -158,6 +158,13 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     *PlayerState->Member<char>(("bHasFinishedLoading")) = true;
     *PlayerState->Member<char>(("bIsReadyToContinue")) = true;
 
+    if (FnVerDouble >= 16.00)
+    {
+        auto InventoryServiceClass = FindObject("Class /Script/FortniteGame.FortControllerComponent_InventoryService");
+        auto InventoryServiceComponent = Easy::SpawnObject(InventoryServiceClass, PlayerController);
+        *PlayerController->Member<UObject*>("InventoryServiceComponent") = InventoryServiceComponent;
+    }
+
     auto Pawn = Helper::InitPawn(PlayerController, true, Helper::GetPlayerStart(), true);
 
     if (!Pawn)
