@@ -1,5 +1,106 @@
 #pragma once
+
 #include <UE/structs.h>
+#include <Gameplay/helper.h>
+
+static UObject* JerkyBPLoader;
+static UObject* JerkyLoaderActual;
+static UObject* JerkyPlayerInteraction;
+
+namespace EventHelper // credits spooky man
+{
+	void ApplyGEs()
+	{
+		auto World = Helper::GetWorld();
+		if (World)
+		{
+			auto NetDriver = *World->Member<UObject*>(("NetDriver"));
+			if (NetDriver)
+			{
+				auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+
+				if (ClientConnections)
+				{
+					for (int i = 0; i < ClientConnections->Num(); i++)
+					{
+						auto Connection = ClientConnections->At(i);
+
+						if (!Connection)
+							continue;
+
+						auto Controller = *Connection->Member<UObject*>(("PlayerController"));
+
+						if (Controller)
+						{
+							auto NewPawn = *Controller->Member<UObject*>("Pawn");
+
+							if (NewPawn)
+							{
+								static auto GES = JerkyBPLoader->Function("AddEventInProgressGEs");
+								static auto GES2 = JerkyBPLoader->Function("EventInProgressGEs");
+								JerkyBPLoader->ProcessEvent(GES, &NewPawn);
+								JerkyBPLoader->ProcessEvent(GES2, &NewPawn);
+							}
+
+						}
+
+					}
+
+				}
+
+			}
+		}
+	}
+
+	void BoostUp()
+	{
+		TArray<UObject*> Pawns;
+
+		auto World = Helper::GetWorld();
+		if (World)
+		{
+			auto NetDriver = *World->Member<UObject*>(("NetDriver"));
+			if (NetDriver)
+			{
+				auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+
+				if (ClientConnections)
+				{
+					for (int i = 0; i < ClientConnections->Num(); i++)
+					{
+						auto Connection = ClientConnections->At(i);
+
+						if (!Connection)
+							continue;
+
+						auto Controller = *Connection->Member<UObject*>(("PlayerController"));
+
+						if (Controller)
+						{
+							auto NewPawn = *Controller->Member<UObject*>("Pawn");
+
+							if (NewPawn)
+							{
+								Pawns.Add(NewPawn);
+							}
+
+						}
+
+					}
+				}
+			}
+		}
+
+		auto fn = JerkyBPLoader->Function("PawnsAvailableFlyUp");
+		auto disablegliders = JerkyBPLoader->Function("ToggleParachute");
+
+		bool bdisabled = true;
+
+		JerkyBPLoader->ProcessEvent(fn, &Pawns);
+		JerkyBPLoader->ProcessEvent(disablegliders, &bdisabled);
+	}
+}
+
 namespace Events {
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
@@ -21,19 +122,11 @@ namespace Events {
 
 			if (Version == 12.41f) {
 				static auto JL = FindObject(("BP_Jerky_Loader_C /CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2"));
-				//static auto JS = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
-
-				static auto JerkyLoadLevel = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.LoadJerkyLevel"));
-				//static auto LoadPOI = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.LoadPOI"));
-
-				bool CO = true;
 
 				if (JL)
 				{
-					JL->ProcessEvent(JerkyLoadLevel, &CO);
-					//JS->ProcessEvent(LoadPOI, &CO);
-				}
-					
+					JerkyLoaderActual = JL;
+				}				
 			}
 			if (Version == 10.40f) {
 				//The End C1
@@ -88,26 +181,69 @@ namespace Events {
 			}
 
 			if (Version == 12.41f) {
-				static auto JL = FindObject(("BP_Jerky_Loader_C /CycloneJerky/Levels/JerkyLoaderLevel.JerkyLoaderLevel.PersistentLevel.BP_Jerky_Loader_2"));
-				//static auto JS = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
-				//static auto KismetSystem = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
+				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
+			
+				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
+				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
 
-				//static auto Function1 = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.StartLoadBeforeKnockback"));
-				//static auto Function2 = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Scripting.BP_Jerky_Scripting_C.startevent"));
-				/*if (JS)
+				if (JerkyBPLoader && JerkyPlayerInteraction)
 				{
-					JS->ProcessEvent(Function1);
-					JS->ProcessEvent(Function2);
+					auto TeleportDistant = JerkyBPLoader->Function("TeleportDistantPlayers");
+					auto DebugStartSequence = JerkyBPLoader->Function("DebugStartSequence");
 
+					float SequenceTime = 0.0f;
 
-				}*/
-				static auto Function = FindObject(("Function /CycloneJerky/Gameplay/BP_Jerky_Loader.BP_Jerky_Loader_C.CallStartEventOnScripting"));
-				JL->ProcessEvent(Function);
-				//auto executeconsolecommand = KismetSystem->Function(("ExecuteConsoleCommand"));
-				/*FString Command;
-				Command.Set(L"streammap /CycloneJerky/Levels/JerkySequenceMap");
-				Helper::Console::ExecuteConsoleCommand(Command);*/
-				// static auto JS = FindObject(("LevelSequencePlayer /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.Jerky.AnimationPlayer"));
+					JerkyBPLoader->ProcessEvent(TeleportDistant);
+					JerkyBPLoader->ProcessEvent(DebugStartSequence, &SequenceTime);
+					EventHelper::ApplyGEs();
+					
+					auto World = Helper::GetWorld();
+					if (World)
+					{
+						auto NetDriver = *World->Member<UObject*>(("NetDriver"));
+						if (NetDriver)
+						{
+							auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+
+							if (ClientConnections)
+							{
+								static auto BuildingItemData_Wall = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Wall.BuildingItemData_Wall"));
+								static auto BuildingItemData_Floor = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Floor.BuildingItemData_Floor"));
+								static auto BuildingItemData_Stair_W = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
+								static auto BuildingItemData_RoofS = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
+
+								for (int i = 0; i < ClientConnections->Num(); i++)
+								{
+									auto Connection = ClientConnections->At(i);
+
+									if (!Connection)
+										continue;
+
+									auto Controller = *Connection->Member<UObject*>(("PlayerController"));
+
+									auto ItemInstances = Inventory::GetItemInstances(Controller);
+
+									for (int i = 0; i < ItemInstances->Num(); i++)
+									{
+										auto CurrentItemInstance = ItemInstances->At(i);
+
+										if (CurrentItemInstance->IsA(BuildingItemData_Wall) || CurrentItemInstance->IsA(BuildingItemData_Floor) || CurrentItemInstance->IsA(BuildingItemData_Stair_W) || CurrentItemInstance->IsA(BuildingItemData_RoofS))
+											continue;
+
+										Inventory::TakeItem(Controller, Inventory::GetItemGuid(CurrentItemInstance), *FFortItemEntry::GetCount(GetItemEntryFromInstance(CurrentItemInstance)), true);
+									}
+								}
+							}
+						}
+					}
+
+					bIsInEvent = true;
+				}
+				else
+				{
+					printf("Jerky Sequencer or Jerky Player Interaction is not valid \n");
+				}
 			}
 
 			else if (Version == 10.40f) {

@@ -1205,7 +1205,7 @@ inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Funct
 
 inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Parameters)
 {
-	if (Pawn && Parameters)
+	if (Pawn && Parameters && !bIsInEvent)
 	{
 		struct AFortPlayerPawn_ServerHandlePickup_Params
 		{

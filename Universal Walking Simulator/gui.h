@@ -505,6 +505,9 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (Events::HasEvent()) {
 						if (ImGui::Button(("Start Event")))
 							Events::StartEvent();
+
+						if (std::stod(FN_Version) == 12.41 && ImGui::Button("Fly players up"))
+							EventHelper::BoostUp();
 					}
 
 					if (ImGui::Button("idfk2"))
