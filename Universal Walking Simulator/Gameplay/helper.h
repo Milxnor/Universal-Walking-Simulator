@@ -349,6 +349,11 @@ namespace Helper
 		return Owner;
 	}
 
+	void KickPawn(UObject* Player)
+	{
+		// HyperionCSharp: Will Manage this in later release
+	}
+
 	void DestroyActor(UObject* Actor)
 	{
 		if (!Actor) 
