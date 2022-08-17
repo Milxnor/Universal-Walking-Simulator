@@ -594,11 +594,15 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							auto Controller = *Connection->Member<UObject*>(("PlayerController"));
 
-							auto PlayerState = *Controller->Member<UObject*>(("PlayerState"));
+							
 							auto Pawn = *Controller->Member<UObject*>(("Pawn"));
-							auto Location = Helper::GetActorLocation(Pawn);
-							auto VolumeClass = FindObject("Class /Script/FortniteGame.FortVolume");
-							auto Volume = Easy::SpawnActor(VolumeClass, Location);
+							if (Pawn)
+							{
+								auto Location = Helper::GetActorLocation(Pawn);
+								auto VolumeClass = FindObject("Class /Script/FortniteGame.FortVolume");
+								auto Volume = Easy::SpawnActor(VolumeClass, Location);
+							}
+							
 						}
 
 					}
