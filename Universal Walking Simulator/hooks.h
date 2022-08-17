@@ -261,13 +261,13 @@ bool ServerReviveFromDBNOHook(UObject* DownedPawn, UFunction*, void* Parameters)
 	return false;
 }
 
-bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction*, void* Parameters)
+bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Parameters)
 {
 	std::cout << "OnSafeZoneStateChange!\n";
 
-	if (Indicator && Helper::IsSmallZoneEnabled() && false)
+	if (Indicator && Helper::IsSmallZoneEnabled())
 	{
-		static auto GameState = *Helper::GetWorld()->Member<UObject*>(("GameState"));
+		/* static auto GameState = Helper::GetGameState();
 
 		if (!GameState)
 			return false;
@@ -276,10 +276,16 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction*, void* Parameters)
 
 		if (!Aircraft)
 			return false;
+		else
+			std::cout << "No Aircraft!\n"; */
 
-		*Indicator->Member<FVector>("NextCenter") = Helper::GetActorLocation(Aircraft);
+		*Indicator->Member<FVector>("NextCenter") = AircraftLocationToUse; // Helper::GetActorLocation(Aircraft);
 
-		*Indicator->Member<float>("Radius") = 15000;
+		auto PrevRadius = *Indicator->Member<float>("Radius");
+		auto PrevNextRadius = *Indicator->Member<float>("NextRadius");
+
+		*Indicator->Member<float>("Radius") = PrevRadius > 15000 ? 15000 : PrevRadius - 5000;
+		*Indicator->Member<float>("NextRadius") = PrevNextRadius > 10000 ? 10000 : PrevNextRadius - 5000;
 	}
 
 	return true;
@@ -1360,10 +1366,11 @@ void FinishInitializeUHooks()
 	if (Engine_Version < 422)
 		AddHook(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
+	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
-	AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
+	// AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
 	//AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
@@ -1388,13 +1395,9 @@ void FinishInitializeUHooks()
 
 	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerChoosePart"), ServerChoosePartHook);
 
-	AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
-
 	AddHook("Function /Script/FortniteGame.FortPlayerPawn.ServerReviveFromDBNO", ServerReviveFromDBNOHook);
 
-	AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerSendSquadFriend", ServerSendSquadFriendHook)
-
-	// GameplayAbility.K2_CommitExecute We probably have to hook this for consumables
+	AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerSendSquadFriend", ServerSendSquadFriendHook);
 
 	for (auto& Func : FunctionsToHook)
 	{
@@ -1461,7 +1464,9 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), ("Chime")) && 
 					!strstr(FunctionName.c_str(), ("ServerMove")) &&
 					!strstr(FunctionName.c_str(), ("OnVisibilitySetEvent")) &&
-					!strstr(FunctionName.c_str(), "ReceiveHit"))
+					!strstr(FunctionName.c_str(), "ReceiveHit") &&
+					!strstr(FunctionName.c_str(), "ReadyToStartMatch") && 
+					!strstr(FunctionName.c_str(), "ClientAckGoodMove"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}

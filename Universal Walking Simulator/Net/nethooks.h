@@ -192,7 +192,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                     }
                 }
 
-                static auto grapplerAbility = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Weapons/Abilities/HookGun/GA_Athena_HookPassive.GA_Athena_HookPassive_C");
+                /* static auto grapplerAbility = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Weapons/Abilities/HookGun/GA_Athena_HookPassive.GA_Athena_HookPassive_C");
                 static auto grapplerAbility2 = FindObject("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/Projectile/GA_Ranged_GenericProjectileImpact_HookGun.GA_Ranged_GenericProjectileImpact_HookGun_C");
 
                 if (grapplerAbility)
@@ -203,7 +203,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                 if (grapplerAbility2)
                     GrantGameplayAbility(Pawn, grapplerAbility2);
                 else
-                    std::cout << "No grapplerAbility2!\n";
+                    std::cout << "No grapplerAbility2!\n"; */
             }
             else
             {

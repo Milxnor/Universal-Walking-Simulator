@@ -424,19 +424,22 @@ DWORD WINAPI GuiThread(LPVOID)
 
 									*FlightSpeed = 0;
 
-									auto RandomPOI = Helper::GetRandomPOIActor();
+									// auto RandomPOI = Helper::GetRandomPOIActor();
 									
-									if (RandomPOI)
+									if (true) // RandomPOI)
 									{
-										auto RandomPOILocation = Helper::GetActorLocation(RandomPOI);
-										*FlightStartLocation = RandomPOILocation;
-										// Helper::SetActorLocation(Aircraft, RandomPOILocation);
-										std::cout << std::format("Set aircraft location to {} {} {}\n", RandomPOILocation.X, RandomPOILocation.Y, RandomPOILocation.Z);
+										// auto RandomPOILocation = Helper::GetActorLocation(RandomPOI);
+
+										*FlightStartLocation = AircraftLocationToUse;
+										Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
+										std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
 									}
 									else
 										std::cout << "No POI!\n";
 
 									*GameState->Member<bool>("bAircraftIsLocked") = false;
+
+									// *GameState->Member<float>("SafeZonesStartTime") = 0.f;
 								}
 
 								std::cout << ("Started aircraft!\n");

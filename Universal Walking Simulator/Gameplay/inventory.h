@@ -158,10 +158,10 @@ namespace Inventory
 {
 	UObject* GetWorldInventory(UObject* Controller)
 	{
-		static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
-		auto WorldInventory = *(UObject**)(__int64(Controller) + WorldInventoryOffset);
+		// static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
+		// auto WorldInventory = *(UObject**)(__int64(Controller) + WorldInventoryOffset);
 
-		return WorldInventory;
+		return *Controller->Member<UObject*>(("WorldInventory")); // WorldInventory;
 	}
 
 	__int64* GetInventory(UObject* Controller)
@@ -170,8 +170,8 @@ namespace Inventory
 
 		if (WorldInventory)
 		{
-			static auto InventoryOffset = GetOffset(WorldInventory, "Inventory");
-			auto Inventorya = (__int64*)(__int64(WorldInventory) + InventoryOffset);
+			// static auto InventoryOffset = GetOffset(WorldInventory, "Inventory");
+			auto Inventorya = WorldInventory->Member<__int64>(("Inventory")); // (__int64*)(__int64(WorldInventory) + InventoryOffset);
 
 			return Inventorya;
 		}
@@ -1394,6 +1394,8 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // n
 
 		__int64* ItemEntry = nullptr;
 
+		// Inventory::TakeItem(PlayerController, *FFortItemEntry::GetGuid(ItemEntry), AmountToRemove, true);
+
 		Inventory::DecreaseItemCount(PlayerController, AmmoDef, AmountToRemove, &ItemEntry);
 
 		if (ItemEntry)
@@ -1406,6 +1408,8 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // n
 
 		return HandleReloadCost(Weapon, AmountToRemove);
 	}
+
+	return;
 }
 
 void InitializeInventoryHooks()
@@ -1423,9 +1427,9 @@ void InitializeInventoryHooks()
 		AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupWithSwap"), ServerHandlePickupWithSwapHook);
 	}
 
-	/* if (HandleReloadCost)
+	if (HandleReloadCost)
 	{
 		MH_CreateHook((PVOID)HandleReloadCostAddr, HandleReloadCostDetour, (void**)&HandleReloadCost);
 		MH_EnableHook((PVOID)HandleReloadCostAddr);
-	} */
+	}
 }
