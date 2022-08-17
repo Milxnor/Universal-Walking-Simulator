@@ -173,7 +173,15 @@ namespace Events {
 				UObject* BF = FindObject(("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
 				UObject* Func = BF->Function(("ButterflySequence"));
 				BF->ProcessEvent(Func);
-				//(TODO) Fix screen going white when cube explodes (Im guessing its similar to the Map loading issue on 8.51 Event)
+				//(TODO) Fix screen going white when cube explodes
+
+				/*
+				
+					void ButterflyScriptingReady();
+					void ButterflyStart();
+					void CubeEvent();
+
+				*/
 			}
 			else if (Version == 4.5f) {
 				//Rocket

@@ -399,7 +399,7 @@ namespace LootingV2
 				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
 				static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
-				auto Location = GetCorrectLocation();
+				auto Location = GetCorrectLocation(); // GetLootSpawnLocation
 
 				{
 					static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -408,6 +408,9 @@ namespace LootingV2
 					Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
 					Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
 					Helper::SummonPickup(nullptr, Minis, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 6);
+
+					// OnRep_Looted
+					// SpawnLoot
 				}
 			}
 
@@ -884,10 +887,6 @@ namespace Looting
 				{
 					FVector RandLocation;
 
-					// CHAPTER 1
-
-					// SKUNKED VERY
-
 					std::random_device rd; // obtain a random number from hardware
 					std::mt19937 gen(rd()); // seed the generator
 
@@ -906,7 +905,9 @@ namespace Looting
 					FRotator RandRotation;
 					// RandRotation.Yaw = RandomBetween(0, 360);
 
-					Easy::SpawnActor(LlamaClass, RandLocation, RandRotation);
+					auto LlamaActor = Easy::SpawnActor(LlamaClass, RandLocation, RandRotation);
+
+					// Multicast_ApplyGravityForFall
 				}
 			}
 

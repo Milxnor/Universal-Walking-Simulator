@@ -395,6 +395,11 @@ DWORD WINAPI GuiThread(LPVOID)
 						CreateThread(0, 0, LootingV2::SummonFloorLoot, 0, 0, 0);
 					}
 
+					if (ImGui::Button("idfk3"))
+					{
+						*Helper::GetGameState()->Member<float>("SafeZonesStartTime") = 1;
+					}
+
 					if (serverStatus == EServerStatus::Up)
 					{
 						if (Engine_Version < 423) // I do not know how to start the bus on S8+
@@ -439,7 +444,10 @@ DWORD WINAPI GuiThread(LPVOID)
 
 									*GameState->Member<bool>("bAircraftIsLocked") = false;
 
-									// *GameState->Member<float>("SafeZonesStartTime") = 0.f;
+									FString ifrogor;
+									ifrogor.Set(L"startsafezone");
+									Helper::Console::ExecuteConsoleCommand(ifrogor);
+									*GameState->Member<float>("SafeZonesStartTime") = 1.f;
 								}
 
 								std::cout << ("Started aircraft!\n");
@@ -492,6 +500,31 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (Events::HasEvent()) {
 						if (ImGui::Button(("Start Event")))
 							Events::StartEvent();
+					}
+
+					if (ImGui::Button("idfk2"))
+					{
+						Helper::DestroyActor(FindObjectOld("B_BaseGlider_C /Game/Athena/Maps/Athena_Terrain.Athena_Terrain.PersistentLevel.B_BaseGlider_C_"));
+					}
+
+					if (ImGui::Button("idfk"))
+					{
+						auto scripting = FindObjectOld("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
+						std::cout << "scripting: " << scripting << '\n';
+
+						if (scripting)
+						{
+							// *scripting->Member<FVector>("IslandPosition") = FVector{ 1250, 1818, 3284 };
+							// scripting->ProcessEvent("LoadDynamicLevels");
+							// void BindCalendarEvents();
+							/*
+							
+								void TrySetMapMarker();
+								void SetupMapMarker();
+								void TrySetIslandLocation();
+							
+							*/
+						}
 					}
 
 					/* if (ImGui::Button(("Summon FloorLoot")))
@@ -688,8 +721,6 @@ DWORD WINAPI GuiThread(LPVOID)
 						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_B.AshtonRockItemDef_B"), RandLocation, {});
 					}
 					break;
-
-				
 				}
 				
 
@@ -704,6 +735,8 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					if (CurrentPlayer.first && CurrentPlayer.second)
 					{
+						auto Pawn = CurrentPlayer.first;
+
 						if (!bInformationTab)
 						{
 							static std::string VehicleClass;
@@ -769,7 +802,6 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 						else
 						{
-							auto Pawn = CurrentPlayer.first;
 							TextCentered(std::format(("Kills: {}"), *CurrentPlayer.second->Member<int>(("KillScore"))));
 							auto PawnLocation = Helper::GetActorLocation(Pawn);
 							TextCentered(std::format(("X: {} Y: {} Z: {}"), (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 

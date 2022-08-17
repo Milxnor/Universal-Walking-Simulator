@@ -281,6 +281,8 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 
 		*Indicator->Member<FVector>("NextCenter") = AircraftLocationToUse; // Helper::GetActorLocation(Aircraft);
 
+		// idk im stupid
+
 		auto PrevRadius = *Indicator->Member<float>("Radius");
 		auto PrevNextRadius = *Indicator->Member<float>("NextRadius");
 

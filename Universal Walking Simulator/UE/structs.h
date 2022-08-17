@@ -391,11 +391,13 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	INL void* ProcessEvent(const std::string& FuncName, void* Params = nullptr)
 	{
 		auto fn = this->Function(FuncName); // static?
+
 		if (!fn)
 		{
 			std::cout << ("[ERROR] Unable to find ") << FuncName << '\n';
 			return nullptr;
 		}
+
 		return ProcessEvent((UObject*)fn, Params);
 	}
 
