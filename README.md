@@ -2,7 +2,7 @@
 ### FYI: This isn't 100% universal, there are bugs on almost every season and some seasons have no support at all.<br> <a href="https://discord.gg/reboot">Discord Server</a>.
 
 # Supported Versions
-Currently Supported: ~S3-S15<br>
+Currently Supported: ~S4-S15<br>
 
 
 # PLANS
