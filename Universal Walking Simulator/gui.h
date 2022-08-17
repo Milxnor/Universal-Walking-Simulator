@@ -731,14 +731,14 @@ DWORD WINAPI GuiThread(LPVOID)
 							{
 
 							}
-							ImGui::InputText(("VehicleClass"), &VehicleClass);
+							/* ImGui::InputText(("VehicleClass"), &VehicleClass);
 							if (ImGui::Button("Spawn Vehicle"))
 							{
 								auto Pawn = Controller->Member<UObject*>("Pawn");
 								auto vehicleClass = FindObject(VehicleClass);
 								auto Location = Helper::GetActorLocation(*Pawn);
 								Helper::SpawnVehicle(vehicleClass, Location);
-							}
+							} */
 
 							// TODO: Add teleport to location
 

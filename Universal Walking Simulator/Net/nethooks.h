@@ -138,7 +138,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (FnVerDouble < 7.4)
     {
         static const auto QuickBarsClass = FindObject("Class /Script/FortniteGame.FortQuickBars", true);
-        auto QuickBars = PlayerController->Member<UObject*>(("QuickBars"));
+        auto QuickBars = PlayerController->FastMember<UObject*>("Class /Script/FortniteGame.FortPlayerController", "QuickBars");
 
         if (QuickBars)
         {
@@ -191,6 +191,19 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                         }
                     }
                 }
+
+                static auto grapplerAbility = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Weapons/Abilities/HookGun/GA_Athena_HookPassive.GA_Athena_HookPassive_C");
+                static auto grapplerAbility2 = FindObject("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/Projectile/GA_Ranged_GenericProjectileImpact_HookGun.GA_Ranged_GenericProjectileImpact_HookGun_C");
+
+                if (grapplerAbility)
+                    GrantGameplayAbility(Pawn, grapplerAbility);
+                else
+                    std::cout << "No grapplerAbility!\n";
+
+                if (grapplerAbility2)
+                    GrantGameplayAbility(Pawn, grapplerAbility2);
+                else
+                    std::cout << "No grapplerAbility2!\n";
             }
             else
             {
@@ -394,8 +407,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         PlayerState->ProcessEvent(OnRep_TeamIndex, &OldVal);
 
     }
-
-
 
     Inventory::Update(PlayerController);
 

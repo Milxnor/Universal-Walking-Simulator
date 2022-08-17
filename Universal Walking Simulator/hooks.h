@@ -790,7 +790,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 	auto EmoteAsset = EmoteParams->EmoteAsset;
 
-	if (Controller /* && !Controller->IsInAircraft() */ && Pawn && EmoteAsset && Engine_Version < 424)
+	if (Controller /* && !Controller->IsInAircraft() */ && Pawn && EmoteAsset && Engine_Version < 424 && Engine_Version >= 421)
 	{
 		struct {
 			TEnumAsByte<EFortCustomBodyType> BodyType;

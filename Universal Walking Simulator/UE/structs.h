@@ -456,6 +456,10 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	// protected:
 	template <typename MemberType>
 	INL MemberType* Member(const std::string& MemberName, int extraOffset = 0); // DONT USE FOR SCRIPTSTRUCTS
+
+	// ONLY USE IF YOU KNOW WHAT UR DOING
+	template <typename MemberType>
+	INL MemberType* FastMember(const std::string& ClassName, const std::string& MemberName); // DONT USE FOR SCRIPTSTRUCTS
 };
 
 
@@ -1344,6 +1348,46 @@ int FindOffsetStruct(const std::string& ClassName, const std::string& MemberName
 		return FindOffsetStructAh<UClass_CT, FField, FProperty>(ClassName, MemberName, 0x44);
 
 	return 0;
+}
+
+int GetOffsetFromProp(void* Prop)
+{
+	if (!Prop)
+		return -1;
+
+	if (Engine_Version <= 420)
+		return ((UProperty_UE*)Prop)->Offset_Internal;
+
+	else if (Engine_Version >= 421 && Engine_Version <= 424)
+		return ((UProperty_FTO*)Prop)->Offset_Internal;
+
+	else if (Engine_Version >= 425 && Engine_Version < 500)
+		return ((FProperty*)Prop)->Offset_Internal;
+
+	else if (std::stod(FN_Version) >= 19)
+		return *(int*)(__int64(Prop) + 0x44);
+
+	return -1;
+}
+
+template <typename MemberType>
+INL MemberType* UObject::FastMember(const std::string& ClassName, const std::string& MemberName)
+{
+	// credit android and ender
+
+	static auto PropertyClass = FindObject("/Script/CoreUObject.Property");
+	auto die = std::wstring(MemberName.begin(), MemberName.end()).c_str();
+	auto property = StaticFindObjectO ? StaticFindObjectO(FindObject(ClassName), PropertyClass, die, false) : nullptr;
+
+	if (property)
+	{
+		auto offset = GetOffsetFromProp(property); // *(uint32_t*)(__int64(Property) + 0x44);
+		return (MemberType*)(__int64(property) + offset);
+	}
+	else
+		std::cout << "Failed FastMember!\n";
+
+	return this->Member<MemberType>(MemberName);
 }
 
 template <typename MemberType>

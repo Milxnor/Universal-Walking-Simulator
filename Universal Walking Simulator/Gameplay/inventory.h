@@ -156,13 +156,22 @@ static UObject* GetPickaxeDef(UObject* Controller)
 
 namespace Inventory
 {
+	UObject* GetWorldInventory(UObject* Controller)
+	{
+		static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
+		auto WorldInventory = *(UObject**)(__int64(Controller) + WorldInventoryOffset);
+
+		return WorldInventory;
+	}
+
 	__int64* GetInventory(UObject* Controller)
 	{
-		auto WorldInventory = *Controller->Member<UObject*>(("WorldInventory"));
+		auto WorldInventory = GetWorldInventory(Controller);
 
 		if (WorldInventory)
 		{
-			auto Inventorya = WorldInventory->Member<__int64>(("Inventory"));
+			static auto InventoryOffset = GetOffset(WorldInventory, "Inventory");
+			auto Inventorya = (__int64*)(__int64(WorldInventory) + InventoryOffset);
 
 			return Inventorya;
 		}
@@ -435,7 +444,7 @@ namespace Inventory
 	{
 		static const auto FnVerDouble = std::stod(FN_Version);
 
-		auto WorldInventory = *Controller->Member<UObject*>(("WorldInventory"));
+		auto WorldInventory = GetWorldInventory(Controller);
 		auto Inventory = GetInventory(Controller);
 
 		static auto WorldHandleInvUpdate = WorldInventory->Function(("HandleInventoryLocalUpdate"));
@@ -1066,7 +1075,7 @@ namespace Inventory
 
 		static const auto FnVerDouble = std::stod(FN_Version);
 
-		if (Engine_Version <= 420) // wrong I think
+		if (Engine_Version < 420) // wrong I think
 		{
 			static UObject* AthenaAmmoDataRockets = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
 			static UObject* AthenaAmmoDataShells = FindObject(("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
@@ -1087,8 +1096,9 @@ namespace Inventory
 			static UObject* AthenaAmmoDataBulletsMedium = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
 			static UObject* AthenaAmmoDataBulletsLight = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
 			static UObject* AthenaAmmoDataBulletsHeavy = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
+			static UObject* GrapplerAmmo = FindObject("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataHooks.AthenaAmmoDataHooks");
 
-			if (!AthenaAmmoDataRockets || !AthenaAmmoDataShells || !AthenaAmmoDataBulletsMedium || !AthenaAmmoDataBulletsLight || !AthenaAmmoDataBulletsHeavy)
+			if (!AthenaAmmoDataRockets || !AthenaAmmoDataShells || !AthenaAmmoDataBulletsMedium || !AthenaAmmoDataBulletsLight || !AthenaAmmoDataBulletsHeavy || !GrapplerAmmo)
 				std::cout << "Some ammo is invalid!\n";
 
 			CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 999);
@@ -1096,6 +1106,7 @@ namespace Inventory
 			CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 999);
 			CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 999);
 			CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, GrapplerAmmo, EFortQuickBars::Secondary, 0, 999);
 		}
 	}
 

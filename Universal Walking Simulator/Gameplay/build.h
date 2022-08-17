@@ -195,7 +195,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 					if (RemoteClientInfo && *RemoteClientInfo)
 					{
 						// auto BuildingClass = Controller->Member<UObject*>(("CurrentBuildableClass"));
-						auto RemoteBuildableClassOffset = GetOffset(*RemoteClientInfo, "RemoteBuildableClass");
+						static auto RemoteBuildableClassOffset = GetOffset(*RemoteClientInfo, "RemoteBuildableClass");
 						auto BuildingClass = (UObject**)(__int64(*RemoteClientInfo) + RemoteBuildableClassOffset);
 
 						// std::cout << ("BuildLocation Offset: ") << BuildLocOffset << '\n';
