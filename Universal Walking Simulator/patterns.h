@@ -579,6 +579,8 @@ void InitializePatterns()
         InitHostSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B F1 4C 8D 05 ? ? ? ? 48 8D 4D D7 45 33 C9 33 D2 E8 ? ? ? ? E8 ? ? ? ? 48 8B C8 4C 8D 45 67 48 8D 15 ? ? ? ? E8 ? ? ? ? 33 FF 84 C0 74 0D 8B 45 67 85 C0 74 06 89 86 ? ? ? ?";
         Beacon_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D 68 88 48 81 EC ? ? ? ? 45 33 E4 49 8B D9 44 89 64 24 ? 41 8A F0 48 8B 41 10 48 8B";
         NoReserveSig = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 49 8B D9 45 8A F8 4C 8B F2 48 8B F9 45 32 E4 E8 ? ? ? ? 48 8B";
+        LocalPlayerSpawnPlayActorSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 56 41 57 48 8D 68 D8 48 81 EC ? ? ? ? 48 8B D9 4D 8B F1 49 8B C9 4D 8B F8 48 8B F2";
+        KickPlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 49 8B F0 48 8B DA 48 85 D2 74 54 48 8B BA ? ? ? ? 48 85 FF 74 15";
     }
 
     if (FnVerDouble >= 17.00)
