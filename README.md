@@ -4,7 +4,6 @@
 # Supported Versions
 Currently Supported: ~S4-S15<br>
 
-
 # PLANS
 
 Add an auto pattern finder, this was in development and it's easy to make, it's just time consuming.<br>
@@ -12,7 +11,7 @@ Clean up Project and add comments to the code.<br>
 
 # CURRENT ISSUES
 
-Battle Bus Crashes on ~S8+<br>
+Battle Bus Crashes on S8+<br>
 
 Code is everywhere.<br>
 Console Colors are a 30/70.<br>
@@ -21,11 +20,9 @@ Console Colors are a 30/70.<br>
 
 In order to find a UFunction, please use UObject->Function("FunctionName") instead of FindObject("Function ...").<br>
 Test your code.<br>
-Document what versions you tested your code on in this format: Season.xx (example: 4.1, 6.21, 7.30, etc)<br>
-Give a descriptive summary of what your code does and how its beneficial to the project<br>
+If your code edits some existing code, lets say inventory, explain what it does.
 
 ## NOTICE
-Pull Requests WILL NOT be accepted if they do not follow the provided criteria
 <br>
 This Project was made for fun and was Open Sourced for Educational Purposes. If you are an Epic Employee and want this project taken down contact me on Discord: Milxnor#3531
 # CREDITS
