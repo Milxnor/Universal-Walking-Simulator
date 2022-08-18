@@ -586,12 +586,31 @@ void InitializePatterns()
         TickFlushSig = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8A 81 ? ? ? ? 48";
         GetPlayerViewpointSig = "48 8B C4 48 89 58 10 48 89 70 18 55 57 41 54 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 0F 29 70 C8 45 33 E4 0F 29 78 B8 49 8B F0 44 0F 29 40 ? 48 8B FA 44 0F 29 48";
         Beacon_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 45 33 ED 4D 8B F1 44 89 6C 24 ? 41 8A F0 48 8B 41 10";
-        // IDK WHY THIS DOESNT WORK ^
     }
 
     if (FnVerDouble >= 18.00)
     {
+        TickFlushSig = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 44 0F B6 A1";
+        InitListenSig = "4C 8B DC 49 89 5B 10 49 89 73 18 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0 48 8B 01 48 8B D9 49 89 7B D0 45 88 4B C8 4D 8B C8 4C 8B C2 33 D2 FF 90 ? ? ? ? 84 C0";
+        World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89 6C 24 ? 49 8B D9";
+        SpawnPlayActorSig = "48 89 5C 24 ? 44 89 44 24 ? 48 89 54 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 81 EC ? ? ? ? 48 8B 5D 68 4C 8D 35 ? ? ? ? 33 FF 49 8B F1 4C 8B E9 89 7D 40 4C 39 33 74 24 8B 43 0C 8B CF";
+        PauseBeaconRequestsSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 30 33 F6 48 8B F9 84 D2 74 42 80 3D ? ? ? ? ? 72 20 48 8D 05 ? ? ? ? 33 D2 44 8D 4E 06 48 89 44 24 ? 4C 8D 05 ? ? ? ? 33 C9 E8 ? ? ? ? 48 8B 8F ? ? ?";
+        InitHostSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 48 8B F1 4C 8D 35 ? ? ? ? 4D 8B C6 48 8D 4D D7 45 33 C9 33 D2 E8 ? ? ? ? E8 ? ? ? ? 48 8B C8 4C 8D 45 67 48 8D 15 ? ? ? ? E8 ? ? ? ? 33 FF 84 C0 74 0D 8B 45 67 85 C0";
+        Beacon_NotifyControlMessageSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 FF 41 0F B6 D8 4C 8D A9";
+        ReceiveFStringSig = "48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 00 F6 41 28 01 48 8B F2 48 8B F9 0F 84 ? ? ? ? 48 8B 49";
+        ReceiveUniqueIdReplSig = "40 55 53 57 48 8B EC 48 83 EC 40 80 79 28 00 48 8B FA 48 8B D9 7C 1A 4C 8D 4D 20 48 8B D3 48 8B CF E8 ? ? ? ? 48 8B C3 48 83 C4 40 5F 5B 5D C3 F6 41 2B 08";
+    }
 
+    if (FnVerDouble >= 19.00)
+    {
+        ReceiveUniqueIdReplSig = "40 55 53 57 48 8B EC 48 83 EC 40 80 79 28 00 48 8B FA 48 8B D9 7C 1A 4C 8D 4D 20 48 8B D3 48 8B CF E8 ? ? ? ? 48 8B C3 48 83 C4 40 5F 5B 5D C3 F6 41 2B 10 75 E0 48 8B CF";
+        World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 41 0F B6 F8 44 89 BD ? ? ? ? 49 8B D9 48 8B 41 10 48 8B F2 4C 8B E9 45 8B E7 4C 39 B8 ? ? ? ? 0F";
+        SpawnPlayActorSig = "48 89 5C 24 ? 44 89 44 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 4C 8B 75 77 48 8D 3D ? ? ? ? 4C 8B EA 4C 8B F9 33 DB 48";
+        PauseBeaconRequestsSig = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 48 83 EC 20 33 ED 48 8B F1 84 D2 74 27 80 3D ? ? ? ? ? 72 05 E8 ? ? ? ? 48 8B 8E ? ? ? ? 33 D2 48 8B 01";
+        InitHostSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 4C 8B F1 48 8D 3D ? ? ? ? 4C 8B C7 48 8D 4D D7 45 33 C9 33 D2 E8 ? ? ? ? E8";
+        Beacon_NotifyControlMessageSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 ED 41 0F B6 D8 4C 8D B9 ? ? ? ? 44";
+        ReceiveFStringSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 17 41 BD ? ? ? ? 4C 8B F2 48 8B F1 44 84 69 28 0F 84 ? ? ? ? 48 8B 49";
+        TickFlushSig = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 44 8A A1 ? ? ? ? 48 8D 15 ? ? ? ? 48 8B F9 44 88 64 24 ?";
     }
 
     static auto ReallocAddr = FindPattern(ReallocSig);
@@ -664,7 +683,7 @@ void InitializePatterns()
     if (!TickFlushAddr)
         TickFlushAddr = FindPattern(("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0"));
 
-    if (!TickFlushAddr && Engine_Version > 424)
+    if (!TickFlushAddr && Engine_Version > 424 && FnVerDouble < 18.00)
     {
         Finder::Functions::GetTickFlush(35, &TickFlushAddr);
     }

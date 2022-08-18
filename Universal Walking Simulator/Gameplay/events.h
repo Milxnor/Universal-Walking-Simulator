@@ -117,7 +117,11 @@ namespace Events {
 				auto FritterLoader = FindObject(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0"));
 				auto LoadFritterLevel = FindObject(("Function /Fritter/BP_Fritter_Loader.BP_Fritter_Loader_C.LoadFritterLevel"));
 				bool CO = true;
-				FritterLoader->ProcessEvent(LoadFritterLevel, &CO);
+
+				if (FritterLoader)
+					FritterLoader->ProcessEvent(LoadFritterLevel, &CO);
+				else
+					std::cout << "Unable to find FritterLoader!\n";
 			}
 
 			if (Version == 12.41f) {

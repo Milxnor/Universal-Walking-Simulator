@@ -1046,6 +1046,9 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		SpawnActorAddr = FindPattern(("40 53 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B 9C 24 ? ? ? ? 0F 28 CB 0F 54 1D ? ? ? ? 0F 57"));
 
 	if (!SpawnActorAddr)
+		SpawnActorAddr = FindPattern("48 89 5C 24 ? 55 56 57 48 8B EC 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 F0 0F 28 05 ? ? ? ? 48 8B FA 0F 28 0D ? ? ? ? 48 8B D9 48 8B 75 40 0F 29 45 C0 0F 28 05 ? ? ? ? 0F 29 45 E0 0F 29 4D D0 4D 85 C0 74 12 F3 41 0F 10 50 ? F2 41 0F 10 18");
+
+	if (!SpawnActorAddr)
 	{
 		MessageBoxA(0, ("Failed to find SpawnActor function."), ("Universal Walking Simulator"), MB_OK);
 		return 0;
@@ -1219,6 +1222,12 @@ bool Setup(/* void* ProcessEventHookAddr */)
 			FreeMemoryAddr = FindPattern(("48 85 C9 0F 84 ? ? ? ? 53 48 83 EC 20 48 89 7C 24 ? 48 8B D9 48 8B 3D ? ? ? ? 48 85 FF"));
 
 		// C3 S3
+
+		if (!ToStringAddr) // 19.00
+			ToStringAddr = FindPattern("48 89 5C 24 ? 56 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 83 79 04 00 48 8B DA 0F 85 ? ? ? ? 48 89 BC 24 ? ? ? ? E8 ? ? ? ? 48 8B F8 48 8D 54 24 ? 48 8B C8");
+
+		if (!ProcessEventAddr) // 19.00
+			ProcessEventAddr = FindPattern("40 55 53 56 57 41 54 41 56 41 57 48 81 EC ? ? ? ? 48 8D AC 24 ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 4D 8B F8 48 8B FA 48 8B F1 48 85 C9 0F 84 ? ? ? ? F7 41 ? ? ? ? ? 0F");
 
 		if (!ToStringAddr)
 			ToStringAddr = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 57 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B 01 48 8B F2 8B"));

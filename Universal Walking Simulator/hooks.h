@@ -262,29 +262,40 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 {
 	std::cout << "OnSafeZoneStateChange!\n";
 
-	if (Indicator && Helper::IsSmallZoneEnabled())
+	if (Indicator && Parameters && Helper::IsSmallZoneEnabled())
 	{
-		/* static auto GameState = Helper::GetGameState();
+		struct ASafeZoneIndicator_C_OnSafeZoneStateChange_Params
+		{
+		public:
+			EFortSafeZoneState              NewState;                                          // 0x0(0x1)(BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+			bool                                       bInitial;                                          // 0x1(0x1)(BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, IsPlainOldData, NoDestructor)
+		};
 
-		if (!GameState)
-			return false;
+		auto Params = (ASafeZoneIndicator_C_OnSafeZoneStateChange_Params*)Parameters;
 
-		auto Aircraft = GameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
+		std::random_device rd; // obtain a random number from hardware
+		std::mt19937 gen(rd()); // seed the generator
+		std::uniform_int_distribution<> distr(300.f, 5000.f);
 
-		if (!Aircraft)
-			return false;
-		else
-			std::cout << "No Aircraft!\n"; */
+		std::random_device rd1; // obtain a random number from hardware
+		std::mt19937 gen1(rd1()); // seed the generator
+		std::uniform_int_distribution<> distr1(300.f, 5000.f);
 
+		std::random_device rd2; // obtain a random number from hardware
+		std::mt19937 gen2(rd2()); // seed the generator
+		std::uniform_int_distribution<> distr2(300.f, 5000.f);
+
+		AircraftLocationToUse += Params->NewState == EFortSafeZoneState::Starting ? AircraftLocationToUse : FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
 		*Indicator->Member<FVector>("NextCenter") = AircraftLocationToUse; // Helper::GetActorLocation(Aircraft);
 
 		// idk im stupid
 
-		auto PrevRadius = *Indicator->Member<float>("Radius");
 		auto PrevNextRadius = *Indicator->Member<float>("NextRadius");
 
-		*Indicator->Member<float>("Radius") = PrevRadius > 15000 ? 15000 : PrevRadius - 5000;
-		*Indicator->Member<float>("NextRadius") = PrevNextRadius > 10000 ? 10000 : PrevNextRadius - 5000;
+		if (Params->NewState == EFortSafeZoneState::Starting)
+			*Indicator->Member<float>("Radius") = 1500;
+
+		*Indicator->Member<float>("NextRadius") = PrevNextRadius > 10000 ? 10000 : PrevNextRadius / 2;
 	}
 
 	return true;
@@ -1359,9 +1370,29 @@ inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void*
 			}
 		}
 
+		struct BitField_Container
+		{
+			unsigned char                                      bAlwaysShowContainer : 1;                                 // 0x0D99(0x0001) (Edit, BlueprintVisible)
+			unsigned char                                      bAlwaysMaintainLoot : 1;                                  // 0x0D99(0x0001) (Edit, DisableEditOnTemplate)
+			unsigned char                                      bDestroyContainerOnSearch : 1;                            // 0x0D99(0x0001) (Edit, BlueprintVisible)
+			unsigned char                                      bAlreadySearched : 1;
+		};
+
+		struct BitField_Container2
+		{
+			uint8_t                                        bUseLootProperties_Athena : 1;                     // Mask : 0x1 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t                                        bAlwaysShowContainer : 1;                          // Mask : 0x2 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t                                        bAlwaysMaintainLoot : 1;                           // Mask : 0x4 0xC31(0x1)(Edit, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t                                        bDestroyContainerOnSearch : 1;                     // Mask : 0x8 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t                                        bForceHidePickupMinimapIndicator : 1;              // Mask : 0x10 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t                                        bForceSpawnLootOnDestruction : 1;                  // Mask : 0x20 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t                                        bForceTossLootOnSpawn : 1;                         // Mask : 0x40 0xC31(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t                                        bAlreadySearched : 1;                              // Mask : 0x80
+		};
+
 		static auto BuildingContainerClass = FindObject(("Class /Script/FortniteGame.BuildingContainer"));
 
-		if (BuildingActor->IsA(BuildingContainerClass))
+		if (BuildingActor->IsA(BuildingContainerClass) && !BuildingActor->Member<BitField_Container>("bAlreadySearched")->bAlreadySearched)
 		{
 			Looting::Tables::HandleSearch(BuildingActor);
 		}

@@ -239,7 +239,15 @@ DWORD WINAPI GuiThread(LPVOID)
 		auto WindowSize = ImGui::GetMainViewport()->Size;
 		// ImGui::SetNextWindowPos(ImVec2(WindowSize.x * 0.5f, WindowSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f)); // Center
 		ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(640, 480), ImGuiCond_Always);
+
+		tagRECT rect;
+
+		if (GetWindowRect(hwnd, &rect))
+		{
+			int width = rect.right - rect.left;
+			int height = rect.bottom - rect.top;
+			ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_Always);
+		}
 
 		static int Tab = 1;
 		static int PlayerTab = -1;
@@ -327,17 +335,31 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem(("Thanos")))
+				if (std::floor(std::stod(FN_Version)) == 8 || Engine_Version >= 424)
 				{
-					Tab = 5;
-					PlayerTab = -1;
-					bInformationTab = false;
-					ImGui::EndTabItem();
+					if (ImGui::BeginTabItem(("Thanos")))
+					{
+						Tab = 4;
+						PlayerTab = -1;
+						bInformationTab = false;
+						ImGui::EndTabItem();
+					}
+				}
+
+				if (bStarted && Events::HasEvent())
+				{
+					if (ImGui::BeginTabItem(("Event")))
+					{
+						Tab = 5;
+						PlayerTab = -1;
+						bInformationTab = false;
+						ImGui::EndTabItem();
+					}
 				}
 
 				if (ImGui::BeginTabItem(("Credits")))
 				{
-					Tab = 4;
+					Tab = 6;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
@@ -395,10 +417,10 @@ DWORD WINAPI GuiThread(LPVOID)
 						CreateThread(0, 0, LootingV2::SummonFloorLoot, 0, 0, 0);
 					}
 
-					if (ImGui::Button("idfk3"))
+					/* if (ImGui::Button("idfk3"))
 					{
 						*Helper::GetGameState()->Member<float>("SafeZonesStartTime") = 1;
-					}
+					} */
 
 					if (serverStatus == EServerStatus::Up)
 					{
@@ -418,46 +440,48 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								if (Helper::IsSmallZoneEnabled())
 								{
-									static auto GameState = *Helper::GetWorld()->Member<UObject*>(("GameState"));
+									auto Aircraft = gameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
 
-									// if (!GameState)
-										// return false;
-
-									auto Aircraft = GameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
-									auto FlightInfo = Aircraft->Member<__int64>("FlightInfo");
-
-									static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
-									static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
-
-									auto FlightSpeed = (float*)(__int64(FlightInfo) + FlightSpeedOffset);
-									auto FlightStartLocation = (FVector*)(__int64(FlightInfo) + FlightStartLocationOffset);
-
-									*FlightSpeed = 0;
-
-									// auto RandomPOI = Helper::GetRandomPOIActor();
-									
-									if (true) // RandomPOI)
+									if (Aircraft)
 									{
-										// auto RandomPOILocation = Helper::GetActorLocation(RandomPOI);
+										auto FlightInfo = Aircraft->Member<__int64>("FlightInfo");
 
-										*FlightStartLocation = AircraftLocationToUse;
-										Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
-										std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
+										if (FlightInfo)
+										{
+											static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
+											static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
+
+											auto FlightSpeed = (float*)(__int64(FlightInfo) + FlightSpeedOffset);
+											auto FlightStartLocation = (FVector*)(__int64(FlightInfo) + FlightStartLocationOffset);
+
+											*FlightSpeed = 0;
+
+											// auto RandomPOI = Helper::GetRandomPOIActor();
+
+											if (true) // RandomPOI)
+											{
+												// auto RandomPOILocation = Helper::GetActorLocation(RandomPOI);
+
+												*FlightStartLocation = AircraftLocationToUse;
+												Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
+												std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
+											}
+											else
+												std::cout << "No POI!\n";
+
+											*gameState->Member<bool>("bAircraftIsLocked") = false;
+
+											FString ifrogor;
+											ifrogor.Set(L"startsafezone");
+											Helper::Console::ExecuteConsoleCommand(ifrogor);
+											*gameState->Member<float>("SafeZonesStartTime") = 1.f;
+										}
 									}
 									else
-										std::cout << "No POI!\n";
-
-									*GameState->Member<bool>("bAircraftIsLocked") = false;
-
-									FString ifrogor;
-									ifrogor.Set(L"startsafezone");
-									Helper::Console::ExecuteConsoleCommand(ifrogor);
-									*GameState->Member<float>("SafeZonesStartTime") = 1.f;
+										std::cout << "No Aircraft!\n";
 								}
 
 								std::cout << ("Started aircraft!\n");
-
-								// TODO: Hook a func for this
 
 								static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
 
@@ -502,20 +526,12 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 					}
 
-					if (Events::HasEvent()) {
-						if (ImGui::Button(("Start Event")))
-							Events::StartEvent();
-
-						if (std::stod(FN_Version) == 12.41 && ImGui::Button("Fly players up"))
-							EventHelper::BoostUp();
-					}
-
-					if (ImGui::Button("idfk2"))
+					/* if (ImGui::Button("idfk2"))
 					{
 						Helper::DestroyActor(FindObjectOld("B_BaseGlider_C /Game/Athena/Maps/Athena_Terrain.Athena_Terrain.PersistentLevel.B_BaseGlider_C_"));
-					}
+					} */
 
-					if (ImGui::Button("idfk"))
+					if (false && ImGui::Button("idfk"))
 					{
 						auto scripting = FindObjectOld("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
 						std::cout << "scripting: " << scripting << '\n';
@@ -576,38 +592,33 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (ImGui::Button(("OpenVaults"))) {
 						Henchmans::OpenVaults();
 					}*/
-					if (ImGui::Button(("Spawn Volume(stay in 1 place to get creative inventory)"))) {
-						
-						auto World = Helper::GetWorld();
-						auto NetDriver = *World->Member<UObject*>(("NetDriver"));
-
-
-						auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
-
-
-
-						for (int i = 0; i < ClientConnections->Num(); i++)
+					if (Engine_Version >= 422 && Engine_Version < 424) 
+					{
+						if (ImGui::Button("Spawn Volume (stay in 1 place to get creative inventory)"))
 						{
-							auto Connection = ClientConnections->At(i);
+							auto World = Helper::GetWorld();
+							auto NetDriver = *World->Member<UObject*>(("NetDriver"));
 
+							auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
 
-
-							auto Controller = *Connection->Member<UObject*>(("PlayerController"));
-
-							
-							auto Pawn = *Controller->Member<UObject*>(("Pawn"));
-							if (Pawn)
+							for (int i = 0; i < ClientConnections->Num(); i++)
 							{
-								auto Location = Helper::GetActorLocation(Pawn);
-								auto VolumeClass = FindObject("Class /Script/FortniteGame.FortVolume");
-								auto Volume = Easy::SpawnActor(VolumeClass, Location);
-							}
-							
-						}
+								auto Connection = ClientConnections->At(i);
 
+								auto Controller = *Connection->Member<UObject*>(("PlayerController"));
+
+								auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+								if (Pawn)
+								{
+									auto Location = Helper::GetActorLocation(Pawn);
+									static auto VolumeClass = FindObject("Class /Script/FortniteGame.FortVolume");
+									auto Volume = Easy::SpawnActor(VolumeClass, Location);
+								}
+							}
+						}
 					}
 
-					
+					break;
 				}
 				case 2:
 					// ImGui::Text("Players Connected: ")
@@ -629,8 +640,8 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 				case 3:
 				{
-					if (!bStarted)
-						ImGui::InputText(("Playlist"), &PlaylistToUse);
+					// if (!bStarted)
+					ImGui::InputText(("Playlist"), &PlaylistToUse);
 					
 					ImGui::Checkbox(("Playground"), &bIsPlayground);
 
@@ -640,14 +651,8 @@ DWORD WINAPI GuiThread(LPVOID)
 					// TODO: default character parts
 					break;
 				}
+
 				case 4:
-					TextCentered(("Credits:"));
-					TextCentered(("Milxnor: Made the base, main developer"));
-					TextCentered(("GD: Added events, cleans up code and adds features."));
-
-					break;
-
-				case 5:
 					if(ImGui::Button(("Spawn Mind Stone"))) {
 						FVector RandLocation;
 						std::random_device rd; // obtain a random number from hardware
@@ -758,10 +763,22 @@ DWORD WINAPI GuiThread(LPVOID)
 						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_B.AshtonRockItemDef_B"), RandLocation, {});
 					}
 					break;
+
+				case 5:
+					if (ImGui::Button(("Start Event")))
+						Events::StartEvent();
+
+					if (std::stod(FN_Version) == 12.41 && ImGui::Button("Fly players up"))
+						EventHelper::BoostUp();
+					break;
+
+				case 6:
+					TextCentered(("Credits:"));
+					TextCentered(("Milxnor: Made the base, main developer"));
+					TextCentered(("GD: Added events, cleans up code and adds features."));
+
+					break;
 				}
-				
-
-
 			}
 			else
 			{

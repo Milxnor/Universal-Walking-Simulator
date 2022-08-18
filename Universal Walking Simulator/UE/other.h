@@ -26,6 +26,11 @@ struct FVector
 	{
 		return X == A.X && Y == A.Y && Z == A.Z;
 	}
+
+	void operator+=(const FVector& A)
+	{
+		*this = *this + A;
+	}
 };
 
 enum class EServerStatus : uint8_t
@@ -204,6 +209,15 @@ enum class EFortRarityC2 : uint8_t // C2
 	Unattainable = 7,
 	NumRarityValues = 8,
 	EFortRarity_MAX = 9,
+};
+
+enum class EFortSafeZoneState : uint8_t
+{
+	None = 0,
+	Starting = 1,
+	Holding = 2,
+	Shrinking = 3,
+	EFortSafeZoneState_MAX = 4,
 };
 
 enum EName
