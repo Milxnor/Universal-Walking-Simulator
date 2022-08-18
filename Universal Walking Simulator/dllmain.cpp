@@ -167,7 +167,9 @@ DWORD WINAPI Main(LPVOID)
     CreateThread(0, 0, BotThread, 0, 0, 0);
 #endif
 
-    Looting::Tables::Init(nullptr);
+    if (FnVerDouble < 18.00)
+        Looting::Tables::Init(nullptr);
+
     SetConsoleTitleA(("Project Reboot Server"));
     std::cout << ("Found all loot!\n");
 

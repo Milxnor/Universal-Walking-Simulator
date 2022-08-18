@@ -39,7 +39,7 @@ inline void initStuff()
 
 			*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = 100; // GameState->GetMaxPlaylistPlayers()
 
-			if (std::stod(FN_Version) >= 8 && AuthGameMode)
+			if (FnVerDouble >= 8 && AuthGameMode)
 			{
 				static auto PlayerControllerClass = FindObject(("BlueprintGeneratedClass /Game/Athena/Athena_PlayerController.Athena_PlayerController_C"));
 				std::cout << ("PlayerControllerClass: ") << PlayerControllerClass << '\n';
@@ -82,7 +82,7 @@ inline void initStuff()
 			{
 				AuthGameMode->ProcessEvent(AuthGameMode->Function(("StartPlay")), nullptr);
 
-				auto FNVer = std::stod(FN_Version);
+				auto FNVer = FnVerDouble;
 
 				if (std::floor(FNVer) == 3 || FNVer >= 8.0) 
 				{
@@ -108,7 +108,7 @@ inline void initStuff()
 
 				bIsPlayground = PlaylistToUse == "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
 
-				if (std::stod(FN_Version) >= 6.10) // WRONG
+				if (FnVerDouble >= 6.10) // WRONG
 				{
 					auto OnRepPlaylist = gameState->Function(("OnRep_CurrentPlaylistInfo"));
 
@@ -178,6 +178,12 @@ inline void initStuff()
 					gameState->ProcessEvent(OnRep_PlayersLeft);
 			}
 		}
+
+		auto GameInstance = *GetEngine()->Member<UObject*>(("GameInstance"));
+		auto& LocalPlayers = *GameInstance->Member<TArray<UObject*>>(("LocalPlayers"));
+		auto PlayerController = *LocalPlayers.At(0)->Member<UObject*>(("PlayerController"));
+
+		*PlayerController->Member<UObject*>("CheatManager") = Easy::SpawnObject(FindObject("Class /Script/Engine.CheatManager"), PlayerController);
 
 		Listen(7777);
 		// CreateThread(0, 0, MapLoadThread, 0, 0, 0);
@@ -1184,7 +1190,7 @@ inline bool ClientWasKickedHook(UObject* Controller, UFunction*, void* Params)
 {
 	std::cout << "ClientWasKicked!\n";
 
-	if (std::stod(FN_Version) >= 16.00)
+	if (FnVerDouble >= 16.00)
 	{
 		return true;
 	}

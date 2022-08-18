@@ -117,7 +117,7 @@ void Listen(int Port = 7777)
 
         std::cout << ("Spawned Beacon!\n");
 
-        // if (std::stod(FN_Version) < 16.00)
+        // if (FnVerDouble < 16.00)
         {
             if (Engine_Version < 426)
                 *BeaconHost->Member<int>(("ListenPort")) = Port - 1;
@@ -194,7 +194,8 @@ void Listen(int Port = 7777)
         }
         else
         {
-            auto SetWorldAAddr = NetDriver->VFTable[0x72];
+            int VTableIndex = FnVerDouble < 19.00 ? 0x72 : 0x7A;
+            auto SetWorldAAddr = NetDriver->VFTable[VTableIndex];
             SetWorld = decltype(SetWorld)(SetWorldAAddr);
             std::cout << "SetWorld Sig: " << GetBytes(__int64(SetWorldAAddr), 50) << '\n';
             SetWorld(NetDriver, World);

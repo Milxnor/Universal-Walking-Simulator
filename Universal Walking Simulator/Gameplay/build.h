@@ -153,8 +153,6 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 		bool bSuccessful = false;
 		UObject* MatDefinition = nullptr;
 
-		static const auto FnVerDouble = std::stod(FN_Version);
-
 		if (FnVerDouble > 8)
 		{
 			struct FCreateBuildingActorData

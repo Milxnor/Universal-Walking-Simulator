@@ -279,8 +279,6 @@ void InitializePatterns()
         CanActivateAbilitySig = "48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 49 8B F0";
     }
 
-    static const auto FnVerDouble = std::stod(FN_Version);
-
     if (Engine_Version >= 426)
     {
         TickFlushSig = ("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 7B C8");
@@ -321,6 +319,10 @@ void InitializePatterns()
         TickFlushSig = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8A 81 ? ? ? ? 48";
         GetPlayerViewpointSig = "48 8B C4 48 89 58 10 48 89 70 18 55 57 41 54 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 0F 29 70 C8 45 33 E4 0F 29 78 B8 49 8B F0 44 0F 29 40 ? 48 8B FA 44 0F 29 48";
         Beacon_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 45 33 ED 4D 8B F1 44 89 6C 24 ? 41 8A F0 48 8B 41 10";
+        GiveAbilitySig = "48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 83 EC 20 8B 81 ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 85 C0 7E 54 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01 89 87 ? ? ? ? 3B 87 ? ? ? ? 7E 0A 8B";
+        InternalTryActivateAbilitySig = "48 8B C4 4C 89 48 20 4C 89 40 18 89 50 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 8B DA 4C 8B F1 E8 ? ? ? ? 49 8D 8E ? ? ? ? 33 D2 48 8D";
+        MarkAbilitySpecDirtySig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 01 41 8A F0 48 8B FA 48 8B D9 FF 90 ? ? ? ? 84 C0 74 3E 48 8B 47 10 48 85 C0 74 0E 80 B8 ? ? ? ? ? 75 05 40 84 F6 74 16 80 8B";
+        StaticFindObjectSig = "40 55 53 57 41 54 41 55 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 80 3D ? ? ? ? ? 45 0F B6 E1 49 8B F8 48 8B DA 4C 8B F9";
     }
 
     if (FnVerDouble >= 18.00)
@@ -334,6 +336,7 @@ void InitializePatterns()
         Beacon_NotifyControlMessageSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 FF 41 0F B6 D8 4C 8D A9";
         ReceiveFStringSig = "48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 00 F6 41 28 01 48 8B F2 48 8B F9 0F 84 ? ? ? ? 48 8B 49";
         ReceiveUniqueIdReplSig = "40 55 53 57 48 8B EC 48 83 EC 40 80 79 28 00 48 8B FA 48 8B D9 7C 1A 4C 8D 4D 20 48 8B D3 48 8B CF E8 ? ? ? ? 48 8B C3 48 83 C4 40 5F 5B 5D C3 F6 41 2B 08";
+        KickPlayerSig = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 48 83 65 ? ? 4C 8B F2 83 65 E8 00 4C 8B E1 83 65 EC 00 48 8D 4D E0 BA ? ? ? ? 4D 8B F8 E8 ? ? ? ?";
     }
 
     if (FnVerDouble >= 19.00)
@@ -346,6 +349,24 @@ void InitializePatterns()
         Beacon_NotifyControlMessageSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 ED 41 0F B6 D8 4C 8D B9 ? ? ? ? 44";
         ReceiveFStringSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 17 41 BD ? ? ? ? 4C 8B F2 48 8B F1 44 84 69 28 0F 84 ? ? ? ? 48 8B 49";
         TickFlushSig = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 44 8A A1 ? ? ? ? 48 8D 15 ? ? ? ? 48 8B F9 44 88 64 24 ?";
+        KickPlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 50 48 8B DA 4C 8B F1 48 8D 15 ? ? ? ? 49 8B F0 48 8D 4D E0 E8 ? ? ? ? 48 8B 8B";
+    }
+
+    if (FnVerDouble >= 19.10)
+    {
+        KickPlayerSig = "48 89 5C 24 ? 48 89 7C 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 50 48 8B DA 4C 8B F9 48 8D 15 ? ? ? ? 4D 8B F0 48 8D 4D E0 E8 ? ? ? ? 48 8B 8B ? ? ? ? 48 85 C9 74 2A 48 81 C1 ? ? ? ? 48 8D 55 F0 E8";
+        World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 41 0F B6 F8 44 89 7C 24 ? 49 8B D9 48 8B 41 10 4C 8B F2 4C 8B E9";
+        SpawnPlayActorSig = "44 89 44 24 ? 48 89 54 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 4C 8B 7D 77 48 8D 3D ? ? ? ? 4C 8B F1 33 DB";
+        Beacon_NotifyControlMessageSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 E4 41 0F B6 D8 4C";
+    }
+
+    if (FnVerDouble >= 20.00)
+    {
+        ReceiveUniqueIdReplSig = "40 55 53 57 48 8B EC 48 83 EC 30 80 79 28 00 48 8B FA 48 8B D9 7C 1A 4C 8D 4D 20 48 8B D3 48 8B CF E8 ? ? ? ? 48 8B C3 48 83 C4 30 5F 5B 5D C3 F6 41 2B 10";
+        WelcomePlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 70 48 8B 71 30 48 8B DA 45 33 FF 48 8B D1 4C 89 7D B0 48 8B F9 4C 89 7D B8 E8 ? ? ? ? 44 38 B8";
+        World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89 6C 24 ? 49 8B F1 48 8B 41 10";
+        Beacon_NotifyControlMessageSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 E4 41 0F B6 D8 4C 8D";
+        KickPlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 50 48 83 65 ? ? 4C 8B F2 83 65 E8 00 4C 8B E1 83 65 EC 00 48 8D";
     }
 
     static auto ReallocAddr = FindPattern(ReallocSig);
@@ -488,7 +509,7 @@ void InitializePatterns()
     if (Engine_Version >= 419 && FnVerDouble < 17.00)
         CheckPattern(("NetDebug"), NetDebugAddr, &NetDebug);
 
-    if (Engine_Version >= 420)
+    if (Engine_Version >= 420 && FnVerDouble < 18.00)
     {
         GiveAbilityAddr = FindPattern(GiveAbilitySig);
 
@@ -513,8 +534,10 @@ void InitializePatterns()
         {
             if (Engine_Version < 426)
                 CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbility);
-            else
+            else if (Engine_Version == 426)
                 CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityFTS);
+            else
+                CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityNewer);
 
             InternalTryActivateAbilityAddr = FindPattern(InternalTryActivateAbilitySig);
             
@@ -536,7 +559,10 @@ void InitializePatterns()
             else
                 CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyFTS);
         }
+    }
 
+    if (Engine_Version >= 420)
+    {
         GetPlayerViewpointAddr = FindPattern(GetPlayerViewpointSig);
 
         if (!GetPlayerViewpointAddr)
@@ -678,7 +704,7 @@ void InitializePatterns()
         CheckPattern(("CallPreReplication"), CallPreReplicationAddr, &CallPreReplication);
     }
 
-    if (std::stod(FN_Version) == 4.5)
+    if (FnVerDouble == 4.5)
     {
         uintptr_t CrashFix = FindPattern(CrashPatchSig);
         if (CrashFix) {

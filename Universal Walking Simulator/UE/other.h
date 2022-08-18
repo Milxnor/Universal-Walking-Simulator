@@ -10,12 +10,12 @@
 
 struct FVector
 {
-	float X;
-	float Y;
-	float Z;
+	double X;
+	double Y;
+	double Z;
 
 	FVector() : X(0), Y(0), Z(0) {}
-	FVector(float x, float y, float z) : X(x), Y(y), Z(z) {}
+	FVector(double x, double y, double z) : X(x), Y(y), Z(z) {}
 
 	FVector operator+(const FVector& A)
 	{
@@ -152,9 +152,9 @@ float UE_Fmod(float X, float Y)
 
 struct FRotator
 {
-	float Pitch;
-	float Yaw;
-	float Roll;
+	double Pitch;
+	double Yaw;
+	double Roll;
 
 	FQuat Quaternion() const;
 
@@ -497,11 +497,10 @@ float UE_Atan2(float Y, float X)
 // alignas(16)
 struct FQuat
 {
-	// float W;
-	float X;
-	float Y;
-	float Z;
-	float W;
+	double W;
+	double X;
+	double Y;
+	double Z;
 
 	FRotator Rotator() const
 	{

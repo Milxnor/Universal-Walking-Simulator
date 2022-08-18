@@ -293,6 +293,8 @@ namespace LootingV2
 						((test*)world + 0x10C)->bIsRunningConstructionScript = false;
 					}
 
+					// OR WE COULD set bAllowDuringConstructionScript IN SPAWN PARAMS TO TRUE
+
 					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon).Definition, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
 						EFortPickupSpawnSource::Unset);
 				}

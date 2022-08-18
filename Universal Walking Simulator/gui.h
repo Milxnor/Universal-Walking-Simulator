@@ -335,7 +335,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (std::floor(std::stod(FN_Version)) == 8 || Engine_Version >= 424)
+				if (std::floor(FnVerDouble) == 8 || Engine_Version >= 424)
 				{
 					if (ImGui::BeginTabItem(("Thanos")))
 					{
@@ -424,7 +424,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					if (serverStatus == EServerStatus::Up)
 					{
-						if (Engine_Version < 423) // I do not know how to start the bus on S8+
+						if (Engine_Version < 423 || FnVerDouble >= 16.00) // I do not know how to start the bus on S8+
 						{
 							if (ImGui::Button(("Start Aircraft")))
 							{
@@ -769,7 +769,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (ImGui::Button(("Start Event")))
 						Events::StartEvent();
 
-					if (std::stod(FN_Version) == 12.41 && ImGui::Button("Fly players up"))
+					if (FnVerDouble == 12.41 && ImGui::Button("Fly players up"))
 						EventHelper::BoostUp();
 					break;
 

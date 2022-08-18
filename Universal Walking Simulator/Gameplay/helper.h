@@ -18,6 +18,27 @@ UObject* GetWorldW(bool bReset = false)
 	return nullptr;
 }
 
+static TArray<UObject*> GetAllActorsOfClass_(UObject* Class, UObject* World = nullptr)
+{
+	static auto GSCClass = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+
+	static UObject* GetAllActorsOfClass = GSCClass->Function(("GetAllActorsOfClass"));
+
+	struct
+	{
+		UObject* World;
+		UObject* Class;
+		TArray<UObject*> ReturnValue;
+	} Params;
+
+	Params.World = World ? World : GetWorldW();
+	Params.Class = Class;
+
+	ProcessEventO(GSCClass, GetAllActorsOfClass, &Params);
+
+	return Params.ReturnValue;
+}
+
 namespace Easy
 {
 	UObject* SpawnObject(UObject* ObjectClass, UObject* Outer)
@@ -66,9 +87,88 @@ namespace Easy
 
 		auto Loc = Location;
 		auto Rot = Rotation;
+
+		FQuat Ehh; // wrong
+		Ehh.W = 0;
+		Ehh.X = Rot.Pitch;
+		Ehh.Y = Rot.Roll;
+		Ehh.Z = Rot.Yaw;
+
+		FTransform transform;
+		transform.Translation = Loc;
+		transform.Rotation = Ehh;
+		transform.Scale3D = { 1, 1, 1 };
+
 		FActorSpawnParameters spawnParams = FActorSpawnParameters();
-		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-		return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, spawnParams);
+		// spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+		if (FnVerDouble < 19.00)
+			return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, spawnParams);
+		else
+		{
+			auto GameInstance = *GetEngine()->Member<UObject*>(("GameInstance"));
+			auto& LocalPlayers = *GameInstance->Member<TArray<UObject*>>(("LocalPlayers"));
+			auto PlayerController = *LocalPlayers.At(0)->Member<UObject*>(("PlayerController"));
+
+			auto CheatManager = *PlayerController->Member<UObject*>("CheatManager");
+
+			static auto Summon = CheatManager->Function("Summon");
+
+			// auto AllActorsOld = Helper::GetAllActorsOfClass(Class);
+
+			std::wstring className = Class->GetFullNFame();
+			className.erase(0, className.find_last_of(L".", className.length() - 1) + 1);
+
+			FString ClassName;
+			ClassName.Set(className.c_str());
+
+			if (Summon)
+				CheatManager->ProcessEvent(Summon, &ClassName);
+			else
+				std::cout << "Unable to find SUmmon!\n";
+
+			auto AllActors = GetAllActorsOfClass_(Class);
+			std::cout << "All Actors Num: " << AllActors.Num() << '\n';
+			return AllActors.At(AllActors.Num() - 1);
+			
+			/* struct {
+				UObject* WorldContextObject;
+				UObject* ActorClass;
+				FTransform SpawnTransform;
+				ESpawnActorCollisionHandlingMethod CollisionHandlingOverride;
+				UObject* Owner;
+				UObject* NewActor;
+			} beginParams{GetWorldW(), Class, transform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn, nullptr};
+
+			static auto GSC = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+
+			static auto BeginDeferredActorSpawnFromClass = GSC->Function("BeginDeferredActorSpawnFromClass");
+
+			if (BeginDeferredActorSpawnFromClass)
+				GSC->ProcessEvent(BeginDeferredActorSpawnFromClass, &beginParams);
+
+			if (beginParams.NewActor)
+			{
+				struct {
+					UObject* Actor;
+					FTransform Transform;
+					UObject* ret;
+				} finishParams{ beginParams.NewActor, transform };
+
+				static auto FinishSpawningActor = GSC->Function("FinishSpawningActor");
+
+				if (GSC)
+					GSC->ProcessEvent(FinishSpawningActor, &finishParams);
+
+				return finishParams.ret;
+			}
+			else
+				std::cout << "Failed beginning spawning actor!\n";
+
+			return SpawnActorOTrans(GetWorldW(), Class, &transform, spawnParams); */
+		}
+
+		return nullptr;
 	}
 }
 
@@ -134,7 +234,7 @@ namespace Helper
 
 	static void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart)
 	{
-		/* if (std::stod(FN_Version) >= 6) // TODO: make sure this is actually when they change it.
+		/* if (FnVerDouble >= 6) // TODO: make sure this is actually when they change it.
 		{
 			auto PlayerState = *Pawn->Member<UObject*>(("PlayerState"));
 			auto CustomCharacterParts = PlayerState->Member<__int64>(("CharacterParts")); // FCustomCharacterParts
@@ -804,8 +904,6 @@ namespace Helper
 
 	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart(), bool bResetTeams = false)
 	{
-		static const auto FnVerDouble = std::stod(FN_Version);
-
 		UObject* PlayerState = *PC->Member<UObject*>(("PlayerState"));
 
 		static auto PawnClass = FindObject(("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
@@ -933,7 +1031,7 @@ namespace Helper
 		auto world = Helper::GetWorld();
 		auto gameState = *world->Member<UObject*>(("GameState"));
 
-		if (std::stod(FN_Version) >= 6.10) // WRONG
+		if (FnVerDouble >= 6.10) // WRONG
 		{
 			static auto BasePlaylistOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("BasePlaylist"));
 			if (BasePlaylistOffset)

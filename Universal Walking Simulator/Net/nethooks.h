@@ -133,8 +133,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     *NewPlayer->Member<UObject*>(("PlayerController")) = PlayerController;
 
-    static const auto FnVerDouble = std::stod(FN_Version);
-
     if (FnVerDouble < 7.4)
     {
         static const auto QuickBarsClass = FindObject("Class /Script/FortniteGame.FortQuickBars", true);
@@ -158,23 +156,16 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     *PlayerState->Member<char>(("bHasFinishedLoading")) = true;
     *PlayerState->Member<char>(("bIsReadyToContinue")) = true;
 
-    if (FnVerDouble >= 16.00)
-    {
-        auto InventoryServiceClass = FindObject("Class /Script/FortniteGame.FortControllerComponent_InventoryService");
-        auto InventoryServiceComponent = Easy::SpawnObject(InventoryServiceClass, PlayerController);
-        *PlayerController->Member<UObject*>("InventoryServiceComponent") = InventoryServiceComponent;
-    }
-
     auto Pawn = Helper::InitPawn(PlayerController, true, Helper::GetPlayerStart(), true);
 
     if (!Pawn)
         return PlayerController;
 
-    if (GiveAbility || GiveAbilityFTS)
+    if (GiveAbility || GiveAbilityFTS || GiveAbilityNewer)
     {
         auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
 
-        if (AbilitySystemComponent && FnVerDouble < 14)
+        if (AbilitySystemComponent)
         {
             std::cout << ("Granting abilities!\n");
             if (FnVerDouble < 8 && Engine_Version != 421) // idk CDO offset
@@ -330,7 +321,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         std::cout << ("Unable to grant abilities due to no GiveAbility!\n");
 
     // if (FnVerDouble >= 4.0) // if (std::floor(FnVerDouble) != 9 && std::floor(FnVerDouble) != 10 && Engine_Version >= 420) // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
-    if (FnVerDouble < 16.00)
+    // if (FnVerDouble < 16.00)
     {
         static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
         static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -368,7 +359,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
     }
 
-    if (false && std::stod(FN_Version) /* > */ == 7.40) // idk why this dopesnt work
+    if (false && FnVerDouble /* > */ == 7.40) // idk why this dopesnt work
     {
         struct FUniqueNetIdRepl // : public FUniqueNetIdWrapper
         {
@@ -487,11 +478,21 @@ char __fastcall malformedDetour(__int64 a1, __int64 a2)
     return ret;
 }
 
+FString* GetRequestURL(UObject* Connection)
+{
+    if (FnVerDouble >= 7 && Engine_Version < 424)
+        return (FString*)(__int64(Connection) + 424);
+    else if (FnVerDouble < 7)
+        return (FString*)((__int64*)Connection + 54);
+    else if (Engine_Version >= 424)
+        return (FString*)(__int64(Connection) + 440);
+
+    return nullptr;
+}
+
 void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8_t MessageType, __int64* Bunch)
 {
     std::cout << ("Receieved control message: ") << std::to_string((int)MessageType) << '\n';
-
-    static const auto FnVerDouble = std::stod(FN_Version);
 
     switch (MessageType)
     {
@@ -556,23 +557,21 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 
             FString OnlinePlatformName;
 
-            static double CurrentFortniteVersion = std::stod(FN_Version);
+            static double CurrentFortniteVersion = FnVerDouble;
 
             if (CurrentFortniteVersion >= 7 && Engine_Version < 424)
-            {
                 ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 400)); // clientresponse
-                ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 424)); // requesturl
-            }
             else if (CurrentFortniteVersion < 7)
-            {
                 ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 51));
-                ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 54));
-            }
             else if (Engine_Version >= 424)
-            {
                 ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 416));
-                ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 440));
-            }
+
+            auto RequestURL = GetRequestURL(Connection);
+
+            if (!RequestURL)
+                return;
+
+            ReceiveFString(Bunch, *RequestURL);
 
             ReceiveUniqueIdRepl(Bunch, Connection->Member<__int64>(("PlayerID")));
             std::cout << ("Got PlayerID!\n");
@@ -588,6 +587,39 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
             Bunch[7] -= (16 * 1024 * 1024);
 
             WelcomePlayer(Helper::GetWorld(), Connection);
+
+            /* auto funnyURL = RequestURL->ToString();
+
+            std::string teamCodeStr = "NONE";
+
+            if (funnyURL.find("?teamCode=") != std::string::npos)
+            {
+                // open 127.0.0.1?teamCode=100
+
+                funnyURL = funnyURL.substr(funnyURL.find("?teamCode") + 1);
+                funnyURL = funnyURL.substr(0, funnyURL.find('?'));
+
+                auto teamCodeParam = funnyURL;
+
+                teamCodeStr = teamCodeParam.substr(teamCodeParam.find('=') + 1);
+            }
+            else if (false) // here we would use like regex match or something
+            {
+                // Milxnor[100]
+
+                funnyURL = funnyURL.substr(funnyURL.find("?Name") + 1);
+                funnyURL = funnyURL.substr(0, funnyURL.find('?'));
+                auto Name = funnyURL.substr(funnyURL.find('=') + 1);
+
+                const std::regex base_regex((R"(\[[0-9]+\])"));
+                std::cmatch base_match;
+
+                std::regex_search(Name.c_str(), base_match, base_regex);
+
+                teamCodeStr = base_match.str();
+                teamCodeStr.erase(std::remove(teamCodeStr.begin(), teamCodeStr.end(), '['), teamCodeStr.end());
+                teamCodeStr.erase(std::remove(teamCodeStr.begin(), teamCodeStr.end(), ']'), teamCodeStr.end());
+            } */
 
             return;
         }
@@ -659,9 +691,11 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
     return World_NotifyControlMessage(Helper::GetWorld(), Connection, MessageType, Bunch);
 }
 
-void Beacon_NotifyControlMessageDetour(UObject* Beacon, UObject* Connection, uint8_t MessageType, __int64* Bunch)
+char Beacon_NotifyControlMessageDetour(UObject* Beacon, UObject* Connection, uint8_t MessageType, __int64* Bunch)
 {
-    return World_NotifyControlMessageDetour(Helper::GetWorld(), Connection, MessageType, Bunch);
+    std::cout << "beacon ncm!\n";
+    World_NotifyControlMessageDetour(Helper::GetWorld(), Connection, MessageType, Bunch);
+    return true;
 }
 
 char __fastcall NoReserveDetour(__int64* a1, __int64 a2, char a3, __int64* a4)
@@ -727,8 +761,6 @@ int __fastcall ReceivedPacketDetour(__int64* a1, LARGE_INTEGER a2, char a3)
 
 void InitializeNetHooks()
 {
-    static const auto FnVerDouble = std::stod(FN_Version);
-
     MH_CreateHook((PVOID)SpawnPlayActorAddr, SpawnPlayActorDetour, (void**)&SpawnPlayActor);
     MH_EnableHook((PVOID)SpawnPlayActorAddr);
 
@@ -803,8 +835,6 @@ void InitializeNetHooks()
 
 void DisableNetHooks()
 {
-    static const auto FnVerDouble = std::stod(FN_Version);
-
     MH_DisableHook((PVOID)SpawnPlayActorAddr);
     MH_DisableHook((PVOID)Beacon_NotifyControlMessageAddr);
     MH_DisableHook((PVOID)World_NotifyControlMessageAddr);

@@ -117,8 +117,6 @@ namespace QuickBars
 		if (!Controller)
 			return nullptr;
 
-		static const auto FnVerDouble = std::stod(FN_Version);
-
 		{
 			static auto GetItemInQuickbarSlotfn = Controller->Function(("GetItemInQuickbarSlot"));
 
@@ -232,7 +230,7 @@ namespace Inventory
 
 			struct { UObject* Weapon; } internalEquipParams{ FortWeapon };
 
-			if (std::stod(FN_Version) >= 7.40)
+			if (FnVerDouble >= 7.40)
 			{
 				static auto internalEquipFn = Pawn->Function(("ClientInternalEquipWeapon"));
 				if (internalEquipFn)
@@ -249,7 +247,7 @@ namespace Inventory
 			std::cout << ("No weapon!\n");
 	}
 
-	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, const FGuid& Guid, int Ammo = 0)
+	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, const FGuid& Guid, int Ammo = 0, const FGuid& TrackerGuid = FGuid())
 	{
 		if (Pawn && Definition)
 		{
@@ -258,16 +256,35 @@ namespace Inventory
 			
 			if (!IsAGID)
 			{
-				// i dont think we need this on s15?
+				UObject* Weapon = nullptr;
+
 				static auto equipFn = Pawn->Function(("EquipWeaponDefinition"));
-				struct {
-					UObject* Def;
-					FGuid Guid;
-					UObject* Wep;
-				} params{ Definition, Guid };
-				if (equipFn)
-					Pawn->ProcessEvent(equipFn, &params);
-				auto Weapon = params.Wep;
+
+				if (FnVerDouble < 16.00)
+				{
+					struct {
+						UObject* Def;
+						FGuid Guid;
+						UObject* Wep;
+					} params{ Definition, Guid };
+					if (equipFn)
+						Pawn->ProcessEvent(equipFn, &params);
+					Weapon = params.Wep;
+				}
+				else
+				{
+					struct {
+						UObject* Def;
+						FGuid Guid;
+						FGuid TrackerGuid;
+						UObject* Wep;
+					} params{ Definition, Guid, TrackerGuid };
+
+					if (equipFn)
+						Pawn->ProcessEvent(equipFn, &params);
+
+					Weapon = params.Wep;
+				}
 
 				if (Weapon)
 				{
@@ -391,10 +408,12 @@ namespace Inventory
 		return parms.Ret;
 	}
 
-	inline UObject* EquipInventoryItem(UObject* Controller, const FGuid& Guid)
+	inline UObject* GetItemInstanceFromGuid(UObject* Controller, const FGuid& Guid)
 	{
+		if (!Controller)
+			return nullptr;
+
 		auto ItemInstances = GetItemInstances(Controller);
-		auto Pawn = Helper::GetPawnFromController(Controller);
 
 		for (int i = 0; i < ItemInstances->Num(); i++)
 		{
@@ -404,22 +423,46 @@ namespace Inventory
 				continue;
 
 			if (GetItemGuid(CurrentItemInstance) == Guid)
-			{
-				auto Def = GetItemDefinition(CurrentItemInstance);
-				/*if (Def != nullptr) {
-					if (std::stof(FN_Version) >= 7.40) {
-						return EquipWeaponDefinition(Pawn, Def, Guid);
-					}
-					else {
-						EquipWeapon(Pawn, Def, Guid);
-					}
-				}*/
-				EquipWeaponDefinition(Pawn, Def, Guid);
-				std::string FullName = Def->GetFullName();
-				if (FullName.contains("CarminePack") || FullName.contains("AshtonPack.")) {
-					Items::HandleCarmine(*Pawn->Member<UObject*>("Controller"));
-				}
+				return CurrentItemInstance;
+		}
+
+		return nullptr;
+	}
+
+	inline UObject* EquipInventoryItem(UObject* Controller, const FGuid& Guid)
+	{
+		auto CurrentItemInstance = GetItemInstanceFromGuid(Controller, Guid);
+
+		if (!CurrentItemInstance)
+			return nullptr;
+
+		auto Pawn = Helper::GetPawnFromController(Controller);
+
+		auto Def = GetItemDefinition(CurrentItemInstance);
+
+		/*if (Def != nullptr) {
+			if (std::stof(FN_Version) >= 7.40) {
+				return EquipWeaponDefinition(Pawn, Def, Guid);
 			}
+			else {
+				EquipWeapon(Pawn, Def, Guid);
+			}
+		}*/
+
+		FGuid TrackerGuid;
+
+		if (FnVerDouble >= 16.00)
+		{
+			static auto GetTrackerGuid = CurrentItemInstance->Function("GetTrackerGuid");
+
+			if (GetTrackerGuid)
+				CurrentItemInstance->ProcessEvent(GetTrackerGuid, &TrackerGuid);
+		}
+
+		EquipWeaponDefinition(Pawn, Def, Guid, 0, TrackerGuid);
+		std::string FullName = Def->GetFullName();
+		if (FullName.contains("CarminePack") || FullName.contains("AshtonPack.")) {
+			Items::HandleCarmine(*Pawn->Member<UObject*>("Controller"));
 		}
 
 		return nullptr;
@@ -442,7 +485,7 @@ namespace Inventory
 
 	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false, FFastArraySerializerItem* ModifiedItem = nullptr)
 	{
-		static const auto FnVerDouble = std::stod(FN_Version);
+		static const 
 
 		auto WorldInventory = GetWorldInventory(Controller);
 		auto Inventory = GetInventory(Controller);
@@ -586,7 +629,7 @@ namespace Inventory
 	template <typename Type>
 	bool ChangeItemInReplicatedEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal, int Count = -1)
 	{
-		static const auto FlooredVer = std::floor(std::stod(FN_Version));
+		static const auto FlooredVer = std::floor(FnVerDouble);
 
 		if (FlooredVer == 3)
 		{
@@ -594,12 +637,12 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
 			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
-		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
+		else if (FlooredVer > 3 && FnVerDouble < 7.40)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
-		else if (std::stod(FN_Version) >= 7.40 && Engine_Version <= 424)
+		else if (FnVerDouble >= 7.40 && Engine_Version <= 424)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
@@ -614,9 +657,14 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x160]; };
 			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
-		else if (FlooredVer >= 15)
+		else if (FlooredVer >= 15 && FlooredVer < 18)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x190]; };
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+		}
+		else if (FlooredVer >= 18)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x1A0]; };
 			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
 		}
 
@@ -654,7 +702,7 @@ namespace Inventory
 		if (!Controller || !FortItem)
 			return;
 
-		static const auto FlooredVer = std::floor(std::stod(FN_Version));
+		static const auto FlooredVer = std::floor(FnVerDouble);
 
 		// auto Inventory = GetInventory(Controller);
 
@@ -663,8 +711,6 @@ namespace Inventory
 
 		if (Engine_Version < 424) // chapter two momentum
 			GetItemInstances(Controller)->Add(FortItem);
-
-		static const auto FnVerDouble = std::stod(FN_Version);
 
 		if (7.4 > FnVerDouble)
 		{
@@ -703,7 +749,7 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (std::stod(FN_Version) >= 7.40 && Engine_Version <= 424)
+		else if (FnVerDouble >= 7.40 && Engine_Version <= 424)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
@@ -718,9 +764,14 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x160]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
-		else if (FlooredVer >= 15)
+		else if (FlooredVer >= 15 && FlooredVer < 18)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x190]; };
+			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
+		}
+		else if (FlooredVer >= 18)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x1A0]; };
 			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
 		}
 		else
@@ -789,7 +840,7 @@ namespace Inventory
 			}
 		}
 
-		static const auto FlooredVer = std::floor(std::stod(FN_Version));
+		static const auto FlooredVer = std::floor(FnVerDouble);
 
 		bool bFortnite = false;
 
@@ -798,12 +849,12 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (FlooredVer > 3 && std::stod(FN_Version) < 7.40)
+		else if (FlooredVer > 3 && FnVerDouble < 7.40)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (std::stod(FN_Version) >= 7.40 && Engine_Version <= 424)
+		else if (FnVerDouble >= 7.40 && Engine_Version <= 424)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
@@ -818,9 +869,14 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x160]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (FlooredVer >= 15)
+		else if (FlooredVer >= 15 && FlooredVer < 18)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x190]; };
+			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (FlooredVer >= 18)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0x1A0]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 
@@ -1074,8 +1130,6 @@ namespace Inventory
 	{
 		// omfg
 
-		static const auto FnVerDouble = std::stod(FN_Version);
-
 		if (Engine_Version < 420) // wrong I think
 		{
 			static UObject* AthenaAmmoDataRockets = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
@@ -1146,7 +1200,9 @@ namespace Inventory
 
 inline bool ServerExecuteInventoryItemHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
+	// if (FnVerDouble < 16.00)
 	Inventory::EquipInventoryItem(Controller, *(FGuid*)Parameters);
+
 	return false;
 }
 
@@ -1417,13 +1473,13 @@ void InitializeInventoryHooks()
 {
 	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
 
-	if (Engine_Version >= 423)
+	if (Engine_Version >= 423 && FnVerDouble < 16.00)
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
 
 	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"), ServerHandlePickupHook);
 
-	if (std::stod(FN_Version) >= 7.40)
+	if (FnVerDouble >= 7.40)
 	{
 		AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupWithSwap"), ServerHandlePickupWithSwapHook);
 	}

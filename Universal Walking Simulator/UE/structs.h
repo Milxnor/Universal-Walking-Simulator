@@ -21,6 +21,7 @@ static inline void (*ToStringO)(struct FName*, class FString&);
 static inline void* (*ProcessEventO)(void*, void*, void*);
 
 std::string FN_Version = "0.0";
+static double FnVerDouble = 0;
 int Engine_Version;
 
 static struct FChunkedFixedUObjectArray* ObjObjects;
@@ -279,6 +280,22 @@ struct FName // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4c8
 		return Str;
 	}
 
+	INL std::wstring ToSFtring()
+	{
+		if (!this)
+			return L"";
+
+		FString temp;
+
+		ToStringO(this, temp);
+
+		auto Str = std::wstring(temp.Data.GetData());
+
+		temp.FreeString();
+
+		return Str;
+	}
+
 	bool operator==(const FName& other)
 	{
 		return (other.ComparisonIndex == this->ComparisonIndex);
@@ -358,6 +375,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	UObject* OuterPrivate;
 
 	INL std::string GetName() { return NamePrivate.ToString(); }
+	INL std::wstring GetNFame() { return NamePrivate.ToSFtring(); }
 
 	INL std::string GetFullName()
 	{
@@ -367,6 +385,16 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 			temp = std::format("{}.{}", outer->GetName(), temp);
 
 		return std::format("{} {}{}", ClassPrivate->GetName(), temp, this->GetName());
+	}
+
+	INL std::wstring GetFullNFame()
+	{
+		std::wstring temp;
+
+		for (auto outer = OuterPrivate; outer; outer = outer->OuterPrivate)
+			temp = outer->GetNFame() + L"." + temp;
+
+		return ClassPrivate->GetNFame() + L" " + temp + this->GetNFame();
 	}
 
 	INL std::string GetFullNameT()
@@ -403,8 +431,6 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 
 	UObject* CreateDefaultObject()
 	{
-		auto FnVerDouble = std::stod(FN_Version);
-
 		static auto Index = 0;
 
 		if (Index == 0)
@@ -961,10 +987,10 @@ static int GetOffset(UObject* Object, const std::string& MemberName)
 		else if (Engine_Version >= 422 && Engine_Version <= 424)
 			return LoopMembersAndFindOffset<UClass_FTT, UProperty_FTO>(Object, MemberName);
 
-		else if (Engine_Version >= 425 && Engine_Version < 500)
+		else if (Engine_Version >= 425 && FnVerDouble < 20.00)
 			return LoopMembersAndFindOffset<UClass_CT, FProperty>(Object, MemberName);
 
-		else if (std::stod(FN_Version) >= 19)
+		else if (FnVerDouble >= 20) // s20 maybe
 			return LoopMembersAndFindOffset<UClass_CT, FProperty>(Object, MemberName, 0x44);
 	}
 	else
@@ -1016,7 +1042,8 @@ FString(*GetEngineVersion)();
 
 struct FActorSpawnParameters
 {
-	FName Name;
+	char pad[0x40];
+	/* FName Name;
 	UObject* Template; // AActor*
 	UObject* Owner; // AActor*
 	UObject* Instigator; // APawn*
@@ -1026,9 +1053,11 @@ struct FActorSpawnParameters
 	uint16_t	bNoFail : 1;
 	uint16_t	bDeferConstruction : 1;
 	uint16_t	bAllowDuringConstructionScript : 1;
-	EObjectFlags ObjectFlags;
+	EObjectFlags ObjectFlags; */
 };
 
+
+static UObject* (*SpawnActorOTrans)(UObject* World, UObject* Class, FTransform* Transform, const FActorSpawnParameters& SpawnParameters);
 static UObject* (*SpawnActorO)(UObject* World, UObject* Class, FVector* Position, FRotator* Rotation, const FActorSpawnParameters& SpawnParameters);
 
 uint64_t ToStringAddr = 0;
@@ -1050,10 +1079,14 @@ bool Setup(/* void* ProcessEventHookAddr */)
 
 	if (!SpawnActorAddr)
 	{
-		MessageBoxA(0, ("Failed to find SpawnActor function."), ("Universal Walking Simulator"), MB_OK);
-		return 0;
+		std::cout << "[WARNING] Failed to find SpawnActor function!\n";
+		// MessageBoxA(0, ("Failed to find SpawnActor function."), ("Universal Walking Simulator"), MB_OK);
+		// return 0;
 	}
+	
+	auto SpawnActorTransAddr = FindPattern("48 8B C4 55 53 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 A8 0F 29 78 98 44 0F 29 40 ? 44 0F 29 88 ? ? ? ? 44 0F 29 90 ? ? ? ? 44 0F 29 98 ? ? ? ? 44 0F 29 A0 ? ? ? ? 44 0F 29 A8 ? ? ? ? 44 0F 29 B0 ? ? ? ? 44 0F 29 B8 ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 60 45 33 ED 48 89 4D 90 44 89 6D 80 48 8D 05 ? ? ? ? 44 38");
 
+	SpawnActorOTrans = decltype(SpawnActorOTrans)(SpawnActorTransAddr);
 	SpawnActorO = decltype(SpawnActorO)(SpawnActorAddr);
 
 	bool bOldObjects = false;
@@ -1110,8 +1143,6 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		}
 
 		FN_Version = FNVer;
-
-		auto FnVerDouble = std::stod(FN_Version);
 
 		if (FnVerDouble >= 16.00 && FnVerDouble < 18.40)
 			Engine_Version = 427; // 4.26.1;
@@ -1170,7 +1201,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ProcessEventAddr = FindPattern(("40 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 48 8D 6C 24 ? 48 89 9D ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C5 48 89 85 ? ? ? ? 8B 41 0C 45 33 F6"));
 	}
 
-	auto FnVerDouble = std::stod(FN_Version);
+	FnVerDouble = std::stod(FN_Version);
 
 	if (Engine_Version == 421 && FnVerDouble >= 5 && FnVerDouble < 6)
 		ServerReplicateActorsOffset = 0x54;
@@ -1182,8 +1213,12 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ServerReplicateActorsOffset = 0x5A;
 	else if (Engine_Version >= 425 && FnVerDouble < 14)
 		ServerReplicateActorsOffset = 0x5D;
-	else if (Engine_Version >= 426)
+	else if (Engine_Version >= 426 && FnVerDouble < 19)
 		ServerReplicateActorsOffset = 0x5F;
+	else if (std::floor(FnVerDouble) == 19)
+		ServerReplicateActorsOffset = 0x66;
+	else
+		ServerReplicateActorsOffset = 0x67;
 
 	if (FnVerDouble >= 5)
 	{
@@ -1352,10 +1387,10 @@ int FindOffsetStruct(const std::string& ClassName, const std::string& MemberName
 	else if (Engine_Version >= 422 && Engine_Version <= 424)
 		return FindOffsetStructAh<UClass_FTT, UField, UProperty_FTO>(ClassName, MemberName);
 
-	else if (Engine_Version >= 425 && Engine_Version < 500)
+	else if (Engine_Version >= 425 && FnVerDouble < 20.00)
 		return FindOffsetStructAh<UClass_CT, FField, FProperty>(ClassName, MemberName);
 
-	else if (std::stod(FN_Version) >= 19)
+	else if (FnVerDouble >= 20)
 		return FindOffsetStructAh<UClass_CT, FField, FProperty>(ClassName, MemberName, 0x44);
 
 	return 0;
@@ -1372,10 +1407,10 @@ int GetOffsetFromProp(void* Prop)
 	else if (Engine_Version >= 421 && Engine_Version <= 424)
 		return ((UProperty_FTO*)Prop)->Offset_Internal;
 
-	else if (Engine_Version >= 425 && Engine_Version < 500)
+	else if (Engine_Version >= 425 && FnVerDouble < 20.00)
 		return ((FProperty*)Prop)->Offset_Internal;
 
-	else if (std::stod(FN_Version) >= 19)
+	else if (FnVerDouble >= 20)
 		return *(int*)(__int64(Prop) + 0x44);
 
 	return -1;
@@ -2126,7 +2161,7 @@ std::vector<int> UFunction::GetAllParamOffsets()
 			return offs;
 		}
 
-		else if (std::stod(FN_Version) >= 19)
+		else if (FnVerDouble >= 19)
 		{
 			auto Members = GetMembers<UClass_CT, FProperty>(this);
 			std::vector<int> offs;
