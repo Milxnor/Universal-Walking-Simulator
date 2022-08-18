@@ -755,6 +755,7 @@ void InitializeNetHooks()
 
     if (KickPlayer)
     {
+        std::cout << "Hooked kickplayer!\n";
         MH_CreateHook((PVOID)KickPlayerAddr, KickPlayerDetour, (void**)&KickPlayer);
         MH_EnableHook((PVOID)KickPlayerAddr);
     }

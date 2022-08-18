@@ -124,7 +124,9 @@ static auto AircraftLocationToUse = FVector{ 3500, -9180, 10500 };
 
 const wchar_t* GetMapName()
 {
-	if (Engine_Version >= 424)
+    if (std::stod(FN_Version) >= 19.00)
+        return L"Artemis_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+	else if (Engine_Version >= 424)
 		return L"Apollo_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
 	else if (Engine_Version < 424)
 		return L"Athena_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";

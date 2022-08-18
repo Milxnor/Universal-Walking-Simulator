@@ -568,9 +568,10 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					*/
 
-					if (ImGui::Button("Restart"))
+					/* if (ImGui::Button("Restart"))
 					{
 						bStarted = false;
+						bListening = false;
 						DisableNetHooks();
 						
 						if (BeaconHost)
@@ -579,7 +580,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						LoadInMatch();
 
 						ExistingBuildings.empty();
-					}
+					} */
 
 					if (ImGui::Button(("Dump Objects (Win64/Objects.log)")))
 					{
