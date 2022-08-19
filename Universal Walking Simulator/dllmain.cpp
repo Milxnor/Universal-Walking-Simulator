@@ -101,6 +101,29 @@ UObject* __fastcall SpawnsAircraftDetour(__int64 a1, int a2)
     return Aircraft;
 }
 
+char __fastcall crashmaybDetour(__int64 a1)
+{
+    return true;
+}
+
+__int64(__fastcall* Crashes)(__int64 a1, __int64 a2);
+
+__int64 __fastcall CrashesDetour(__int64 a1, __int64 a2)
+{
+    std::cout << "Crashes called!\n";
+
+    /*
+    auto ClassPrivateMaybe = *(__int64*)(a1 + 16);
+
+    if (!(__int64*)(ClassPrivateMaybe + 0x88))
+        return 0;
+
+    return Crashes(a1, a2);
+    */
+
+    return 0;
+}
+
 DWORD WINAPI Main(LPVOID)
 {
     AllocConsole();
@@ -220,6 +243,17 @@ DWORD WINAPI Main(LPVOID)
     else
         std::cout << "No SpawnAircraftAddr!\n"; */
 
+    /* auto crashAddr = FindPattern("48 89 5C 24 ? 48 89 7C 24 ? 4C 89 74 24 ? 55 48 8B EC 48 83 EC 30 48 8B 79 10 4C 8B C1 48 83 BF ? ? ? ? ? 74 15 80 3D ? ? ? ? ? 72 05 E8 ? ? ? ? 33 C0");
+
+    if (crashAddr)
+    {
+        Crashes = decltype(Crashes)(crashAddr);
+        MH_CreateHook((PVOID)crashAddr, CrashesDetour, (PVOID*)&Crashes);
+        MH_EnableHook((PVOID)crashAddr);
+    }
+    else
+        std::cout << "No crashAddr!\n"; */
+
     return 0;
 }
 
@@ -235,7 +269,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         break;
     case DLL_PROCESS_DETACH:
         std::cout << ("Disabling all Hooks!");
-        MH_DisableHook(MH_ALL_HOOKS); // Untested
+        MH_DisableHook(MH_ALL_HOOKS);
         SendDiscordEnd();
         break;
     }

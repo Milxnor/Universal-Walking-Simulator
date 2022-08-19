@@ -39,13 +39,27 @@ void InitializeNetUHooks()
 void TickFlushDetour(UObject* thisNetDriver, float DeltaSeconds)
 {
     // std::cout << ("TicKFluSh!\n");
-    static auto NetDriver = *Helper::GetWorld()->Member<UObject*>(("NetDriver"));
-    static auto& ClientConnections = *NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+    auto World = Helper::GetWorld();
 
-    if (ClientConnections.Num() > 0)
+    if (World)
     {
-        ServerReplicateActors(NetDriver);
+        static auto NetDriverOffset = GetOffset(World, "NetDriver");
+        auto NetDriver = *(UObject**)(__int64(World) + NetDriverOffset);
+
+        if (NetDriver)
+        {
+            static auto& ClientConnections = *NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+
+            if (ClientConnections.Num() > 0)
+            {
+                ServerReplicateActors(NetDriver);
+            }
+        }
+        else
+            std::cout << "No World netDriver??\n";
     }
+    else
+        std::cout << "no world?!?!\n";
 
     return TickFlush(thisNetDriver, DeltaSeconds);
 }

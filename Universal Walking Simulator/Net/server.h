@@ -195,6 +195,10 @@ void Listen(int Port = 7777)
         else
         {
             int VTableIndex = FnVerDouble < 19.00 ? 0x72 : 0x7A;
+
+            if (FnVerDouble >= 20.00)
+                VTableIndex = 0x7B;
+
             auto SetWorldAAddr = NetDriver->VFTable[VTableIndex];
             SetWorld = decltype(SetWorld)(SetWorldAAddr);
             std::cout << "SetWorld Sig: " << GetBytes(__int64(SetWorldAAddr), 50) << '\n';
@@ -235,7 +239,7 @@ void Listen(int Port = 7777)
                         std::cout << ("No ReplicationGraph_Enable\n");
                 }
                 else
-                    std::cout << dye::red(("\n\n[WARNING] ReplicationDriver is valid, but we are trying to create it. (This is VERY good)\n\n\n"));
+                    std::cout << dye::green(("\n\n[WARNING] ReplicationDriver is valid, but we are trying to create it. (This is VERY good)\n\n\n"));
             }
             else
                 std::cout << ("No SetReplicationDriver!\n");
@@ -249,13 +253,42 @@ void Listen(int Port = 7777)
     else
         std::cout << dye::red(("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
 
-    auto LevelCollections = World->Member<TArray<FLevelCollection>>(("LevelCollections"));
+    /* if (FnVerDouble < 19)
+    {
+        auto LevelCollections = World->Member<TArray<FLevelCollection>>(("LevelCollections"));
+
+        if (LevelCollections)
+        {
+            LevelCollections->At(0).NetDriver = NetDriver;
+            LevelCollections->At(1).NetDriver = NetDriver;
+        }
+    }
+    else
+    {
+        auto LevelCollections = World->Member<TArray<FLevelCollectionNewer>>(("LevelCollections"));
+
+        if (LevelCollections)
+        {
+            LevelCollections->At(0).NetDriver = NetDriver;
+            LevelCollections->At(1).NetDriver = NetDriver;
+        }
+    } */
+
+    auto LevelCollections = World->Member<TArray<__int64>>(("LevelCollections"));
+    auto LevelCollectionsDa = World->Member<TArray<FLevelCollection>>(("LevelCollections"));
+    static auto LevelCollectionsSize = GetSizeOfStruct(FindObject("ScriptStruct /Script/Engine.LevelCollection"));
+    static auto NetDriverOffset = FindOffsetStruct("ScriptStruct /Script/Engine.LevelCollection", "NetDriver");
 
     if (LevelCollections)
     {
-        LevelCollections->At(0).NetDriver = NetDriver;
-        LevelCollections->At(1).NetDriver = NetDriver;
+        typedef __int64 TheLevelCollection;
+        // std::cout << "OUrs: " << __int64((UObject**)(__int64((TheLevelCollection*)(__int64(LevelCollections->GetData()) + (LevelCollectionsSize * 0))) + NetDriverOffset));
+        // std::cout << "Acutal: " << __int64(&LevelCollectionsDa->At(0).NetDriver) << '\n';
+        *(UObject**)(__int64((TheLevelCollection*)(__int64(LevelCollections->GetData()) + (LevelCollectionsSize * 0))) + NetDriverOffset) = NetDriver;
+        *(UObject**)(__int64((TheLevelCollection*)(__int64(LevelCollections->GetData()) + (LevelCollectionsSize * 1))) + NetDriverOffset) = NetDriver;
     }
+
+    *World->Member<UObject*>(("NetDriver")) = NetDriver;
 
     bListening = true;
     std::cout << std::format(("Listening for connections on port {}!\n"), std::to_string(Port));

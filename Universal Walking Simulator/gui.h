@@ -376,7 +376,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
-					ImGui::Checkbox(("Use Beacons"), &bUseBeacons);
+					// ImGui::Checkbox(("Use Beacons"), &bUseBeacons);
 
 					if (serverStatus == EServerStatus::Down && !bTraveled)
 					{
@@ -524,6 +524,45 @@ DWORD WINAPI GuiThread(LPVOID)
 						{
 							CreateThread(0, 0, Looting::Tables::SpawnLlamas, 0, 0, 0);
 						}
+
+						if (ImGui::Button("Fill Vending Machines"))
+						{
+							CreateThread(0, 0, LootingV2::FillVendingMachines, 0, 0, 0);
+						}
+					}
+
+					if (ImGui::Button("Dump Playlists (DOES NOT WORK)"))
+					{
+						std::ofstream PlaylistsFile("Playlists.txt");
+
+						if (PlaylistsFile.is_open())
+						{
+							PlaylistsFile << "Fortnite Version: " + FN_Version << '\n';
+							// static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylist");
+							static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylistAthena");
+
+							auto AllPlaylists = Helper::GetAllActorsOfClass(FortPlaylistClass);
+
+							std::cout << "Num playlists: " << AllPlaylists.Num() << '\n';
+
+							for (int i = 0; i < AllPlaylists.Num(); i++)
+							{
+								auto CurrentPlaylist = AllPlaylists.At(i);
+
+								if (CurrentPlaylist)
+								{
+									std::string PlaylistName = CurrentPlaylist->Member<FName>("PlaylistName")->ToString();
+
+									PlaylistsFile << std::format("[{}] {}\n", PlaylistName, CurrentPlaylist->GetFullName());
+								}
+								else
+									std::cout << "Invalid Playlist!\n";
+							}
+
+							AllPlaylists.Free();
+						}
+						else
+							std::cout << "Failed to open playlist file!\n";
 					}
 
 					/* if (ImGui::Button("idfk2"))

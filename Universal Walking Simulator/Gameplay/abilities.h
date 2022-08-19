@@ -206,7 +206,7 @@ void LoopSpecs(UObject* ASC, std::function<void(__int64*)> func)
     static auto SpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
     static auto SpecSize = GetSizeOfStruct(SpecStruct);
 
-    if (ActivatableAbilities)
+    if (ActivatableAbilities && Items)
     {
         for (int i = 0; i < Items->Num(); i++)
         {

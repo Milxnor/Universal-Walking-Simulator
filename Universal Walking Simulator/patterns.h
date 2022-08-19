@@ -648,7 +648,8 @@ void InitializePatterns()
             // auto NCMSig = Finder::Functions::GetBeaconNotifyControlMessage(35, &Beacon_NotifyControlMessageAddr);
         }
 
-        CheckPattern(("Beacon_NotifyControlMessage"), Beacon_NotifyControlMessageAddr, &Beacon_NotifyControlMessage);
+        if (FnVerDouble < 20.00)
+            CheckPattern(("Beacon_NotifyControlMessage"), Beacon_NotifyControlMessageAddr, &Beacon_NotifyControlMessage);
     }
 
     HandleReloadCostAddr = FindPattern(HandleReloadCostSig);

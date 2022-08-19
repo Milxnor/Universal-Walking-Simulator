@@ -506,10 +506,10 @@ namespace LootingV2
 						// ItemCollections->At(i).OutputItem = LootingTables::GetWeaponDef();
 						// So this is equal to Array[1] + OutputItemOffset, but since the array is __int64, it doesn't calcuate it properly so we have to implement it ourselves
 						std::cout << __int64(&ItemCollections->At(0).OutputItem) << '\n';
-						std::cout << __int64(&*(UObject**)(*(__int64*)(__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)) + OutputItemOffset)) << '\n';
-						*(UObject**)(*(__int64*)((__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
-						*(UObject**)(*(__int64*)((__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 1))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
-						*(UObject**)(*(__int64*)((__int64(ItemCollections) + (GetSizeOfStruct(CollectorUnitInfoClass) * 2))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						std::cout << __int64(&*(UObject**)(*(__int64*)(__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)) + OutputItemOffset)) << '\n';
+						*(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						*(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 1)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						*(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 2)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
 					}
 					else
 						std::cout << ("ItemCollections Invalid: ") << ItemCollections << '\n';

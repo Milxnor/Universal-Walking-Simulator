@@ -10,16 +10,21 @@
 
 struct FVector
 {
-	double X;
-	double Y;
-	double Z;
+	float X;
+	float Y;
+	float Z;
 
 	FVector() : X(0), Y(0), Z(0) {}
-	FVector(double x, double y, double z) : X(x), Y(y), Z(z) {}
+	FVector(float x, float y, float z) : X(x), Y(y), Z(z) {}
 
 	FVector operator+(const FVector& A)
 	{
 		return FVector{ this->X + A.X, this->Y + A.Y, this->Z + A.Z };
+	}
+
+	FVector operator-(const FVector& A)
+	{
+		return FVector{ this->X - A.X, this->Y - A.Y, this->Z - A.Z };
 	}
 
 	bool operator==(const FVector& A)
@@ -30,6 +35,11 @@ struct FVector
 	void operator+=(const FVector& A)
 	{
 		*this = *this + A;
+	}
+
+	void operator-=(const FVector& A)
+	{
+		*this = *this - A;
 	}
 };
 
@@ -152,9 +162,9 @@ float UE_Fmod(float X, float Y)
 
 struct FRotator
 {
-	double Pitch;
-	double Yaw;
-	double Roll;
+	float Pitch;
+	float Yaw;
+	float Roll;
 
 	FQuat Quaternion() const;
 
@@ -497,10 +507,10 @@ float UE_Atan2(float Y, float X)
 // alignas(16)
 struct FQuat
 {
-	double W;
-	double X;
-	double Y;
-	double Z;
+	float W;
+	float X;
+	float Y;
+	float Z;
 
 	FRotator Rotator() const
 	{

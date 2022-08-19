@@ -1126,6 +1126,11 @@ namespace Inventory
 		return nullptr;
 	}
 
+	int* GetCount(UObject* Instance)
+	{
+		return FFortItemEntry::GetCount(GetItemEntryFromInstance(Instance));
+	}
+
 	void GiveAllAmmo(UObject* Controller)
 	{
 		// omfg

@@ -342,7 +342,6 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 			std::cout << ("Y: ") << Translation->Y << '\n';
 			std::cout << ("Z: ") << Translation->Z << '\n';
 
-			// Helper::SetActorLocation(Vehicle, *Translation);
 			auto rot = Rotation->Rotator();
 
 			// rot.Pitch = 0;
@@ -354,6 +353,7 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 			auto OGRot = Helper::GetActorRotation(Vehicle);
 
 			Helper::SetActorLocation(Vehicle, *Translation);
+			// Helper::SetActorLocationAndRotation(Vehicle, *Translation, FRotator{ rot.Pitch, OGRot.Yaw, OGRot.Roll });
 
 			UObject* RootComp = nullptr;
 			static auto GetRootCompFunc = Vehicle->Function("K2_GetRootComponent");
@@ -395,6 +395,9 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 
 bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
+	if (FnVerDouble >= 16.00)
+		PlayerController = Helper::GetOwnerOfComponent(PlayerController);
+
 	struct Param{
 		FRotator                                    ClientRotation;
 	};
@@ -796,7 +799,7 @@ inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Functio
 		if (Vehicle)
 		{
 			Helper::SetLocalRole(*Pawn, ENetRole::ROLE_Authority);
-			// Helper::SetLocalRole(Vehicle, ENetRole::ROLE_Authority);
+			Helper::SetLocalRole(Vehicle, ENetRole::ROLE_Authority);
 		}
 	}
 
@@ -1064,21 +1067,107 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				}
 			}
 
-			if (ReceivingActorName.contains(("B_Athena_VendingMachine")))
+			if (bIsPlayground && ReceivingActorName.contains(("B_Athena_VendingMachine")))
 			{
-				// *ReceivingActor->Member<int>(("CostAmount"))
-				// MaterialType
-				auto Super = (UClass_FTT*)ReceivingActor;
-				for (auto Super = (UClass_FTT*)ReceivingActor; Super; Super = (UClass_FTT*)Super->SuperStruct)
+				static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+				static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+				auto CurrentMaterial = *ReceivingActor->Member<UObject*>("ActiveInputItem");
+
+				int CostAmount = 0; // TODO: Determine cost depending on the rarity of the weapon
+
+				std::cout << "Cost Amount: " << CostAmount << '\n';
+
+				if (CurrentMaterial == WoodItemData)
 				{
-					std::cout << ("SuperStruct: ") << Super->GetFullName() << '\n';
+					auto WoodGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, WoodItemData));
+
+					if (*Inventory::GetCount(Inventory::GetItemInstanceFromGuid(Controller, WoodGUID)) >= CostAmount)
+					{
+						Inventory::TakeItem(Controller, WoodGUID, CostAmount);
+					}
+					else
+					{
+						// PlayVendFailFX
+						// fail
+						return false;
+					}
+				}
+				else if (CurrentMaterial == StoneItemData)
+				{
+					auto StoneGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, StoneItemData));
+					if (*Inventory::GetCount(Inventory::GetItemInstanceFromGuid(Controller, StoneGUID)) >= CostAmount)
+					{
+						Inventory::TakeItem(Controller, StoneGUID, CostAmount);
+					}
+					else
+					{
+						// fail
+						return false;
+					}
+				}
+				else if (CurrentMaterial == MetalItemData)
+				{
+					auto MetalGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, MetalItemData));
+					if (*Inventory::GetCount(Inventory::GetItemInstanceFromGuid(Controller, MetalGUID)) >= CostAmount)
+					{
+						Inventory::TakeItem(Controller, MetalGUID, CostAmount);
+					}
+					else
+					{
+						// fail
+						return false;
+					}
 				}
 
-				static auto GetCurrentActiveItem = ReceivingActor->Function(("GetCurrentActiveItem"));
-				UObject* CurrentMaterial = nullptr;
-				ReceivingActor->ProcessEvent(GetCurrentActiveItem, &CurrentMaterial);
+				TArray<__int64>* ItemCollections = ReceivingActor->Member<TArray<__int64>>(("ItemCollections")); // CollectorUnitInfo
+
+				UObject* DefinitionToDrop = nullptr;
+
+				if (ItemCollections)
+				{
+					static UObject* CollectorUnitInfoClass = FindObject(("ScriptStruct /Script/FortniteGame.CollectorUnitInfo"));
+					static std::string CollectorUnitInfoClassName = ("ScriptStruct /Script/FortniteGame.CollectorUnitInfo");
+
+					if (!CollectorUnitInfoClass)
+					{
+						CollectorUnitInfoClassName = ("ScriptStruct /Script/FortniteGame.ColletorUnitInfo"); // die fortnite
+						CollectorUnitInfoClass = FindObject(CollectorUnitInfoClassName); // Wedc what this value is
+					}
+
+					static auto OutputItemOffset = FindOffsetStruct(CollectorUnitInfoClassName, ("OutputItem"));
+
+					std::cout << ("Offset: ") << OutputItemOffset << '\n';
+					// ItemCollections->At(i).OutputItem = LootingTables::GetWeaponDef();
+					// So this is equal to Array[1] + OutputItemOffset, but since the array is __int64, it doesn't calcuate it properly so we have to implement it ourselves
+
+					int Index = 0;
+
+					if (CurrentMaterial == StoneItemData)
+						Index = 1;
+					else if (CurrentMaterial == MetalItemData)
+						Index = 2;
+
+					DefinitionToDrop = *(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * Index)))) + OutputItemOffset);
+				}
 
 				auto SpawnLocation = *ReceivingActor->Member<FVector>(("LootSpawnLocation"));
+				SpawnLocation += Helper::GetActorLocation(ReceivingActor);
+				std::cout << std::format("SpawnLocation X: {} Y: {} Z: {}\n", SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
+
+				// CostAmount
+
+				if (CurrentMaterial)
+				{
+					std::cout << "CurrentMaterial Name: " << CurrentMaterial->GetFullName() << '\n';
+					// Helper::SummonPickup(nullptr, CurrentMaterial, SpawnLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset);
+				}
+
+				if (DefinitionToDrop)
+				{
+					Helper::SummonPickup(nullptr, DefinitionToDrop, SpawnLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset);
+				}
 			}
 
 			if (ReceivingActorName.contains(("Vehicle")))
@@ -1482,7 +1571,10 @@ void FinishInitializeUHooks()
 	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
-	AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
+	if (FnVerDouble < 16.00)
+		AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
+	else
+		AddHook(("Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	// AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
 	//AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook

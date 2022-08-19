@@ -1042,8 +1042,8 @@ FString(*GetEngineVersion)();
 
 struct FActorSpawnParameters
 {
-	char pad[0x40];
-	/* FName Name;
+	// char pad[0x40];
+	FName Name;
 	UObject* Template; // AActor*
 	UObject* Owner; // AActor*
 	UObject* Instigator; // APawn*
@@ -1053,7 +1053,7 @@ struct FActorSpawnParameters
 	uint16_t	bNoFail : 1;
 	uint16_t	bDeferConstruction : 1;
 	uint16_t	bAllowDuringConstructionScript : 1;
-	EObjectFlags ObjectFlags; */
+	EObjectFlags ObjectFlags;
 };
 
 
@@ -1217,7 +1217,7 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ServerReplicateActorsOffset = 0x5F;
 	else if (std::floor(FnVerDouble) == 19)
 		ServerReplicateActorsOffset = 0x66;
-	else
+	else if (FnVerDouble >= 20.00)
 		ServerReplicateActorsOffset = 0x67;
 
 	if (FnVerDouble >= 5)
@@ -1339,6 +1339,16 @@ struct FLevelCollection
 	UObject* PersistentLevel;                                          // 0x0020(0x0008) (ZeroConstructor, IsPlainOldData)
 	unsigned char                                      UnknownData01[0x50];  // TSet<ULevel*> Levels;
 };
+
+struct FLevelCollectionNewer
+{
+	UObject* GameState;                                                // 0x0008(0x0008) (ZeroConstructor, IsPlainOldData)
+	UObject* NetDriver;                                                // 0x0010(0x0008) (ZeroConstructor, IsPlainOldData)
+	UObject* DemoNetDriver;                                            // 0x0018(0x0008) (ZeroConstructor, IsPlainOldData)
+	UObject* PersistentLevel;                                          // 0x0020(0x0008) (ZeroConstructor, IsPlainOldData)
+	unsigned char                                      UnknownData01[0x50];  // TSet<ULevel*> Levels;
+};
+
 
 template <typename ClassType, typename FieldType, typename Prop>
 int FindOffsetStructAh(const std::string& ClassName, const std::string& MemberName, int offset = 0)

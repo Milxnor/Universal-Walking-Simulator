@@ -10,10 +10,14 @@ static bool bPickupAnimsEnabled = true;
 
 UObject* GetWorldW(bool bReset = false)
 {
-	auto GameViewport = *GetEngine()->Member<UObject*>(("GameViewport"));
+	static auto GameViewportOffset = GetOffset(GetEngine(), "GameViewport");
+	auto GameViewport = *(UObject**)(__int64(GetEngine()) + GameViewportOffset);
 
 	if (GameViewport)
-		return *GameViewport->Member<UObject*>(("World")); // we could also find the world by name but that depends on the map
+	{
+		static auto WorldOffset = GetOffset(GameViewport, "World");
+		return *(UObject**)(__int64(GameViewport) + WorldOffset);
+	}
 
 	return nullptr;
 }
@@ -100,7 +104,7 @@ namespace Easy
 		transform.Scale3D = { 1, 1, 1 };
 
 		FActorSpawnParameters spawnParams = FActorSpawnParameters();
-		// spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 		if (FnVerDouble < 19.00)
 			return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, spawnParams);
@@ -125,11 +129,13 @@ namespace Easy
 			if (Summon)
 				CheatManager->ProcessEvent(Summon, &ClassName);
 			else
-				std::cout << "Unable to find SUmmon!\n";
+				std::cout << "Unable to find Summon!\n";
 
 			auto AllActors = GetAllActorsOfClass_(Class);
 			std::cout << "All Actors Num: " << AllActors.Num() << '\n';
-			return AllActors.At(AllActors.Num() - 1);
+			auto ActorWeWant = AllActors.At(AllActors.Num() - 1);
+			AllActors.Free();
+			return ActorWeWant;
 			
 			/* struct {
 				UObject* WorldContextObject;
