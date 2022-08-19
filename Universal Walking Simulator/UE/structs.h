@@ -1004,6 +1004,9 @@ static int GetOffset(UObject* Object, const std::string& MemberName)
 template <typename ClassType>
 bool IsA_(const UObject* cmpto, UObject* cmp)
 {
+	if (!cmpto || !cmpto->ClassPrivate)
+		return false;
+
 	for (auto super = (ClassType*)cmpto->ClassPrivate; super; super = (ClassType*)super->SuperStruct)
 	{
 		if (super == cmp)

@@ -336,6 +336,10 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
     // if (FnVerDouble >= 4.0) // if (std::floor(FnVerDouble) != 9 && std::floor(FnVerDouble) != 10 && Engine_Version >= 420) // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
     // if (FnVerDouble < 16.00)
+
+    // itementrysize 0xb0 on 2.4.2
+
+    if (Engine_Version >= 420)
     {
         static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
         static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -716,50 +720,6 @@ char __fastcall NoReserveDetour(__int64* a1, __int64 a2, char a3, __int64* a4)
 {
     std::cout << ("No Reserve!\n");
     return 0;
-}
-
-UObject* __fastcall CreateNetDriver_LocalDetour(UObject* Engine, __int64 a2, FName NetDriverDefinition)
-{
-    UObject* ReturnVal = nullptr; // UNetDriver
-    // FNetDriverDefinition* Definition = nullptr;
-
-    // if (Definition != nullptr)
-    ReturnVal = *Helper::GetWorld()->Member<UObject*>(("NetDriver"));
-    if (false)
-    {
-        // UClass* NetDriverClass = StaticLoadClass(UNetDriver::StaticClass(), nullptr, *Definition->DriverClassName.ToString(), nullptr, LOAD_Quiet);
-
-        static auto NetDriverClass = FindObject(("Class /Script/Engine.NetDriver"));
-
-        // if it fails, then fall back to standard fallback
-        /* if (NetDriverClass == nullptr || !NetDriverClass->GetDefaultObject<UNetDriver>()->IsAvailable())
-        {
-            NetDriverClass = StaticLoadClass(NetDriverClass, nullptr, *Definition->DriverClassNameFallback.ToString(),
-                nullptr, LOAD_None);
-        } */
-
-        if (NetDriverClass)
-        {
-            ReturnVal = Easy::SpawnObject(NetDriverClass, Engine);// NewObject<UNetDriver>(GetTransientPackage(), NetDriverClass);
-
-            if (ReturnVal)
-            {
-                ReturnVal->NamePrivate = FName(282); // GamenetDriver
-                // ReturnVal->SetNetDriverName(ReturnVal->NamePrivate); // We luckily don't have to do this since CreateNamedNetDriver redoes it!
-
-                // new(Context.ActiveNetDrivers) FNamedNetDriver(ReturnVal, Definition);
-            }
-        }
-    }
-
-
-    if (!ReturnVal)
-    {
-        std::cout << ("Failed to create netdriver!\n");
-        // UE_LOG(LogNet, Log, TEXT("CreateNamedNetDriver failed to create driver from definition %s"), *NetDriverDefinition.ToString());
-    }
-
-    return ReturnVal;
 }
 
 __int64 CollectGarbageDetour(__int64) { return 0; }

@@ -3,6 +3,7 @@
 #include <UE/structs.h>
 #include <unordered_map>
 #include <functional>
+#include <unordered_set>
 
 
 uint64_t GetNetModeAddr = 0;
@@ -139,13 +140,23 @@ const wchar_t* GetMapName()
 struct FGameplayAbilitySpecHandle 
 { 
     int Handle; 
+    static inline std::unordered_set<int> Handles;
 
     void GenerateNewHandle()
     {
         // Must be in C++ to avoid duplicate statics accross execution units
         /* static int32_t GHandle = 1;
         Handle = GHandle++; */
-        Handle = rand();
+
+        auto newHandle = rand();
+
+        while (Handles.find(newHandle) != Handles.end())
+        {
+            newHandle = rand();
+        }
+
+        Handle = newHandle;
+        Handles.emplace(Handle);
     }
 };
 

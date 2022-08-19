@@ -105,7 +105,20 @@ TArray<UObject*> GetAllActors(UObject* World)
     return (TArray<UObject*>*)(__int64(&*OwningWorld) - 32); */
 
     static auto ActorsClass = FindObjectOld("Class /Script/Engine.Actor", true);
-    auto AllActors = Helper::GetAllActorsOfClass(ActorsClass, World);
+    // auto AllActors = Helper::GetAllActorsOfClass(ActorsClass, World);
+
+    TArray<UObject*> AllActors;
+
+    for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
+    {
+        auto Object = GetByIndex(i);
+
+        if (Object->IsA(ActorsClass))
+        {
+            AllActors.Add(Object);
+        }
+    }
+
     return AllActors;
 }
 
@@ -202,8 +215,11 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
             continue;
         }
 
-        CallPreReplication(Actor, NetDriver);
-        OutConsiderList.push_back(Actor);
+        if (Actor->NamePrivate.ComparisonIndex != 0)
+        {
+            CallPreReplication(Actor, NetDriver);
+            OutConsiderList.push_back(Actor);
+        }
     }
 
     Actors.Free();
@@ -245,7 +261,9 @@ int32_t ServerReplicateActors(UObject* NetDriver)
     if (NumClientsToTick == 0)
         return NumClientsToTick;
 
+    // std::vector<UObject*> ConsiderList;
     std::vector<UObject*> ConsiderList;
+    ConsiderList.reserve(2000);
     // ConsiderList.reserve(ObjectList.size());
     BuildConsiderList(NetDriver, ConsiderList);
 
@@ -283,13 +301,24 @@ int32_t ServerReplicateActors(UObject* NetDriver)
             */
 
             static auto PlayerControllerOffset = GetOffset(Connection, "PlayerController");
-            auto PlayerController = *(UObject**)(__int64(Connection) + PlayerControllerOffset);
+            auto PlayerControllerR = (UObject**)(__int64(Connection) + PlayerControllerOffset);
+
+            if (!(PlayerControllerR && *PlayerControllerR))
+                continue;
+            
+            auto PlayerController = *PlayerControllerR;
 
             if (SendClientAdjustment && PlayerController)
                 SendClientAdjustment(PlayerController); // Sending adjustments to children is for splitscreen
 
-            for (auto Actor : ConsiderList)
+            std::cout << "a\n";
+
+            for (int j = 0; j < ConsiderList.size(); j++)
             {
+                std::cout << "b\n";
+                
+                auto Actor = ConsiderList.at(j);
+
                 static auto PlayerControllerClass = FindObject(("Class /Script/Engine.PlayerController"));
 
                 if (Actor->IsA(PlayerControllerClass) && Actor != PlayerController)
@@ -307,9 +336,6 @@ int32_t ServerReplicateActors(UObject* NetDriver)
                     }
                     */
 
-#ifdef N_T
-                    Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
-#else
                     // EName ActorEName = EName::Actor;
 
                     // FNameEntryId ActorEntryId = FromValidEName(ActorEName);
@@ -325,7 +351,7 @@ int32_t ServerReplicateActors(UObject* NetDriver)
                         Channel = CreateChannelByName(Connection, &ActorName, EChannelCreateFlags::OpenedLocally, -1);
                     else
                         Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
-#endif
+
                     if (Channel)
                     {
                         SetChannelActor(Channel, Actor);

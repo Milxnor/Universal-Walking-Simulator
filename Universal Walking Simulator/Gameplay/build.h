@@ -419,7 +419,12 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 	{
 		auto BuildingActor = Params->BuildingActorToEdit;
 		auto NewBuildingClass = Params->NewBuildingClass;
-		auto RotationIterations = Params->RotationIterations;
+
+		static auto bMirroredOffset = FindOffsetStruct("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "bMirrored");
+		auto bMirrored = *(bool*)(__int64(Parameters) + bMirroredOffset);
+
+		static auto RotationIterationsOffset = FindOffsetStruct("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "RotationIterations");
+		auto RotationIterations = *(int*)(__int64(Parameters) + RotationIterationsOffset);
 
 		if (BuildingActor && NewBuildingClass)
 		{
@@ -498,7 +503,7 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 
 					static auto SetMirroredFn = EditedActor->Function(("SetMirrored"));
 
-					struct { bool bMirrored; }mirroredParams{ Params->bMirrored };
+					struct { bool bMirrored; }mirroredParams{ bMirrored };
 					EditedActor->ProcessEvent(SetMirroredFn, &mirroredParams);
 
 					Helper::InitializeBuildingActor(Controller, EditedActor);

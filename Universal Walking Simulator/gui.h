@@ -22,6 +22,7 @@
 #include <hooks.h>
 #include "Gameplay/inventory.h"
 #include <AI.h>
+#include <set>
 
 // THE BASE CODE IS FROM IMGUI GITHUB
 
@@ -531,35 +532,28 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 					}
 
-					if (ImGui::Button("Dump Playlists (DOES NOT WORK)"))
+					if (ImGui::Button("Dump Playlists")) // iirc ftext changed but idk
 					{
 						std::ofstream PlaylistsFile("Playlists.txt");
 
 						if (PlaylistsFile.is_open())
 						{
-							PlaylistsFile << "Fortnite Version: " + FN_Version << '\n';
-							// static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylist");
-							static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylistAthena");
+							PlaylistsFile << "Fortnite Version: " + FN_Version << "\n\n";
+							static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylist");
+							// static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylistAthena");
 
-							auto AllPlaylists = Helper::GetAllActorsOfClass(FortPlaylistClass);
-
-							std::cout << "Num playlists: " << AllPlaylists.Num() << '\n';
-
-							for (int i = 0; i < AllPlaylists.Num(); i++)
+							for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
 							{
-								auto CurrentPlaylist = AllPlaylists.At(i);
+								auto Object = GetByIndex(i);
 
-								if (CurrentPlaylist)
+								if (Object && Object->IsA(FortPlaylistClass))
 								{
-									std::string PlaylistName = CurrentPlaylist->Member<FName>("PlaylistName")->ToString();
+									// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
+									std::string PlaylistName = Helper::Conversion::TextToString(*Object->Member<FText>("UIDisplayName"));
 
-									PlaylistsFile << std::format("[{}] {}\n", PlaylistName, CurrentPlaylist->GetFullName());
+									PlaylistsFile << std::format("[{}] {}\n", PlaylistName, Object->GetFullName());
 								}
-								else
-									std::cout << "Invalid Playlist!\n";
 							}
-
-							AllPlaylists.Free();
 						}
 						else
 							std::cout << "Failed to open playlist file!\n";
