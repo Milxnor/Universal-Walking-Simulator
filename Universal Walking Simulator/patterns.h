@@ -573,7 +573,7 @@ void InitializePatterns()
     }
 
     if (Engine_Version >= 421 && Engine_Version <= 423)
-    {
+    { 
         if (FnVerDouble >= 5 && FnVerDouble < 7)
         {
             IdkfAddr = FindPattern(IdkfSig);

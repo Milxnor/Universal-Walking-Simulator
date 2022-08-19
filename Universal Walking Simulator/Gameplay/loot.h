@@ -49,11 +49,13 @@ struct DefinitionInRow // 50 bytes
 const DefinitionInRow* cumulative_weighted_choice(const std::vector<float>& weights, const std::vector<DefinitionInRow>& values) {
 	static std::random_device hardware_seed;
 	static std::mt19937_64 engine{ hardware_seed() };
+
 	if (weights.size() != values.size())
 	{
 		MessageBoxA(0, "Weights and values size mismatch!", "Reboot", MB_ICONERROR);
 		return nullptr;
 	}
+
 	assert(weights.size() == values.size());
 	const auto max_weight{ weights.back() };
 	std::uniform_real_distribution < float > distribution{ 0.0, max_weight };
@@ -76,8 +78,6 @@ bool RandomBoolWithWeight(float Weight)
 		std::random_device rd; // obtain a random number from hardware
 		std::mt19937 gen(rd()); // seed the generator
 
-		// CHAPTER 1
-
 		std::uniform_int_distribution<> distr(0.0f, 1.0f);
 		return Weight >= distr(gen);
 	}
@@ -94,6 +94,7 @@ namespace LootingV2
 	// Position in Items
 	int LootItems = 0;
 	int SupplyDropItems = 1;
+	int LlamaItems = 2;
 
 	void AddItemAndWeight(int Index, const DefinitionInRow& Item, float Weight)
 	{
@@ -158,8 +159,18 @@ namespace LootingV2
 			auto RowName = RowFName.ToString();
 			auto LootPackageDataOfRow = Pair.Second; // ScriptStruct FortniteGame.FortLootPackageData
 
-			if (LootPackageDataOfRow && RowName.starts_with("WorldList.AthenaLoot")) // pretty sure this is wrong // todo: check rowisa athenaloot package or something io think
+			if (LootPackageDataOfRow) // pretty sure this is wrong // todo: check rowisa athenaloot package or something io think
 			{
+				int Index = -1;
+
+				if (RowName.starts_with("WorldList.AthenaLoot"))
+					Index = LootItems;
+				else if (RowName.starts_with("WorldPKG.AthenaSupplyDrop."))
+					Index = SupplyDropItems;
+
+				if (Index == -1)
+					continue;
+
 				static auto off = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "ItemDefinition");
 				static auto countOff = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "Count");
 				static auto weightOff = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "Weight");
@@ -193,7 +204,7 @@ namespace LootingV2
 						currentItem.Type = ItemType::Ammo;
 
 					if (Weight)
-						AddItemAndWeight(0, currentItem, *Weight);
+						AddItemAndWeight(Index, currentItem, *Weight);
 				}
 
 				// std::cout << "Item funny!\n";
@@ -267,6 +278,8 @@ namespace LootingV2
 		{
 			auto BuildingContainers = Helper::GetAllActorsOfClass(BuildingContainerClass);
 
+			std::cout << "Spawning: " << BuildingContainers.Num() << '\n';
+
 			for (int i = 0; i < BuildingContainers.Num(); i++)
 			{
 				auto BuildingContainer = BuildingContainers.At(i);
@@ -293,12 +306,41 @@ namespace LootingV2
 						((test*)world + 0x10C)->bIsRunningConstructionScript = false;
 					}
 
-					// OR WE COULD set bAllowDuringConstructionScript IN SPAWN PARAMS TO TRUE
+					bool ShouldSpawn = true; // RandomBoolWithWeight(0.7f);
 
-					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon).Definition, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
-						EFortPickupSpawnSource::Unset);
+					if (ShouldSpawn)
+					{
+						if (RandomBoolWithWeight(0.35))
+						{
+							Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Consumable).Definition, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
+								EFortPickupSpawnSource::Unset);
+						}
+						else
+						{
+							auto Weapon = GetRandomItem(ItemType::Weapon);
+
+							auto WeaponPickup = Helper::SummonPickup(nullptr, Weapon.Definition, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
+								EFortPickupSpawnSource::Unset);
+
+							static auto GetAmmoWorldItemDefinition_BP = Weapon.Definition->Function(("GetAmmoWorldItemDefinition_BP"));
+
+							if (GetAmmoWorldItemDefinition_BP && WeaponPickup)
+							{
+								struct { UObject* AmmoDefinition; }GetAmmoWorldItemDefinition_BP_Params{};
+								Weapon.Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
+								auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
+
+								Helper::SummonPickup(nullptr, AmmoDef, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
+									EFortPickupSpawnSource::Unset, *AmmoDef->Member<int>("DropCount"));
+							}
+						}
+					}
+
+					Sleep(10);
 				}
 			}
+
+			std::cout << "Finished!\n";
 
 			BuildingContainers.Free();
 		}

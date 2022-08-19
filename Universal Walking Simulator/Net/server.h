@@ -217,7 +217,7 @@ void Listen(int Port = 7777)
 
     serverStatus = EServerStatus::Up;
 
-    if (NetDriver)
+    if (NetDriver && Engine_Version >= 420)
     {
         ReplicationDriver = NetDriver->Member<UObject*>(("ReplicationDriver"));
 

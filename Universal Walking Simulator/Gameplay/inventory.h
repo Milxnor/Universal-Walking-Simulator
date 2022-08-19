@@ -408,6 +408,11 @@ namespace Inventory
 		return parms.Ret;
 	}
 
+	void SetLoadedAmmo()
+	{
+
+	}
+
 	inline UObject* GetItemInstanceFromGuid(UObject* Controller, const FGuid& Guid)
 	{
 		if (!Controller)
@@ -1494,4 +1499,9 @@ void InitializeInventoryHooks()
 		MH_CreateHook((PVOID)HandleReloadCostAddr, HandleReloadCostDetour, (void**)&HandleReloadCost);
 		MH_EnableHook((PVOID)HandleReloadCostAddr);
 	}
+}
+
+void ClearInventory(UObject* PlayerController)
+{
+
 }

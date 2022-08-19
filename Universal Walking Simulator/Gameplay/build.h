@@ -430,99 +430,58 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 		{
 			IsDestroyedBitField* BitField = Params->BuildingActorToEdit->Member<IsDestroyedBitField>(("bDestroyed"));
 
-			if (BitField && BitField->bDestroyed)
+			if (!BitField || BitField->bDestroyed || RotationIterations > 3) 
 				return false;
 
 			auto Location = Helper::GetActorLocation(BuildingActor);
 			auto Rotation = Helper::GetActorRotation(BuildingActor);
 
-			if (*BuildingActor->Member<EFortBuildingType>(("BuildingType")) != EFortBuildingType::Wall) // wtf this isnt working this line
+			// class UBuildingEditModeMetadata*             EditModePatternData;
+
+			/* auto EditModeMetaData = BuildingActor->Member<UObject*>("EditModePatternData");
+
+			if (EditModeMetaData && *EditModeMetaData)
 			{
-				int Yaw = (int(Rotation.Yaw) + 360) % 360; // credits: PRO100KatYT
+				std::cout << "Bruh: " << *(int*)(__int64(*EditModeMetaData) + 72) << '\n';;
 
-				if (Yaw > 80 && Yaw < 100) // 90
+				if ((*EditModeMetaData)->GetFullName().contains("_Stair"))
 				{
-					if (RotationIterations == 1)
-						Location = Location + FVector(-256, 256, 0);
-					else if (RotationIterations == 2)
-						Location = Location + FVector(-512, 0, 0);
-					else if (RotationIterations == 3)
-						Location = Location + FVector(-256, -256, 0);
+					auto TileData = (*EditModeMetaData)->Member<TArray<int32_t>>("TileData");
+					std::cout << "TileData Num: " << TileData->Num() << '\n';
+
+					// *(int32_t*)(__int64(TileData) + 8) = (RotationIterations * RotationIterations);
+
+					// TileData->Add(RotationIterations);
+
+					RotationIterations = sqrt(TileData->Num());
 				}
-				else if (Yaw > 170 && Yaw < 190) // 180
-				{
-					if (RotationIterations == 1)
-						Location = Location + FVector(-256, -256, 0);
-					else if (RotationIterations == 2)
-						Location = Location + FVector(0, -512, 0);
-					else if (RotationIterations == 3)
-						Location = Location + FVector(256, -256, 0);
-				}
-				else if (Yaw > 260 && Yaw < 280) // 270
-				{
-					if (RotationIterations == 1)
-						Location = Location + FVector(256, -256, 0);
-					else if (RotationIterations == 2)
-						Location = Location + FVector(512, 0, 0);
-					else if (RotationIterations == 3)
-						Location = Location + FVector(256, 256, 0);
-				}
-				else // 0 - 360
-				{
-					if (RotationIterations == 1)
-						Location = Location + FVector(256, 256, 0);
-					else if (RotationIterations == 2)
-						Location = Location + FVector(0, 512, 0);
-					else if (RotationIterations == 3)
-						Location = Location + FVector(-256, 256, 0);
-				}
+
+				*(int*)(__int64(*EditModeMetaData) + 72) = RotationIterations;
+
+				__int64 (*ahh)(UObject * EditMetaData) = decltype(ahh)((*EditModeMetaData)->VFTable[0x49]); // rotate
+
+				std::cout << "Ahh: " << ahh(*EditModeMetaData) << '\n';;
+
+				__int64 (*ahh2)(UObject* EditMetaData) = decltype(ahh)((*EditModeMetaData)->VFTable[0x4A]); // mirror
+
+				std::cout << "Ahh2: " << ahh2(*EditModeMetaData) << '\n';
 			}
+			else
+				std::cout << "Invalid metadata!\n"; */
 
-			Rotation.Yaw += 90 * RotationIterations;
+			auto BuildingSMActorReplaceBuildingActorAddr = FindPattern("4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?");
 
-			static auto TeamOffset = GetOffset(Params->BuildingActorToEdit, "Team");
+			if (!BuildingSMActorReplaceBuildingActorAddr || Engine_Version <= 421)
+				BuildingSMActorReplaceBuildingActorAddr = FindPattern("48 8B C4 44 89 48 20 55 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 33 FF 40 38 3D ? ? ? ? 48 8B F1 4C 89 60 E0 44 8B E2");
 
-			auto Team = *Params->BuildingActorToEdit->Member<TEnumAsByte<uint8_t>>(("Team"));
+			UObject* (__fastcall* BuildingSMActorReplaceBuildingActor)(UObject* BuildingSMActor, unsigned int a2, UObject* a3, unsigned int a4, int a5, unsigned __int8 bMirrored, UObject* Controller);
 
-			/* float BuildingHealth = 0;
+			BuildingSMActorReplaceBuildingActor = decltype(BuildingSMActorReplaceBuildingActor)(BuildingSMActorReplaceBuildingActorAddr);
 
-			static auto GetHealth = Params->BuildingActorToEdit->Function(("GetHealth"));
-
-			if (GetHealth)
-				Params->BuildingActorToEdit->ProcessEvent(GetHealth, &BuildingHealth); */
-
-			Helper::SilentDie(Params->BuildingActorToEdit);
-
-			auto EditedActor = Easy::SpawnActor(Params->NewBuildingClass, Location, Rotation);
-
-			if (EditedActor)
-			{
-				if (true) // !Helper::IsStructurallySupported(EditedActor))
-				{
-					Helper::SetOwner(EditedActor, Controller);
-
-					static auto SetMirroredFn = EditedActor->Function(("SetMirrored"));
-
-					struct { bool bMirrored; }mirroredParams{ bMirrored };
-					EditedActor->ProcessEvent(SetMirroredFn, &mirroredParams);
-
-					Helper::InitializeBuildingActor(Controller, EditedActor);
-
-					*EditedActor->Member<TEnumAsByte<uint8_t>>(("Team")) = Team;
-
-					// TODO: Check bIsInitiallyBuilding
-
-					/* static auto ForceBuildingHealth = EditedActor->Function(("ForceBuildingHealth"));
-
-					if (ForceBuildingHealth)
-						EditedActor->ProcessEvent(ForceBuildingHealth, &BuildingHealth); */
-				}
-				else
-				{
-					Helper::SetActorScale3D(BuildingActor, {});
-					Helper::SilentDie(BuildingActor);
-				}
-			}
+			if (BuildingSMActorReplaceBuildingActor)
+				BuildingSMActorReplaceBuildingActor(BuildingActor, 1, NewBuildingClass, 0, RotationIterations, bMirrored, Controller);
+			else
+				std::cout << "No BuildingSMActorReplaceBuildingActor!\n";
 		}
 	}
 
@@ -586,7 +545,7 @@ void InitializeBuildHooks()
 	{
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
 
-		if (Engine_Version < 424)
+		// if (Engine_Version < 424)
 		{
 			AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
 			AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), ServerEditBuildingActorHook);

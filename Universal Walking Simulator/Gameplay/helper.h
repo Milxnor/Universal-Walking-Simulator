@@ -105,6 +105,7 @@ namespace Easy
 
 		FActorSpawnParameters spawnParams = FActorSpawnParameters();
 		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		spawnParams.bAllowDuringConstructionScript = true;
 
 		if (FnVerDouble < 19.00)
 			return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, spawnParams);
@@ -135,6 +136,7 @@ namespace Easy
 			std::cout << "All Actors Num: " << AllActors.Num() << '\n';
 			auto ActorWeWant = AllActors.At(AllActors.Num() - 1);
 			AllActors.Free();
+			// Helper::SetActorLocation(ActorWeWant, Location);
 			return ActorWeWant;
 			
 			/* struct {
@@ -348,7 +350,6 @@ namespace Helper
 		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena"));
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location);
-		auto Effect = Easy::SpawnActor(EffectClass, Location);
 
 		if (Pickup && Definition)
 		{

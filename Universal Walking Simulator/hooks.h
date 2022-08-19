@@ -1060,6 +1060,8 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 					BitField->bAlreadySearched = true;
 				}
 
+				// ReceivingActor->Member<bool>("bAlreadySearched", true);
+
 				static auto AlreadySearchedFn = ReceivingActor->Function(("OnRep_bAlreadySearched"));
 				if (AlreadySearchedFn)
 				{

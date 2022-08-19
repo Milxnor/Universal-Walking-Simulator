@@ -225,11 +225,17 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
     Actors.Free();
 }
 
+static bool bInThing = false;
 
 int32_t ServerReplicateActors(UObject* NetDriver)
 {
+    bInThing = true;
+
     if (!NetDriver)
+    {
+        bInThing = false;
         return -1;
+    }
 
 	// Supports replicationgraph
 
@@ -265,7 +271,7 @@ int32_t ServerReplicateActors(UObject* NetDriver)
     std::vector<UObject*> ConsiderList;
     ConsiderList.reserve(2000);
     // ConsiderList.reserve(ObjectList.size());
-    BuildConsiderList(NetDriver, ConsiderList);
+    // BuildConsiderList(NetDriver, ConsiderList);
 
     std::cout << ("Considering: ") << ConsiderList.size() << '\n';
 
@@ -313,7 +319,116 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 
             std::cout << "a\n";
 
-            for (int j = 0; j < ConsiderList.size(); j++)
+            int j = 0;
+
+            TArray<UObject*> Actors = GetAllActors(Helper::GetWorld());
+
+            if (!Actors.GetData())
+                continue;
+
+            std::cout << ("NumActors: ") << Actors.Num() << '\n';
+
+            for (int i = 0; i < Actors.Num(); i++)
+            {
+                auto Actor = Actors.At(i);
+
+                if (!Actor)
+                    continue;
+
+                // std::cout << "RemoteRoleOffset: " << RemoteRoleOffset << '\n';
+
+                static auto RemoteRoleOffset = GetOffset(Actor, "RemoteRole");
+
+                if (((TEnumAsByte<ENetRole>*)(__int64(Actor) + RemoteRoleOffset))->Get() == ENetRole::ROLE_None)
+                {
+                    // std::cout << "actor: " << Actor << '\n';
+                    continue;
+                }
+
+                static auto bActorIsBeingDestroyedOffset = GetOffset(Actor, "bActorIsBeingDestroyed");
+
+                if ((((Bitfield2_242*)(__int64(Actor) + bActorIsBeingDestroyedOffset))->bActorIsBeingDestroyed))
+                {
+                    std::cout << "bActorIsBeingDestroyed!\n";
+                    continue;
+                }
+
+                static auto NetDormancyOffset = GetOffset(Actor, "NetDormancy");
+                static auto bNetStartupOffset = GetOffset(Actor, "bNetStartup");
+
+                if ((*(ENetDormancy*)(__int64(Actor) + NetDormancyOffset) == ENetDormancy::DORM_Initial) && ((Bitfield_242*)(__int64(Actor) + bNetStartupOffset))->bNetStartup)
+                {
+                    continue;
+                }
+
+                if (Actor->NamePrivate.ComparisonIndex != 0)
+                {
+                    CallPreReplication(Actor, NetDriver);
+
+                    std::cout << "b\n";
+
+                    // auto Actor = ConsiderList.at(j);
+
+                    static auto PlayerControllerClass = FindObject(("Class /Script/Engine.PlayerController"));
+
+                    if (Actor->IsA(PlayerControllerClass) && Actor != PlayerController)
+                        continue;
+
+                    auto Channel = FindChannel(Actor, Connection);
+
+                    if (!Channel)
+                    {
+                        /*
+                        if (!IsActorRelevantToConnection(Actor, ConnectionViewers) && !Actor->bAlwaysRelevant)
+                        {
+                            // If not relevant (and we don't have a channel), skip
+                            continue;
+                        }
+                        */
+
+                        // EName ActorEName = EName::Actor;
+
+                        // FNameEntryId ActorEntryId = FromValidEName(ActorEName);
+
+                       //  FName ActorName = FName(ActorEName);
+
+                        FName ActorName(102); // Helper::StringToName(idk)
+
+                        // std::cout << ("Comparison Index: ") << ActorName.ComparisonIndex << '\n';
+                        // std::cout << ("Number: ") << ActorName.Number << '\n';
+
+                        if (Engine_Version >= 422)
+                            Channel = CreateChannelByName(Connection, &ActorName, EChannelCreateFlags::OpenedLocally, -1);
+                        else
+                            Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
+
+                        if (Channel)
+                        {
+                            SetChannelActor(Channel, Actor);
+                            // std::cout << ("Created Channel for Actor => ") << Actor->GetFullName() << '\n';
+                        }
+                        else
+                        {
+                            std::cout << ("Unable to Create Channel!\n");
+                        }
+                    }
+
+                    if (Channel)
+                    {
+                        // if (IsActorRelevantToConnection(Actor, ConnectionViewers) || Actor->bAlwaysRelevant) // temporary
+                        {
+                            // ReplicateActor(Channel);
+                        }
+                        // else // techinally we should wait like 5 seconds but whatever.
+                        {
+                            // todo get pattern
+                            // Native::ActorChannel::Close(Channel);
+                        }
+                    }
+                }
+            }
+            /*
+            while(j < ConsiderList.size())
             {
                 std::cout << "b\n";
                 
@@ -328,13 +443,6 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 
                 if (!Channel)
                 {
-                    /*
-                    if (!IsActorRelevantToConnection(Actor, ConnectionViewers) && !Actor->bAlwaysRelevant)
-                    {
-                        // If not relevant (and we don't have a channel), skip
-                        continue;
-                    }
-                    */
 
                     // EName ActorEName = EName::Actor;
 
@@ -375,9 +483,13 @@ int32_t ServerReplicateActors(UObject* NetDriver)
                         // Native::ActorChannel::Close(Channel);
                     }
                 }
-            }
+
+                j++;
+            } */
         }
     }
+
+    bInThing = false;
 
     return NumClientsToTick;
 }

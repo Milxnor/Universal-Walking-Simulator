@@ -106,9 +106,9 @@ char __fastcall crashmaybDetour(__int64 a1)
     return true;
 }
 
-__int64(__fastcall* Crashes)(__int64 a1, __int64 a2);
+__int64(__fastcall* Crashes)(__int64 a1, __int64* a2, char a3);
 
-__int64 __fastcall CrashesDetour(__int64 a1, __int64 a2)
+__int64 __fastcall CrashesDetour(__int64 a1, __int64* a2, char a3) 
 {
     std::cout << "Crashes called!\n";
 
@@ -243,7 +243,7 @@ DWORD WINAPI Main(LPVOID)
     else
         std::cout << "No SpawnAircraftAddr!\n"; */
 
-    /* auto crashAddr = FindPattern("48 89 5C 24 ? 48 89 7C 24 ? 4C 89 74 24 ? 55 48 8B EC 48 83 EC 30 48 8B 79 10 4C 8B C1 48 83 BF ? ? ? ? ? 74 15 80 3D ? ? ? ? ? 72 05 E8 ? ? ? ? 33 C0");
+    /* auto crashAddr = FindPattern("48 8B C4 48 89 48 08 55 41 55 48 8D 68 D8 48 81 EC ? ? ? ? 48 89 58 18 4C 8B EA 4C 89 70 D0 41 0F B6 D8 4C 8B F1 48 81 C1 ? ? ? ? E8 ? ? ? ? 49 8B 06 49 8B CE FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 45 00 49 8B CD 48 89 B4 24 ? ? ? ?");
 
     if (crashAddr)
     {

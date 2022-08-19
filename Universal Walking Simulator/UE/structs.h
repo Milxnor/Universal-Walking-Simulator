@@ -483,7 +483,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 
 	// protected:
 	template <typename MemberType>
-	INL MemberType* Member(const std::string& MemberName, int extraOffset = 0); // DONT USE FOR SCRIPTSTRUCTS
+	INL MemberType* Member(const std::string& MemberName, int BitFieldVal = 0); // DONT USE FOR SCRIPTSTRUCTS
 
 	// ONLY USE IF YOU KNOW WHAT UR DOING
 	template <typename MemberType>
@@ -974,6 +974,33 @@ int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int
 	}
 }
 
+static void* GetProperty(UObject* Object, const std::string& MemberName)
+{
+	if (Object && !MemberName.contains((" ")))
+	{
+		if (Engine_Version <= 420)
+			return LoopMembersAndGetProperty<UClass_FT, UProperty_UE>(Object, MemberName);
+
+		else if (Engine_Version == 421) // && Engine_Version <= 424)
+			return LoopMembersAndGetProperty<UClass_FTO, UProperty_FTO>(Object, MemberName);
+
+		else if (Engine_Version >= 422 && Engine_Version <= 424)
+			return LoopMembersAndGetProperty<UClass_FTT, UProperty_FTO>(Object, MemberName);
+
+		else if (Engine_Version >= 425 && FnVerDouble < 20)
+			return LoopMembersAndGetProperty<UClass_CT, FProperty>(Object, MemberName);
+
+		else if (std::stod(FN_Version) >= 20)
+			return LoopMembersAndGetProperty<UClass_CT, FProperty>(Object, MemberName);
+	}
+	else
+	{
+		std::cout << std::format(("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, Object->GetFullName());
+	}
+
+	return nullptr;
+}
+
 static int GetOffset(UObject* Object, const std::string& MemberName)
 {
 	if (Object && !MemberName.contains((" ")))
@@ -1216,6 +1243,8 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ServerReplicateActorsOffset = 0x5A;
 	else if (Engine_Version >= 425 && FnVerDouble < 14)
 		ServerReplicateActorsOffset = 0x5D;
+	else if (std::floor(FnVerDouble) == 14)
+		ServerReplicateActorsOffset = 0x5E;
 	else if (Engine_Version >= 426 && FnVerDouble < 19)
 		ServerReplicateActorsOffset = 0x5F;
 	else if (std::floor(FnVerDouble) == 19)
@@ -1477,15 +1506,77 @@ INL MemberType* UObject::FastMember(const std::string& MemberName)
 	return this->Member<MemberType>(MemberName);
 }
 
+
+uint8_t GetFieldMask(void* Property)
+{
+	uint8_t FieldMask = *(uint8_t*)(__int64(Property) + (sizeof(FProperty) + 3));
+	return FieldMask;
+}
+
+uint8_t GetBitIndex(void* Property)
+{
+	auto FieldMask = GetFieldMask(Property);
+
+	if (FieldMask == 0xFF)
+		return FieldMask;
+
+	if (FieldMask == 1)
+		return 1;
+	if (FieldMask == 2)
+		return 2;
+	if (FieldMask == 4)
+		return 3;
+	if (FieldMask == 8)
+		return 4;
+	if (FieldMask == 16)
+		return 5;
+	if (FieldMask == 32)
+		return 6;
+	if (FieldMask == 64)
+		return 7;
+	if (FieldMask == 128)
+		return 8;
+}
+
 template <typename MemberType>
-INL MemberType* UObject::Member(const std::string& MemberName, int extraOffset)
+INL MemberType* UObject::Member(const std::string& MemberName, int BitfieldVal)
 {
 	// MemberName.erase(0, MemberName.find_last_of(".", MemberName.length() - 1) + 1); // This would be getting the short name of the member if you did like ObjectProperty /Script/stuff
 
+	auto Prop = GetProperty(this, MemberName);
+
+	auto Actual = (MemberType*)(__int64(this) + (GetOffsetFromProp(Prop)));
+
 	// if (!bIsStruct)
-	return (MemberType*)(__int64(this) + (GetOffset(this, MemberName) - extraOffset));
-	// else
-		// return (MemberType*)(__int64(this) + FindOffsetStruct(this->GetFullName(), MemberName));
+
+	// CREDITS FISCHSALAT FOR BITFIELD
+
+	/* if (std::is_same<MemberType, bool>())
+	{
+		const auto FieldMask = GetFieldMask(Prop);
+		const auto BitIndex = GetBitIndex(Prop);
+		if (BitIndex != 0xFF) // if it is 0xFF then its just a normal bool
+		{
+			uint8_t* Byte = (uint8_t*)Actual;
+
+			if (BitfieldVal <= 1)
+			{
+				if (((bool(1) << BitIndex) & *(bool*)(Actual)) != (bool)BitfieldVal)
+				{
+					*Byte = (*Byte & ~FieldMask) | (BitfieldVal == 1 ? FieldMask : 0);
+					return (MemberType*)&BitfieldVal;
+				}
+			}
+			else
+			{
+				*Byte = ((bool(1) << BitIndex) & *(bool*)(Actual));
+			}
+
+			return (MemberType*)&BitfieldVal;
+		}
+	} */
+
+	return Actual;
 }
 
 template<typename ElementType>

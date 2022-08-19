@@ -413,7 +413,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						std::cout << "Setup AI!\n";
 					} */
 
-					if (ImGui::Button("Summon Floorloot (V2) (don't use)"))
+					if (Engine_Version == 422 && ImGui::Button("Summon Floorloot"))
 					{
 						CreateThread(0, 0, LootingV2::SummonFloorLoot, 0, 0, 0);
 					}
@@ -680,7 +680,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::Checkbox(("Playground"), &bIsPlayground);
 
 					// if (!bStarted) // couldnt we wqait till aircraft start
-					ImGui::Checkbox(("Lategame"), &bIsLateGame);
+					// ImGui::Checkbox(("Lategame"), &bIsLateGame);
 
 					// TODO: default character parts
 					break;
