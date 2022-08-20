@@ -159,7 +159,7 @@ struct Bitfield2_242
     unsigned char                                      bCanBeInCluster : 1;
 };
 
-void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderList)
+void ServerReplicateActors_BuildConsiderList(UObject* NetDriver, TArray<FNetworkObjectInfo*>& OutConsiderList)
 {
     static auto WorldOffset = GetOffset(NetDriver, "World");
     auto World = *(UObject**)(__int64(NetDriver) + WorldOffset);
@@ -167,24 +167,30 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
     if (!World)
         return;
 
-    /* auto ObjectList = GetNetworkObjectList(NetDriver);
-    auto ActiveNetworkObjects = ObjectList->ActiveNetworkObjects;
+    auto ObjectList = GetNetworkObjectList(NetDriver);
+    auto& ActiveNetworkObjects = ObjectList->ActiveNetworkObjects;
 
     std::cout << ("NumActors: ") << ActiveNetworkObjects.Elements.Data.Num() << '\n';
+
+    TArray<UObject*> ActorsToRemove;
 
     for (int j = 0; j < ActiveNetworkObjects.Elements.Data.Num(); j++)
     {
         auto& ActorIdk = ActiveNetworkObjects.Elements.Data.At(j);
         auto ActorInfo = ActorIdk.ElementData.Value.Get();
-        auto Actor = ActorInfo->Actor; */
 
-    TArray<UObject*> Actors = GetAllActors(World);
+        if (!ActorInfo)
+            continue;
+
+        auto Actor = ActorInfo->Actor;
+
+    /* TArray<UObject*> Actors = GetAllActors(World);
 
     std::cout << ("NumActors: ") << Actors.Num() << '\n';
 
     for (int i = 0; i < Actors.Num(); i++)
     {
-        auto Actor = Actors.At(i);
+        auto Actor = Actors.At(i); */
 
         if (!Actor)
             continue;
@@ -215,14 +221,15 @@ void BuildConsiderList(UObject* NetDriver, std::vector<UObject*>& OutConsiderLis
             continue;
         }
 
-        if (Actor->NamePrivate.ComparisonIndex != 0)
+        // TODO: Check NetDriver Name
+
         {
             CallPreReplication(Actor, NetDriver);
-            OutConsiderList.push_back(Actor);
+            OutConsiderList.Add(ActorInfo);
         }
     }
 
-    Actors.Free();
+    // Actors.Free();
 }
 
 static bool bInThing = false;
@@ -267,13 +274,12 @@ int32_t ServerReplicateActors(UObject* NetDriver)
     if (NumClientsToTick == 0)
         return NumClientsToTick;
 
-    // std::vector<UObject*> ConsiderList;
-    std::vector<UObject*> ConsiderList;
-    ConsiderList.reserve(2000);
-    // ConsiderList.reserve(ObjectList.size());
-    // BuildConsiderList(NetDriver, ConsiderList);
+    TArray<FNetworkObjectInfo*> ConsiderList;
+    ConsiderList.Reserve(GetNetworkObjectList(NetDriver)->ActiveNetworkObjects.Elements.Data.Num());
 
-    std::cout << ("Considering: ") << ConsiderList.size() << '\n';
+    ServerReplicateActors_BuildConsiderList(NetDriver, ConsiderList);
+
+    std::cout << ("Considering: ") << ConsiderList.Num() << '\n';
 
     auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
 
@@ -292,20 +298,6 @@ int32_t ServerReplicateActors(UObject* NetDriver)
 
         else if (ViewTarget && *ViewTarget)
         {
-            /*
-            static auto ConnectionViewers = GetWorld()->PersistentLevel->WorldSettings->ReplicationViewers;
-            ConnectionViewers.Reset();
-            ConnectionViewers.Add(FNetViewer(Connection));
-
-            for (int32 ViewerIndex = 0; ViewerIndex < Connection->Children.Num(); ViewerIndex++)
-            {
-                if (Connection->Children[ViewerIndex]->ViewTarget)
-                {
-                    ConnectionViewers.Add(FNetViewer(Connection->Children[ViewerIndex]));
-                }
-            }
-            */
-
             static auto PlayerControllerOffset = GetOffset(Connection, "PlayerController");
             auto PlayerControllerR = (UObject**)(__int64(Connection) + PlayerControllerOffset);
 
@@ -315,124 +307,22 @@ int32_t ServerReplicateActors(UObject* NetDriver)
             auto PlayerController = *PlayerControllerR;
 
             if (SendClientAdjustment && PlayerController)
-                SendClientAdjustment(PlayerController); // Sending adjustments to children is for splitscreen
+                SendClientAdjustment(PlayerController);
 
             std::cout << "a\n";
 
             int j = 0;
 
-            TArray<UObject*> Actors = GetAllActors(Helper::GetWorld());
-
-            if (!Actors.GetData())
-                continue;
-
-            std::cout << ("NumActors: ") << Actors.Num() << '\n';
-
-            for (int i = 0; i < Actors.Num(); i++)
-            {
-                auto Actor = Actors.At(i);
-
-                if (!Actor)
-                    continue;
-
-                // std::cout << "RemoteRoleOffset: " << RemoteRoleOffset << '\n';
-
-                static auto RemoteRoleOffset = GetOffset(Actor, "RemoteRole");
-
-                if (((TEnumAsByte<ENetRole>*)(__int64(Actor) + RemoteRoleOffset))->Get() == ENetRole::ROLE_None)
-                {
-                    // std::cout << "actor: " << Actor << '\n';
-                    continue;
-                }
-
-                static auto bActorIsBeingDestroyedOffset = GetOffset(Actor, "bActorIsBeingDestroyed");
-
-                if ((((Bitfield2_242*)(__int64(Actor) + bActorIsBeingDestroyedOffset))->bActorIsBeingDestroyed))
-                {
-                    std::cout << "bActorIsBeingDestroyed!\n";
-                    continue;
-                }
-
-                static auto NetDormancyOffset = GetOffset(Actor, "NetDormancy");
-                static auto bNetStartupOffset = GetOffset(Actor, "bNetStartup");
-
-                if ((*(ENetDormancy*)(__int64(Actor) + NetDormancyOffset) == ENetDormancy::DORM_Initial) && ((Bitfield_242*)(__int64(Actor) + bNetStartupOffset))->bNetStartup)
-                {
-                    continue;
-                }
-
-                if (Actor->NamePrivate.ComparisonIndex != 0)
-                {
-                    CallPreReplication(Actor, NetDriver);
-
-                    std::cout << "b\n";
-
-                    // auto Actor = ConsiderList.at(j);
-
-                    static auto PlayerControllerClass = FindObject(("Class /Script/Engine.PlayerController"));
-
-                    if (Actor->IsA(PlayerControllerClass) && Actor != PlayerController)
-                        continue;
-
-                    auto Channel = FindChannel(Actor, Connection);
-
-                    if (!Channel)
-                    {
-                        /*
-                        if (!IsActorRelevantToConnection(Actor, ConnectionViewers) && !Actor->bAlwaysRelevant)
-                        {
-                            // If not relevant (and we don't have a channel), skip
-                            continue;
-                        }
-                        */
-
-                        // EName ActorEName = EName::Actor;
-
-                        // FNameEntryId ActorEntryId = FromValidEName(ActorEName);
-
-                       //  FName ActorName = FName(ActorEName);
-
-                        FName ActorName(102); // Helper::StringToName(idk)
-
-                        // std::cout << ("Comparison Index: ") << ActorName.ComparisonIndex << '\n';
-                        // std::cout << ("Number: ") << ActorName.Number << '\n';
-
-                        if (Engine_Version >= 422)
-                            Channel = CreateChannelByName(Connection, &ActorName, EChannelCreateFlags::OpenedLocally, -1);
-                        else
-                            Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
-
-                        if (Channel)
-                        {
-                            SetChannelActor(Channel, Actor);
-                            // std::cout << ("Created Channel for Actor => ") << Actor->GetFullName() << '\n';
-                        }
-                        else
-                        {
-                            std::cout << ("Unable to Create Channel!\n");
-                        }
-                    }
-
-                    if (Channel)
-                    {
-                        // if (IsActorRelevantToConnection(Actor, ConnectionViewers) || Actor->bAlwaysRelevant) // temporary
-                        {
-                            // ReplicateActor(Channel);
-                        }
-                        // else // techinally we should wait like 5 seconds but whatever.
-                        {
-                            // todo get pattern
-                            // Native::ActorChannel::Close(Channel);
-                        }
-                    }
-                }
-            }
-            /*
-            while(j < ConsiderList.size())
+            while(j < ConsiderList.Num())
             {
                 std::cout << "b\n";
-                
-                auto Actor = ConsiderList.at(j);
+
+                auto ActorInfo = ConsiderList.At(j);
+
+                if (!ActorInfo)
+                    continue;
+
+                auto Actor = ActorInfo->Actor;
 
                 static auto PlayerControllerClass = FindObject(("Class /Script/Engine.PlayerController"));
 
@@ -485,7 +375,7 @@ int32_t ServerReplicateActors(UObject* NetDriver)
                 }
 
                 j++;
-            } */
+            }
         }
     }
 

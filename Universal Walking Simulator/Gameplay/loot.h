@@ -461,12 +461,10 @@ namespace LootingV2
 			}
 
 			else if (BuildingContainerName.contains("AthenaSupplyDrop_C"))
-			{
-				static auto GoldAR = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"));
-				
+			{				
 				for (int i = 0; i < 5; i++)
 				{
-					Helper::SummonPickup(nullptr, GoldAR, GetCorrectLocation(), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 1);
+					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon, SupplyDropItems).Definition, GetCorrectLocation(), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 1);
 				}
 			}
 

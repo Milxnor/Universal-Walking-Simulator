@@ -258,6 +258,17 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                     static auto JumpAbility = FindObject("FortGameplayAbility_Jump /Script/FortniteGame.Default__FortGameplayAbility_Jump");
                     static auto InteractUseAbility = FindObject("GA_DefaultPlayer_InteractUse_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.Default__GA_DefaultPlayer_InteractUse_C");
                     static auto InteractSearchAbility = FindObject("GA_DefaultPlayer_InteractSearch_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.Default__GA_DefaultPlayer_InteractSearch_C");
+                    static auto ExitAbility = FindObject("GA_AthenaExitVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.Default__GA_AthenaExitVehicle_C");
+                    static auto EnterAbility = FindObject("GA_AthenaEnterVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.Default__GA_AthenaEnterVehicle_C");
+                    static auto InAbility = FindObject("GA_AthenaInVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.Default__GA_AthenaInVehicle_C");
+
+                    /*
+                    
+                    [502001] GA_AthenaEnterVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.Default__GA_AthenaEnterVehicle_C
+                    [502002] GA_AthenaExitVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.Default__GA_AthenaExitVehicle_C
+                    [502003] GA_AthenaInVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.Default__GA_AthenaInVehicle_C
+
+                    */
 
                     // GAB_CarryPlayer_C
 
@@ -274,6 +285,21 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                         if (LandedOnAbility)
                             GrantGameplayAbility(Pawn, LandedOnAbility);
                     }
+
+                    if (InAbility)
+                        GrantGameplayAbility(Pawn, InAbility);
+                    else
+                        std::cout << "No InAbility!\n";
+
+                    if (EnterAbility)
+                        GrantGameplayAbility(Pawn, EnterAbility);
+                    else
+                        std::cout << "No EnterAbility!\n";
+
+                    if (ExitAbility)
+                        GrantGameplayAbility(Pawn, ExitAbility);
+                    else
+                        std::cout << "No ExitAbility!\n";
 
                     if (SprintAbility)
                         GrantGameplayAbility(Pawn, SprintAbility);

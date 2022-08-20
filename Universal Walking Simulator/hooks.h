@@ -363,6 +363,29 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 
 			if (RootComp)
 			{
+				/* static auto K2_SetWorldTransform = RootComp->Function("K2_SetWorldTransform");
+
+				FTransform NewTransform;
+				NewTransform.Scale3D = { 1, 1, 1 };
+				NewTransform.Translation = *Translation;
+				NewTransform.Rotation = *Rotation;
+				
+				struct
+				{
+				public:
+					struct FTransform                            NewTransform;                                      // 0x0(0x30)(ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
+					bool                                         bSweep;                                            // 0x30(0x1)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        Pad_16F[0x3];                                      // Fixing Size After Last Property  [ Dumper-7 ]
+					char                            SweepHitResult[0x88];                                    // 0x34(0x88)(Parm, OutParm, IsPlainOldData, NoDestructor, ContainsInstancedReference, NativeAccessSpecifierPublic)
+					bool                                         bTeleport;                                         // 0xBC(0x1)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					uint8_t                                        Pad_170[0x3];                                      // Fixing Size Of Struct [ Dumper-7 ]
+				} K2_SetWorldTransform_Params{ NewTransform, false };
+
+				K2_SetWorldTransform_Params.bTeleport = true;
+
+				if (K2_SetWorldTransform)
+					RootComp->ProcessEvent(K2_SetWorldTransform, &K2_SetWorldTransform_Params); */
+
 				static auto SetPhysicsLinearVelocity = RootComp->Function("SetPhysicsLinearVelocity");
 
 				struct {
@@ -1204,7 +1227,13 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				case EFortRarityC2::Epic:
 					thingToReplace = std::make_pair("_VR_", "_SR_");
 					break;
+				default:
+					thingToReplace = std::make_pair("NONE", "NONE");
+					break;
 				}
+
+				if (thingToReplace.first == "NONE")
+					return false;
 
 				std::string newDefStr = CurrentWeaponDefinition->GetFullName();
 				// newDefStr.replace(newDefStr.find(thingToReplace.first), thingToReplace.first.size(), thingToReplace.second);
