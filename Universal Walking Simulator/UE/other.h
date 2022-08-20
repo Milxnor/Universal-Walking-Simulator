@@ -27,6 +27,11 @@ struct FVector
 		return FVector{ this->X - A.X, this->Y - A.Y, this->Z - A.Z };
 	}
 
+	FVector operator*(const float A)
+	{
+		return FVector{ this->X * A, this->Y * A, this->Z * A };
+	}
+
 	bool operator==(const FVector& A)
 	{
 		return X == A.X && Y == A.Y && Z == A.Z;

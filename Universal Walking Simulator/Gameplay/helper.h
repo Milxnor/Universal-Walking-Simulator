@@ -301,6 +301,44 @@ namespace Helper
 		return FVector();
 	}
 
+	FVector GetActorForwardVector(UObject* Actor)
+	{
+		if (!Actor)
+			return FVector();
+
+		/* static */ auto GetActorForwardVectorFN = Actor->Function(("GetActorForwardVector"));
+
+		if (GetActorForwardVectorFN)
+		{
+			FVector loc;
+			Actor->ProcessEvent(GetActorForwardVectorFN, &loc);
+			return loc;
+		}
+		else
+			GetActorForwardVectorFN = Actor->Function(("GetActorForwardVector"));
+
+		return FVector();
+	}
+
+	FVector GetActorRightVector(UObject* Actor)
+	{
+		if (!Actor)
+			return FVector();
+
+		/* static */ auto GetActorRightVectorFN = Actor->Function(("GetActorRightVector"));
+
+		if (GetActorRightVectorFN)
+		{
+			FVector loc;
+			Actor->ProcessEvent(GetActorRightVectorFN, &loc);
+			return loc;
+		}
+		else
+			GetActorRightVectorFN = Actor->Function(("GetActorRightVector"));
+
+		return FVector();
+	}
+
 	void EnablePickupAnimation(UObject* Pawn, UObject* Pickup)
 	{
 		if (bPickupAnimsEnabled)
