@@ -116,12 +116,63 @@ UObject** GetAbilityFromSpec(void* Spec)
     if (!Spec)
         return nullptr;
 
+    static auto AbilityOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
+
+    return (UObject**)(__int64(Spec) + AbilityOffset);
+
     if (Engine_Version < 426)
         return &((FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)Spec)->Ability;
     else if (Engine_Version == 426)
         return &((FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)Spec)->Ability;
     else
         return &((FGameplayAbilitySpecNewer*)Spec)->Ability;
+}
+
+int GetHandleFromHandle(FGameplayAbilitySpecHandle& handle)
+{
+    return handle.Handle;
+}
+
+// template return and base the func and actual ret of fof that maybe?
+void LoopSpecs(UObject* ASC, std::function<void(__int64*)> func)
+{
+    auto ActivatableAbilities = ASC->Member<__int64>(("ActivatableAbilities"));
+
+    static auto ItemsOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer", "Items");
+    auto Items = (TArray<__int64>*)(__int64(ActivatableAbilities) + ItemsOffset);
+
+    static auto SpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
+    static auto SpecSize = GetSizeOfStruct(SpecStruct);
+
+    if (ActivatableAbilities && Items)
+    {
+        for (int i = 0; i < Items->Num(); i++)
+        {
+            auto CurrentSpec = (__int64*)(__int64(Items->GetData()) + (static_cast<long long>(SpecSize) * i));
+            func(CurrentSpec);
+        }
+    }
+}
+
+__int64* FindAbilitySpecFromHandle2(UObject* ASC, FGameplayAbilitySpecHandle Handle)
+{
+    __int64* SpecToReturn = nullptr;
+
+    auto compareHandles = [&Handle, &SpecToReturn](__int64* Spec) {
+        static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
+
+        auto CurrentHandle = (FGameplayAbilitySpecHandle*)(__int64(Spec) + HandleOffset);
+
+        if (GetHandleFromHandle(*CurrentHandle) == Handle.Handle)
+        {
+            SpecToReturn = Spec;
+            return;
+        }
+    };
+
+    LoopSpecs(ASC, compareHandles);
+
+    return SpecToReturn;
 }
 
 void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle Handle, bool InputPressed, FPredictionKey* PredictionKey, __int64* TriggerEventData, bool bConsumeData = false)
@@ -132,12 +183,12 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
         return;
     }
 
-    void* Spec = nullptr;
+    void* Spec = FindAbilitySpecFromHandle2(ASC, Handle);
 
-    if (Engine_Version < 426)
+    /* if (Engine_Version < 426)
         Spec = FindAbilitySpecFromHandle(ASC, Handle);
     else
-        Spec = FindAbilitySpecFromHandleFTS(ASC, Handle);
+        Spec = FindAbilitySpecFromHandleFTS(ASC, Handle); */
 
     if (!Spec)
     {
@@ -195,27 +246,6 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
     }
 }
 
-// template return and base the func and actual ret of fof that maybe?
-void LoopSpecs(UObject* ASC, std::function<void(__int64*)> func)
-{
-    auto ActivatableAbilities = ASC->Member<__int64>(("ActivatableAbilities"));
-
-    auto ItemsOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer", "Items");
-    auto Items = (TArray<__int64>*)(__int64(ActivatableAbilities) + ItemsOffset);
-
-    static auto SpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
-    static auto SpecSize = GetSizeOfStruct(SpecStruct);
-
-    if (ActivatableAbilities && Items)
-    {
-        for (int i = 0; i < Items->Num(); i++)
-        {
-            auto CurrentSpec = (__int64*)(__int64(Items) + (static_cast<long long>(SpecSize) * i));
-            func(CurrentSpec);
-        }
-    }
-}
-
 UObject* DoesASCHaveAbility(UObject* ASC, UObject* Ability)
 {
     if (!ASC || !Ability)
@@ -262,35 +292,8 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
         return nullptr;
     }
 
-    auto GenerateNewSpec = [&]() -> FGameplayAbilitySpec<FGameplayAbilityActivationInfo>
+    auto GenerateNewSpec = [&]() -> FGameplayAbilitySpecNewer
     {
-        FGameplayAbilitySpecHandle Handle{};
-        Handle.GenerateNewHandle();
-
-        FGameplayAbilitySpec<FGameplayAbilityActivationInfo> Spec{ -1, -1, -1, Handle, DefaultObject, 1, -1, nullptr, 0, false, false, false };
-
-        return Spec;
-    };
-
-    auto GenerateNewSpecFTS = [&]() -> FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>
-    {
-        FGameplayAbilitySpecHandle Handle{};
-        Handle.GenerateNewHandle();
-
-        FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS> Spec{ -1, -1, -1, Handle, DefaultObject, 1, -1, nullptr, 0, false, false, false };
-
-        return Spec;
-    };
-
-    auto GenerateNewSpecNewer = [&]() -> FGameplayAbilitySpecNewer
-    {
-        /* FGameplayAbilitySpecHandle Handle{};
-        Handle.GenerateNewHandle();
-
-        FGameplayAbilitySpecNewer Spec{-1, -1, -1, Handle, DefaultObject, 1, -1, nullptr, 0, false, false, false, false};
-
-        return Spec; */
-
         static auto GameplayAbilitySpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
         static auto GameplayAbilitySpecSize = GetSizeOfStruct(GameplayAbilitySpecStruct);
 
@@ -315,86 +318,24 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
         static auto AbilityOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
         static auto LevelOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Level");
         static auto InputIDOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputID");
-        static auto SourceObjectOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "SourceObject");
 
         *(FGameplayAbilitySpecHandle*)(__int64(ptr) + HandleOffset) = Handle;
         *(UObject**)(__int64(ptr) + AbilityOffset) = DefaultObject;
         *(int*)(__int64(ptr) + LevelOffset) = 1;
         *(int*)(__int64(ptr) + InputIDOffset) = -1;
-        // *(UObject**)(__int64(ptr) + SourceObjectOffset) = nullptr;
 
         return *(FGameplayAbilitySpecNewer*)ptr;
     };
 
     void* NewSpec = nullptr;
 
-    /* if (Engine_Version < 426)
     {
         auto spec = GenerateNewSpec();
-        NewSpec = &spec;
-    }
-    else if (FnVerDouble < 17.00)
-    {
-        auto spec = GenerateNewSpecFTS();
-        NewSpec = &spec;
-    }
-    else */
-    {
-        auto spec = GenerateNewSpecNewer();
         NewSpec = &spec;
     }
 
     if (!NewSpec || DoesASCHaveAbility(AbilitySystemComponent, *GetAbilityFromSpec(NewSpec)))
         return nullptr;
-
-    /* if (Engine_Version <= 422)
-    {
-        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"));
-
-        for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
-        {
-            auto& CurrentSpec = ActivatableAbilities.Items[i];
-
-            if (CurrentSpec.Ability == *GetAbilityFromSpec(NewSpec))
-                return nullptr;
-        }
-    }
-    else if (Engine_Version < 426)
-    {
-        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"));
-
-        for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
-        {
-            auto& CurrentSpec = ActivatableAbilities.Items[i];
-
-            if (CurrentSpec.Ability == *GetAbilityFromSpec(NewSpec))
-                return nullptr;
-        }
-    }
-    else if (FnVerDouble < 17.00)
-    {
-        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerFTS>(("ActivatableAbilities"));
-
-        for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
-        {
-            auto& CurrentSpec = ActivatableAbilities.Items[i];
-
-            if (CurrentSpec.Ability == *GetAbilityFromSpec(NewSpec))
-                return nullptr;
-        }
-    }
-    else
-    {
-        auto ActivatableAbilities = *AbilitySystemComponent->Member<FGameplayAbilitySpecContainerNewer>(("ActivatableAbilities"));
-
-        for (int i = 0; i < ActivatableAbilities.Items.Num(); i++)
-        {
-            auto& CurrentSpec = ActivatableAbilities.Items[i];
-
-            if (CurrentSpec.Ability == *GetAbilityFromSpec(NewSpec))
-                return nullptr;
-        }
-    } */
 
     // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232
 
@@ -429,50 +370,18 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
         __int64                      BatchInfo;                                                // (Parm)
     };
 
-    static auto AbilitySpecHandleOffset = FindOffsetStruct("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", "AbilitySpecHandle"); // Function->GetParam<FGameplayAbilitySpecHandle>("AbilitySpecHandle", Parameters);
-    static auto InputPressedOffset = FindOffsetStruct("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", "InputPressed");
-    static auto PredictionKeyOffset = FindOffsetStruct("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerAbilityRPCBatch", "PredictionKey");
+    static auto AbilitySpecHandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch", "AbilitySpecHandle"); // Function->GetParam<FGameplayAbilitySpecHandle>("AbilitySpecHandle", Parameters);
+    static auto InputPressedOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch", "InputPressed");
+    static auto PredictionKeyOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.ServerAbilityRPCBatch", "PredictionKey");
 
-    auto AbilitySpecHandle = (FGameplayAbilitySpecHandle*)(__int64(Function) + AbilitySpecHandleOffset);
-    auto InputPressed = (bool*)(__int64(Function) + InputPressedOffset);
-    auto PredictionKey = (FPredictionKey*)(__int64(Function) + PredictionKeyOffset);
+    auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
+
+    auto AbilitySpecHandle = (FGameplayAbilitySpecHandle*)(__int64(&Params->BatchInfo) + AbilitySpecHandleOffset);
+    auto InputPressed = (bool*)(__int64(&Params->BatchInfo) + InputPressedOffset);
+    auto PredictionKey = (FPredictionKey*)(__int64(&Params->BatchInfo) + PredictionKeyOffset);
 
     if (AbilitySpecHandle && InputPressed && PredictionKey)
         InternalServerTryActivateAbility(AbilitySystemComponent, *AbilitySpecHandle, *InputPressed, PredictionKey, nullptr);
-
-    /* if (Engine_Version <= 422)
-    {
-        struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
-            FServerAbilityRPCBatchOL                      BatchInfo;                                                // (Parm)
-        };
-
-        auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
-
-        auto& BatchInfo = Params->BatchInfo;
-        InternalServerTryActivateAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.InputPressed, &BatchInfo.PredictionKey, nullptr);
-    }
-    else if (FnVerDouble < 17.00)
-    {
-        struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
-            FServerAbilityRPCBatchSE                      BatchInfo;                                                // (Parm)
-        };
-
-        auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
-
-        auto& BatchInfo = Params->BatchInfo;
-        InternalServerTryActivateAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.InputPressed, &BatchInfo.PredictionKey, nullptr);
-    }
-    else
-    {
-        struct UAbilitySystemComponent_ServerAbilityRPCBatch_Params {
-            FServerAbilityRPCBatchNewer                     BatchInfo;                                                // (Parm)
-        };
-
-        auto Params = (UAbilitySystemComponent_ServerAbilityRPCBatch_Params*)Parameters;
-        auto& BatchInfo = Params->BatchInfo;
-
-        InternalServerTryActivateAbility(AbilitySystemComponent, BatchInfo.AbilitySpecHandle, BatchInfo.InputPressed, (FPredictionKey*)&BatchInfo.PredictionKey, nullptr);
-    } */
 
     return false;
 }

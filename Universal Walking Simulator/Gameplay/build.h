@@ -541,7 +541,7 @@ inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Fu
 
 void InitializeBuildHooks()
 {
-	if (Engine_Version < 426)
+	// if (Engine_Version < 426)
 	{
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
 

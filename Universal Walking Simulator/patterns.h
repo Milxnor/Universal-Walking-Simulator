@@ -312,6 +312,9 @@ void InitializePatterns()
         Beacon_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D 68 88 48 81 EC ? ? ? ? 45 33 E4 49 8B D9 44 89 64 24 ? 41 8A F0 48 8B 41 10 48 8B";
         NoReserveSig = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 49 8B D9 45 8A F8 4C 8B F2 48 8B F9 45 32 E4 E8 ? ? ? ? 48 8B";
         KickPlayerSig = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 48 83 65 ? ? 4C 8B F2 83 65 E8 00 4C 8B E1 83 65 EC 00 48 8D 4D E0";
+        GiveAbilitySig = "48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 83 EC 20 8B 81 ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 85 C0 0F 8F ? ? ? ? FF C0 48 89 4C 24 ? 89 81 ? ? ? ? 48 8D B1 ? ? ? ? 48 63";
+        InternalTryActivateAbilitySig = "4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 8B DA 48 8B F1 E8 ? ? ? ? 48 8D 8E ? ? ? ? 33 D2 48 8D B8";
+        StaticFindObjectSig = "40 55 53 57 41 54 41 55 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 80 3D ? ? ? ? ? 45 0F B6 E1 49 8B F8 48 8B DA 4C 8B F9 0F 85 ? ? ? ? 45 33 ED";
     }
 
     if (FnVerDouble >= 17.00)
@@ -549,7 +552,7 @@ void InitializePatterns()
             else
                 CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbilityFTS);
 
-            MarkAbilitySpecDirtyAddr = FindPattern(MarkAbilitySpecDirtySig);
+            /* MarkAbilitySpecDirtyAddr = FindPattern(MarkAbilitySpecDirtySig);
 
             if (!MarkAbilitySpecDirtyAddr)
                 MarkAbilitySpecDirtyAddr = FindPattern(("48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 D8 4C 8B F2 48 8B F9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 46 10 48 89 6C 24 ? 48 89 74"));
@@ -557,7 +560,7 @@ void InitializePatterns()
             if (Engine_Version < 426)
                 CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyOld);
             else
-                CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyFTS);
+                CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyFTS); */
         }
     }
 

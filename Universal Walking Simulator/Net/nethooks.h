@@ -182,6 +182,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         if (AbilitySystemComponent)
         {
             std::cout << ("Granting abilities!\n");
+
             if (FnVerDouble < 8 && Engine_Version != 421) // idk CDO offset
             {
                 static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
@@ -204,6 +205,11 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                         }
                     }
                 }
+
+                /* static auto RangedAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C"));
+
+                if (RangedAbility)
+                    GrantGameplayAbility(Pawn, RangedAbility); */
 
                 /* static auto grapplerAbility = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Weapons/Abilities/HookGun/GA_Athena_HookPassive.GA_Athena_HookPassive_C");
                 static auto grapplerAbility2 = FindObject("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/Projectile/GA_Ranged_GenericProjectileImpact_HookGun.GA_Ranged_GenericProjectileImpact_HookGun_C");
