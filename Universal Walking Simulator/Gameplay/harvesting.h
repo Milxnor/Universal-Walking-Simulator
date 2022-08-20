@@ -147,9 +147,15 @@ inline bool BlueprintCanAttemptGenerateResourcesHook(UObject* BuildingActor, UFu
 
 	ProcessEventO(BuildingActor, Function, Params);
 
-	if (Params && Params->ret)
+	static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+	auto CurrentWeapon = *(*Params->InstigatorController->Member<UObject*>(("MyFortPawn")))->Member<UObject*>(("CurrentWeapon"));
+
+	if (CurrentWeapon && *CurrentWeapon->Member<UObject*>(("WeaponData")) == PickaxeDef)
 	{
-		DoHarvesting(Params->InstigatorController, BuildingActor);
+		if (Params && Params->ret)
+		{
+			DoHarvesting(Params->InstigatorController, BuildingActor);
+		}
 	}
 
 	return false;

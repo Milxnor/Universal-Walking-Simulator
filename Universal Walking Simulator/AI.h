@@ -55,7 +55,6 @@ namespace Henchmans
 		static auto OpenVaultFn = FindObject("Function /Game/Athena/Items/EnvironmentalItems/Locks/Keycard/Actors/Locks/BGA_Athena_Keycard_Lock_Parent.BGA_Athena_Keycard_Lock_Parent_C.CallOpenVault");
 		//bool CO = true;
 
-
 		if (AgencyVault)
 			AgencyVault->ProcessEvent(OpenVaultFn);
 	}

@@ -19,15 +19,71 @@ struct IsDestroyedBitField {
 	unsigned char                                      bRotateInPlaceGame : 1;                                   // 0x0541(0x0001)
 };
 
-bool CanBuild(UObject* BuildingActor)
+bool CanBuild(UObject* BuildingActor, bool bMirrored)
 {
-	if (!bDoubleBuildFix)
-		return true;
+	return true;
+
+	// if (!bDoubleBuildFix)
+		// return true;
 
 	if (!BuildingActor)
 		return false;
 
+	auto MainLocation = Helper::GetActorLocation(BuildingActor);
+	auto MainRot = Helper::GetActorRotation(BuildingActor);
+	auto MainCellIdx = Helper::GetCellIndexFromLocation(MainLocation);
+
 	auto StructuralSupportSystem = Helper::GetStructuralSupportSystem();
+
+	/*
+	
+	TESTED:
+
+	WouldBuildingBeStructurallySupportedByNeighbors
+	StartActorRemovalBatch & StopActorRemovalBatch
+
+	*/
+
+	static auto BuildingTypeOffset = GetOffset(BuildingActor, "BuildingType");
+	auto BuildingType = *(EFortBuildingType*)(__int64(BuildingActor) + BuildingTypeOffset);
+
+	struct
+	{
+		TEnumAsByte<EFortBuildingType>              BuildingType;                                             // (Parm, ZeroConstructor, IsPlainOldData)
+		FVector                                     WorldLocation;                                            // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
+		FBuildingSupportCellIndex                   OutActorGridIndices;                                      // (Parm, OutParm)
+		FBuildingNeighboringActorInfo               OutNeighboringActors;                                     // (Parm, OutParm)
+	} UBuildingStructuralSupportSystem_K2_GetNeighboringBuildingActors_Params{BuildingType, MainLocation};
+
+	static auto K2_GetNeighboringBuildingActors = StructuralSupportSystem->Function("K2_GetNeighboringBuildingActors");
+
+	if (K2_GetNeighboringBuildingActors)
+		StructuralSupportSystem->ProcessEvent(K2_GetNeighboringBuildingActors, &UBuildingStructuralSupportSystem_K2_GetNeighboringBuildingActors_Params);
+
+	auto& NeighboringActors = UBuildingStructuralSupportSystem_K2_GetNeighboringBuildingActors_Params.OutNeighboringActors;
+
+	if (BuildingType == EFortBuildingType::Wall)
+	{
+		for (int i = 0; i < NeighboringActors.NeighboringWallInfos.Num(); i++)
+		{
+			auto& WallInfo = NeighboringActors.NeighboringWallInfos.At(i);
+
+			if (MainCellIdx == WallInfo.NeighboringCellIdx)
+				return false;
+
+			/* auto WallActor = WallInfo.NeighboringActor.Get();
+
+			if (!WallActor)
+				continue;
+
+			if (Helper::GetActorLocation(WallActor) == MainLocation)
+				return false; */
+		}
+	}
+
+	return true;
+
+	/* auto StructuralSupportSystem = Helper::GetStructuralSupportSystem();
 
 	static auto K2_GetBuildingActorsInGridCell = StructuralSupportSystem->Function("K2_GetBuildingActorsInGridCell");
 
@@ -46,11 +102,6 @@ bool CanBuild(UObject* BuildingActor)
 	std::cout << "Neighboring Floor Size: " << UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params.OutActorsInGridCell.NeighboringFloorInfos.Num() << '\n';
 	std::cout << "Neighboring CenterCell Size: " << UBuildingStructuralSupportSystem_K2_GetBuildingActorsInGridCell_Params.OutActorsInGridCell.NeighboringCenterCellInfos.Num() << '\n';
 
-	static auto BuildingTypeOffset = GetOffset(BuildingActor, "BuildingType");
-	auto BuildingType = *(EFortBuildingType*)(__int64(BuildingActor) + BuildingTypeOffset);
-
-	auto MainLocation = Helper::GetActorLocation(BuildingActor);
-	auto MainRot = Helper::GetActorRotation(BuildingActor);
 	auto MainCellIdx = Helper::GetCellIndexFromLocation(MainLocation);
 
 	auto HandleNeighbor = [](UObject* NeighboringActor) -> bool {
@@ -97,7 +148,7 @@ bool CanBuild(UObject* BuildingActor)
 			}
 		}
 	}
-	else // if (NewBuildingType == EFortBuildingType::GenericCenterCellActor)
+	else */ // if (NewBuildingType == EFortBuildingType::GenericCenterCellActor)
 	{
 		bool bCanBuild = true;
 
@@ -232,7 +283,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 								if (BuildingActor)
 								{
-									if (CanBuild(BuildingActor))
+									if (CanBuild(BuildingActor, Params->CreateBuildingData.bMirrored))
 									{
 										if (bDoubleBuildFix)
 											ExistingBuildings.push_back(BuildingActor);
@@ -297,15 +348,39 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 				if (BuildingClass) // && *BuildingClass)
 				{
-					auto BuildingClassName = BuildingClass->GetFullName();
+					UObject* BuildingActor = Easy::SpawnActor(BuildingClass, Params->BuildLoc, Params->BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
+
+					if (BuildingActor)
+					{
+						if (CanBuild(BuildingActor, Params->bMirrored))
+						{
+							if (bDoubleBuildFix)
+								ExistingBuildings.push_back(BuildingActor);
+
+							Helper::InitializeBuildingActor(Controller, BuildingActor, true);
+
+							bSuccessful = true;
+
+							// if (!Helper::IsStructurallySupported(BuildingActor))
+								// bSuccessful = false;
+						}
+						else
+							bSuccessful = false;
+					}
+					else
+						std::cout << ("Unable to summon the building!\n");
+
+					// auto BuildingClassName = BuildingClass->GetFullName();
+
+					auto ResourceType = *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(("ResourceType"));
 
 					// TODO:" figure out a better way
 
-					if (BuildingClassName.contains(("W1")))
+					if (ResourceType.Get() == EFortResourceType::Wood)// (BuildingClassName.contains(("W1")))
 						MatDefinition = WoodItemData;
-					else if (BuildingClassName.contains(("S1")))
+					else if (ResourceType.Get() == EFortResourceType::Stone)// (BuildingClassName.contains(("S1")))
 						MatDefinition = StoneItemData;
-					else if (BuildingClassName.contains(("M1")))
+					else if (ResourceType.Get() == EFortResourceType::Metal) // (BuildingClassName.contains(("M1")))
 						MatDefinition = MetalItemData;
 
 					if (MatDefinition)
@@ -313,33 +388,14 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 						auto MatInstance = Inventory::FindItemInInventory(Controller, MatDefinition);
 
 						if (*FFortItemEntry::GetCount(GetItemEntryFromInstance(MatInstance)) < 10)
-							return false;
+							bSuccessful = false;
+					}
 
-						UObject* BuildingActor = Easy::SpawnActor(BuildingClass, Params->BuildLoc, Params->BuildRot); // Helper::GetActorLocation(Pawn), Helper::GetActorRotation(Pawn));
-
-						if (BuildingActor)
-						{
-							if (CanBuild(BuildingActor))
-							{
-								ExistingBuildings.push_back(BuildingActor);
-								Helper::InitializeBuildingActor(Controller, BuildingActor, true);
-
-								bSuccessful = true;
-
-								// if (!Helper::IsStructurallySupported(BuildingActor))
-									// bSuccessful = false;
-							}
-							else
-								bSuccessful = false;
-
-							if (!bSuccessful)
-							{
-								Helper::SetActorScale3D(BuildingActor, {});
-								Helper::SilentDie(BuildingActor);
-							}
-						}
-						else
-							std::cout << ("Unable to summon the building!\n");
+					if (!bSuccessful && BuildingActor)
+					{
+						Helper::SetActorScale3D(BuildingActor, {});
+						Helper::SilentDie(BuildingActor);
+						return false;
 					}
 				}
 				else
@@ -396,6 +452,8 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 				if (OnRep_EditActor)
 					EditTool->ProcessEvent(OnRep_EditActor);
 			}
+			else
+				std::cout << "Failed to equip edittool??\n";
 		}
 		else
 			std::cout << ("No Edit Tool Instance?\n");

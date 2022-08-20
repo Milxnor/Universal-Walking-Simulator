@@ -264,7 +264,7 @@ bool ServerReviveFromDBNOHook(UObject* DownedPawn, UFunction*, void* Parameters)
 	return false;
 }
 
-bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Parameters)
+bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Parameters) // TODO: Change this func
 {
 	std::cout << "OnSafeZoneStateChange!\n";
 
@@ -291,17 +291,26 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 		std::mt19937 gen2(rd2()); // seed the generator
 		std::uniform_int_distribution<> distr2(300.f, 5000.f);
 
-		AircraftLocationToUse += Params->NewState == EFortSafeZoneState::Starting ? AircraftLocationToUse : FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
-		*Indicator->Member<FVector>("NextCenter") = AircraftLocationToUse; // Helper::GetActorLocation(Aircraft);
+		auto world = Helper::GetWorld();
+		auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
+		auto SafeZonePhase = *AuthGameMode->Member<int>("SafeZonePhase");
 
-		// idk im stupid
+		bool bIsStartZone = SafeZonePhase == 0; // Params->NewState == EFortSafeZoneState::Starting
+		
+		// *Indicator->Member<float>("SafeZoneStartShrinkTime") // how fast the storm iwll shrink
 
-		auto PrevNextRadius = *Indicator->Member<float>("NextRadius");
+		auto Radius = *Indicator->Member<float>("Radius");
+		*Indicator->Member<float>("NextRadius") = bIsStartZone ? 10000 : Radius / 2;
 
-		if (Params->NewState == EFortSafeZoneState::Starting)
-			*Indicator->Member<float>("Radius") = 1500;
+		auto NextCenter = Indicator->Member<FVector>("NextCenter");
 
-		*Indicator->Member<float>("NextRadius") = PrevNextRadius > 10000 ? 10000 : PrevNextRadius / 2;
+		if (bIsStartZone)
+		{
+			*Indicator->Member<float>("Radius") = 14000;
+			*NextCenter = AircraftLocationToUse;
+		}
+		else
+			*NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
 	}
 
 	return true;
@@ -1177,10 +1186,6 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 					DefinitionToDrop = *(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * Index)))) + OutputItemOffset);
 				}
 
-				auto SpawnLocation = *ReceivingActor->Member<FVector>(("LootSpawnLocation"));
-				SpawnLocation += Helper::GetActorLocation(ReceivingActor);
-				std::cout << std::format("SpawnLocation X: {} Y: {} Z: {}\n", SpawnLocation.X, SpawnLocation.Y, SpawnLocation.Z);
-
 				// CostAmount
 
 				if (CurrentMaterial)
@@ -1191,7 +1196,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 				if (DefinitionToDrop)
 				{
-					Helper::SummonPickup(nullptr, DefinitionToDrop, SpawnLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset);
+					Helper::SummonPickup(Pawn, DefinitionToDrop, Helper::GetCorrectLocation(ReceivingActor), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset);
 				}
 			}
 

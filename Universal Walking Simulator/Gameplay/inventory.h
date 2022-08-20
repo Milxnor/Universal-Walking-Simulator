@@ -11,6 +11,8 @@ TakeItem - Decreases and or removes if requested
 
 */
 
+constexpr bool newSwapping = false; // there is this bug where its not actuallythe correct weapon on the client
+
 static int GetEntrySize()
 {
 	static auto FortItemEntryClass = FindObject(("ScriptStruct /Script/FortniteGame.FortItemEntry"), true);
@@ -215,7 +217,9 @@ namespace Inventory
 			// Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
 
 			static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
-			FortWeapon->ProcessEvent(OnRep_ReplicatedWeaponData);
+
+			if (OnRep_ReplicatedWeaponData)
+				FortWeapon->ProcessEvent(OnRep_ReplicatedWeaponData);
 
 			// the functgion below starts taking a param
 			// Weapon->ProcessEvent(("OnRep_AmmoCount"));
@@ -238,10 +242,6 @@ namespace Inventory
 				else
 					std::cout << ("No ClientInternalEquipWeapon!\n");
 			}
-
-			std::cout << ("Noob!\n");
-
-			// Pawn->OnRep_CurrentWeapon(); // i dont think this is needed but alr
 		}
 		else
 			std::cout << ("No weapon!\n");
@@ -269,6 +269,7 @@ namespace Inventory
 					} params{ Definition, Guid };
 					if (equipFn)
 						Pawn->ProcessEvent(equipFn, &params);
+
 					Weapon = params.Wep;
 				}
 				else
@@ -291,6 +292,23 @@ namespace Inventory
 					Helper::SetOwner(Weapon, Pawn);
 					//*Weapon->Member<UObject*>(("WeaponData")) = Definition;
 					//EquipWeapon(Pawn, Weapon, Guid, Ammo);
+
+					static auto getBulletsFn = Weapon->Function(("GetBulletsPerClip"));
+
+					if (getBulletsFn && FullName.contains("Weapon"))
+					{
+						int BulletsPerClip;
+						Weapon->ProcessEvent(getBulletsFn, &BulletsPerClip);
+						*Weapon->Member<int>(("AmmoCount")) = BulletsPerClip;
+					}
+					else
+						std::cout << ("No GetBulletsPerClip!\n");
+
+					static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
+
+					if (OnRep_ReplicatedWeaponData)
+						Weapon->ProcessEvent(OnRep_ReplicatedWeaponData);
+
 					return Weapon;
 				}
 				else
@@ -316,7 +334,7 @@ namespace Inventory
 				if (Def)
 				{
 					// std::cout << "Def Name: " << Def->GetFullName() << '\n';
-					EquipWeaponDefinition(Pawn, Def, Guid, Ammo);
+					Inventory::EquipWeaponDefinition(Pawn, Def, Guid);
 				}
 				else
 					std::cout << ("Failed to get AGID's Definition!\n");
@@ -379,7 +397,8 @@ namespace Inventory
 		static UObject* GetItemGuidFn = FindObject(("Function /Script/FortniteGame.FortItem.GetItemGuid"));
 		FGuid Guid;
 
-		ItemInstance->ProcessEvent(GetItemGuidFn, &Guid);
+		if (GetItemGuidFn)
+			ItemInstance->ProcessEvent(GetItemGuidFn, &Guid);
 
 		return Guid;
 	}
@@ -408,7 +427,7 @@ namespace Inventory
 		return parms.Ret;
 	}
 
-	void SetLoadedAmmo()
+	void GetLoadedAmmo()
 	{
 
 	}
@@ -436,23 +455,56 @@ namespace Inventory
 
 	inline UObject* EquipInventoryItem(UObject* Controller, const FGuid& Guid)
 	{
+		if (!Controller)
+			return nullptr;
+
+		auto Pawn = Helper::GetPawnFromController(Controller);
+
+		if (!Pawn)
+			return nullptr;
+
+		if (newSwapping)
+		{
+			auto CurrentWeaponList = Pawn->Member<TArray<UObject*>>("CurrentWeaponList");
+
+			std::cout << "Weapon List size: " << CurrentWeaponList->Num() << '\n';
+
+			for (int i = 0; i < CurrentWeaponList->Num(); i++)
+			{
+				auto CurrentWeaponInList = CurrentWeaponList->At(i);
+
+				if (CurrentWeaponInList && (*CurrentWeaponInList->Member<FGuid>("ItemEntryGuid") == Guid))
+				{
+					static auto OnRep_ReplicatedWeaponData = CurrentWeaponInList->Function("OnRep_ReplicatedWeaponData");
+
+					if (OnRep_ReplicatedWeaponData)
+						CurrentWeaponInList->ProcessEvent(OnRep_ReplicatedWeaponData);
+
+					// OnRep_ReplicatedAppliedAlterations?
+
+					static auto ClientGivenTo = CurrentWeaponInList->Function("ClientGivenTo");
+
+					if (ClientGivenTo)
+						CurrentWeaponInList->ProcessEvent(ClientGivenTo, &Pawn);
+
+					static auto ClientInternalEquipWeapon = Pawn->Function("ClientInternalEquipWeapon");
+
+					struct { UObject* Weapon; } ClientInternalEquipWeapon_Params{ CurrentWeaponInList };
+
+					if (ClientInternalEquipWeapon)
+						Pawn->ProcessEvent(ClientInternalEquipWeapon, &ClientInternalEquipWeapon_Params);
+
+					return nullptr;
+				}
+			}
+		}
+
 		auto CurrentItemInstance = GetItemInstanceFromGuid(Controller, Guid);
 
 		if (!CurrentItemInstance)
 			return nullptr;
 
-		auto Pawn = Helper::GetPawnFromController(Controller);
-
 		auto Def = GetItemDefinition(CurrentItemInstance);
-
-		/*if (Def != nullptr) {
-			if (std::stof(FN_Version) >= 7.40) {
-				return EquipWeaponDefinition(Pawn, Def, Guid);
-			}
-			else {
-				EquipWeapon(Pawn, Def, Guid);
-			}
-		}*/
 
 		FGuid TrackerGuid;
 
@@ -465,9 +517,11 @@ namespace Inventory
 		}
 
 		EquipWeaponDefinition(Pawn, Def, Guid, 0, TrackerGuid);
+
 		std::string FullName = Def->GetFullName();
+
 		if (FullName.contains("CarminePack") || FullName.contains("AshtonPack.")) {
-			Items::HandleCarmine(*Pawn->Member<UObject*>("Controller"));
+			Items::HandleCarmine(Controller);
 		}
 
 		return nullptr;
@@ -1020,6 +1074,23 @@ namespace Inventory
 		else
 			RemoveItem(Controller, Guid);
 
+		auto Pawn = Helper::GetPawnFromController(Controller);
+
+		if (newSwapping)
+		{
+			auto CurrentWeaponList = Pawn->Member<TArray<UObject*>>("CurrentWeaponList");
+
+			for (int i = 0; i < CurrentWeaponList->Num(); i++)
+			{
+				auto CurrentWeaponInList = CurrentWeaponList->At(i);
+
+				if (CurrentWeaponInList && (*CurrentWeaponInList->Member<FGuid>("ItemEntryGuid") == Guid))
+				{
+					CurrentWeaponList->RemoveAt(i);
+				}
+			}
+		}
+
 		return FFortItemEntry::GetItemDefinition(Entry);
 	}
 
@@ -1225,17 +1296,14 @@ inline bool ServerExecuteInventoryWeaponHook(UObject* Controller, UFunction* Fun
 		auto Pawn = Helper::GetPawnFromController(Controller);
 		auto Guid = *(*Weapon)->Member<FGuid>(("ItemEntryGuid"));
 		auto Def = *(*Weapon)->Member<UObject*>(("WeaponData"));
-
-		int Ammo = 0; // TODO: implmeent
-
-		// Inventory::EquipInventoryItem(Controller, Guid); // "hacky" // this doesjnt work maybe
 		
 		if (Def)
-			Inventory::EquipWeaponDefinition(Pawn, Def, Guid, Ammo); // scuffed
+			Inventory::EquipInventoryItem(Pawn, Guid); // scuffed
 		else
 			std::cout << ("No Def!\n");
 
 		// Inventory::EquipWeapon, *Weapon, Guid);
+
 	}
 	else
 		std::cout << ("No weapon?\n");
@@ -1338,10 +1406,12 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 				bool bDidStack = false;
 
+				UObject* newInstance = nullptr;
+
 				if (Definition && *Definition && Count)
 				{
-					auto NewInstance = Inventory::GiveItem(Controller, *Definition, EFortQuickBars::Primary, 1, *Count, &bDidStack); // TODO: Figure out what quickbars are supposed to be used.
-					Helper::EnablePickupAnimation(Pawn, Params->Pickup);
+					newInstance = Inventory::GiveItem(Controller, *Definition, EFortQuickBars::Primary, 1, *Count, &bDidStack); // TODO: Figure out what quickbars are supposed to be used.
+					Helper::EnablePickupAnimation(Pawn, Params->Pickup, /* Params->InFlyTime */ 0.75f, Params->InStartDirection);
 
 					if (bShouldSwap)
 					{
@@ -1359,6 +1429,9 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 						auto loc = Helper::GetActorLocation(Pawn);
 
 						auto DroppedPickup = Helper::SummonPickup(Pawn, HeldWeaponDef, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, 1);
+						
+						// if (newInstance)
+							// Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(newInstance));
 					}
 					else
 						bSucceededSwap = false;
@@ -1366,9 +1439,6 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 				if (bSucceededSwap)
 				{
-
-					// Helper::DestroyActor(Params->Pickup);
-
 					*bPickedUp = true;
 
 					static auto bPickedUpFn = Params->Pickup->Function(("OnRep_bPickedUp")); 

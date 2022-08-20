@@ -377,6 +377,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
+
 					// ImGui::Checkbox(("Use Beacons"), &bUseBeacons);
 
 					if (serverStatus == EServerStatus::Down && !bTraveled)
@@ -429,15 +430,12 @@ DWORD WINAPI GuiThread(LPVOID)
 						{
 							if (ImGui::Button(("Start Aircraft")))
 							{
-								/* FString StartAircraftCmd;
+								FString StartAircraftCmd;
 								StartAircraftCmd.Set(L"startaircraft");
 
-								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd); */
+								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 
 								auto gameState = Helper::GetGameState();
-
-								*gameState->Member<float>(("AircraftStartTime")) = 1.f;
-								*gameState->Member<float>(("WarmupCountdownEndTime")) = 1.f;
 
 								if (Helper::IsSmallZoneEnabled())
 								{
@@ -455,7 +453,8 @@ DWORD WINAPI GuiThread(LPVOID)
 											auto FlightSpeed = (float*)(__int64(FlightInfo) + FlightSpeedOffset);
 											auto FlightStartLocation = (FVector*)(__int64(FlightInfo) + FlightStartLocationOffset);
 
-											*FlightSpeed = 0;
+											if (FlightSpeed)
+												*FlightSpeed = 0;
 
 											// auto RandomPOI = Helper::GetRandomPOIActor();
 
@@ -475,7 +474,7 @@ DWORD WINAPI GuiThread(LPVOID)
 											FString ifrogor;
 											ifrogor.Set(L"startsafezone");
 											Helper::Console::ExecuteConsoleCommand(ifrogor);
-											*gameState->Member<float>("SafeZonesStartTime") = 1.f;
+											*gameState->Member<float>("SafeZonesStartTime") = 0.f;
 										}
 									}
 									else
@@ -552,6 +551,34 @@ DWORD WINAPI GuiThread(LPVOID)
 									std::string PlaylistName = Helper::Conversion::TextToString(*Object->Member<FText>("UIDisplayName"));
 
 									PlaylistsFile << std::format("[{}] {}\n", PlaylistName, Object->GetFullName());
+								}
+							}
+						}
+						else
+							std::cout << "Failed to open playlist file!\n";
+					}
+
+					if (ImGui::Button("Dump Weapons")) // iirc ftext changed but idk
+					{
+						std::ofstream WeaponsFile("Weapons.txt");
+
+						if (WeaponsFile.is_open())
+						{
+							WeaponsFile << "Fortnite Version: " + FN_Version << "\n\n";
+							static auto FortWeaponItemDefinitionClass = FindObjectOld("Class /Script/FortniteGame.FortWeaponItemDefinition", true);
+
+							for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
+							{
+								auto Object = GetByIndex(i);
+
+								if (Object && Object->IsA(FortWeaponItemDefinitionClass))
+								{
+									// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
+									std::string ItemDefinitionName = Helper::Conversion::TextToString(*Object->Member<FText>("DisplayName"));
+
+									// check if it contains gallery or playset?
+
+									WeaponsFile << std::format("[{}] {}\n", ItemDefinitionName, Object->GetFullName());
 								}
 							}
 						}
@@ -674,15 +701,16 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 				case 3:
 				{
-					// if (!bStarted)
-					ImGui::InputText(("Playlist"), &PlaylistToUse);
-					
+					if (!bStarted)
+						ImGui::InputText(("Playlist"), &PlaylistToUse);
+		
 					ImGui::Checkbox(("Playground"), &bIsPlayground);
 
 					// if (!bStarted) // couldnt we wqait till aircraft start
-					// ImGui::Checkbox(("Lategame"), &bIsLateGame);
 
-					// TODO: default character parts
+					if (!bIsPlayground)
+						ImGui::Checkbox(("Lategame"), &bIsLateGame);
+
 					break;
 				}
 

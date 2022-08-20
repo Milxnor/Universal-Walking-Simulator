@@ -86,26 +86,10 @@ void ConsumeAllReplicatedData(UObject* AbilitySystemComponent, FGameplayAbilityS
     }
 } */
 
-// https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1754
-
-void PrintExplicitTags(UObject* ASC)
-{
-    static auto AHAHA = 264;
-    auto MinimalReplicationGameplayCuesOff = GetOffset(ASC, (("MinimalReplicationGameplayCues")));
-    auto BlockedAbilityTags = (__int64(ASC) + (MinimalReplicationGameplayCuesOff + 0xD0));
-    auto ExplicitTags = *(FGameplayTagContainer*)(BlockedAbilityTags + AHAHA);
-    std::cout << "\n\nExplicit Tags: " << ExplicitTags.ToStringSimple(true) << "\n\n\n";
-}
-
 int16_t* GetCurrent(FPredictionKey* Key)
 {
     if (!Key)
         return nullptr;
-
-    /* if (Engine_Version < 426)
-        return &Key->Current;
-    else
-        return &((FPredictionKeyFTS*)Key)->Current; */
     
     static auto CurrentOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.PredictionKey", "Current");
     return (int16_t*)(__int64(Key) + CurrentOffset);
@@ -185,10 +169,14 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     void* Spec = FindAbilitySpecFromHandle2(ASC, Handle);
 
-    /* if (Engine_Version < 426)
+    /* void* Spec;
+
+    if (Engine_Version < 426)
         Spec = FindAbilitySpecFromHandle(ASC, Handle);
+    else if (Engine_Version == 426)
+        Spec = FindAbilitySpecFromHandleFTS(ASC, Handle);
     else
-        Spec = FindAbilitySpecFromHandleFTS(ASC, Handle); */
+        Spec = FindAbilitySpecFromHandleNewer(ASC, Handle); */
 
     if (!Spec)
     {
@@ -287,12 +275,13 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     if (!DefaultObject)
     {
-        std::cout << "Failed to create defaultobject!\n";
-        std::cout << "GameplayAbilityClass: " << GameplayAbilityClass->GetFullName() << '\n';
+        std::cout << "Failed to create defaultobject for GameplayAbilityClass: " << GameplayAbilityClass->GetFullName() << '\n';
         return nullptr;
     }
 
-    auto GenerateNewSpec = [&]() -> FGameplayAbilitySpecNewer
+    static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
+
+    auto GenerateNewSpec = [&]() -> void*
     {
         static auto GameplayAbilitySpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
         static auto GameplayAbilitySpecSize = GetSizeOfStruct(GameplayAbilitySpecStruct);
@@ -303,7 +292,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
         auto ptr = malloc(GameplayAbilitySpecSize);
 
         if (!ptr)
-            return FGameplayAbilitySpecNewer();
+            return nullptr;
 
         RtlSecureZeroMemory(ptr, GameplayAbilitySpecSize);
 
@@ -314,7 +303,6 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
         ((FFastArraySerializerItem*)ptr)->ReplicationID = -1;
         ((FFastArraySerializerItem*)ptr)->ReplicationKey = -1;
 
-        static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
         static auto AbilityOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
         static auto LevelOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Level");
         static auto InputIDOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputID");
@@ -324,15 +312,15 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
         *(int*)(__int64(ptr) + LevelOffset) = 1;
         *(int*)(__int64(ptr) + InputIDOffset) = -1;
 
-        return *(FGameplayAbilitySpecNewer*)ptr;
+        return ptr;
     };
 
-    void* NewSpec = nullptr;
+    void* NewSpec = GenerateNewSpec();
 
-    {
-        auto spec = GenerateNewSpec();
-        NewSpec = &spec;
-    }
+    if (!NewSpec)
+        return nullptr;
+
+    auto Handle = (FGameplayAbilitySpecHandle*)(__int64(NewSpec) + HandleOffset);
 
     if (!NewSpec || DoesASCHaveAbility(AbilitySystemComponent, *GetAbilityFromSpec(NewSpec)))
         return nullptr;
@@ -340,11 +328,11 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232
 
     if (Engine_Version < 426)
-        GiveAbility(AbilitySystemComponent, &((FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)NewSpec)->Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)NewSpec);
+        GiveAbility(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)NewSpec);
     else if (Engine_Version == 426)
-        GiveAbilityFTS(AbilitySystemComponent, &((FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)NewSpec)->Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)NewSpec);
+        GiveAbilityFTS(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)NewSpec);
     else
-        GiveAbilityNewer(AbilitySystemComponent, &((FGameplayAbilitySpecNewer*)NewSpec)->Handle, *(FGameplayAbilitySpecNewer*)NewSpec);
+        GiveAbilityNewer(AbilitySystemComponent,  Handle, *(FGameplayAbilitySpecNewer*)NewSpec);
 
     return *GetAbilityFromSpec(NewSpec);
 }

@@ -339,7 +339,18 @@ namespace Helper
 		return FVector();
 	}
 
-	void EnablePickupAnimation(UObject* Pawn, UObject* Pickup)
+	FVector GetCorrectLocation(UObject* Actor) {
+
+		if (!Actor)
+			return FVector{ 0, 0, 0 };
+
+		auto Location = Helper::GetActorLocation(Actor);
+		auto RightVector = Helper::GetActorRightVector(Actor);
+
+		return Location + RightVector * 70.0f + FVector{ 0, 0, 50 };
+	}
+
+	void EnablePickupAnimation(UObject* Pawn, UObject* Pickup, float FlyTime = 0.75f, FVector StartDirection = FVector())
 	{
 		if (bPickupAnimsEnabled)
 		{
@@ -367,7 +378,8 @@ namespace Helper
 				PickupLocationData->PickupTarget = Pawn;
 				PickupLocationData->ItemOwner = Pawn; // wrong I think
 				// PickupLocationData->LootInitialPosition = Helper::GetActorLocation(Pickup);
-				PickupLocationData->FlyTime = 0.75f;
+				PickupLocationData->FlyTime = FlyTime;
+				PickupLocationData->StartDirection = StartDirection;
 				static auto GuidOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemGuid"));
 				auto Guid = (FGuid*)(__int64(&*Pickup->Member<__int64>(("PrimaryPickupItemEntry"))) + GuidOffset);
 				PickupLocationData->PickupGuid = *Guid; // *FFortItemEntry::GetGuid(Pickup->Member<__int64>(("PrimaryPickupItemEntry")));
@@ -531,6 +543,9 @@ namespace Helper
 
 	UObject* GetPawnFromController(UObject* PC)
 	{
+		if (!PC)
+			return nullptr;
+
 		static auto PawnOffset = GetOffset(PC, "Pawn");
 
 		return *(UObject**)(__int64(PC) + PawnOffset);
@@ -1064,6 +1079,7 @@ namespace Helper
 
 		static auto headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
 		static auto bodyPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+		static auto noBackpack = FindObject("CustomCharacterPart /Game/Characters/CharacterParts/Backpacks/NoBackpack.NoBackpack");
 
 		if (!headPart)
 			headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA"));
@@ -1075,6 +1091,7 @@ namespace Helper
 		{
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
+			Helper::ChoosePart(Pawn, EFortCustomPartType::Backpack, noBackpack);
 
 			static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
 

@@ -312,14 +312,14 @@ namespace LootingV2
 					{
 						if (RandomBoolWithWeight(0.35))
 						{
-							Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Consumable).Definition, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
+							Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Consumable).Definition, Helper::GetCorrectLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
 								EFortPickupSpawnSource::Unset);
 						}
 						else
 						{
 							auto Weapon = GetRandomItem(ItemType::Weapon);
 
-							auto WeaponPickup = Helper::SummonPickup(nullptr, Weapon.Definition, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
+							auto WeaponPickup = Helper::SummonPickup(nullptr, Weapon.Definition, Helper::GetCorrectLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
 								EFortPickupSpawnSource::Unset);
 
 							static auto GetAmmoWorldItemDefinition_BP = Weapon.Definition->Function(("GetAmmoWorldItemDefinition_BP"));
@@ -330,7 +330,7 @@ namespace LootingV2
 								Weapon.Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
 								auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
 
-								Helper::SummonPickup(nullptr, AmmoDef, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
+								Helper::SummonPickup(nullptr, AmmoDef, Helper::GetCorrectLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
 									EFortPickupSpawnSource::Unset, *AmmoDef->Member<int>("DropCount"));
 							}
 						}
@@ -375,7 +375,7 @@ namespace LootingV2
 						auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
 
 						{
-							auto Location = GetCorrectLocation();
+							auto Location = Helper::GetCorrectLocation(BuildingContainer);
 
 							if (WeaponDef)
 								Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DefInRow.DropCount);
@@ -403,7 +403,7 @@ namespace LootingV2
 
 				if (AmmoDef)
 				{
-					auto Location = GetCorrectLocation();
+					auto Location = Helper::GetCorrectLocation(BuildingContainer);
 
 					auto DropCount = AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
 					Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount);
@@ -416,7 +416,7 @@ namespace LootingV2
 				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
 				static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
-				auto Location = GetCorrectLocation(); // GetLootSpawnLocation
+				auto Location = Helper::GetCorrectLocation(BuildingContainer); // GetLootSpawnLocation
 
 				{
 					static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -435,7 +435,7 @@ namespace LootingV2
 			{				
 				for (int i = 0; i < 5; i++)
 				{
-					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon, SupplyDropItems).Definition, GetCorrectLocation(), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 1);
+					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon, SupplyDropItems).Definition, Helper::GetCorrectLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 1);
 				}
 			}
 
@@ -938,43 +938,6 @@ namespace Looting
 
 		static void HandleSearch(UObject* BuildingContainer)
 		{
-			// SOMEONE FIX THIS FUNCTION PLEASEEEEEEEE
-			auto GetCorrectLocation = [BuildingContainer]() -> FVector {
-				// TODO: LootFinalLocation
-				/* auto LootSpawnLocation = *BuildingContainer->Member<FVector>(("LootSpawnLocation"));
-				auto ActualLocation = Helper::GetActorLocation(BuildingContainer);
-				return LootSpawnLocation + ActualLocation; */
-				auto Location = Helper::GetActorLocation(BuildingContainer);
-				auto Rotation = Helper::GetActorRotation(BuildingContainer);
-
-				if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
-				{
-					Location.X -= 170;
-					std::cout << ("Removed 170 from the X!\n");
-				}
-				else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
-				{
-					Location.Y -= 170;
-					std::cout << ("Removed 170 from the Y!\n");
-				}
-				else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
-				{
-					Location.Y += 170;
-					std::cout << ("Added 170 to the Y!\n");
-				}
-				else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
-				{
-					Location.X += 170;
-					std::cout << ("Added 170 to the X!\n");
-				}
-				else
-				{
-					std::cout << ("Unhandled rotation!\n");
-				}
-
-				return Location;
-			};
-
 			if (BuildingContainer)
 			{
 				auto BuildingContainerName = BuildingContainer->GetName();
@@ -993,7 +956,7 @@ namespace Looting
 
 							// if (AmmoDef)
 							{
-								auto Location = GetCorrectLocation();
+								auto Location = Helper::GetCorrectLocation(BuildingContainer);
 
 								if (WeaponDef)
 									Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, 1);
@@ -1019,7 +982,7 @@ namespace Looting
 
 					if (AmmoDef)
 					{
-						auto Location = GetCorrectLocation();
+						auto Location = Helper::GetCorrectLocation(BuildingContainer);
 
 						// DROPCOUNT IS VERY WRONG
 						auto DropCount = *AmmoDef->Member<int>(("DropCount"));
@@ -1033,7 +996,7 @@ namespace Looting
 					static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
 					static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
-					auto Location = GetCorrectLocation();
+					auto Location = Helper::GetCorrectLocation(BuildingContainer);
 
 					{
 						static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
@@ -1066,7 +1029,7 @@ namespace Looting
 
 					}
 
-					else if (BuildingContainerName.contains("Wumba")) // Workbench/Upgrade Bench
+					else if (BuildingContainerName.contains("IceMachine")) // fish thijngy
 					{
 
 					}
