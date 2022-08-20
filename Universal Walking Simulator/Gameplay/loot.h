@@ -354,7 +354,7 @@ namespace LootingV2
 			auto Location = Helper::GetActorLocation(BuildingContainer);
 			auto RightVector = Helper::GetActorRightVector(BuildingContainer);
 
-			return Location + RightVector * 70.0f;
+			return Location + RightVector * 70.0f + FVector{0, 0, 50};
 		};
 
 		if (BuildingContainer)
