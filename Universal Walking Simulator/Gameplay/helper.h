@@ -527,19 +527,40 @@ namespace Helper
 
 	static void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false)
 	{
-		// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
-		struct {
-			UObject* BuildingOwner; // ABuildingActor
-			UObject* SpawningController;
-			bool bUsePlayerBuildAnimations; // I think this is not on some versions
-		} IBAParams{BuildingActor, Controller, bUsePlayerBuildAnimations};
-
-		if (Controller && BuildingActor)
+		if (FnVerDouble < 18.00) // wrong probs
 		{
-			static auto fn = BuildingActor->Function(("InitializeKismetSpawnedBuildingActor"));
+			// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
+			struct {
+				UObject* BuildingOwner; // ABuildingActor
+				UObject* SpawningController;
+				bool bUsePlayerBuildAnimations; // I think this is not on some versions
+			} IBAParams{ BuildingActor, Controller, bUsePlayerBuildAnimations };
 
-			if (fn)
-				BuildingActor->ProcessEvent(fn, &IBAParams);
+			if (Controller && BuildingActor)
+			{
+				static auto fn = BuildingActor->Function(("InitializeKismetSpawnedBuildingActor"));
+
+				if (fn)
+					BuildingActor->ProcessEvent(fn, &IBAParams);
+			}
+		}
+		else
+		{
+			// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
+			struct {
+				UObject* BuildingOwner; // ABuildingActor
+				UObject* SpawningController;
+				bool bUsePlayerBuildAnimations; // I think this is not on some versions
+				UObject* ReplacedBuilding;
+			} IBAParams{ BuildingActor, Controller, bUsePlayerBuildAnimations, nullptr};
+
+			if (Controller && BuildingActor)
+			{
+				static auto fn = BuildingActor->Function(("InitializeKismetSpawnedBuildingActor"));
+
+				if (fn)
+					BuildingActor->ProcessEvent(fn, &IBAParams);
+			}
 		}
 	}
 

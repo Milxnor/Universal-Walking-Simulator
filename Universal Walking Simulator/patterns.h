@@ -340,6 +340,10 @@ void InitializePatterns()
         ReceiveFStringSig = "48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 00 F6 41 28 01 48 8B F2 48 8B F9 0F 84 ? ? ? ? 48 8B 49";
         ReceiveUniqueIdReplSig = "40 55 53 57 48 8B EC 48 83 EC 40 80 79 28 00 48 8B FA 48 8B D9 7C 1A 4C 8D 4D 20 48 8B D3 48 8B CF E8 ? ? ? ? 48 8B C3 48 83 C4 40 5F 5B 5D C3 F6 41 2B 08";
         KickPlayerSig = "48 8B C4 48 89 58 08 48 89 70 10 48 89 78 18 4C 89 60 20 55 41 56 41 57 48 8B EC 48 83 EC 60 48 83 65 ? ? 4C 8B F2 83 65 E8 00 4C 8B E1 83 65 EC 00 48 8D 4D E0 BA ? ? ? ? 4D 8B F8 E8 ? ? ? ?";
+        GiveAbilitySig = "48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 83 EC 20 8B 81 ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 85 C0 7E 54 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01 89 87 ? ? ? ? 3B";
+        MarkAbilitySpecDirtySig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B 01 41 8A F0 48 8B FA 48 8B D9 FF 90 ? ? ? ? 84 C0 74 3E 48 8B 47 10 48 85 C0 74 0E 80 B8 ? ? ? ? ? 75 05 40 84 F6 74 16 80 8B ? ? ? ? ?";
+        InternalTryActivateAbilitySig = "4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 8B DA 48 8B F1 E8 ? ? ? ? 48 8D 8E";
+        StaticFindObjectSig = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 60 45 33 ED 45 8A F9 44 38 2D ? ? ? ? 49 8B F8 48 8B F2 4C 8B E1 0F 85 ? ? ? ? 44";
     }
 
     if (FnVerDouble >= 19.00)
@@ -512,7 +516,7 @@ void InitializePatterns()
     if (Engine_Version >= 419 && FnVerDouble < 17.00)
         CheckPattern(("NetDebug"), NetDebugAddr, &NetDebug);
 
-    if (Engine_Version >= 420 && FnVerDouble < 18.00)
+    if (Engine_Version >= 420) // && FnVerDouble < 18.00)
     {
         GiveAbilityAddr = FindPattern(GiveAbilitySig);
 
@@ -546,6 +550,9 @@ void InitializePatterns()
             
             if (!InternalTryActivateAbilityAddr)
                 InternalTryActivateAbilityAddr = FindPattern(("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 8B DA 4C 8B F1 E8 ? ? ? ? 4D 8D BE ? ? ? ? 33 D2 49"));
+
+            if (!InternalTryActivateAbilityAddr)
+                InternalTryActivateAbilityAddr = FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 48 8D 05 ? ? ? ? 44 38 3D ? ? ? ? 8B"); // 5.10
 
             if (Engine_Version < 426)
                 CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbility);
