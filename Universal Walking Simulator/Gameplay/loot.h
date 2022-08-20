@@ -351,39 +351,10 @@ namespace LootingV2
 	static void HandleSearch(UObject* BuildingContainer)
 	{
 		auto GetCorrectLocation = [BuildingContainer]() -> FVector {
-			// TODO: LootFinalLocation
-			/* auto LootSpawnLocation = *BuildingContainer->Member<FVector>(("LootSpawnLocation"));
-			auto ActualLocation = Helper::GetActorLocation(BuildingContainer);
-			return LootSpawnLocation + ActualLocation; */
 			auto Location = Helper::GetActorLocation(BuildingContainer);
-			auto Rotation = Helper::GetActorRotation(BuildingContainer);
+			auto RightVector = Helper::GetActorRightVector(BuildingContainer);
 
-			if (Rotation.Yaw >= 0 && Rotation.Yaw <= 89)
-			{
-				Location.X -= 170;
-				std::cout << ("Removed 170 from the X!\n");
-			}
-			else if (Rotation.Yaw >= 90 && Rotation.Yaw <= 179 || Rotation.Yaw < -180 && Rotation.Yaw >= -269)
-			{
-				Location.Y -= 170;
-				std::cout << ("Removed 170 from the Y!\n");
-			}
-			else if (Rotation.Yaw >= 180 && Rotation.Yaw <= 269 || Rotation.Yaw < -179 && Rotation.Yaw >= -90)
-			{
-				Location.Y += 170;
-				std::cout << ("Added 170 to the Y!\n");
-			}
-			else if (Rotation.Yaw >= 270 && Rotation.Yaw <= 360 || Rotation.Yaw < 0 && Rotation.Yaw >= -89)
-			{
-				Location.X += 170;
-				std::cout << ("Added 170 to the X!\n");
-			}
-			else
-			{
-				std::cout << ("Unhandled rotation!\n");
-			}
-
-			return Location;
+			return Location + RightVector * 70.0f + FVector{0, 0, 50};
 		};
 
 		if (BuildingContainer)
