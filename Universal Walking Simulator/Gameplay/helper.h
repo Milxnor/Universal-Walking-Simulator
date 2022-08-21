@@ -209,7 +209,6 @@ namespace Helper
 		}
 		//Loot Lake
 		if (Season == 6) {
-			return;
 			static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
 			
 			if (FloatingIsland)
