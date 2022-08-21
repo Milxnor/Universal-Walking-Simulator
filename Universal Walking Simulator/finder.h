@@ -4,6 +4,8 @@
 #include <string>
 #include <format>
 
+#include <vector>
+
 std::string ToByteStr(uintptr_t Addr)
 {
 	return std::to_string(*(uint8_t*)Addr);
@@ -179,5 +181,54 @@ namespace Finder
 
 			return "";
 		}
+
+        // HyperionCSharp: Added PatternScan_Module Function
+        uintptr_t PatternScan_Module(uintptr_t moduleAddy, const char* signature)
+        {
+            static auto patternToByte = [](const char* pattern)
+            {
+                auto bytes = std::vector<int>{};
+                const auto start = const_cast<char*>(pattern);
+                const auto end = const_cast<char*>(pattern) + strlenf_(pattern);
+
+                for (auto current = start; current < end; ++current)
+                {
+                    if (*current == '?')
+                    {
+                        ++current;
+                        if (*current == '?')
+                            ++current;
+                        bytes.push_back(-1);
+                    }
+                    else { bytes.push_back(strtoul(current, &current, 16)); }
+                }
+                return bytes;
+            };
+
+            const auto dosHeaders = (PIMAGE_DOS_HEADER)moduleAddy;
+            const auto ntHeaders = (PIMAGE_NT_HEADERS)((std::uint8_t*)moduleAddy + dosHeaders->e_lfanew);
+
+            const auto sizeOfImage = ntHeaders->OptionalHeader.SizeOfImage;
+            auto       patternBytes = patternToByte(signature);
+            const auto scanBytes = reinterpret_cast<std::uint8_t*>(moduleAddy);
+
+            const auto s = patternBytes.size();
+            const auto d = patternBytes.data();
+
+            for (auto i = 0UL; i < sizeOfImage - s; ++i)
+            {
+                bool found = true;
+                for (auto j = 0UL; j < s; ++j)
+                {
+                    if (scanBytes[i + j] != d[j] && d[j] != -1)
+                    {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found) { return reinterpret_cast<uintptr_t>(&scanBytes[i]); }
+            }
+            return NULL;
+        }
 	}
 }
