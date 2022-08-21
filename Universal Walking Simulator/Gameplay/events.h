@@ -104,7 +104,7 @@ namespace EventHelper // credits spooky man
 namespace Events {
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
+		return (Version == 17.50f || Version == 17.30f || Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
@@ -112,6 +112,39 @@ namespace Events {
 
 		if (HasEvent()) {
 			std::cout << ("Loading Event!\n");
+
+			if (Version == 17.50f) {
+				auto KiwiLoader = FindObject(("Kiwi_EventScript_C /Kiwi/Levels/Kiwi_P.Kiwi_P.PersistentLevel.Kiwi_EventScript_2"));
+				auto AwfulDuckBGA = FindObject(("BGA_Kiwi_AwfulDuck_C /Kiwi/Levels/Kiwi_P.Kiwi_P.PersistentLevel.BGA_Kiwi_AwfulDuck_2"));
+				auto AwfulDuckManager = FindObject(("BP_Kiwi_AwfulDuck_Manager_C /Kiwi/Levels/Kiwi_P.Kiwi_P.PersistentLevel.BP_Kiwi_AwfulDuck_Manager_4"));
+				if (KiwiLoader)
+				{
+					static auto Function = KiwiLoader->Function("LoadKiwiAssets");
+					KiwiLoader->ProcessEvent(Function);
+
+					/*static auto Ability1 = FindObject("BlueprintGeneratedClass /Kiwi/Gameplay/GameplayAbilities/GA_Kiwi_AwfulDuck_Warning.GA_Kiwi_AwfulDuck_Warning_C");
+					static auto Ability2 = FindObject("BlueprintGeneratedClass /Kiwi/Gameplay/GameplayAbilities/GA_Kiwi_AwfulDuck_WarmUpPulse.GA_Kiwi_AwfulDuck_WarmUpPulse_C");
+					static auto Ability3 = FindObject("BlueprintGeneratedClass /Kiwi/Gameplay/GameplayAbilities/GA_Kiwi_AwfulDuck.GA_Kiwi_AwfulDuck_C");*/
+					
+				}
+				
+
+			}
+			if (Version == 17.30f) {
+				static auto BuffetLoaderClass = FindObject(("BlueprintGeneratedClass /Buffet/Gameplay/Blueprints/BP_Buffet_Level_Loader.BP_Buffet_Level_Loader_C"));
+				static auto BuffetLoader = Easy::SpawnObject(BuffetLoaderClass, nullptr);
+				struct 
+				{
+					bool Condition;
+					int PhaseIndex;
+				} Function_params {true, 0};
+				 
+				static auto Function = BuffetLoader->Function("LoadBuffetLevel");
+				BuffetLoader->ProcessEvent(Function, &Function_params);
+				
+					
+				
+			}
 
 			if (Version == 12.61f) {
 				auto FritterLoader = FindObject(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0"));
@@ -172,6 +205,32 @@ namespace Events {
 		if (HasEvent()) {
 			std::cout << ("Starting Event!\n");
 
+			if (Version == 17.50f) {
+				static auto KiwiScripting = FindObject(("BP_Kiwi_Master_Scripting_C /Kiwi/Levels/Kiwi_P.Kiwi_P.PersistentLevel.BP_Kiwi_Master_Scripting_2"));
+				static auto AwfulDuckManager = FindObject(("BP_Kiwi_AwfulDuck_Manager_C /Kiwi/Levels/Kiwi_P.Kiwi_P.PersistentLevel.BP_Kiwi_AwfulDuck_Manager_4"));
+				
+
+				if (KiwiScripting)
+				{
+					static auto Function = KiwiScripting->Function("startevent");
+					KiwiScripting->ProcessEvent(Function);
+					static auto Function2 = AwfulDuckManager->Function("CheckMassAbductionComplete");
+					AwfulDuckManager->ProcessEvent(Function2);
+					
+
+				}
+				
+
+			}
+			if (Version == 17.30f) {
+				static auto BuffetScripting = FindObject(("BP_Buffet_Master_Scripting_C /Buffet/Levels/Buffet_P.Buffet_P.PersistentLevel.BP_Event_Master_Scripting_2"));
+
+				if (BuffetScripting)
+				{
+					static auto Function = BuffetScripting->Function("startevent");
+					BuffetScripting->ProcessEvent(Function);
+				}
+			}
 			if (Version == 12.61f) {
 				auto AP = FindObject(("LevelSequencePlayer /Fritter/Level/FritterSequenceLevel.FritterSequenceLevel.PersistentLevel.Fritter_2.AnimationPlayer"));
 				

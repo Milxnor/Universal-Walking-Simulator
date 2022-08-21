@@ -1278,6 +1278,10 @@ bool Setup(/* void* ProcessEventHookAddr */)
 				ToStringAddr = FindPattern(("48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 56 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 8B 19 33 ED 0F B7 01 48 8B FA C1 EB 10 4C"));
 		}
 	}
+	if (FnVerDouble == 17.30)
+	{
+		FreeMemoryAddr = FindPattern(("48 85 C9 0F 84 ? ? ? ? 53 48 83 EC 20 48 89 7C 24 30 48 8B D9 48 8B 3D ? ? ? ? 48 85 FF 0F 84 ? ? ? ? 48 8B 07 4C 8B 40 30 48 8D 05 ? ? ? ? 4C 3B C0"));
+	}
 
 	// if (Engine_Version >= 500)
 	if (FnVerDouble >= 19.00)
