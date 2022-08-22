@@ -167,7 +167,7 @@ static FVector getRandomLocation()
         { 29050, -21225, 25000 }, //Dusty Mountain
         { 18325, -17881, 25000 }, //Salty Mountain
         { 6621, 18784, 25000 }, //Random Location 2
-        { -6702, 33251, 25000 }, //Random Location 3/bridge
+        { -6702, 33251, 25000 } //Random Location 3/bridge
         /*  //Off map
         { 137767, 40939, 25000 }, //off map near where risky would be
         { 137767, 40939, 25000 }, //off map near where risky would be DUPE
