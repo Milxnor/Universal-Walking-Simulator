@@ -530,6 +530,9 @@ DWORD WINAPI GuiThread(LPVOID)
 										Helper::Console::ExecuteConsoleCommand(ifrogor);
 										*gameState->Member<float>("SafeZonesStartTime") = 0.f;
 										std::cout << ("Started aircraft!\n");
+										FString ShrinkSafeZone;
+										ShrinkSafeZone.Set(L"startshrinksafezone");
+										Helper::Console::ExecuteConsoleCommand(ShrinkSafeZone);
 									}
 								}
 								else
@@ -575,7 +578,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 						if (ImGui::Button(("Skip SafeZone"))) {
 							FString ShrinkSafeZone;
-							ShrinkSafeZone.Set(L"shrinksafezone");
+							ShrinkSafeZone.Set(L"startshrinksafezone");
 							Helper::Console::ExecuteConsoleCommand(ShrinkSafeZone);
 						}
 

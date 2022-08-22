@@ -120,6 +120,7 @@ void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, vo
     else
         FunctionsToHook.insert({ funcObject, func });
 }
+
 static FVector getRandomLocation()
 {
     static std::vector<FVector> Locations = {
@@ -179,12 +180,18 @@ static FVector getRandomLocation()
         { -26584, -90150, 25000 }, //off map bottom left 2 DUPE
         { -123778, -112480, 20000 } //Spawn Island*/
     };
+    
+        auto Location = Locations[rand() % Locations.size()];
+        return Location;
+    
 
-    auto Location = Locations[rand() % Locations.size()];
-    return Location;
+    
 }
 static auto RandomLocation = getRandomLocation();
+
+
 static auto AircraftLocationToUse = RandomLocation;
+
 
 const wchar_t* GetMapName()
 {
