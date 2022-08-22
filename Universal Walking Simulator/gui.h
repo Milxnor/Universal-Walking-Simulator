@@ -456,11 +456,11 @@ DWORD WINAPI GuiThread(LPVOID)
 											if (FlightSpeed)
 												*FlightSpeed = 0;
 
-											// auto RandomPOI = Helper::GetRandomPOIActor();
+											auto RandomFoundation = Helper::GetRandomFoundation();
 
 											if (true) // RandomPOI)
 											{
-												// auto RandomPOILocation = Helper::GetActorLocation(RandomPOI);
+												AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{0, 0, 5000};
 
 												*FlightStartLocation = AircraftLocationToUse;
 												Helper::SetActorLocation(Aircraft, AircraftLocationToUse);

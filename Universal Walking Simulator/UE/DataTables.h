@@ -31,9 +31,12 @@ static UObject* GetLootPackages()
 
 	auto& LootPackagesName = Default;
 
-	/* if (LootPackagesSoft && LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex) {
+	if (LootPackagesSoft && LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex) {
 		LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
-	} */
+		std::cout << "SubPath: " << LootPackagesSoft->ObjectID.SubPathString.ToString();
+	}
+	else
+		std::cout << "Unable to find LootPackages! Falling back to default Playground.\n";
 
 	std::cout << "AssetPathName: " << LootPackagesName << '\n';
 
@@ -46,59 +49,6 @@ static UObject* GetLootPackages()
 		std::cout << "LootPackages Name: " << LootPackages->GetFullName() << '\n';
 	else
 		return nullptr;
-
-	return LootPackages;
-
-	auto LootPackagesRowMap = GetRowMap(LootPackages);
-	
-	auto Men = LootPackagesRowMap.Pairs.Elements.Data;
-
-	std::cout << "Men Num: " << Men.Num() << '\n';
-
-	std::cout << "RowStructName: " << (*LootPackages->Member<UObject*>(("RowStruct")))->GetFullName() << '\n';
-
-	for (int i = 0; i < Men.Num(); i++)
-	{
-		auto& Man = Men.At(i);
-		auto& Pair = Man.ElementData.Value;
-		auto RowName = Pair.First.ToString();
-		auto LootPackageDataOfRow = Pair.Second; // ScriptStruct FortniteGame.FortLootPackageData
-		// std::cout << std::format("[{}] {}\n", i, RowName);
-
-		if (RowName.starts_with("WorldList.AthenaLoot"))
-		{
-			static auto off = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "ItemDefinition");
-			static auto countOff = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortLootPackageData", "Count");
-
-			auto ItemDef = (TSoftObjectPtr*)(__int64(LootPackageDataOfRow) + off);
-			auto Count = (int*)(__int64(LootPackageDataOfRow) + countOff);
-
-			std::cout << std::format("Count: {} ItemDef: {}\n", *Count, ItemDef->ObjectID.AssetPathName.ToString());
-
-			/*
-			
-				"LootPackageID": "WorldList.AthenaLoot.Weapon.HighAssaultAuto",
-				"Weight": 0.4,
-				"NamedWeightMult": "None",
-				"PotentialNamedWeights": [],
-				"Count": 1,
-				"LootPackageCategory": 0,
-				"GameplayTags": [],
-				"RequiredTag": "None",
-				"LootPackageCall": "",
-				"ItemDefinition": {
-				  "AssetPathName": "/Game/Athena/Items/Weapons/WID_Assault_SemiAuto_Athena_UC_Ore_T03.WID_Assault_SemiAuto_Athena_UC_Ore_T03",
-				  "SubPathString": ""
-				},
-				"PersistentLevel": "",
-				"MinWorldLevel": -1,
-				"MaxWorldLevel": -1,
-				"bAllowBonusDrops": true,
-				"Annotation": ";List:WorldList.AthenaLoot.Weapon.HighAssaultAuto.C0;Item:WID.Assault.SemiAuto.Athena.UC.Ore.T03"
-			
-			*/
-		}
-	}
 
 	return LootPackages;
 }

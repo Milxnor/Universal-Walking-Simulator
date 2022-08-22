@@ -182,6 +182,58 @@ namespace Easy
 
 namespace Helper
 {
+	FVector GetActorLocation(UObject* Actor)
+	{
+		if (!Actor)
+			return FVector();
+
+		/* static */ auto K2_GetActorLocationFN = Actor->Function(("K2_GetActorLocation"));
+
+		if (K2_GetActorLocationFN)
+		{
+			FVector loc;
+			Actor->ProcessEvent(K2_GetActorLocationFN, &loc);
+			return loc;
+		}
+		else
+			K2_GetActorLocationFN = Actor->Function(("K2_GetActorLocation"));
+
+		return FVector();
+	}
+
+	FRotator GetActorRotation(UObject* Actor)
+	{
+		static auto K2_GetActorRotationFN = Actor->Function(("K2_GetActorRotation"));
+
+		if (K2_GetActorRotationFN)
+		{
+			FRotator loc;
+			Actor->ProcessEvent(K2_GetActorRotationFN, &loc);
+			return loc;
+		}
+		else
+			K2_GetActorRotationFN = Actor->Function(("K2_GetActorRotation"));
+
+		return FRotator();
+	}
+
+	void ShowBuilding(UObject* Foundation)
+	{
+		if (!Foundation)
+			return;
+
+		*Foundation->Member<uint8_t>(("DynamicFoundationType")) = 0;
+
+		struct BITMF
+		{
+			uint8_t                                        bConditionalFoundation : 1;                        // Mask : 0x1 0xC68(0x1)(Edit, NoDestructor, Protected, HasGetValueTypeHash, NativeAccessSpecifierProtected)
+			uint8_t                                        bServerStreamedInLevel : 1;
+		};
+
+		Foundation->Member<BITMF>("bServerStreamedInLevel")->bServerStreamedInLevel = true;
+		Foundation->ProcessEvent("OnRep_ServerStreamedInLevel");
+	}
+
 	//Show Missing POIs. Credit to Ultimanite for most of this.
 	void FixPOIs() {
 		float Version = std::stof(FN_Version);
@@ -189,40 +241,45 @@ namespace Helper
 		//Volcano
 		if (Season == 8) {
 			static auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
-			
-			*Volcano->Member<uint8_t>(("DynamicFoundationType")) = 0;
-
-			static auto OnRep_ServerStreamedInLevel = Volcano->Function(("OnRep_ServerStreamedInLevel"));
-		
-			if (OnRep_ServerStreamedInLevel)
-				Volcano->ProcessEvent(OnRep_ServerStreamedInLevel);
-			else
-				std::cout << ("Unable to find OnRep_ServerStreamedInLevel!\n");
+			ShowBuilding(Volcano);
 		}
 		//Pleasant
 		if (Season == 7) {
-			*FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36"))->Member<uint8_t>(("DynamicFoundationType")) = 0;
+			static auto idfk = FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")); // polar peak?
+			ShowBuilding(idfk);
+
+			// static auto tilted = FindObject("ahh /Game/Athena/Maps/Buildings/5x5/Athena_URB_5x5_Shops_a");
+			// ShowBuilding(tilted);
 		}
+
 		//Marshamello
 		if (Version == 7.30f) {
-			*FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"))->Member<uint8_t>(("DynamicFoundationType")) = 0;
+			static auto PleasantPark = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"));
+			ShowBuilding(PleasantPark);
 		}
 		//Loot Lake
 		if (Season == 6) {
 			static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
-			
-			if (FloatingIsland)
-				*FloatingIsland->Member<uint8_t>(("DynamicFoundationType")) = 0;
-
 			static auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
+			static auto Lake2 = FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
 
-			if (Lake)
-				*Lake->Member<uint8_t>(("DynamicFoundationType")) = 0;
+			ShowBuilding(FloatingIsland);
+			ShowBuilding(Lake);
+			ShowBuilding(Lake2);
 
-			FloatingIsland->ProcessEvent("OnRep_DynamicFoundationTransform");
-			Lake->ProcessEvent("OnRep_DynamicFoundationTransform");
-			FloatingIsland->ProcessEvent("OnRep_FoundationEnabledState");
-			Lake->ProcessEvent("OnRep_FoundationEnabledState");
+			// *scripting->Member<FVector>("IslandPosition") = Helper::GetActorLocation(FloatingIsland);
+
+			/* static auto iforgot = FindObject("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13");
+
+			if (iforgot)
+			{
+				*iforgot->Member<uint8_t>(("DynamicFoundationType")) = 0;
+				iforgot->Member<BITMF>("bServerStreamedInLevel")->bServerStreamedInLevel = true;
+				iforgot->ProcessEvent("OnRep_ServerStreamedInLevel");
+			}
+			else
+				std::cout << "No I forgot!\n"; */
+
 		}
 
 		/*
@@ -231,6 +288,7 @@ namespace Helper
 		[51710] Function /Script/FortniteGame.BuildingFoundation.OnLevelStreamedIn
 		[51711] Function /Script/FortniteGame.BuildingFoundation.OnRep_DynamicFoundationRepData
 		// OnRep_DynamicFoundationTransform
+
 		*/
 	}
 	
@@ -279,25 +337,6 @@ namespace Helper
 			Controller->ProcessEvent(fn, &bIsInAircraft);
 
 		return bIsInAircraft;
-	}
-
-	FVector GetActorLocation(UObject* Actor)
-	{
-		if (!Actor)
-			return FVector();
-
-		/* static */ auto K2_GetActorLocationFN = Actor->Function(("K2_GetActorLocation"));
-
-		if (K2_GetActorLocationFN)
-		{
-			FVector loc;
-			Actor->ProcessEvent(K2_GetActorLocationFN, &loc);
-			return loc;
-		}
-		else
-			K2_GetActorLocationFN = Actor->Function(("K2_GetActorLocation"));
-
-		return FVector();
 	}
 
 	FVector GetActorForwardVector(UObject* Actor)
@@ -511,6 +550,18 @@ namespace Helper
 		return Owner;
 	}
 
+	UObject* GetOwner(UObject* Actor)
+	{
+		static auto fn = Actor->Function(("GetOwner"));
+
+		UObject* Owner = nullptr;
+
+		if (fn)
+			Actor->ProcessEvent(fn, &Owner);
+
+		return Owner;
+	}
+
 	void DestroyActor(UObject* Actor)
 	{
 		if (!Actor) 
@@ -522,22 +573,6 @@ namespace Helper
 			Actor->ProcessEvent(fn);
 		else
 			std::cout << ("Failed to find K2_DestroyActor function!\n");
-	}
-
-	FRotator GetActorRotation(UObject* Actor)
-	{
-		static auto K2_GetActorRotationFN = Actor->Function(("K2_GetActorRotation"));
-
-		if (K2_GetActorRotationFN)
-		{
-			FRotator loc;
-			Actor->ProcessEvent(K2_GetActorRotationFN, &loc);
-			return loc;
-		}
-		else
-			K2_GetActorRotationFN = Actor->Function(("K2_GetActorRotation"));
-
-		return FRotator();
 	}
 
 	UObject* GetPawnFromController(UObject* PC)
@@ -840,8 +875,41 @@ namespace Helper
 	{
 		*Actor->Member<UObject*>(("Owner")) = Owner; // TODO: Call SetOwner
 		static auto OnRepOwner = Actor->Function(("OnRep_Owner"));
+
 		if (OnRepOwner)
 			Actor->ProcessEvent(OnRepOwner);
+	}
+
+	void SpawnPlaysetFromDefinition(UObject* Definition, const FVector& Loc, const FRotator& Rot)
+	{
+		struct FFortPlaysetStreamingData
+		{
+			FName                                       PackageName;                                              // 0x0000(0x0008) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FName                                       UniquePackageName;                                        // 0x0008(0x0008) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FVector                                     Location;                                                 // 0x0010(0x000C) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FRotator                                    Rotation;                                                 // 0x001C(0x000C) (ZeroConstructor, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
+			unsigned char                                      bValid : 1;                                               // 0x0028(0x0001) (NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      UnknownData00[0x3];                                       // 0x0029(0x0003) MISSED OFFSET
+		};
+
+		struct {
+			UObject* WorldContextObject;
+			UObject* Playset;
+			FVector Location;
+			FRotator Rotation;
+			FFortPlaysetStreamingData OutLevelData;
+			UObject* LevelStreamingDynamic;
+		} params{ Helper::GetWorld(), Definition, Loc, Rot };
+
+		static auto def = FindObject("FortPlaysetItemDefinition /Script/FortniteGame.Default__FortPlaysetItemDefinition");
+
+		std::cout << "Size of FFortPlaysetStreamingData: " << GetSizeOfStruct(FindObject("ScriptStruct /Script/FortniteGame.FortPlaysetStreamingData")) << '\n';
+		std::cout << "Our size: " << sizeof(FFortPlaysetStreamingData) << '\n';
+
+		static auto SpawnPlayset = def->Function("SpawnPlayset");
+
+		if (SpawnPlayset)
+			def->ProcessEvent(SpawnPlayset, &params);
 	}
 
 	static UObject* GetVehicle(UObject* Pawn)
@@ -893,9 +961,9 @@ namespace Helper
 		return bIsLateGame;
 	}
 
-	static UObject* GetRandomPOIActor()
+	static UObject* GetRandomFoundation()
 	{
-		if (Helper::IsSmallZoneEnabled())
+		/* if (Helper::IsSmallZoneEnabled())
 		{
 			auto POIManager = *Helper::GetGameState()->Member<UObject*>("PoiManager");
 
@@ -910,6 +978,20 @@ namespace Helper
 					if (POI)
 						return POI;
 				}
+			}
+		} */
+
+		static auto FoundationClass = FindObject("Class /Script/FortniteGame.BuildingFoundation");
+		auto AllFoundations = GetAllActorsOfClass_(FoundationClass);
+
+		if (AllFoundations.Num() > 0)
+		{
+			while (true)
+			{
+				auto Foundation = AllFoundations.At(rand() % (AllFoundations.Num()));;
+
+				if (Foundation)
+					return Foundation;
 			}
 		}
 

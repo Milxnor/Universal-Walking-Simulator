@@ -486,21 +486,7 @@ namespace LootingV2
 
 				if (Actor)
 				{
-					struct FCollectorUnitInfo
-					{
-						UObject* InputItem;                                                // 0x0000(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
-						char pad[0x0028];
-						UObject* OverrideInputItemTexture;                                 // 0x0028(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
-						unsigned char                                      bUseDefinedOutputItem : 1;                                // 0x0030(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
-						unsigned char                                      UnknownData00[0x7];                                       // 0x0031(0x0007) MISSED OFFSET
-						UObject* OutputItem;                                               // 0x0038(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
-						TArray<__int64>                      OutputItemEntry;                                          // 0x0040(0x0010) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, Transient)
-						FName                                       OverrideOutputItemLootTierGroupName;                      // 0x0050(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
-						char pad1[0xA8];
-						UObject* OverrideOutputItemTexture;                                // 0x0100(0x0008) (Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData)
-					};
-
-					TArray<FCollectorUnitInfo>* ItemCollections = Actor->Member<TArray<FCollectorUnitInfo>>(("ItemCollections")); // CollectorUnitInfo
+					TArray<__int64>* ItemCollections = Actor->Member<TArray<__int64>>(("ItemCollections")); // CollectorUnitInfo
 
 					if (ItemCollections)
 					{
@@ -516,10 +502,9 @@ namespace LootingV2
 						static auto OutputItemOffset = FindOffsetStruct(CollectorUnitInfoClassName, ("OutputItem"));
 
 						std::cout << ("Offset: ") << OutputItemOffset << '\n';
-						// ItemCollections->At(i).OutputItem = LootingTables::GetWeaponDef();
+
 						// So this is equal to Array[1] + OutputItemOffset, but since the array is __int64, it doesn't calcuate it properly so we have to implement it ourselves
-						std::cout << __int64(&ItemCollections->At(0).OutputItem) << '\n';
-						std::cout << __int64(&*(UObject**)(*(__int64*)(__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)) + OutputItemOffset)) << '\n';
+
 						*(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
 						*(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 1)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
 						*(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 2)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
@@ -533,6 +518,8 @@ namespace LootingV2
 
 			Actors.Free();
 		}
+		else
+			std::cout << "Unable to find BuildingItemCollectorClass!\n";
 
 		std::cout << ("Finished filling vending machines!\n");
 

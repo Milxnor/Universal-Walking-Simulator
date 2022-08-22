@@ -1296,14 +1296,17 @@ inline bool ServerExecuteInventoryWeaponHook(UObject* Controller, UFunction* Fun
 		auto Pawn = Helper::GetPawnFromController(Controller);
 		auto Guid = *(*Weapon)->Member<FGuid>(("ItemEntryGuid"));
 		auto Def = *(*Weapon)->Member<UObject*>(("WeaponData"));
-		
+
+		int Ammo = 0; // TODO: implmeent
+
+		// Inventory::EquipInventoryItem(Controller, Guid); // "hacky" // this doesjnt work maybe
+
 		if (Def)
-			Inventory::EquipInventoryItem(Pawn, Guid); // scuffed
+			Inventory::EquipWeaponDefinition(Pawn, Def, Guid, Ammo); // scuffed
 		else
 			std::cout << ("No Def!\n");
 
 		// Inventory::EquipWeapon, *Weapon, Guid);
-
 	}
 	else
 		std::cout << ("No weapon?\n");

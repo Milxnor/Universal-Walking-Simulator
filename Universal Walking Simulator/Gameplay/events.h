@@ -163,6 +163,12 @@ namespace Events {
 				UObject* BF = FindObject(("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
 				UObject* Func = BF->Function(("LoadButterflySublevel"));
 				BF->ProcessEvent(Func);
+
+				static auto scripting = FindObjectOld("BP_IslandScripting_C_", true);
+				scripting->ProcessEvent("LoadDynamicLevels");
+
+				scripting->ProcessEvent("OnRep_CachedTime");
+				scripting->ProcessEvent("TrySetIslandLocation");
 			}
 		}
 	}

@@ -400,7 +400,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
     }
 
-    if (false && FnVerDouble /* > */ == 7.40) // idk why this dopesnt work
+    if (false && FnVerDouble >= 7.40) // idk why this dopesnt work
     {
         struct FUniqueNetIdRepl // : public FUniqueNetIdWrapper
         {
@@ -410,22 +410,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
             TArray<unsigned char>                              ReplicationBytes;                                         // 0x0018(0x0010) (ZeroConstructor, Transient)
         };
 
-        struct FGameMemberInfo : public FFastArraySerializerItem
-        {
-            unsigned char                                      SquadId;                                                  // 0x000C(0x0001) (ZeroConstructor, IsPlainOldData)
-            unsigned char                                      TeamIndex;                                                // 0x000D(0x0001) (ZeroConstructor, IsPlainOldData)
-            unsigned char                                      UnknownData00[0x2];                                       // 0x000E(0x0002) MISSED OFFSET
-            FUniqueNetIdRepl id;
-        };
-
-        struct FGameMemberInfoArray : public FFastArraySerializerOL
-        {
-            TArray<FGameMemberInfo>                     Members;                                                  // 0x0108(0x0010) (ZeroConstructor)
-            UObject* OwningGameState;                                          // 0x0118(0x0008) (ZeroConstructor, Transient, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
-        };
-
         static auto GameState = Helper::GetGameState();
-        auto GameMemberInfoArray = GameState->Member<FGameMemberInfoArray>("GameMemberInfoArray");
+        auto GameMemberInfoArray = GameState->Member<__int64>("GameMemberInfoArray");
 
         static int TeamIDX = 4;
 
@@ -442,42 +428,72 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
         static auto GameMemberInfoStruct = FindObject("ScriptStruct /Script/FortniteGame.GameMemberInfo");
         static auto SizeOfGameMemberInfo = GetSizeOfStruct(GameMemberInfoStruct);
-        auto NewInfo = FGameMemberInfo(); // malloc(SizeOfGameMemberInfo);
+        auto NewInfo = (__int64*)malloc(SizeOfGameMemberInfo);
 
-        // *(uint8_t*)(__int64(&NewInfo) + SquadIdInfoOffset) = TeamIDX;
-        // *(uint8_t*)(__int64(&NewInfo) + TeamIndexOffset) = TeamIDX;
-        // *(FUniqueNetIdRepl*)(__int64(&NewInfo) + MemberUniqueIdOffset) = *PlayerState->Member<FUniqueNetIdRepl>("UniqueId");
+        static auto UniqueIdSize = GetSizeOfStruct(FindObject("ScriptStruct /Script/Engine.UniqueNetIdRepl"));
 
-        NewInfo.SquadId = TeamIDX;
-        NewInfo.TeamIndex = TeamIDX;
-        NewInfo.id = *PlayerState->Member<FUniqueNetIdRepl>("UniqueId");
+        std::cout << "acutal size: " << UniqueIdSize << '\n';
+        std::cout << "ours: " << sizeof(FUniqueNetIdRepl) << '\n';
+
+        RtlSecureZeroMemory(NewInfo, SizeOfGameMemberInfo);
+
+        *(uint8_t*)(__int64(NewInfo) + SquadIdInfoOffset) = TeamIDX;
+        *(uint8_t*)(__int64(NewInfo) + TeamIndexOffset) = TeamIDX;
+        *(FUniqueNetIdRepl*)(__int64(NewInfo) + MemberUniqueIdOffset) = *PlayerState->Member<FUniqueNetIdRepl>("UniqueId");
 
         static auto MembersOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.GameMemberInfoArray", "Members");
 
-        // MarkArrayDirty(GameMemberInfoArray);
-        // ((TArray<FGameMemberInfo>*)(__int64(&*GameMemberInfoArray) + MembersOffset))->Add(NewInfo); // ,SizeOfGameMemberInfo);
+        auto Members = (TArray<__int64>*)(__int64(GameMemberInfoArray) + MembersOffset);
+
         MarkArrayDirty(GameMemberInfoArray);
-        (*GameMemberInfoArray).Members.Add(NewInfo);
+        Members->Add(*NewInfo, SizeOfGameMemberInfo);
         MarkArrayDirty(GameMemberInfoArray);
-        // MarkArrayDirty(GameMemberInfoArray);
+
         // MarkItemDirty(GameMemberInfoArray, (FFastArraySerializerItem*)&NewInfo);
 
         auto PlayerTeam = PlayerState->Member<UObject*>("PlayerTeam");
 
-        *PlayerTeam = GameState->Member<TArray<UObject*>>("Teams")->At(TeamIDX);
-        *PlayerState->Member<UObject*>("PlayerTeamPrivate") = *(*PlayerTeam)->Member<UObject*>("PrivateInfo");
+        // *PlayerTeam = GameState->Member<TArray<UObject*>>("Teams")->At(TeamIDX);
+        // *PlayerState->Member<UObject*>("PlayerTeamPrivate") = *(*PlayerTeam)->Member<UObject*>("PrivateInfo");
         (*PlayerTeam)->Member<TArray<UObject*>>("TeamMembers")->Add(PlayerController);
 
         static auto OnRep_SquadId = PlayerState->Function("OnRep_SquadId");
         static auto OnRep_PlayerTeam = PlayerState->Function("OnRep_PlayerTeam");
         static auto OnRep_TeamIndex = PlayerState->Function("OnRep_TeamIndex");
 
-        unsigned char OldVal = oldTeamIDX;
-
         PlayerState->ProcessEvent(OnRep_SquadId);
         PlayerState->ProcessEvent(OnRep_PlayerTeam);
-        PlayerState->ProcessEvent(OnRep_TeamIndex, &OldVal);
+        PlayerState->ProcessEvent(OnRep_TeamIndex, &oldTeamIDX);
+    }
+    else if (FnVerDouble <= 7.30)
+    {
+        static int Team = 4;
 
+        auto Teams = Helper::GetGameState()->Member<TArray<UObject*>>("Teams");
+
+        // if (GameState->Teams[Team]->TeamMembers.Num() >= MaxPlayersPerTeam)
+           // Team++;
+
+        auto PlayerTeam = PlayerState->Member<UObject*>("PlayerTeam");
+
+        auto TeamMembers = Teams->At(Team)->Member<TArray<UObject*>>("TeamMembers");
+
+        std::cout << "After Team: " << Team << '\n';
+        std::cout << "Team A: " << Teams->At(Team) << '\n';
+
+        *PlayerState->Member<uint8_t>("TeamIndex") = Team; // GetMath()->STATIC_RandomIntegerInRange(2, GameState->CurrentPlaylistData->MaxTeamCount));
+        *PlayerTeam = Teams->At(Team);
+        *(*PlayerState->Member<UObject*>("PlayerTeamPrivate"))->Member<UObject*>("TeamInfo") = *PlayerTeam;
+
+        TeamMembers->Add(PlayerController);
+
+        std::cout << "New Team Size: " << TeamMembers->Num() << "\n";
+        *PlayerState->Member<uint8_t>("SquadId") = TeamMembers->Num();
+
+        static auto OnRep_SquadId = PlayerState->Function("OnRep_SquadId");
+
+        PlayerState->ProcessEvent(OnRep_SquadId);
+        // OnRep_TeamIndex
     }
 
     Inventory::Update(PlayerController);
@@ -708,7 +724,7 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 
                     static auto ClientTravelFn = (*ConnectionPC)->Function(("ClientTravel"));
                     struct {
-                        const FString& URL;
+                        FString URL;
                         ETravelType TravelType;
                         bool bSeamless;
                         FGuid MapPackageGuid;

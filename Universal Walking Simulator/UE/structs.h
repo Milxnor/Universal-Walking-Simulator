@@ -1545,7 +1545,12 @@ INL MemberType* UObject::Member(const std::string& MemberName, int BitfieldVal)
 
 	auto Prop = GetProperty(this, MemberName);
 
-	auto Actual = (MemberType*)(__int64(this) + (GetOffsetFromProp(Prop)));
+	auto offset = GetOffsetFromProp(Prop);
+
+	if (offset == -1)
+		return nullptr;
+
+	auto Actual = (MemberType*)(__int64(this) + offset);
 
 	// if (!bIsStruct)
 

@@ -52,55 +52,6 @@ DWORD WINAPI InputThread(LPVOID)
     return 0;
 }
 
-UObject* __fastcall SpawnsAircraftDetour(__int64 a1, int a2)
-{
-    std::cout << "Spawns aircraft called!\n";
-    static auto aircraftClass = FindObject("BlueprintGeneratedClass /Game/Athena/Aircraft/AthenaAircraft.AthenaAircraft_C");
-    auto Aircraft = Easy::SpawnActor(aircraftClass, AircraftLocationToUse);
-
-    auto World = Helper::GetWorld();
-    if (World)
-    {
-        auto NetDriver = *World->Member<UObject*>(("NetDriver"));
-        if (NetDriver)
-        {
-            auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
-
-            if (ClientConnections)
-            {
-                for (int i = 0; i < ClientConnections->Num(); i++)
-                {
-                    auto Connection = ClientConnections->At(i);
-
-                    if (!Connection)
-                        continue;
-
-                    auto Controller = *Connection->Member<UObject*>(("PlayerController"));
-
-                    if (Controller)
-                    {
-                        struct
-                        {
-                        public:
-                            UObject* A;                                                 // 0x0(0x8)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-                            char          TransitionParams[0x10];                                  // 0x8(0x10)(Parm, NoDestructor, NativeAccessSpecifierPublic)
-                        }APlayerController_ClientSetViewTarget_Params{ Aircraft };
-
-                        static auto ClientSetViewTarget = Controller->Function("ClientSetViewTarget");
-
-                        if (ClientSetViewTarget)
-                            Controller->ProcessEvent(ClientSetViewTarget, &APlayerController_ClientSetViewTarget_Params);
-                        else
-                            std::cout << "No ClientSetViewTarget!\n";
-                    }
-                }
-            }
-        }
-    }
-
-    return Aircraft;
-}
-
 char __fastcall crashmaybDetour(__int64 a1)
 {
     return true;

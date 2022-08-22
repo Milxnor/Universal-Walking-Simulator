@@ -1599,6 +1599,95 @@ bool ServerUpdateVehicleInputStateUnreliableHook(UObject* Pawn, UFunction* Funct
 	return false;
 }
 
+bool Server_SpawnProjectileHook(UObject* something, UFunction* Function, void* Parameters)
+{
+	if (something)
+	{
+		/* struct parm { FVector Loc; FRotator Direction; };
+		auto Params = (parm*)Parameters;
+		static auto ProjClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Consumables/TowerGrenade/B_Prj_Athena_TowerGrenade.B_Prj_Athena_TowerGrenade_C");
+		UObject* Proj = Easy::SpawnActor(ProjClass, Params->Loc, FRotator());// *something->Member<UObject*>("ProjectileReference"); // i think im stupid
+
+		if (Proj)
+		{
+			std::cout << "Proj name: " << Proj->GetFullName() << '\n';
+
+			// ClearAndBuild is useless
+			// so is CreateBaseSection
+
+			struct
+			{
+				FVector                                     ReferenceLocation;                                        // (BlueprintVisible, BlueprintReadOnly, Parm, IsPlainOldData)
+			} AB_Prj_Athena_TowerGrenade_C_SpawnTires_Params{ Params->Loc };
+
+			static auto SpawnTires = Proj->Function("SpawnTires");
+
+			if (SpawnTires)
+				Proj->ProcessEvent(SpawnTires, &AB_Prj_Athena_TowerGrenade_C_SpawnTires_Params);
+			else
+				std::cout << "No SpawnTires\n";
+
+		}
+		else
+			std::cout << "No Proj!\n"; */
+
+		/*
+		
+		static void SpawnActorsInPlayset(class AActor* WorldContextObject, class UFortPlaysetItemDefinition* Playset);
+		struct FName GetPlaysetName();
+		static struct FVector AdjustToFinalLocation(class UObject* WorldContextObject, class UFortPlaysetItemDefinition* Playset, struct FVector BaseLocation, struct FRotator Rotation)
+
+		*/
+	}
+
+	return false;
+}
+
+bool balloonFunHook(UObject* ability, UFunction* Function, void* Parameters)
+{
+	if (ability)
+	{
+		std::cout << "balloon!\n";
+		// ability->ProcessEvent("SpawnBalloon");
+		auto Pawn = nullptr; // *ability->Member<UObject*>("PlayerPawn");
+		std::cout << "Pawn: " << Pawn << '\n';
+		ability->Member<TArray<UObject*>>("Balloons")->Add(Easy::SpawnActor(FindObject("Class /Script/FortniteGame.BuildingGameplayActorBalloon"), Helper::GetActorLocation(Pawn)));
+	}
+
+	return false;
+}
+
+bool boomboxHook(UObject* ability, UFunction* Function, void* Parameters)
+{
+	if (ability)
+	{
+		struct parm { FVector Loc; FRotator Direction; };
+		auto Params = (parm*)Parameters;
+
+		static auto ProjClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Consumables/BoomBox/B_Proj_BoomBox.B_Proj_BoomBox_C");
+		UObject* Proj = Easy::SpawnActor(ProjClass, Params->Loc, FRotator());// *something->Member<UObject*>("ProjectileReference"); // i think im stupid
+
+		if (Proj)
+		{
+			std::cout << "Proj name: " << Proj->GetFullName() << '\n';
+			static auto actualBoomBoxClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Consumables/BoomBox/BGA_Athena_BoomBox.BGA_Athena_BoomBox_C");
+			auto newBoomBox = Easy::SpawnActor(actualBoomBoxClass, Helper::GetActorLocation(Proj));
+			*Proj->Member<UObject*>("SpawnedBGA") = newBoomBox;
+
+			UObject* Pawn; // Helper::GetOwner(ability);
+			ability->ProcessEvent("GetActivatingPawn", &Pawn);
+
+			std::cout << "Pawn: " << Pawn << '\n';
+
+			std::cout << "Pawn Name: " << Pawn->GetFullName() << '\n';
+
+			Helper::InitializeBuildingActor(*Pawn->Member<UObject*>("Controller"), newBoomBox);
+		}
+	}
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
@@ -1607,6 +1696,11 @@ void FinishInitializeUHooks()
 	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
+	AddHook("Function /Game/Athena/Items/Consumables/Grenade/GA_Athena_Grenade_WithTrajectory.GA_Athena_Grenade_WithTrajectory_C.Server_SpawnProjectile", boomboxHook);
+
+	// AddHook("Function /Game/Athena/Items/Consumables/TowerGrenade/GA_Athena_TowerGrenadeWithTrajectory.GA_Athena_TowerGrenadeWithTrajectory_C.Server_SpawnProjectile", Server_SpawnProjectileHook);
+	// AddHook("Function /Game/Athena/Items/Consumables/Balloons/GA_Athena_Balloons_Consumable_Passive.GA_Athena_Balloons_Consumable_Passive_C.K2_ActivateAbility", balloonFunHook);
+
 	if (FnVerDouble < 16.00)
 		AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	else
@@ -1656,7 +1750,7 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 	{
 		if (bStarted && bListening && (bLogRpcs || bLogProcessEvent))
 		{
-			auto FunctionName = Function->GetName();
+			auto FunctionName = Function->GetFullName();
 			// if (Function->FunctionFlags & 0x00200000 || Function->FunctionFlags & 0x01000000) // && FunctionName.find("Ack") == -1 && FunctionName.find("AdjustPos") == -1))
 			if (bLogRpcs && (FunctionName.starts_with(("Server")) || FunctionName.starts_with(("Client")) || FunctionName.starts_with(("OnRep_"))))
 			{
