@@ -428,7 +428,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					{
 						if (Engine_Version < 423 || FnVerDouble >= 16.00) // I do not know how to start the bus on S8+
 						{
-							if (ImGui::Button(("Start Aircraft")))
+							if (ImGui::Button(("Start Aircraft Normal")))
 							{
 								FString StartAircraftCmd;
 								StartAircraftCmd.Set(L"startaircraft");
@@ -437,7 +437,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								auto gameState = Helper::GetGameState();
 
-								if (Helper::IsSmallZoneEnabled())
+								/*if (Helper::IsSmallZoneEnabled())
 								{
 									auto Aircraft = gameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
 
@@ -456,13 +456,13 @@ DWORD WINAPI GuiThread(LPVOID)
 											if (FlightSpeed)
 												*FlightSpeed = 0;
 
-											auto RandomFoundation = Helper::GetRandomFoundation();
+											// auto RandomPOI = Helper::GetRandomPOIActor();
 
 											if (true) // RandomPOI)
 											{
-												AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{0, 0, 5000};
+												// auto RandomPOILocation = Helper::GetActorLocation(RandomPOI);
 
-												*FlightStartLocation = AircraftLocationToUse;
+												*FlightStartLocation = getRandomLocation();//AircraftLocationToUse;
 												Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
 												std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
 											}
@@ -475,13 +475,14 @@ DWORD WINAPI GuiThread(LPVOID)
 											ifrogor.Set(L"startsafezone");
 											Helper::Console::ExecuteConsoleCommand(ifrogor);
 											*gameState->Member<float>("SafeZonesStartTime") = 0.f;
+											std::cout << ("Started aircraft!\n");
 										}
 									}
 									else
 										std::cout << "No Aircraft!\n";
-								}
+								}*/
 
-								std::cout << ("Started aircraft!\n");
+
 
 								static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
 
@@ -489,7 +490,60 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								ExistingBuildings.clear();
 							}
+							if (ImGui::Button(("Start LateGame Aircraft"))) {
+								bIsLateGame = true;
+								FString StartAircraftCmd;
+								StartAircraftCmd.Set(L"startaircraft");
+
+								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+
+								auto gameState = Helper::GetGameState();
+								auto Aircraft = gameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
+
+								if (Aircraft)
+								{
+									auto FlightInfo = Aircraft->Member<__int64>("FlightInfo");
+
+									if (FlightInfo)
+									{
+										static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
+										static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
+
+										auto FlightSpeed = (float*)(__int64(FlightInfo) + FlightSpeedOffset);
+										auto FlightStartLocation = (FVector*)(__int64(FlightInfo) + FlightStartLocationOffset);
+
+										if (FlightSpeed)
+											*FlightSpeed = 0;
+
+										// auto RandomPOI = Helper::GetRandomPOIActor();
+
+
+										*FlightStartLocation = AircraftLocationToUse;
+										Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
+										std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
+
+
+										*gameState->Member<bool>("bAircraftIsLocked") = false;
+
+										FString ifrogor;
+										ifrogor.Set(L"startsafezone");
+										Helper::Console::ExecuteConsoleCommand(ifrogor);
+										*gameState->Member<float>("SafeZonesStartTime") = 0.f;
+										std::cout << ("Started aircraft!\n");
+									}
+								}
+								else
+									std::cout << "No Aircraft!\n";
+							}
+
+
+							static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
+
+							// Helper::DestroyAll(BuildingSMActorClass);
+
+							ExistingBuildings.clear();
 						}
+						
 						// else
 						{
 							if (ImGui::Button(("Change Phase to Aircraft"))) // TODO: Improve phase stuff
@@ -518,6 +572,17 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								ExistingBuildings.clear();
 							}
+						}
+						if (ImGui::Button(("Skip SafeZone"))) {
+							FString ShrinkSafeZone;
+							ShrinkSafeZone.Set(L"shrinksafezone");
+							Helper::Console::ExecuteConsoleCommand(ShrinkSafeZone);
+						}
+
+						if (ImGui::Button(("Shrink SafeZone"))) {
+							FString SkipSafeZone;
+							SkipSafeZone.Set(L"skipshrinksafezone");
+							Helper::Console::ExecuteConsoleCommand(SkipSafeZone);
 						}
 
 						if (ImGui::Button(("Summon Llamas")))

@@ -303,14 +303,15 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 		*Indicator->Member<float>("NextRadius") = bIsStartZone ? 10000 : Radius / 2;
 
 		auto NextCenter = Indicator->Member<FVector>("NextCenter");
-
+		
 		if (bIsStartZone)
 		{
 			*Indicator->Member<float>("Radius") = 14000;
 			*NextCenter = AircraftLocationToUse;
 		}
 		else
-			*NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
+			std::cout << "Something went wrong with storm code!\n";
+			//*NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
 	}
 
 	return true;

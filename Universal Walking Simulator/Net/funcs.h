@@ -120,8 +120,71 @@ void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, vo
     else
         FunctionsToHook.insert({ funcObject, func });
 }
+static FVector getRandomLocation()
+{
+    static std::vector<FVector> Locations = {
 
-static auto AircraftLocationToUse = FVector{ 3500, -9180, 10500 };
+        { 24426, 37710, 25000 }, // retail row
+        { 50018, 73844, 25000 }, // lonely lodge
+        { 39781, 61621, 25000 }, // Moisty Mire
+        { -26479, 41847, 20000 }, // Prison
+        { -26479, 41847, 20000 }, // Prison DUPLICATE
+        { 56771, 32818, 20000 }, // Containers/crates
+        { -75353, -8694, 20000 }, //Lucky Landing
+        { 34278, 867, 25000 }, // dusty depot / factories / dusty diner
+        { 79710, 15677, 25000 }, // tomato town
+        { 103901, -20203, 25000 }, // ANARCHY acres
+        { 86766, -83071, 25000 }, // pleasant park
+        { 2399, -96255, 25000 }, // greasy grove
+        { -35037, -463, 25000 }, // fatal fields
+        { 83375, 50856, 25000 }, // Wailing Woods
+        { 35000, -60121, 25000 }, // Tilted Towers
+        { 40000, -127121, 25000 }, // Snobby Shores
+        { 5000, -60121, 25000 }, // shifty shafts
+        { 110088, -115332, 25000 }, // Haunted Hills
+        { 119126, -86354, 25000 }, // Junk Houses
+        { 130036, -105092, 25000 }, // Junk Junction
+        { -68000, -63521, 25000 }, // Flush Factory
+        { 3502, -9183, 25000 }, // Salty Springs
+        { 7760, 76702, 25000 }, //race track
+        { 38374, -94726, 25000 }, //Soccer field
+        { 70000, -40121, 50000 }, // Loot Lake
+        //New Locations: 7/4/22
+        { 117215, -53654, 25000 }, //motel
+        { 117215, -53654, 25000 }, //motel DUPE
+        { 106521, -69597, 25000 }, //Pleasant Park Mountain
+        { 86980, -105015, 25000 }, //Pleasant Park Mountain 2
+        { 76292, -104977, 25000 }, //Haunted/Pleasant House
+        { 56131, -106880, 25000 }, //Snobby Mountain (Before Villain Lair)
+        { 29197, -109347, 25000 }, //Snobby Mountain 2
+        { -29734, -60767, 25000 }, //chair
+        { -19903, -26194, 25000 }, //Grandma's house
+        { -26851, 16299, 25000 }, //Tunnel near Fatal Fields
+        { -63592, 35933, 25000 }, //Random bush circle I've never seen before
+        { -75810, 33594, 25000 }, //Crab behind Moisty
+        { 28374, -94726, 25000 }, //Soccer mountain
+        { 73770, -19009, 25000 }, //Random Location 1
+        { 29050, -21225, 25000 }, //Dusty Mountain
+        { 18325, -17881, 25000 }, //Salty Mountain
+        { 6621, 18784, 25000 }, //Random Location 2
+        { -6702, 33251, 25000 }, //Random Location 3/bridge
+        /*  //Off map
+        { 137767, 40939, 25000 }, //off map near where risky would be
+        { 137767, 40939, 25000 }, //off map near where risky would be DUPE
+        { 136084, -46013, 25000 }, //off map near motel
+        { 136084, -46013, 25000 }, //off map near motel DUPE
+        { -2450, -127394, 25000 }, //off map bottom left
+        { -2450, -127394, 25000 }, //off map bottom left DUPE
+        { -26584, -90150, 25000 }, //off map bottom left 2
+        { -26584, -90150, 25000 }, //off map bottom left 2 DUPE
+        { -123778, -112480, 20000 } //Spawn Island*/
+    };
+
+    auto Location = Locations[rand() % Locations.size()];
+    return Location;
+}
+static auto RandomLocation = getRandomLocation();
+static auto AircraftLocationToUse = RandomLocation;
 
 const wchar_t* GetMapName()
 {
