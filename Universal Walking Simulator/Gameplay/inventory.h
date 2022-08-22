@@ -212,7 +212,7 @@ namespace Inventory
 		auto CurrentWeapon = *Pawn->Member<UObject*>(("CurrentWeapon"));
 		if (FortWeapon && Pawn)
 		{
-			static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
+			static auto OnRep_ReplicatedWeaponData = FortWeapon->Function("OnRep_ReplicatedWeaponData");
 
 			if (OnRep_ReplicatedWeaponData)
 				FortWeapon->ProcessEvent(OnRep_ReplicatedWeaponData);
@@ -619,8 +619,7 @@ namespace Inventory
 			auto GunCount = (int*)(__int64(&*GetItemEntryFromInstance(itemInstance)) + CountOffset);
 			*GunCount = Count;
 
-			auto OwnerInventory = itemInstance->Member<UObject*>(("OwnerInventory")); // We should probably set this?
-			*OwnerInventory = *Controller->Member<UObject*>(("WorldInventory"));
+			*itemInstance->Member<UObject*>(("OwnerInventory")) = *Controller->Member<UObject*>(("WorldInventory"));
 
 			return itemInstance;
 		}
@@ -1568,9 +1567,4 @@ void InitializeInventoryHooks()
 		MH_CreateHook((PVOID)HandleReloadCostAddr, HandleReloadCostDetour, (void**)&HandleReloadCost);
 		MH_EnableHook((PVOID)HandleReloadCostAddr);
 	}
-}
-
-void ClearInventory(UObject* PlayerController)
-{
-
 }

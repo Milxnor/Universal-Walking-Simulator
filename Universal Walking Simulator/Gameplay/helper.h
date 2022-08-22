@@ -182,6 +182,86 @@ namespace Easy
 
 namespace Helper
 {
+	namespace Conversion
+	{
+		UObject* SoftObjectToObject(TSoftObjectPtr SoftObject)
+		{
+			// Function /Script/Engine.KismetSystemLibrary.Conv_SoftObjectReferenceToObject
+
+			static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+
+			static auto fn = KSLClass->Function(("Conv_SoftObjectReferenceToObject"));
+
+			UObject* Object;
+
+			struct {
+				TSoftObjectPtr SoftObject;
+				UObject* ReturnValue;
+			} params{ SoftObject, nullptr };
+
+			if (fn)
+				KSLClass->ProcessEvent(fn, &Object);
+
+			return params.ReturnValue;
+		}
+
+		FText StringToText(FString String)
+		{
+			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
+
+			FText text;
+
+			if (KTL)
+			{
+				static auto fn = KTL->Function(("Conv_StringToText"));
+
+				struct {
+					FString InText;
+					FText ReturnValue;
+				} params{ String };
+
+				if (fn)
+					KTL->ProcessEvent(fn, &params);
+				else
+					std::cout << ("Unable to find Conv_StringToText!\n");
+
+				text = params.ReturnValue;
+			}
+			else
+				std::cout << ("Unable to find KTL!\n");
+
+			return text;
+		}
+
+		std::string TextToString(FText Text)
+		{
+			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
+
+			FString String;
+
+			if (KTL)
+			{
+				static auto fn = KTL->Function(("Conv_TextToString"));
+
+				struct {
+					FText InText;
+					FString ReturnValue;
+				} params{ Text };
+
+				if (fn)
+					KTL->ProcessEvent(fn, &params);
+				else
+					std::cout << ("Unable to find Conv_TextToString!\n");
+
+				String = params.ReturnValue;
+			}
+			else
+				std::cout << ("Unable to find KTL!\n");
+
+			return String.Data.GetData() ? String.ToString() : "INVALID_STRING";
+		}
+	}
+
 	FVector GetActorLocation(UObject* Actor)
 	{
 		if (!Actor)
@@ -222,7 +302,7 @@ namespace Helper
 		if (!Foundation)
 			return;
 
-		*Foundation->Member<uint8_t>(("DynamicFoundationType")) = !bShow;
+		*Foundation->Member<uint8_t>(("DynamicFoundationType")) = bShow ? 0 : 3;
 
 		struct BITMF
 		{
@@ -258,6 +338,27 @@ namespace Helper
 			Pawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
 	}
 
+	UObject* LoadLevelInstance(const FString& LevelName)
+	{
+		struct ULevelStreamingDynamic_LoadLevelInstance_Params
+		{
+			UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FString                                     LevelName;                                                // (Parm, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FVector                                     Location;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FRotator                                    Rotation;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
+			bool                                               bOutSuccess;                                              // (Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			UObject* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		} ULevelStreamingDynamic_LoadLevelInstance_Params{GetWorldW(), LevelName, AircraftLocationToUse, FRotator()};
+
+		static auto levelStreamingDynamicClass = FindObject("LevelStreamingDynamic /Script/Engine.Default__LevelStreamingDynamic");
+		static auto LoadLevelInstance = levelStreamingDynamicClass->Function("LoadLevelInstance");
+
+		if (LoadLevelInstance)
+			levelStreamingDynamicClass->ProcessEvent(LoadLevelInstance, &ULevelStreamingDynamic_LoadLevelInstance_Params);
+
+		return ULevelStreamingDynamic_LoadLevelInstance_Params.ReturnValue;
+	}
+
 	//Show Missing POIs. Credit to Ultimanite for most of this.
 	void FixPOIs() {
 		float Version = std::stof(FN_Version);
@@ -272,8 +373,29 @@ namespace Helper
 			static auto idfk = FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")); // polar peak?
 			ShowBuilding(idfk);
 
-			// static auto tilted = FindObject("ahh /Game/Athena/Maps/Buildings/5x5/Athena_URB_5x5_Shops_a");
-			// ShowBuilding(tilted);
+			FString LevelName;
+			LevelName.Set(L"/Game/Athena/Maps/Buildings/5x5/Athena_URB_5x5_Shops_c_4b"); // tilted
+
+			/* auto streamingDynamic = Helper::LoadLevelInstance(LevelName);
+
+			struct idk {
+				uint8_t                                        bInitiallyLoaded : 1;                              // Mask : 0x1 0x148(0x1)(Edit, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				uint8_t                                        bInitiallyVisible : 1;
+			};
+			
+			streamingDynamic->Member<idk>("bInitiallyVisible")->bInitiallyVisible = true; */
+		}
+
+		if (Season >= 7 && Engine_Version < 424)
+		{
+			static auto TheBlock = FindObject("BuildingFoundationSlab_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_3");
+			ShowBuilding(TheBlock);
+
+			/* FString dababy;
+			dababy.Set(L"Dababy");
+			*TheBlock->Member<FText>("CreatorName") = Helper::Conversion::StringToText(dababy); */
+
+			// LevelSequencePlayer /Game/Athena/Prototype/Blueprints/Slab/Replicated_LevelSequence.Default__Replicated_LevelSequence_C.AnimationPlayer
 		}
 
 		//Marshamello
@@ -1235,86 +1357,6 @@ namespace Helper
 			return *gameState->Member<UObject*>(("CurrentPlaylistData"));
 
 		return nullptr;
-	}
-	
-	namespace Conversion
-	{
-		UObject* SoftObjectToObject(TSoftObjectPtr SoftObject)
-		{
-			// Function /Script/Engine.KismetSystemLibrary.Conv_SoftObjectReferenceToObject
-
-			static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
-
-			static auto fn = KSLClass->Function(("Conv_SoftObjectReferenceToObject"));
-
-			UObject* Object;
-
-			struct {
-				TSoftObjectPtr SoftObject;
-				UObject* ReturnValue;
-			} params{SoftObject, nullptr};
-
-			if (fn)
-				KSLClass->ProcessEvent(fn, &Object);
-
-			return params.ReturnValue;
-		}
-
-		FText StringToText(FString String)
-		{
-			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
-
-			FText text;
-
-			if (KTL)
-			{
-				static auto fn = KTL->Function(("Conv_StringToText"));
-
-				struct {
-					FString InText;
-					FText ReturnValue;
-				} params{ String };
-
-				if (fn)
-					KTL->ProcessEvent(fn, &params);
-				else
-					std::cout << ("Unable to find Conv_StringToText!\n");
-
-				text = params.ReturnValue;
-			}
-			else
-				std::cout << ("Unable to find KTL!\n");
-
-			return text;
-		}
-
-		std::string TextToString(FText Text)
-		{
-			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
-
-			FString String;
-
-			if (KTL)
-			{
-				static auto fn = KTL->Function(("Conv_TextToString"));
-
-				struct {
-					FText InText;
-					FString ReturnValue;
-				} params{ Text };
-
-				if (fn)
-					KTL->ProcessEvent(fn, &params);
-				else
-					std::cout << ("Unable to find Conv_TextToString!\n");
-
-				String = params.ReturnValue;
-			}
-			else
-				std::cout << ("Unable to find KTL!\n");
-
-			return String.Data.GetData() ? String.ToString() : "INVALID_STRING";
-		}
 	}
 
 	void SilentDie(UObject* BuildingActor)
