@@ -94,7 +94,7 @@ inline void initStuff()
 
 				//*AuthGameMode->Member<UObject*>("ServerBotManagerClass") = BotManagerClass;
 				
-				*AuthGameMode->Member<bool>(("bAlwaysDBNO")) = true;
+				// *AuthGameMode->Member<bool>(("bAlwaysDBNO")) = true;
 
 				// Is this correct?
 				/*class UClass* VehicleClass = (UClass*)(FindObject(("Class /Script/FortniteGame.FortAthenaFerretVehicle")));//(UClass*(FindObject(("Class /Script/FortniteGame.FortAthenaFerretVehicle.FortAthenaFerretVehicle"))));
@@ -1704,7 +1704,7 @@ bool boomboxHook(UObject* ability, UFunction* Function, void* Parameters)
 
 bool throwableConsumablesHook(UObject* ability, UFunction*, void* Parameters)
 {
-	if (ability && Parameters)
+	if (ability)
 	{
 		// ability->Server_SpawnProjectile
 		// ability->ThrowConsumable
@@ -1720,6 +1720,43 @@ bool throwableConsumablesHook(UObject* ability, UFunction*, void* Parameters)
 	return false;
 }
 
+bool riftItemHook(UObject* ability, UFunction* Function, void* Parameters)
+{
+	std::cout << "rift!\n";
+
+	if (ability)
+	{
+		UObject* Pawn; // Helper::GetOwner(ability);
+		ability->ProcessEvent("GetActivatingPawn", &Pawn);
+		Helper::TeleportToSkyDive(Pawn, 11000);
+
+		__int64* SkydiveAbilitySpec = nullptr;
+
+		auto FindSkydiveAbility = [&SkydiveAbilitySpec](__int64* Spec) -> void {
+			auto Ability = *GetAbilityFromSpec(Spec);
+			if (Ability && Ability->GetFullName().contains("GA_Rift_Athena_Skydive_C"))
+			{
+				SkydiveAbilitySpec = Spec;
+			}
+		};
+
+		auto ASC = *Pawn->Member<UObject*>("AbilitySystemComponent");
+		LoopSpecs(ASC, FindSkydiveAbility);
+
+		if (SkydiveAbilitySpec)
+		{
+			std::cout << "foujd spec!\n";
+			// std::cout << "found skydive ability: " << SkydiveAbilitySpec->GetFullName() << '\n';
+
+			(*GetAbilityFromSpec(SkydiveAbilitySpec))->ProcessEvent("K2_ActivateAbility"); // does nothing
+		}
+		else
+			std::cout << "failed to fmind skydive ability!\n";
+	}
+
+	return false;
+}
+
 bool OnRep_ParachuteAttachmentHook(UObject* pawn, UFunction* Function, void* Parameters)
 {
 	return true;
@@ -1730,9 +1767,12 @@ void FinishInitializeUHooks()
 	if (Engine_Version < 422)
 		AddHook(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
+	AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
+
+	AddHook("Function /Game/Athena/Items/Consumables/RiftItem/GA_Athena_Rift_Item.GA_Athena_Rift_Item_C.Triggered_1B4C20DD4792D45069FE6C8D47581114", riftItemHook);
 
 	if (Engine_Version > 424)
 	{

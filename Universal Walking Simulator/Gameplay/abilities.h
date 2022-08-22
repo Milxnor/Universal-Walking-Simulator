@@ -3,6 +3,7 @@
 #include <UE/structs.h>
 #include <Gameplay/helper.h>
 #include "Net/funcs.h"
+#include "../anticheat.h"
 
 FGameplayAbilitySpec<FGameplayAbilityActivationInfo>* FindAbilitySpecFromHandle(UObject* ASC, FGameplayAbilitySpecHandle Handle)
 {
@@ -375,7 +376,14 @@ inline bool ServerAbilityRPCBatchHook(UObject* AbilitySystemComponent, UFunction
     auto PredictionKey = (FPredictionKey*)(__int64(&Params->BatchInfo) + PredictionKeyOffset);
 
     if (AbilitySpecHandle && InputPressed && PredictionKey)
+    {
+        auto AbilitySpec = FindAbilitySpecFromHandle2(AbilitySystemComponent, *AbilitySpecHandle);
+
+        if (!AbilitySpec)
+            return false;
+
         InternalServerTryActivateAbility(AbilitySystemComponent, *AbilitySpecHandle, *InputPressed, PredictionKey, nullptr);
+    }
 
     return false;
 }

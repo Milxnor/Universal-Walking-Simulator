@@ -23,16 +23,12 @@ namespace Player
 		static auto PickaxeDefinition = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
 		// TODO: StructProperty /Script/FortniteGame.FortPlaylistAthena.RespawnHeight
-		struct { float HeightAboveGround; }TeleportToSkyDiveParams{ 10000 };
 
 		auto NewPawn = Helper::InitPawn(PlayerController, false, PawnLocation);
 
 		if (NewPawn)
 		{
-			static auto TeleportToSkyDiveFn = NewPawn->Function(("TeleportToSkyDive"));
-
-			if (TeleportToSkyDiveFn)
-				NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
+			Helper::TeleportToSkyDive(Pawn);
 		}
 
 		*NewPawn->Member<bool>("bIsDBNO") = false;

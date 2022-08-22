@@ -916,10 +916,10 @@ auto GetMembersAsObjects(UObject* Object, bool bOnlyMembers = false, bool bOnlyF
 	else if (Engine_Version >= 422 && Engine_Version <= 424)
 		Members = GetMembers<UClass_FTT, UProperty_FTO, UObject>(Object);
 
-	else if (Engine_Version >= 425 && Engine_Version < 500)
+	else if (Engine_Version >= 425 && FnVerDouble < 20)
 		Members = GetMembersFProperty<UClass_CT, FProperty, UObject>(Object, bOnlyMembers, bOnlyFunctions);
 
-	else if (Engine_Version >= 500)
+	else if (FnVerDouble >= 20)
 		Members = GetMembersFProperty<UClass_CT, FProperty, UObject>(Object, bOnlyMembers, bOnlyFunctions);
 
 	return Members;
@@ -931,7 +931,10 @@ std::vector<std::string> GetMemberNames(UObject* Object, bool bOnlyMembers = fal
 	std::vector<UObject*> Members = GetMembersAsObjects(Object, bOnlyMembers, bOnlyFunctions);
 
 	for (auto Member : Members)
-		Names.push_back(Member->GetName());
+	{
+		if (Member)
+			Names.push_back(Member->GetName());
+	}
 
 	return Names;
 }

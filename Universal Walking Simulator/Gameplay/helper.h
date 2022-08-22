@@ -234,6 +234,30 @@ namespace Helper
 		Foundation->ProcessEvent("OnRep_ServerStreamedInLevel");
 	}
 
+	float GetTimeSeconds()
+	{
+		static auto GSCClass = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+
+		struct { UObject* world; float timeseconds; } parms{ GetWorldW() };
+
+		static auto GetTimeSeconds = GSCClass->Function("GetTimeSeconds");
+
+		if (GetTimeSeconds)
+			GSCClass->ProcessEvent(GetTimeSeconds, &parms);
+
+		return parms.timeseconds;
+	}
+
+	void TeleportToSkyDive(UObject* Pawn, float Height = 10000)
+	{
+		struct { float HeightAboveGround; }TeleportToSkyDiveParams{ Height };
+
+		static auto TeleportToSkyDiveFn = Pawn->Function(("TeleportToSkyDive"));
+
+		if (TeleportToSkyDiveFn)
+			Pawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
+	}
+
 	//Show Missing POIs. Credit to Ultimanite for most of this.
 	void FixPOIs() {
 		float Version = std::stof(FN_Version);
