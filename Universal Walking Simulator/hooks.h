@@ -93,7 +93,8 @@ inline void initStuff()
 				//auto BotManagerClass = FindObject("FortServerBotManagerAthena /Script/FortniteGame.Default__FortServerBotManagerAthena");
 
 				//*AuthGameMode->Member<UObject*>("ServerBotManagerClass") = BotManagerClass;
-				// *AuthGameMode->Member<bool>(("bAlwaysDBNO")) = true;
+				
+				*AuthGameMode->Member<bool>(("bAlwaysDBNO")) = true;
 
 				// Is this correct?
 				/*class UClass* VehicleClass = (UClass*)(FindObject(("Class /Script/FortniteGame.FortAthenaFerretVehicle")));//(UClass*(FindObject(("Class /Script/FortniteGame.FortAthenaFerretVehicle.FortAthenaFerretVehicle"))));
@@ -1270,6 +1271,11 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				Inventory::GiveItem(Controller, newDef, EFortQuickBars::Primary, 1, 1);
 			}
 
+			if (ReceivingActorName.contains("Portapotty")) // dont work rn
+			{
+				return true;
+			}
+
 			// Looting::Tables::HandleSearch(ReceivingActor);
 			LootingV2::HandleSearch(ReceivingActor);
 		}
@@ -1294,6 +1300,14 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 
 		if (Zipline && *Zipline)
 		{
+			// TWeakObjectPtr<class AFortPlayerPawn>  CurrentInteractingPawn
+			
+			TWeakObjectPtr<UObject>* CurrentInteractingPawn = (*Zipline)->Member<TWeakObjectPtr<UObject>>("CurrentInteractingPawn");
+			CurrentInteractingPawn->ObjectIndex = Pawn->InternalIndex;
+			CurrentInteractingPawn->ObjectSerialNumber = GetSerialNumber(Pawn);
+			
+			// *Pawn->Member<__int64>("ZiplineState") = Params->ZiplineState; // doesnt work ofc
+
 			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_AutonomousProxy);
 			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_Authority); // UNTESTED
 			// Helper::SetRemoteRole(*Zipline, ENetRole::ROLE_Authority);
@@ -1688,6 +1702,29 @@ bool boomboxHook(UObject* ability, UFunction* Function, void* Parameters)
 	return false;
 }
 
+bool throwableConsumablesHook(UObject* ability, UFunction*, void* Parameters)
+{
+	if (ability && Parameters)
+	{
+		// ability->Server_SpawnProjectile
+		// ability->ThrowConsumable
+		
+		auto memberNames = GetMemberNames(ability, true, false);
+
+		for (auto& MemberName : memberNames)
+			std::cout << "memberName: " << MemberName << '\n';
+
+		std::cout << "throwable!\n";
+	}
+
+	return false;
+}
+
+bool OnRep_ParachuteAttachmentHook(UObject* pawn, UFunction* Function, void* Parameters)
+{
+	return true;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
@@ -1696,8 +1733,15 @@ void FinishInitializeUHooks()
 	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
-	AddHook("Function /Game/Athena/Items/Consumables/Grenade/GA_Athena_Grenade_WithTrajectory.GA_Athena_Grenade_WithTrajectory_C.Server_SpawnProjectile", boomboxHook);
 
+	if (Engine_Version > 424)
+	{
+		// AddHook(("Function /Game/Athena/Items/Consumables/Parents/GA_Athena_Consumable_ThrowWithTrajectory_Parent.GA_Athena_Consumable_ThrowWithTrajectory_Parent_C.Server_SpawnProjectile"), throwableConsumablesHook); // wrong func
+	}
+
+	// AddHook("Function /Script/FortniteGame.FortPlayerPawn.OnRep_ParachuteAttachment", OnRep_ParachuteAttachmentHook);
+	
+	// AddHook("Function /Game/Athena/Items/Consumables/Grenade/GA_Athena_Grenade_WithTrajectory.GA_Athena_Grenade_WithTrajectory_C.Server_SpawnProjectile", boomboxHook);
 	// AddHook("Function /Game/Athena/Items/Consumables/TowerGrenade/GA_Athena_TowerGrenadeWithTrajectory.GA_Athena_TowerGrenadeWithTrajectory_C.Server_SpawnProjectile", Server_SpawnProjectileHook);
 	// AddHook("Function /Game/Athena/Items/Consumables/Balloons/GA_Athena_Balloons_Consumable_Passive.GA_Athena_Balloons_Consumable_Passive_C.K2_ActivateAbility", balloonFunHook);
 
@@ -1705,8 +1749,9 @@ void FinishInitializeUHooks()
 		AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	else
 		AddHook(("Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
-	// AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
-	//AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
+
+	// AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook);
+	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
@@ -1869,18 +1914,6 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 }
 
 __int64(__fastcall* idkbroke)(UObject* a1);
-
-__int64 idkbrokeDetour(UObject* a1)
-{
-	std::cout << ("Idk\n");
-	return 0;
-}
-
-void __fastcall HookToFixMaybeDetour(__int64 a1, unsigned int a2)
-{
-	std::cout << "Funne Called!\n";
-	return;
-}
 
 void InitializeHooks()
 {

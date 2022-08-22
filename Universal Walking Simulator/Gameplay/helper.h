@@ -217,12 +217,12 @@ namespace Helper
 		return FRotator();
 	}
 
-	void ShowBuilding(UObject* Foundation)
+	void ShowBuilding(UObject* Foundation, bool bShow = true)
 	{
 		if (!Foundation)
 			return;
 
-		*Foundation->Member<uint8_t>(("DynamicFoundationType")) = 0;
+		*Foundation->Member<uint8_t>(("DynamicFoundationType")) = !bShow;
 
 		struct BITMF
 		{
@@ -230,7 +230,7 @@ namespace Helper
 			uint8_t                                        bServerStreamedInLevel : 1;
 		};
 
-		Foundation->Member<BITMF>("bServerStreamedInLevel")->bServerStreamedInLevel = true;
+		Foundation->Member<BITMF>("bServerStreamedInLevel")->bServerStreamedInLevel = bShow; // fixes hlods
 		Foundation->ProcessEvent("OnRep_ServerStreamedInLevel");
 	}
 
@@ -265,7 +265,7 @@ namespace Helper
 
 			ShowBuilding(FloatingIsland);
 			ShowBuilding(Lake);
-			ShowBuilding(Lake2);
+			// ShowBuilding(Lake2); // this is for after the event
 
 			// *scripting->Member<FVector>("IslandPosition") = Helper::GetActorLocation(FloatingIsland);
 

@@ -196,6 +196,8 @@ namespace LootingV2
 
 					currentItem.RowName = RowName;
 
+					// brain damage
+
 					if (DefinitionString.contains("Weapon"))
 						currentItem.Type = ItemType::Weapon;
 					else if (DefinitionString.contains("Consumable"))

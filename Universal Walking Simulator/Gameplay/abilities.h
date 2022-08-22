@@ -90,7 +90,7 @@ int16_t* GetCurrent(FPredictionKey* Key)
 {
     if (!Key)
         return nullptr;
-    
+
     static auto CurrentOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.PredictionKey", "Current");
     return (int16_t*)(__int64(Key) + CurrentOffset);
 }
@@ -271,7 +271,13 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     if (!GameplayAbilityClass->GetFullName().contains("Class "))
         DefaultObject = GameplayAbilityClass; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
     else
-        DefaultObject = GameplayAbilityClass->CreateDefaultObject();
+    {
+        auto name = GameplayAbilityClass->GetFullName();
+        // skunked class to default
+        auto ending = GameplayAbilityClass->GetFullName().substr(name.find_last_of(".") + 1);
+        auto path = name.substr(0, name.find_last_of(".") + 1);
+        DefaultObject = FindObject(std::format("{}Default__{}", path, ending));
+    }
 
     if (!DefaultObject)
     {
@@ -332,7 +338,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     else if (Engine_Version == 426)
         GiveAbilityFTS(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)NewSpec);
     else
-        GiveAbilityNewer(AbilitySystemComponent,  Handle, *(FGameplayAbilitySpecNewer*)NewSpec);
+        GiveAbilityNewer(AbilitySystemComponent, Handle, *(FGameplayAbilitySpecNewer*)NewSpec);
 
     return *GetAbilityFromSpec(NewSpec);
 }

@@ -831,7 +831,17 @@ DWORD WINAPI GuiThread(LPVOID)
 						Events::StartEvent();
 
 					if (FnVerDouble == 12.41 && ImGui::Button("Fly players up"))
-						EventHelper::BoostUp();
+						EventHelper::BoostUpTravis();
+
+					if (FnVerDouble == 6.21)
+					{
+						/* if (ImGui::Button("Show Before Event Lake"))
+							EventHelper::LoadAndUnloadLake(false);
+						if (ImGui::Button("Show After Event Lake"))
+							EventHelper::LoadAndUnloadLake(true);
+						if (ImGui::Button("Teleport Players to Butterfly"))
+							EventHelper::TeleportPlayersToButterfly(); */
+					}
 					break;
 
 				case 6:

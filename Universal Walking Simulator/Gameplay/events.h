@@ -3,13 +3,60 @@
 #include <UE/structs.h>
 #include <Gameplay/helper.h>
 
-static UObject* JerkyBPLoader;
-static UObject* JerkyLoaderActual;
-static UObject* JerkyPlayerInteraction;
+static UObject* JerkyBPLoader = nullptr;
+static UObject* JerkyLoaderActual = nullptr;
+static UObject* JerkyPlayerInteraction = nullptr;
 
-namespace EventHelper // credits spooky man
+namespace EventHelper
 {
-	void ApplyGEs()
+	void TeleportPlayersToButterfly()
+	{
+		static auto scripting = FindObjectOld("BP_IslandScripting_C_", true);
+
+		if (!scripting)
+		{
+			std::cout << "[WARNING] Unable to find IslandScripting!\n";
+			return;
+		}
+
+		UObject* ButterflyBP = *scripting->Member<UObject*>("ButterflyBP");
+		auto Locations = ButterflyBP->Member<TArray<FTransform>>("PlayerLocations");
+
+		std::cout << "Num PlayerLocations: " << Locations->Num() << '\n';
+
+		auto World = Helper::GetWorld();
+
+		if (World)
+		{
+			auto NetDriver = *World->Member<UObject*>(("NetDriver"));
+			if (NetDriver)
+			{
+				auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+
+				if (ClientConnections)
+				{
+					for (int i = 0; i < ClientConnections->Num(); i++)
+					{
+						auto Connection = ClientConnections->At(i);
+
+						if (!Connection)
+							continue;
+
+						auto Controller = *Connection->Member<UObject*>(("PlayerController"));
+
+						if (Controller)
+						{
+							auto NewPawn = *Controller->Member<UObject*>("Pawn");
+							Helper::SetActorLocation(NewPawn, Locations->At(i).Translation);
+						}
+					}
+				}
+			}
+		}
+
+	}
+	
+	void ApplyGEsTravis()
 	{
 		auto World = Helper::GetWorld();
 		if (World)
@@ -43,7 +90,6 @@ namespace EventHelper // credits spooky man
 							}
 
 						}
-
 					}
 
 				}
@@ -52,7 +98,21 @@ namespace EventHelper // credits spooky man
 		}
 	}
 
-	void BoostUp()
+	// idk if this works
+	void LoadAndUnloadLake(bool bAfterEvent = true) // load the after event lake and unload the old one
+	{
+		static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
+		static auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
+		static auto Lake2 = FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
+
+		Helper::ShowBuilding(FloatingIsland, !bAfterEvent);
+		Helper::ShowBuilding(Lake, !bAfterEvent);
+		Helper::ShowBuilding(Lake2, bAfterEvent);
+
+		// OnRep_ShowLakeRainbow
+	}
+
+	void BoostUpTravis()
 	{
 		TArray<UObject*> Pawns;
 
@@ -206,7 +266,7 @@ namespace Events {
 
 					JerkyBPLoader->ProcessEvent(TeleportDistant);
 					JerkyBPLoader->ProcessEvent(DebugStartSequence, &SequenceTime);
-					EventHelper::ApplyGEs();
+					EventHelper::ApplyGEsTravis();
 					
 					auto World = Helper::GetWorld();
 					if (World)

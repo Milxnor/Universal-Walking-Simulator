@@ -33,7 +33,7 @@ static UObject* GetLootPackages()
 
 	if (LootPackagesSoft && LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex) {
 		LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
-		std::cout << "SubPath: " << LootPackagesSoft->ObjectID.SubPathString.ToString();
+		// std::cout << "SubPath: " << LootPackagesSoft->ObjectID.SubPathString.ToString();
 	}
 	else
 		std::cout << "Unable to find LootPackages! Falling back to default Playground.\n";
@@ -42,7 +42,7 @@ static UObject* GetLootPackages()
 
 	static auto ClassToUse = LootPackagesName.ends_with("_Client") ? FindObject("Class /Script/Engine.DataTable") : FindObject("Class /Script/Engine.CompositeDataTable"); // cursed
 
-	auto LootPackages = StaticLoadObjectO ? StaticLoadObject(ClassToUse, nullptr, LootPackagesName) : nullptr; // some versions its loaded idk why but some not
+	auto LootPackages = StaticLoadObject(ClassToUse, nullptr, LootPackagesName); // some versions its loaded idk why but some not
 	std::cout << "LootPackages: " << LootPackages << '\n';
 
 	if (LootPackages)

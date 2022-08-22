@@ -5,9 +5,49 @@
 
 void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.f)
 {
+	// HasDestructionLoot
+
+	struct FCurveTableRowHandle
+	{
+	public:
+		UObject* CurveTable;        // UCurveTable                                 // 0x0(0x8)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpeci`erPublic)
+		FName                                  RowName;                                           // 0x8(0x8)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	};
+
+	auto BuildingResourceAmountOverride = BuildingActor->Member<FCurveTableRowHandle>("BuildingResourceAmountOverride");
+
+	if (!BuildingResourceAmountOverride->RowName.ComparisonIndex) // player placed replacement
+		return;
+
+	/* using FRealCurve = void;
+
+	struct skunkedCurveTable : public UObject {
+		TMap<FName, FRealCurve*>	RowMap;
+	};
+
+	static auto curveTableClass = FindObject("Class /Script/Engine.CurveTable");
+	skunkedCurveTable* curveTable = (skunkedCurveTable*)BuildingResourceAmountOverride->CurveTable;
+
+	if (!curveTable)
+		return;
+
+	int offsetToRowMap = sizeof(UObject);
+	std::cout << "offset: " << offsetToRowMap << '\n';
+	auto rowMap = &curveTable->RowMap; // (TMap<FName, FRealCurve*>*)(__int64(curveTable) + offsetToRowMap);
+
+	std::cout << "Amount of rows: " << rowMap->Pairs.Elements.Data.Num() << '\n';
+
+	for (int i = 0; i < rowMap->Pairs.Elements.Data.Num(); i++)
+	{
+		auto& currentRow = rowMap->Pairs.Elements.Data.At(i).ElementData.Value;
+
+		std::cout << std::format("[{}] {}", i, currentRow.First.ToString());
+	} */
+
 	std::random_device rd; // obtain a random number from hardware
 	std::mt19937 gen(rd()); // seed the generator
-	std::uniform_int_distribution<> distr(4, 6); // define the range
+	auto MaxResourcesToSpawn = 6; // *BuildingActor->Member<int>("MaxResourcesToSpawn");
+	std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn); // define the range
 
 	auto Random = distr(gen);
 
@@ -19,10 +59,12 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 	{
 		std::random_device rd; // obtain a random number from hardware
 		std::mt19937 gen(rd()); // seed the generator
-		std::uniform_int_distribution<> distr(4, 5); // define the range
+		std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn); // define the range
 
 		funne += distr(gen);
 	}
+
+	std::cout << "StaticGameplayTags: " << BuildingActor->Member<FGameplayTagContainer>("StaticGameplayTags")->ToStringSimple(true) << '\n';
 
 	struct
 	{
@@ -42,8 +84,6 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 		Controller->ProcessEvent(ClientReportDamagedResourceBuilding, &AFortPlayerController_ClientReportDamagedResourceBuilding_Params);
 
-		// idk y hook no work
-
 		auto Pawn = *Controller->Member<UObject*>(("Pawn"));
 
 		static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
@@ -61,6 +101,8 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		auto ItemInstance = Inventory::FindItemInInventory(Controller, ItemDef);
 
 		int AmountToGive = Params->PotentialResourceCount;
+
+		// IMPROPER, we should add weakspot here.
 
 		if (ItemInstance && Pawn)
 		{
@@ -96,27 +138,12 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 		auto DamageOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("Damage"));
 		auto Damage = (float*)(__int64(Parameters) + DamageOffset);
 
-		struct Bitfield
-		{
-			unsigned char                                      UnknownData09 : 1;                                        // 0x0544(0x0001)
-			unsigned char                                      bWorldReadyCalled : 1;                                    // 0x0544(0x0001) (Transient)
-			unsigned char                                      bBeingRotatedOrScaled : 1;                                // 0x0544(0x0001) (Transient)
-			unsigned char                                      bBeingTranslated : 1;                                     // 0x0544(0x0001) (Transient)
-			unsigned char                                      bRotateInPlaceEditor : 1;                                 // 0x0544(0x0001)
-			unsigned char                                      bEditorPlaced : 1;                                        // 0x0544(0x0001) (Net, Transient)
-			unsigned char                                      bPlayerPlaced : 1;                                        // 0x0544(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, Net, DisableEditOnTemplate)
-			unsigned char                                      bShouldTick : 1;
-		};
-
-		auto BitField = BuildingActor->Member<Bitfield>(("bPlayerPlaced"));
-		auto bPlayerPlaced = false; // BitField->bPlayerPlaced;
-
 		static auto FortPlayerControllerAthenaClass = FindObject(("Class /Script/FortniteGame.FortPlayerControllerAthena"));
 
 		// if (DamageTags)
 			// std::cout << ("DamageTags: ") << DamageTags->ToStringSimple(false) << '\n';
 
-		if (!bPlayerPlaced && InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass) &&
+		if (InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass) &&
 			DamageCauser->GetFullName().contains("B_Melee_Impact_Pickaxe_Athena_C")) // cursed
 		{
 			// TODO: Not hardcode the PickaxeDef, do like slot 0  or something

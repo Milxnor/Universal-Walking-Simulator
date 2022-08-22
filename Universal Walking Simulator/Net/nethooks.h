@@ -183,7 +183,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         {
             std::cout << ("Granting abilities!\n");
 
-            if (FnVerDouble < 8 && Engine_Version != 421) // idk CDO offset
+            if (FnVerDouble < 8) // idk CDO offset
             {
                 static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
 
@@ -213,7 +213,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
             }
             else
             {
-                if (FnVerDouble >= 8 && Engine_Version < 424)
                 {
                     static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
 
@@ -236,106 +235,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
                         }
                     }
                 }
-                else
-                {
-                    // static auto MatsAbility = FindObject(("/Game/Athena/Playlists/Fill/GA_Fill.GA_Fill"));
-//GrantGameplayAbility(Pawn, MatsAbility);
-
-                    static auto SprintAbility = FindObject("FortGameplayAbility_Sprint /Script/FortniteGame.Default__FortGameplayAbility_Sprint");
-                    static auto JumpAbility = FindObject("FortGameplayAbility_Jump /Script/FortniteGame.Default__FortGameplayAbility_Jump");
-                    static auto InteractUseAbility = FindObject("GA_DefaultPlayer_InteractUse_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.Default__GA_DefaultPlayer_InteractUse_C");
-                    static auto InteractSearchAbility = FindObject("GA_DefaultPlayer_InteractSearch_C /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.Default__GA_DefaultPlayer_InteractSearch_C");
-                    static auto ExitAbility = FindObject("GA_AthenaExitVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.Default__GA_AthenaExitVehicle_C");
-                    static auto EnterAbility = FindObject("GA_AthenaEnterVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.Default__GA_AthenaEnterVehicle_C");
-                    static auto InAbility = FindObject("GA_AthenaInVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.Default__GA_AthenaInVehicle_C");
-                    static auto RangedAbility = FindObject("GA_Ranged_GenericDamage_C /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.Default__GA_Ranged_GenericDamage_C");
-                    
-                    /*
-                    
-                    [502001] GA_AthenaEnterVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.Default__GA_AthenaEnterVehicle_C
-                    [502002] GA_AthenaExitVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.Default__GA_AthenaExitVehicle_C
-                    [502003] GA_AthenaInVehicle_C /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.Default__GA_AthenaInVehicle_C
-
-                    */
-
-                    // GAB_CarryPlayer_C
-
-                    if (RangedAbility)
-                        GrantGameplayAbility(Pawn, RangedAbility);
-
-                    if (Engine_Version >= 424)
-                    {
-                        static auto JumpOutAbility = FindObject("GA_Athena_HidingProp_JumpOut_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_JumpOut.Default__GA_Athena_HidingProp_JumpOut_C");
-                        static auto HidingAbility = FindObject("GA_Athena_HidingProp_Hide_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_Hide.Default__GA_Athena_HidingProp_Hide_C");
-                        static auto LandedOnAbility = FindObject("GA_Athena_HidingProp_LandedOn_C /Game/Athena/Items/EnvironmentalItems/HidingProps/GA_Athena_HidingProp_LandedOn.Default__GA_Athena_HidingProp_LandedOn_C");
-
-                        if (JumpOutAbility)
-                            GrantGameplayAbility(Pawn, JumpOutAbility);
-                        if (HidingAbility)
-                            GrantGameplayAbility(Pawn, HidingAbility);
-                        if (LandedOnAbility)
-                            GrantGameplayAbility(Pawn, LandedOnAbility);
-                    }
-
-                    if (InAbility)
-                        GrantGameplayAbility(Pawn, InAbility);
-                    else
-                        std::cout << "No InAbility!\n";
-
-                    if (EnterAbility)
-                        GrantGameplayAbility(Pawn, EnterAbility);
-                    else
-                        std::cout << "No EnterAbility!\n";
-
-                    if (ExitAbility)
-                        GrantGameplayAbility(Pawn, ExitAbility);
-                    else
-                        std::cout << "No ExitAbility!\n";
-
-                    if (SprintAbility)
-                        GrantGameplayAbility(Pawn, SprintAbility);
-                    else
-                        std::cout << "No SprintAbility!\n";
-                    if (JumpAbility)
-                        GrantGameplayAbility(Pawn, JumpAbility);
-                    else
-                        std::cout << "No JumpAbility!\n";
-                    if (InteractUseAbility)
-                        GrantGameplayAbility(Pawn, InteractUseAbility);
-                    else
-                        std::cout << "No InteractUseAbility!\n";
-                    if (InteractSearchAbility)
-                        GrantGameplayAbility(Pawn, InteractSearchAbility);
-                    else
-                        std::cout << "No InteractSearchAbility!\n";
-
-                }
-            /*    static auto SprintAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Sprint"));
-                static auto ReloadAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Reload"));
-                static auto JumpAbility = FindObject(("Class /Script/FortniteGame.FortGameplayAbility_Jump"));
-                static auto InteractUseAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractUse.GA_DefaultPlayer_InteractUse_C"));
-                static auto InteractSearchAbility = FindObject("BlueprintGeneratedClass /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GA_DefaultPlayer_InteractSearch.GA_DefaultPlayer_InteractSearch_C");
-                static auto EnterVehicleAbility = FindObject(("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaEnterVehicle.GA_AthenaEnterVehicle_C"));
-                static auto ExitVehicleAbility = FindObject(("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaExitVehicle.GA_AthenaExitVehicle_C"));
-                static auto InVehicleAbility = FindObject(("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/GA_AthenaInVehicle.GA_AthenaInVehicle_C"));
-
-                if (SprintAbility)
-                    GrantGameplayAbility(Pawn, SprintAbility); //, true);
-                if (ReloadAbility)
-                    GrantGameplayAbility(Pawn, ReloadAbility);
-                if (JumpAbility)
-                    GrantGameplayAbility(Pawn, JumpAbility);
-                if (InteractUseAbility)
-                    GrantGameplayAbility(Pawn, InteractUseAbility);
-                if (InteractSearchAbility)
-                    GrantGameplayAbility(Pawn, InteractSearchAbility);
-                if (EnterVehicleAbility)
-                    GrantGameplayAbility(Pawn, EnterVehicleAbility);
-                if (ExitVehicleAbility)
-                    GrantGameplayAbility(Pawn, ExitVehicleAbility);
-                if (InVehicleAbility)
-                    GrantGameplayAbility(Pawn, InVehicleAbility);
-            */
 
             }
 
@@ -465,34 +364,35 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
         PlayerState->ProcessEvent(OnRep_PlayerTeam);
         PlayerState->ProcessEvent(OnRep_TeamIndex, &oldTeamIDX);
     }
-    else if (FnVerDouble <= 7.30)
+    else if (true) // FnVerDouble <= 7.30)
     {
         static int Team = 4;
 
-        auto Teams = Helper::GetGameState()->Member<TArray<UObject*>>("Teams");
+        // auto Teams = Helper::GetGameState()->Member<TArray<UObject*>>("Teams");
 
         // if (GameState->Teams[Team]->TeamMembers.Num() >= MaxPlayersPerTeam)
-           // Team++;
+        Team++;
 
-        auto PlayerTeam = PlayerState->Member<UObject*>("PlayerTeam");
+        // auto PlayerTeam = PlayerState->Member<UObject*>("PlayerTeam");
 
-        auto TeamMembers = Teams->At(Team)->Member<TArray<UObject*>>("TeamMembers");
+        // auto TeamMembers = Teams->At(Team)->Member<TArray<UObject*>>("TeamMembers");
 
         std::cout << "After Team: " << Team << '\n';
-        std::cout << "Team A: " << Teams->At(Team) << '\n';
+        // std::cout << "Team A: " << Teams->At(Team) << '\n';
 
         *PlayerState->Member<uint8_t>("TeamIndex") = Team; // GetMath()->STATIC_RandomIntegerInRange(2, GameState->CurrentPlaylistData->MaxTeamCount));
-        *PlayerTeam = Teams->At(Team);
-        *(*PlayerState->Member<UObject*>("PlayerTeamPrivate"))->Member<UObject*>("TeamInfo") = *PlayerTeam;
+        // *PlayerTeam = Teams->At(Team);
+        // *(*PlayerState->Member<UObject*>("PlayerTeamPrivate"))->Member<UObject*>("TeamInfo") = *PlayerTeam;
 
-        TeamMembers->Add(PlayerController);
+        // TeamMembers->Add(PlayerController);
 
-        std::cout << "New Team Size: " << TeamMembers->Num() << "\n";
-        *PlayerState->Member<uint8_t>("SquadId") = TeamMembers->Num();
+        // std::cout << "New Team Size: " << TeamMembers->Num() << "\n";
+        *PlayerState->Member<uint8_t>("SquadId") = Team; // TeamMembers->Num();
 
-        static auto OnRep_SquadId = PlayerState->Function("OnRep_SquadId");
+        /* static auto OnRep_SquadId = PlayerState->Function("OnRep_SquadId");
 
-        PlayerState->ProcessEvent(OnRep_SquadId);
+        if (OnRep_SquadId)
+            PlayerState->ProcessEvent(OnRep_SquadId); */
         // OnRep_TeamIndex
     }
 

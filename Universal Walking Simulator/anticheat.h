@@ -14,7 +14,7 @@ Function /Script/FortniteGame.FortWeapon.GetReloadTime
 
 float GetFireRate(UObject*)
 {
-
+	// GetFiringRate
 }
 
 // /Script/FortniteGame.FortWeapon.OnRep_LastFireTimeVerified 

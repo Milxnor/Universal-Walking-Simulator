@@ -81,6 +81,17 @@ namespace Items {
 
 namespace FFortItemEntry
 {
+	int* GetLoadedAmmo(__int64* Entry)
+	{
+		if (!Entry)
+			return nullptr;
+
+		static auto LoadedAmmoOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("LoadedAmmo"));
+		auto LoadedAmmo = (int*)(__int64(&*Entry) + LoadedAmmoOffset);
+
+		return LoadedAmmo;
+	}
+
 	int* GetCount(__int64* Entry)
 	{
 		if (!Entry)
@@ -195,27 +206,12 @@ namespace Inventory
 			return nullptr;
 	}
 
-	inline void EquipWeapon(UObject* Pawn, UObject* FortWeapon, const FGuid& Guid, int Ammo = 0)
+	inline UObject* EquipWeapon(UObject* Pawn, UObject* FortWeapon, const FGuid& Guid, int Ammo = 0)
 	{
 		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 		auto CurrentWeapon = *Pawn->Member<UObject*>(("CurrentWeapon"));
 		if (FortWeapon && Pawn)
 		{
-			//if (*CurrentWeapon->Member<UObject*>(("WeaponData")) != PickaxeDef)
-			{
-				static auto getBulletsFn = FortWeapon->Function(("GetBulletsPerClip"));
-				if (getBulletsFn)
-				{
-					int BulletsPerClip;
-					FortWeapon->ProcessEvent(getBulletsFn, &BulletsPerClip);
-					*FortWeapon->Member<int>(("AmmoCount")) = BulletsPerClip;
-				}
-				else
-					std::cout << ("No GetBulletsPerClip!\n");
-			}
-			 
-			// Instance->ItemEntry.LoadedAmmo = Weapon->AmmoCount;
-
 			static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
 
 			if (OnRep_ReplicatedWeaponData)
@@ -242,6 +238,8 @@ namespace Inventory
 				else
 					std::cout << ("No ClientInternalEquipWeapon!\n");
 			}
+
+			return FortWeapon;
 		}
 		else
 			std::cout << ("No weapon!\n");
@@ -293,23 +291,12 @@ namespace Inventory
 					//*Weapon->Member<UObject*>(("WeaponData")) = Definition;
 					//EquipWeapon(Pawn, Weapon, Guid, Ammo);
 
-					static auto getBulletsFn = Weapon->Function(("GetBulletsPerClip"));
-
-					if (getBulletsFn && FullName.contains("Weapon"))
-					{
-						int BulletsPerClip;
-						Weapon->ProcessEvent(getBulletsFn, &BulletsPerClip);
-						*Weapon->Member<int>(("AmmoCount")) = BulletsPerClip;
-					}
-					else
-						std::cout << ("No GetBulletsPerClip!\n");
+					// *Weapon->Member<int>(("AmmoCount")) = Ammo;
 
 					static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
 
 					if (OnRep_ReplicatedWeaponData)
 						Weapon->ProcessEvent(OnRep_ReplicatedWeaponData);
-
-					return Weapon;
 				}
 				else
 					std::cout << ("Failed to spawn Weapon!\n");
@@ -427,11 +414,6 @@ namespace Inventory
 		return parms.Ret;
 	}
 
-	void GetLoadedAmmo()
-	{
-
-	}
-
 	inline UObject* GetItemInstanceFromGuid(UObject* Controller, const FGuid& Guid)
 	{
 		if (!Controller)
@@ -516,7 +498,13 @@ namespace Inventory
 				CurrentItemInstance->ProcessEvent(GetTrackerGuid, &TrackerGuid);
 		}
 
-		EquipWeaponDefinition(Pawn, Def, Guid, 0, TrackerGuid);
+		static auto GetLoadedAmmo = CurrentItemInstance->Function("GetLoadedAmmo");
+		int loadedAmmo = 0;
+
+		/* if (GetLoadedAmmo)
+			CurrentItemInstance->ProcessEvent(GetLoadedAmmo, &loadedAmmo); */
+
+		EquipWeaponDefinition(Pawn, Def, Guid, loadedAmmo, TrackerGuid);
 
 		std::string FullName = Def->GetFullName();
 
@@ -756,10 +744,11 @@ namespace Inventory
 		return bSuccessful;
 	}
 
-	static void AddItem(UObject* Controller, UObject* FortItem, EFortQuickBars Bars, int Slot, int Count = 1)
+	// returns instance
+	static UObject* AddItem(UObject* Controller, UObject* FortItem, EFortQuickBars Bars, int Slot, int Count = 1)
 	{
 		if (!Controller || !FortItem)
-			return;
+			return nullptr;
 
 		static const auto FlooredVer = std::floor(FnVerDouble);
 
@@ -838,6 +827,8 @@ namespace Inventory
 
 		if (Idx != -1)
 			Inventory::Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
+
+		return FortItem;
 	}
 
 	static UObject* CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1)
@@ -847,7 +838,12 @@ namespace Inventory
 			auto Instance = CreateItemInstance(Controller, Definition, Count);
 
 			if (Instance)
-				AddItem(Controller, Instance, Bars, Slot, Count);
+			{
+				auto instance = AddItem(Controller, Instance, Bars, Slot, Count);
+
+				auto entry = GetItemEntryFromInstance(instance);
+
+			}
 			else
 				std::cout << ("Failed to create ItemInstance!\n");
 
