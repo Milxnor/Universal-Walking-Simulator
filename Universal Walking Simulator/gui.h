@@ -358,9 +358,17 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 				}
 
-				if (ImGui::BeginTabItem(("Credits")))
+				if (ImGui::BeginTabItem(("Settings")))
 				{
 					Tab = 6;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem(("Credits")))
+				{
+					Tab = 7;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
@@ -377,6 +385,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
+					ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
 
 					// ImGui::Checkbox(("Use Beacons"), &bUseBeacons);
 
@@ -844,7 +853,26 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 					break;
 
-				case 6:
+				case 6: // settings
+
+					ImGui::InputText("First Slot", &StartingSlot1.first);
+					ImGui::InputInt("First Slot Amount", &StartingSlot1.second);
+					ImGui::NewLine();
+					ImGui::InputText("Second Slot", &StartingSlot2.first);
+					ImGui::InputInt("Second Slot Amount", &StartingSlot2.second);
+					ImGui::NewLine();
+					ImGui::InputText("Third Slot", &StartingSlot3.first);
+					ImGui::InputInt("Third Slot Amount", &StartingSlot3.second);
+					ImGui::NewLine();
+					ImGui::InputText("Fourth Slot", &StartingSlot4.first);
+					ImGui::InputInt("Fourth Slot Amount", &StartingSlot4.second);
+					ImGui::NewLine();
+					ImGui::InputText("Fifth Slot", &StartingSlot5.first);
+					ImGui::InputInt("Fifth Slot Amount", &StartingSlot5.second);
+					ImGui::NewLine();
+
+					break;
+				case 7:
 					TextCentered(("Credits:"));
 					TextCentered(("Milxnor: Made the base, main developer"));
 					TextCentered(("GD: Added events, cleans up code and adds features."));

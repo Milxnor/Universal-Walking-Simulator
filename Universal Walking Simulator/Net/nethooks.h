@@ -92,6 +92,14 @@ char __fastcall ValidationFailureDetour(__int64* a1, __int64 a2)
 
 bool bMyPawn = false; // UObject*
 
+template <typename T>
+auto getPair(T map, int index)
+{
+    auto it = map.begin();
+    std::advance(it, index);
+    return it;
+}
+
 UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole RemoteRole, FURL& URL, void* UniqueId, FString& Error, uint8_t NetPlayerIndex)
 {
     static bool bSpawnedFloorLoot = false;
@@ -264,38 +272,27 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     if (Engine_Version >= 420)
     {
         static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-        static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
-        static auto SlurpJuice = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff"));
-        static auto GoldAR = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"));
+
+        static auto First = FindObject(StartingSlot1.first);
+        static auto Second = FindObject(StartingSlot2.first);
+        static auto Third = FindObject(StartingSlot3.first);
+        static auto Fourth = FindObject(StartingSlot4.first);
+        static auto Fifth = FindObject(StartingSlot5.first);
 
         Inventory::CreateAndAddItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0, 1);
-        Inventory::CreateAndAddItem(PlayerController, GoldAR, EFortQuickBars::Primary, 1, 1);
 
-        if (FnVerDouble < 9.10)
+        if (!Helper::HasAircraftStarted() || !bClearInventoryOnAircraftJump)
         {
-            static auto GoldPump = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_SR_Ore_T03.WID_Shotgun_Standard_Athena_SR_Ore_T03"));
-            static auto HeavySniper = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Sniper_Heavy_Athena_SR_Ore_T03.WID_Sniper_Heavy_Athena_SR_Ore_T03"));
+            Inventory::CreateAndAddItem(PlayerController, First, EFortQuickBars::Primary, 1, StartingSlot1.second);
+            Inventory::CreateAndAddItem(PlayerController, Second, EFortQuickBars::Primary, 2, StartingSlot2.second);
+            Inventory::CreateAndAddItem(PlayerController, Third, EFortQuickBars::Primary, 3, StartingSlot3.second);
+            Inventory::CreateAndAddItem(PlayerController, Fourth, EFortQuickBars::Primary, 4, StartingSlot4.second);
+            Inventory::CreateAndAddItem(PlayerController, Fifth, EFortQuickBars::Primary, 5, StartingSlot5.second);
 
-            if (!GoldPump)
-                GoldPump = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03"); // blue pump
-
-            Inventory::CreateAndAddItem(PlayerController, GoldPump, EFortQuickBars::Primary, 2, 1);
-            Inventory::CreateAndAddItem(PlayerController, HeavySniper, EFortQuickBars::Primary, 3, 1);
-        }
-        else
-        {
-            static auto BurstSMG = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Pistol_BurstFireSMG_Athena_R_Ore_T03.WID_Pistol_BurstFireSMG_Athena_R_Ore_T03"));
-            static auto CombatShotgun = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Combat_Athena_SR_Ore_T03.WID_Shotgun_Combat_Athena_SR_Ore_T03"));
-
-            Inventory::CreateAndAddItem(PlayerController, CombatShotgun, EFortQuickBars::Primary, 2, 1);
-            Inventory::CreateAndAddItem(PlayerController, BurstSMG, EFortQuickBars::Primary, 3, 1);
+            Inventory::GiveAllAmmo(PlayerController);
+            Inventory::GiveMats(PlayerController);
         }
 
-        Inventory::CreateAndAddItem(PlayerController, Minis, EFortQuickBars::Primary, 4, 1);
-        Inventory::CreateAndAddItem(PlayerController, SlurpJuice, EFortQuickBars::Primary, 5, 1);
-
-        Inventory::GiveAllAmmo(PlayerController);
-        Inventory::GiveMats(PlayerController);
         Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
     }
 

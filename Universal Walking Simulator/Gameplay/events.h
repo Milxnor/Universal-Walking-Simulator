@@ -292,17 +292,7 @@ namespace Events {
 
 									auto Controller = *Connection->Member<UObject*>(("PlayerController"));
 
-									auto ItemInstances = Inventory::GetItemInstances(Controller);
-
-									for (int i = 0; i < ItemInstances->Num(); i++)
-									{
-										auto CurrentItemInstance = ItemInstances->At(i);
-
-										if (CurrentItemInstance->IsA(BuildingItemData_Wall) || CurrentItemInstance->IsA(BuildingItemData_Floor) || CurrentItemInstance->IsA(BuildingItemData_Stair_W) || CurrentItemInstance->IsA(BuildingItemData_RoofS))
-											continue;
-
-										Inventory::TakeItem(Controller, Inventory::GetItemGuid(CurrentItemInstance), *FFortItemEntry::GetCount(GetItemEntryFromInstance(CurrentItemInstance)), true);
-									}
+									ClearInventory(Controller, true);
 								}
 							}
 						}

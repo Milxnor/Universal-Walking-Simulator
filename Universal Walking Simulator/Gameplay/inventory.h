@@ -1568,3 +1568,41 @@ void InitializeInventoryHooks()
 		MH_EnableHook((PVOID)HandleReloadCostAddr);
 	}
 }
+
+void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
+{
+	static auto BuildingItemData_Wall = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Wall.BuildingItemData_Wall"));
+	static auto BuildingItemData_Floor = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Floor.BuildingItemData_Floor"));
+	static auto BuildingItemData_Stair_W = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
+	static auto BuildingItemData_RoofS = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
+	static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+
+	auto ItemInstances = Inventory::GetItemInstances(Controller);
+
+	if (ItemInstances)
+	{
+		for (int i = 0; i < ItemInstances->Num(); i++)
+		{
+			auto CurrentItemInstance = ItemInstances->At(i);
+
+			if (CurrentItemInstance->IsA(BuildingItemData_Wall) || CurrentItemInstance->IsA(BuildingItemData_Floor) || CurrentItemInstance->IsA(BuildingItemData_Stair_W) || 
+				CurrentItemInstance->IsA(BuildingItemData_RoofS) || (bTakePickaxe ? false : Inventory::GetItemDefinition(CurrentItemInstance) == PickaxeDef))
+				continue;
+
+			Inventory::TakeItem(Controller, Inventory::GetItemGuid(CurrentItemInstance), *FFortItemEntry::GetCount(GetItemEntryFromInstance(CurrentItemInstance)), true);
+		}
+	}
+
+	static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+	static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+	static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+	auto WoodInstance = Inventory::FindItemInInventory(Controller, WoodItemData);
+	Inventory::TakeItem(Controller, Inventory::GetItemGuid(WoodInstance), *Inventory::GetCount(WoodInstance));
+
+	auto StoneInstance = Inventory::FindItemInInventory(Controller, StoneItemData);
+	Inventory::TakeItem(Controller, Inventory::GetItemGuid(StoneInstance), *Inventory::GetCount(StoneInstance));
+
+	auto MetalInstance = Inventory::FindItemInInventory(Controller, MetalItemData);
+	Inventory::TakeItem(Controller, Inventory::GetItemGuid(MetalInstance), *Inventory::GetCount(MetalInstance));
+}

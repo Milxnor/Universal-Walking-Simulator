@@ -448,6 +448,9 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 			if (Aircraft)
 			{
+				if (bClearInventoryOnAircraftJump)
+					ClearInventory(PlayerController);
+
 				auto ExitLocation = Helper::GetActorLocation(Aircraft);
 
 				Helper::InitPawn(PlayerController, false, ExitLocation);
@@ -1794,6 +1797,7 @@ void FinishInitializeUHooks()
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
+
 	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
 	AddHook("Function /Script/Engine.PlayerController.ClientWasKicked", ClientWasKickedHook);

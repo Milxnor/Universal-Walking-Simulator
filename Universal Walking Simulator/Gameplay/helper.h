@@ -887,6 +887,11 @@ namespace Helper
 		return GetGameState()->Member<EAthenaGamePhase>(("GamePhase"));
 	}
 
+	bool HasAircraftStarted()
+	{
+		return *GetGamePhase() == EAthenaGamePhase::Aircraft;
+	}
+
 	FVector GetPlayerStart()
 	{
 		static auto WarmupClass = FindObject(("Class /Script/FortniteGame.FortPlayerStartWarmup"));
