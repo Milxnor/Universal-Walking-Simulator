@@ -302,7 +302,10 @@ namespace Helper
 		if (!Foundation)
 			return;
 
-		*Foundation->Member<uint8_t>(("DynamicFoundationType")) = bShow ? 0 : 3;
+		auto DynamicFoundationType = Foundation->Member<uint8_t>(("DynamicFoundationType"));
+		
+		if (DynamicFoundationType && *DynamicFoundationType)
+			*DynamicFoundationType = bShow ? 0 : 3;
 
 		struct BITMF
 		{
@@ -373,22 +376,14 @@ namespace Helper
 			static auto idfk = FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")); // polar peak?
 			ShowBuilding(idfk);
 
-			FString LevelName;
-			LevelName.Set(L"/Game/Athena/Maps/Buildings/5x5/Athena_URB_5x5_Shops_c_4b"); // tilted
+			static auto tiltedtower = FindObject("BuildingFoundation5x5 /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.ShopsNew");
+			ShowBuilding(tiltedtower);
 
-			/* auto streamingDynamic = Helper::LoadLevelInstance(LevelName);
-
-			struct idk {
-				uint8_t                                        bInitiallyLoaded : 1;                              // Mask : 0x1 0x148(0x1)(Edit, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				uint8_t                                        bInitiallyVisible : 1;
-			};
-			
-			streamingDynamic->Member<idk>("bInitiallyVisible")->bInitiallyVisible = true; */
 		}
 
 		if (Season >= 7 && Engine_Version < 424)
 		{
-			static auto TheBlock = FindObject("BuildingFoundationSlab_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_3");
+			static auto TheBlock = FindObject("BuildingFoundationSlab_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_2"); // SLAB_3 is blank
 			ShowBuilding(TheBlock);
 
 			/* FString dababy;
@@ -396,6 +391,18 @@ namespace Helper
 			*TheBlock->Member<FText>("CreatorName") = Helper::Conversion::StringToText(dababy); */
 
 			// LevelSequencePlayer /Game/Athena/Prototype/Blueprints/Slab/Replicated_LevelSequence.Default__Replicated_LevelSequence_C.AnimationPlayer
+
+			/*
+			
+			Block_25x25_ColossalCompound - 7.40
+
+			Block_25x25_HarmonyHotel - 8.10
+
+			Block_25x25_TrickyTracks - 8.50
+
+			Block_25x25_AlienSanctuary - 8.50
+			
+			*/
 		}
 
 		//Marshamello

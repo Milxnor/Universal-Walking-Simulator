@@ -4,6 +4,8 @@
 #include <Gameplay/helper.h>
 #include <Gameplay/abilities.h>
 
+#include <UE/DataTables.h>
+
 /*
 
 GiveItem - Creates a new item and or stacks
@@ -25,6 +27,52 @@ inline EntryType* GetItemEntryFromInstance(UObject* Instance)
 {
 	static auto ItemEntryOffset = GetOffset(Instance, "ItemEntry");
 	return (EntryType*)(__int64(Instance) + ItemEntryOffset);
+}
+
+int GetMaxBullets(UObject* Definition)
+{
+	// ClipSize
+	auto RangedWeapons = Helper::GetPlaylist()->Member<TSoftObjectPtr>(("RangedWeapons"));
+	
+	static auto DataTableClass = FindObject("Class /Script/Engine.DataTable");
+	// /Game/Athena/Items/Weapons/AthenaRangedWeapons.AthenaRangedWeapons
+	auto RangedWeaponsTable = StaticLoadObject(DataTableClass, nullptr, "/Game/Items/Datatables/RangedWeapons.RangedWeapons"); // StaticLoadObject(DataTableClass, nullptr, RangedWeapons->ObjectID.AssetPathName.ToString());
+	
+	if (!RangedWeaponsTable)
+	{
+		std::cout << "unable to find rangedweaponstable!\n";
+		return 0;
+	}
+
+	auto RangedWeaponRows = GetRowMap(RangedWeaponsTable);
+
+	static auto ClipSizeOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortBaseWeaponStats", "ClipSize");
+
+	auto DefName = Definition->GetName();
+
+	std::cout << "Number of RangedWeapons: " << RangedWeaponRows.Pairs.Elements.Data.Num() << '\n';
+
+	for (int i = 0; i < RangedWeaponRows.Pairs.Elements.Data.Num(); i++)
+	{
+		auto& Man = RangedWeaponRows.Pairs.Elements.Data.At(i);
+		auto& Pair = Man.ElementData.Value;
+		auto RowFName = Pair.First;
+
+		if (!RowFName.ComparisonIndex)
+			continue;
+
+		// std::cout << std::format("[{}] {}\n", i, RowFName.ToString());
+
+		if (RowFName.ToString().contains(DefName)) // skunked
+		{
+			auto data = Pair.Second;
+			auto ClipSize = *(int*)(__int64(data) + ClipSizeOffset);
+			std::cout << "ClipSize: " << ClipSize << '\n';
+			return ClipSize;
+		}
+	}
+
+	return 0;
 }
 
 namespace Items {
@@ -146,6 +194,11 @@ namespace QuickBars
 		}
 
 		return nullptr;
+	}
+
+	bool IsHoldingPickaxe()
+	{
+
 	}
 
 	EFortQuickBars WhatQuickBars(UObject* Definition) // returns the quickbar the item should go in
@@ -291,7 +344,9 @@ namespace Inventory
 					//*Weapon->Member<UObject*>(("WeaponData")) = Definition;
 					//EquipWeapon(Pawn, Weapon, Guid, Ammo);
 
-					// *Weapon->Member<int>(("AmmoCount")) = Ammo;
+					std::cout << "Ammo: " << Ammo << '\n';
+
+					*Weapon->Member<int>(("AmmoCount")) = Ammo;
 
 					static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
 
@@ -445,6 +500,8 @@ namespace Inventory
 		if (!Pawn)
 			return nullptr;
 
+		int currentWeaponAmmo = 0;
+
 		if (newSwapping)
 		{
 			auto CurrentWeaponList = Pawn->Member<TArray<UObject*>>("CurrentWeaponList");
@@ -457,7 +514,13 @@ namespace Inventory
 
 				if (CurrentWeaponInList && (*CurrentWeaponInList->Member<FGuid>("ItemEntryGuid") == Guid))
 				{
-					static auto OnRep_ReplicatedWeaponData = CurrentWeaponInList->Function("OnRep_ReplicatedWeaponData");
+					static auto GetMagazineAmmoCount = CurrentWeaponInList->Function("GetMagazineAmmoCount");
+
+					if (GetMagazineAmmoCount)
+						CurrentWeaponInList->ProcessEvent(GetMagazineAmmoCount, &currentWeaponAmmo);
+
+					break;
+					/* static auto OnRep_ReplicatedWeaponData = CurrentWeaponInList->Function("OnRep_ReplicatedWeaponData");
 
 					if (OnRep_ReplicatedWeaponData)
 						CurrentWeaponInList->ProcessEvent(OnRep_ReplicatedWeaponData);
@@ -476,7 +539,7 @@ namespace Inventory
 					if (ClientInternalEquipWeapon)
 						Pawn->ProcessEvent(ClientInternalEquipWeapon, &ClientInternalEquipWeapon_Params);
 
-					return nullptr;
+					return nullptr; */
 				}
 			}
 		}
@@ -498,13 +561,44 @@ namespace Inventory
 				CurrentItemInstance->ProcessEvent(GetTrackerGuid, &TrackerGuid);
 		}
 
-		static auto GetLoadedAmmo = CurrentItemInstance->Function("GetLoadedAmmo");
-		int loadedAmmo = 0;
+		auto currentWeapon = *Pawn->Member<UObject*>("CurrentWeapon");
+		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
-		/* if (GetLoadedAmmo)
-			CurrentItemInstance->ProcessEvent(GetLoadedAmmo, &loadedAmmo); */
+		// if (!QuickBars::IsHoldingPickaxe()) 
+		if (currentWeapon && *currentWeapon->Member<UObject*>("WeaponData") != PickaxeDef)
+		{
+			auto currentInstance = GetItemInstanceFromGuid(Controller, *currentWeapon->Member<FGuid>("ItemEntryGuid"));
 
-		EquipWeaponDefinition(Pawn, Def, Guid, loadedAmmo, TrackerGuid);
+			if (currentInstance)
+			{
+				auto currentItemEntry = GetItemEntryFromInstance(currentInstance);
+
+				if (currentItemEntry)
+				{
+					int currentAmmoCount;; // = *currentWeapon->Member<int>("AmmoCount");
+					static auto GetMagazineAmmoCount = currentWeapon->Function("GetMagazineAmmoCount");
+
+					if (GetMagazineAmmoCount)
+						currentWeapon->ProcessEvent(GetMagazineAmmoCount, &currentAmmoCount);
+
+					std::cout << "AmmoCount: " << currentAmmoCount << '\n';
+
+					auto LoadedAmmo = FFortItemEntry::GetLoadedAmmo(currentItemEntry);
+					std::cout << "LoadedAmmo: " << *LoadedAmmo << '\n';
+					*LoadedAmmo = currentAmmoCount;
+				}
+				else
+					std::cout << "No ItemEntry!\n";
+			}
+			else
+				std::cout << "No ItemInstance!\n";
+		}
+		else
+			std::cout << "Brudaa!\n";
+
+		std::cout << "currentWeapon ammo: " << currentWeaponAmmo << '\n';
+
+		EquipWeaponDefinition(Pawn, Def, Guid, currentWeaponAmmo/* *FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(CurrentItemInstance)) */, TrackerGuid);
 
 		std::string FullName = Def->GetFullName();
 
@@ -842,6 +936,8 @@ namespace Inventory
 
 				auto entry = GetItemEntryFromInstance(instance);
 
+				static auto LoadedAmmoOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("LoadedAmmo"));
+				*(int*)(__int64(&*entry) + LoadedAmmoOffset) = GetMaxBullets(Definition);
 			}
 			else
 				std::cout << ("Failed to create ItemInstance!\n");
@@ -1059,6 +1155,9 @@ namespace Inventory
 	// RETURNS DEFINITION
 	UObject* TakeItem(UObject* Controller, const FGuid& Guid, int Count = 1, bool bDestroyIfEmpty = false) // Use this, this removes from a definition
 	{
+		if (!Controller)
+			return nullptr;
+
 		__int64* Entry = nullptr;
 
 		if (DecreaseItemCount(Controller, GetDefinitionFromGuid(Controller, Guid), Count, &Entry) && Entry) // it successfully decreased
@@ -1071,17 +1170,20 @@ namespace Inventory
 
 		auto Pawn = Helper::GetPawnFromController(Controller);
 
-		if (newSwapping)
+		if (Pawn && newSwapping)
 		{
 			auto CurrentWeaponList = Pawn->Member<TArray<UObject*>>("CurrentWeaponList");
 
-			for (int i = 0; i < CurrentWeaponList->Num(); i++)
+			if (CurrentWeaponList)
 			{
-				auto CurrentWeaponInList = CurrentWeaponList->At(i);
-
-				if (CurrentWeaponInList && (*CurrentWeaponInList->Member<FGuid>("ItemEntryGuid") == Guid))
+				for (int i = 0; i < CurrentWeaponList->Num(); i++)
 				{
-					CurrentWeaponList->RemoveAt(i);
+					auto CurrentWeaponInList = CurrentWeaponList->At(i);
+
+					if (CurrentWeaponInList && (*CurrentWeaponInList->Member<FGuid>("ItemEntryGuid") == Guid))
+					{
+						CurrentWeaponList->RemoveAt(i);
+					}
 				}
 			}
 		}
@@ -1598,11 +1700,11 @@ void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 	static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
 	auto WoodInstance = Inventory::FindItemInInventory(Controller, WoodItemData);
-	Inventory::TakeItem(Controller, Inventory::GetItemGuid(WoodInstance), *Inventory::GetCount(WoodInstance));
+	Inventory::TakeItem(Controller, Inventory::GetItemGuid(WoodInstance), *Inventory::GetCount(WoodInstance), true);
 
 	auto StoneInstance = Inventory::FindItemInInventory(Controller, StoneItemData);
-	Inventory::TakeItem(Controller, Inventory::GetItemGuid(StoneInstance), *Inventory::GetCount(StoneInstance));
+	Inventory::TakeItem(Controller, Inventory::GetItemGuid(StoneInstance), *Inventory::GetCount(StoneInstance), true);
 
 	auto MetalInstance = Inventory::FindItemInInventory(Controller, MetalItemData);
-	Inventory::TakeItem(Controller, Inventory::GetItemGuid(MetalInstance), *Inventory::GetCount(MetalInstance));
+	Inventory::TakeItem(Controller, Inventory::GetItemGuid(MetalInstance), *Inventory::GetCount(MetalInstance), true);
 }

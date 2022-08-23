@@ -108,6 +108,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
     {
         // CreateThread(0, 0, Looting::Tables::SpawnFloorLoot, 0, 0, 0);
         // CreateThread(0, 0, Looting::Tables::SpawnVehicles, 0, 0, 0);
+
         bSpawnedFloorLoot = true;
     }
 
