@@ -626,8 +626,6 @@ namespace Inventory
 
 	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false, FFastArraySerializerItem* ModifiedItem = nullptr)
 	{
-		static const 
-
 		auto WorldInventory = GetWorldInventory(Controller);
 		auto Inventory = GetInventory(Controller);
 
