@@ -1586,7 +1586,7 @@ void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 		{
 			auto CurrentItemInstance = ItemInstances->At(i);
 
-			if (CurrentItemInstance->IsA(BuildingItemData_Wall) || CurrentItemInstance->IsA(BuildingItemData_Floor) || CurrentItemInstance->IsA(BuildingItemData_Stair_W) || 
+			if (!CurrentItemInstance || CurrentItemInstance->IsA(BuildingItemData_Wall) || CurrentItemInstance->IsA(BuildingItemData_Floor) || CurrentItemInstance->IsA(BuildingItemData_Stair_W) || 
 				CurrentItemInstance->IsA(BuildingItemData_RoofS) || (bTakePickaxe ? false : Inventory::GetItemDefinition(CurrentItemInstance) == PickaxeDef))
 				continue;
 
