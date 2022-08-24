@@ -116,6 +116,7 @@
   <ItemGroup>
     <ClInclude Include="anticheat.h" />
     <ClInclude Include="AI.h" />
+    <ClInclude Include="Gameplay\carmine.h" />
     <ClInclude Include="offsets.h" />
     <ClInclude Include="UE\DataTables.h" />
     <ClInclude Include="discord.h" />

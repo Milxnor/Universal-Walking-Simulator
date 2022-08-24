@@ -32,7 +32,7 @@ static UObject* GetLootPackages()
 	auto& LootPackagesName = Default;
 
 	if (LootPackagesSoft && LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex) {
-		LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
+		//LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
 		// std::cout << "SubPath: " << LootPackagesSoft->ObjectID.SubPathString.ToString();
 	}
 	else

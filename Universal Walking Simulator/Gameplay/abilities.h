@@ -257,6 +257,25 @@ UObject* DoesASCHaveAbility(UObject* ASC, UObject* Ability)
     return AbilityToReturn;
 }
 
+void ApplyGameplayEffect(UObject* AbilitySystemComponent, UObject* GE)
+{
+    static UObject* Func = AbilitySystemComponent->Function("BP_ApplyGameplayEffectToSelf");
+
+    struct
+    {
+        UObject* GameplayEffect;
+        float Level;
+        FGameplayEffectContextHandle EffectContext;
+        FActiveGameplayEffectHandle Return;
+    } Params;
+    Params.GameplayEffect = GE;
+    Params.Level = 1.0f;
+    Params.EffectContext = FGameplayEffectContextHandle();
+  
+
+    AbilitySystemComponent->ProcessEvent(Func, & Params);
+}
+
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
 {
     if (!GameplayAbilityClass || !TargetPawn)

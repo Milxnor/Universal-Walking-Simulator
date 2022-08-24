@@ -1,10 +1,9 @@
 #pragma once
+#include <Gameplay/carmine.h>
 
 #include <UE/structs.h>
 #include <Gameplay/helper.h>
 #include <Gameplay/abilities.h>
-
-#include <UE/DataTables.h>
 
 /*
 
@@ -27,104 +26,6 @@ inline EntryType* GetItemEntryFromInstance(UObject* Instance)
 {
 	static auto ItemEntryOffset = GetOffset(Instance, "ItemEntry");
 	return (EntryType*)(__int64(Instance) + ItemEntryOffset);
-}
-
-int GetMaxBullets(UObject* Definition)
-{
-	// ClipSize
-	auto RangedWeapons = Helper::GetPlaylist()->Member<TSoftObjectPtr>(("RangedWeapons"));
-	
-	static auto DataTableClass = FindObject("Class /Script/Engine.DataTable");
-	// /Game/Athena/Items/Weapons/AthenaRangedWeapons.AthenaRangedWeapons
-	auto RangedWeaponsTable = StaticLoadObject(DataTableClass, nullptr, "/Game/Items/Datatables/RangedWeapons.RangedWeapons"); // StaticLoadObject(DataTableClass, nullptr, RangedWeapons->ObjectID.AssetPathName.ToString());
-	
-	if (!RangedWeaponsTable)
-	{
-		std::cout << "unable to find rangedweaponstable!\n";
-		return 0;
-	}
-
-	auto RangedWeaponRows = GetRowMap(RangedWeaponsTable);
-
-	static auto ClipSizeOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortBaseWeaponStats", "ClipSize");
-
-	auto DefName = Definition->GetName();
-
-	std::cout << "Number of RangedWeapons: " << RangedWeaponRows.Pairs.Elements.Data.Num() << '\n';
-
-	for (int i = 0; i < RangedWeaponRows.Pairs.Elements.Data.Num(); i++)
-	{
-		auto& Man = RangedWeaponRows.Pairs.Elements.Data.At(i);
-		auto& Pair = Man.ElementData.Value;
-		auto RowFName = Pair.First;
-
-		if (!RowFName.ComparisonIndex)
-			continue;
-
-		// std::cout << std::format("[{}] {}\n", i, RowFName.ToString());
-
-		if (RowFName.ToString().contains(DefName)) // skunked
-		{
-			auto data = Pair.Second;
-			auto ClipSize = *(int*)(__int64(data) + ClipSizeOffset);
-			std::cout << "ClipSize: " << ClipSize << '\n';
-			return ClipSize;
-		}
-	}
-
-	return 0;
-}
-
-namespace Items {
-	void HandleCarmine(UObject* Controller) {
-		if (!Controller)
-			return;
-
-		UObject* Pawn = Helper::GetPawnFromController(Controller);
-		Helper::ChoosePart(Pawn, EFortCustomPartType::Body, FindObject("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/Dev_TestAsset_Body_M_XL.Dev_TestAsset_Body_M_XL"));
-		Helper::ChoosePart(Pawn, EFortCustomPartType::Head, FindObject("CustomCharacterPart /Game/Athena/Heroes/Meshes/Heads/Dev_TestAsset_Head_M_XL.Dev_TestAsset_Head_M_XL"));
-		*Pawn->Member<UObject*>("AnimBPOverride") = FindObject("AnimBlueprintGeneratedClass /Game/Characters/Player/Male/Male_Avg_Base/Gauntlet_Player_AnimBlueprint.Gauntlet_Player_AnimBlueprint_C");
-		
-		UObject* AS = FindObject("FortAbilitySet /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AS_CarminePack.AS_CarminePack");
-		auto GrantedAbilities = AS->Member<TArray<UObject*>>("GameplayAbilities");
-
-		for (int i = 0; i < GrantedAbilities->Num(); i++) {
-			GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
-		}
-
-		UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
-
-		//if (Montage && PlayMontage && Engine_Version < 426)
-		//{
-		//	auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
-		//	static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
-
-		//	TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Specs;
-
-		//	if (Engine_Version <= 422)
-		//		Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
-		//	else
-		//		Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))).Items;
-
-		//	UObject* DefaultObject = EmoteClass->CreateDefaultObject();
-
-		//	for (int i = 0; i < Specs.Num(); i++)
-		//	{
-		//		auto& CurrentSpec = Specs[i];
-
-		//		if (CurrentSpec.Ability == DefaultObject)
-		//		{
-		//			auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(("CurrentActivationInfo"));
-
-		//			// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
-		//			auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
-		//			// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
-
-		//			std::cout << ("Played for: ") << Dura << '\n';
-		//		}
-		//	}
-		//}
-	}
 }
 
 namespace FFortItemEntry
@@ -346,7 +247,7 @@ namespace Inventory
 
 					std::cout << "Ammo: " << Ammo << '\n';
 
-					*Weapon->Member<int>(("AmmoCount")) = Ammo;
+					//*Weapon->Member<int>(("AmmoCount")) = Ammo;
 
 					static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
 
@@ -585,7 +486,7 @@ namespace Inventory
 
 					auto LoadedAmmo = FFortItemEntry::GetLoadedAmmo(currentItemEntry);
 					std::cout << "LoadedAmmo: " << *LoadedAmmo << '\n';
-					*LoadedAmmo = currentAmmoCount;
+					//*LoadedAmmo = currentAmmoCount;
 				}
 				else
 					std::cout << "No ItemEntry!\n";
@@ -599,12 +500,6 @@ namespace Inventory
 		std::cout << "currentWeapon ammo: " << currentWeaponAmmo << '\n';
 
 		EquipWeaponDefinition(Pawn, Def, Guid, currentWeaponAmmo/* *FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(CurrentItemInstance)) */, TrackerGuid);
-
-		std::string FullName = Def->GetFullName();
-
-		if (FullName.contains("CarminePack") || FullName.contains("AshtonPack.")) {
-			Items::HandleCarmine(Controller);
-		}
 
 		return nullptr;
 	}
@@ -935,7 +830,7 @@ namespace Inventory
 				auto entry = GetItemEntryFromInstance(instance);
 
 				static auto LoadedAmmoOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("LoadedAmmo"));
-				*(int*)(__int64(&*entry) + LoadedAmmoOffset) = GetMaxBullets(Definition);
+				//*(int*)(__int64(&*entry) + LoadedAmmoOffset) = GetMaxBullets(Definition);
 			}
 			else
 				std::cout << ("Failed to create ItemInstance!\n");
@@ -1284,7 +1179,13 @@ namespace Inventory
 			// std::cout << ("OverStack: ") << OverStack << '\n';
 
 			// If someway, the count is bigger than the MaxStackSize, and there is nothing to stack on, then it will not create 2 items.
-
+			std::string FullName = Definition->GetFullName();
+			if (FullName.contains("CarminePack") || FullName.contains("AshtonRockItemDef")) {
+				Carmine::HandleCarmine(Controller);
+				UObject* item = CreateAndAddItem(Controller, FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack"), Bars, Slot, OverStack);
+				
+				Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(item));
+			}
 			if (!ItemInstance || (OverStack > 0 && !bDontCreateNewStack))
 			{
 				if (OverStack > 0)
