@@ -346,7 +346,7 @@ namespace Inventory
 
 					std::cout << "Ammo: " << Ammo << '\n';
 
-					*Weapon->Member<int>(("AmmoCount")) = Ammo;
+					// *Weapon->Member<int>(("AmmoCount")) = Ammo;
 
 					static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
 
