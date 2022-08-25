@@ -1599,11 +1599,17 @@ void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 	static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
 	auto WoodInstance = Inventory::FindItemInInventory(Controller, WoodItemData);
-	Inventory::TakeItem(Controller, Inventory::GetItemGuid(WoodInstance), *Inventory::GetCount(WoodInstance), true);
+
+	if (WoodInstance)
+		Inventory::TakeItem(Controller, Inventory::GetItemGuid(WoodInstance), *Inventory::GetCount(WoodInstance), true);
 
 	auto StoneInstance = Inventory::FindItemInInventory(Controller, StoneItemData);
-	Inventory::TakeItem(Controller, Inventory::GetItemGuid(StoneInstance), *Inventory::GetCount(StoneInstance), true);
+
+	if (StoneInstance)
+		Inventory::TakeItem(Controller, Inventory::GetItemGuid(StoneInstance), *Inventory::GetCount(StoneInstance), true);
 
 	auto MetalInstance = Inventory::FindItemInInventory(Controller, MetalItemData);
-	Inventory::TakeItem(Controller, Inventory::GetItemGuid(MetalInstance), *Inventory::GetCount(MetalInstance), true);
+
+	if (MetalInstance)
+		Inventory::TakeItem(Controller, Inventory::GetItemGuid(MetalInstance), *Inventory::GetCount(MetalInstance), true);
 }
