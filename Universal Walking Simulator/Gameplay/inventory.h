@@ -340,7 +340,7 @@ namespace Inventory
 		static UObject* GetItemGuidFn = FindObject(("Function /Script/FortniteGame.FortItem.GetItemGuid"));
 		FGuid Guid;
 
-		if (GetItemGuidFn)
+		if (ItemInstance && GetItemGuidFn)
 			ItemInstance->ProcessEvent(GetItemGuidFn, &Guid);
 
 		return Guid;
