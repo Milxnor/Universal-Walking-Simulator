@@ -435,6 +435,14 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					if (serverStatus == EServerStatus::Up)
 					{
+						if (ImGui::Button("Freecam"))
+						{
+							FString StartAircraftCmd;
+							StartAircraftCmd.Set(L"toggledebugcamera");
+
+							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+						}
+
 						//if (Engine_Version < 423 || FnVerDouble >= 16.00) // I do not know how to start the bus on S8+
 						{
 							if (ImGui::Button(("Start Aircraft")))
