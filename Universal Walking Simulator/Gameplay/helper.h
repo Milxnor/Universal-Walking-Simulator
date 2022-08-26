@@ -807,7 +807,7 @@ namespace Helper
 			}
 		}
 		
-		*FinalActor->Member<uint8_t>("Team") = Controller->Member<UObject*>("PlayerState")->Member<uint8_t>("TeamIndex");
+		*FinalActor->Member<uint8_t>("Team") = *(*Controller->Member<UObject*>("PlayerState"))->Member<uint8_t>("TeamIndex");
 	}
 
 	static UObject* SpawnChip(UObject* Controller, FVector ChipLocation)
