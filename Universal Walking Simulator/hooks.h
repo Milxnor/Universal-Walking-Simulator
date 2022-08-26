@@ -626,6 +626,10 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		auto DeadPlayerState = *DeadPC->Member<UObject*>(("PlayerState"));
 		auto GameState = Helper::GetGameState();
 
+		struct parms { __int64 DeathReport; };
+
+		auto Params = (parms*)Parameters;
+
 		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
 		static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
 
@@ -636,10 +640,6 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 		if (KillerPawn)
 			KillerController = *KillerPawn->Member<UObject*>(("Controller"));
-
-		struct parms { __int64 DeathReport; };
-
-		auto Params = (parms*)Parameters;
 
 		static auto DeathLocationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathLocation"));	
 		auto DeathInfo = DeadPlayerState->Member<__int64>(("DeathInfo"));
