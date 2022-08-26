@@ -1736,7 +1736,7 @@ bool riftItemHook(UObject* ability, UFunction* Function, void* Parameters)
 		__int64* SkydiveAbilitySpec = nullptr;
 
 		auto FindSkydiveAbility = [&SkydiveAbilitySpec](__int64* Spec) -> void {
-			auto Ability = *GetAbilityFromSpec(Spec);
+			auto Ability = *Abilities::GetAbilityFromSpec(Spec);
 			if (Ability && Ability->GetFullName().contains("GA_Rift_Athena_Skydive_C"))
 			{
 				SkydiveAbilitySpec = Spec;
@@ -1744,14 +1744,14 @@ bool riftItemHook(UObject* ability, UFunction* Function, void* Parameters)
 		};
 
 		auto ASC = *Pawn->Member<UObject*>("AbilitySystemComponent");
-		LoopSpecs(ASC, FindSkydiveAbility);
+		Abilities::LoopSpecs(ASC, FindSkydiveAbility);
 
 		if (SkydiveAbilitySpec)
 		{
 			std::cout << "foujd spec!\n";
 			// std::cout << "found skydive ability: " << SkydiveAbilitySpec->GetFullName() << '\n';
 
-			(*GetAbilityFromSpec(SkydiveAbilitySpec))->ProcessEvent("K2_ActivateAbility"); // does nothing
+			(*Abilities::GetAbilityFromSpec(SkydiveAbilitySpec))->ProcessEvent("K2_ActivateAbility"); // does nothing
 		}
 		else
 			std::cout << "failed to fmind skydive ability!\n";

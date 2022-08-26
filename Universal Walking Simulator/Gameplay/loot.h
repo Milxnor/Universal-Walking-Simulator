@@ -141,7 +141,7 @@ namespace LootingV2
 			return 1;
 		}
 
-		auto LootPackagesRowMap = GetRowMap(LootPackages);
+		auto LootPackagesRowMap = DataTables::GetRowMap(LootPackages);
 
 		auto fortnite = LootPackagesRowMap.Pairs.Elements.Data;
 
@@ -179,8 +179,6 @@ namespace LootingV2
 				auto Count = (int*)(__int64(LootPackageDataOfRow) + countOff);
 				auto Weight = (float*)(__int64(LootPackageDataOfRow) + weightOff);
 
-				// std::cout << std::format("Count: {} ItemDef: {}\n", *Count, ItemDef->ObjectID.AssetPathName.ToString());
-
 				DefinitionInRow currentItem;
 
 				if (ItemDef)
@@ -208,9 +206,6 @@ namespace LootingV2
 					if (Weight)
 						AddItemAndWeight(Index, currentItem, *Weight);
 				}
-
-				// std::cout << "Item funny!\n";
-
 				/*
 
 					"LootPackageID": "WorldList.AthenaLoot.Weapon.HighAssaultAuto",
@@ -542,9 +537,9 @@ namespace Looting
 		static int GetWeaponTableIdx()
 		{
 			// int Random = UKismetMathLibrary::RandomIntegerInRange(0, 100);
-			std::random_device rd; // obtain a random number from hardware
-			std::mt19937 gen(rd()); // seed the generator
-			std::uniform_int_distribution<> distr(0, 100); // define the range
+			std::random_device rd;
+			std::mt19937 gen(rd());
+			std::uniform_int_distribution<> distr(0, 100);
 
 			auto Random = distr(gen);
 
@@ -631,7 +626,6 @@ namespace Looting
 					{
 						auto VehicleName = VehicleClassSoft->ObjectID.AssetPathName.ToString();
 						auto SpawnerLoc = Helper::GetActorLocation(Spawner);
-						std::cout << std::format("Spawning {} at {} {} {}", VehicleName, SpawnerLoc.X, SpawnerLoc.Y, SpawnerLoc.Z);
 						static auto BPC = FindObject("Class /Script/Engine.BlueprintGeneratedClass");
 						auto VehicleClass = StaticLoadObject(BPC, nullptr, VehicleName);
 
@@ -814,7 +808,7 @@ namespace Looting
 			return bIsConsumable ? Tables::GetConsumableDef() : Tables::GetWeaponDef();
 		}
 
-		static DWORD WINAPI SpawnLlamas(LPVOID) // this fuhnction doesn't guarantee 3 llamas
+		static DWORD WINAPI SpawnLlamas(LPVOID) // this function doesn't guarantee 3 llamas
 		{
 			static auto LlamaClass = FindObject(("BlueprintGeneratedClass /Game/Athena/SupplyDrops/Llama/AthenaSupplyDrop_Llama.AthenaSupplyDrop_Llama_C"));
 

@@ -124,10 +124,10 @@ DWORD WINAPI Main(LPVOID)
     InitializeNetUHooks();
 
     if (GiveAbilityAddr)
-        InitializeAbilityHooks();
+        Abilities::InitializeAbilityHooks();
 
     InitializeInventoryHooks();
-    InitializeBuildHooks();
+    Building::InitializeBuildHooks();
     InitializeHarvestingHooks();
 
     FinishInitializeUHooks();
@@ -159,7 +159,7 @@ DWORD WINAPI Main(LPVOID)
     std::cout << dye::blue(("[DEBUG] ")) << std::format("ReplicatedEntries Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ReplicatedEntries")));
     std::cout << dye::blue(("[DEBUG] ")) << std::format("ItemInstances Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances")));
 
-    TestAbilitySizeDifference();
+    Abilities::TestAbilitySizeDifference();
 
     // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "DeltaFlags") << '\n'; // 256 12.41
     // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "ArrayReplicationKey") << '\n'; // 84 12.41

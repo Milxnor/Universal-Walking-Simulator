@@ -7,8 +7,6 @@ namespace Henchmans
 {
 	void SpawnHenchmans()
 	{
-
-
 		auto world = Helper::GetWorld();
 		auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
 
@@ -17,7 +15,7 @@ namespace Henchmans
 		//auto BotManager = Easy::SpawnActor(BotManagerClass);
 		
 
-		if (*AuthGameMode->Member<UObject*>("ServerBotManagerClass") = BotManagerClass)
+		if (*AuthGameMode->Member<UObject*>("ServerBotManagerClass") == BotManagerClass)
 		{
 			auto AIBotControllerClass = FindObject("Class /Script/FortniteGame.FortAthenaAIBotController");
 			auto AIBotController = Easy::SpawnActor(AIBotControllerClass);
@@ -32,10 +30,6 @@ namespace Henchmans
 			AIBotController->ProcessEvent(PossessFn, &params);
 
 		}
-
-
-
-
 		/*static auto BPC = FindObject("Class /Script/Engine.BlueprintGeneratedClass");
 		//auto HenchmanSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/AI/MANG/BP_MANG_Spawner_C.BP_MANG_Spawner_C");
 		auto HenchmanSpawner = StaticLoadObject(BPC, nullptr, "/Game/Athena/AI/MANG/BP_MANG_Spawner_C.BP_MANG_Spawner_C");

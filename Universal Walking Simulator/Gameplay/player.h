@@ -9,11 +9,6 @@ namespace Player
 		auto Pawn = *PlayerController->Member<UObject*>("Pawn");
 		auto PawnLocation = Helper::GetActorLocation(Pawn);
 
-		/* if (Pawn)
-		{
-			Helper::DestroyActor(Pawn);
-		} */
-
 		static auto setHealthFn = Pawn->Function(("SetHealth"));
 		struct { float NewHealthVal; }healthParams{ 100 };
 
@@ -37,7 +32,5 @@ namespace Player
 
 		if (OnRep_DBNOFn)
 			NewPawn->ProcessEvent(OnRep_DBNOFn);
-
-		// PlayerController->ProcessEvent(("RespawnPlayer"));
 	}
 }

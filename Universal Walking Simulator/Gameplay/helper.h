@@ -767,7 +767,7 @@ namespace Helper
 
 	static void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false)
 	{
-		UObject* FinalActor;
+		UObject* FinalActor = nullptr;
 		if (FnVerDouble < 18.00) // wrong probs
 		{
 			// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
@@ -1270,7 +1270,7 @@ namespace Helper
 		else
 			std::cout << ("Could not find Possess!\n");
 
-		Helper::SetOwner(Pawn, PC); // prob not needed
+		Helper::SetOwner(Pawn, PC); //prob not needed
 
 		// *Pawn->Member<float>(("NetUpdateFrequency")) = 200;
 

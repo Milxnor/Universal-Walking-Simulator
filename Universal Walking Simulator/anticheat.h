@@ -7,8 +7,8 @@
 /*
 
 Function /Script/FortniteGame.FortWeapon.GetReloadTime
-[55798] FloatProperty /Script/FortniteGame.FortWeapon.LastSuccessfulReloadTime
-[55799] FloatProperty /Script/FortniteGame.FortWeapon.LastReloadTime
+FloatProperty /Script/FortniteGame.FortWeapon.LastSuccessfulReloadTime
+FloatProperty /Script/FortniteGame.FortWeapon.LastReloadTime
 
 */
 
@@ -46,14 +46,7 @@ bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters)
 
 				currentWeapon->ProcessEvent("GetTimeToNextFire", &TimeToNextFire);
 
-				auto LastFireTime = *currentWeapon->Member<float>("LastFireTime"); // in seconds since game has started
-				/* auto TimeSeconds = Helper::GetTimeSeconds();
-
-				std::cout << "LastFireTime: " << LastFireTime << '\n';
-				std::cout << "TimeToNextFire: " << TimeToNextFire << '\n';
-				std::cout << "FIirng Rate: " << GetFireRate(currentWeapon) << '\n';
-				std::cout << "Time Seconds: " << TimeSeconds << '\n';
-				std::cout << "Time Seconds - LastFireTime: " << TimeSeconds - LastFireTime << '\n'; */
+				auto LastFireTime = *currentWeapon->Member<float>("LastFireTime");
 
 				if (TimeToNextFire > 0.02)
 				{

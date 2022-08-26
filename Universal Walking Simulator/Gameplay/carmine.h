@@ -18,10 +18,10 @@ namespace Carmine {
 		auto GrantedAbilities = AS->Member<TArray<UObject*>>("GameplayAbilities");
 
 		for (int i = 0; i < GrantedAbilities->Num(); i++) {
-			GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
+			Abilities::GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
 		}
 
-		//ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_FallDamageImmune.GE_Carmine_FallDamageImmune_C"));
+		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_FallDamageImmune.GE_Carmine_FallDamageImmune_C"));
 
 		//UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
 	}
@@ -32,16 +32,17 @@ namespace Carmine {
 		if (Object->GetName().contains("AthenaSupplyDrop_Meteor_Gauntlet") && SpanwedCarmine == false) {
 			Helper::SummonPickup(nullptr, FindObject("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack"), *Loc, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
 			SpanwedCarmine = true;
+			std::cout << "\Gauntlet Spawned!\n";
 		}
-		return true;
+		return false;
 	}
 
 	inline bool ReceiveBeginPlay_Hook(UObject* Object, UFunction* Func, void* Params) {
 		if (SpanwedCarmine == true) {
 			Helper::DestroyActor(Object);
-			return false;
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	void InitCarmine() {
@@ -52,12 +53,12 @@ namespace Carmine {
 	void SpawnGauntlet() {
 		UObject* Class = FindObject("/Game/Athena/Playlists/Carmine/MeteorDrop/AthenaSupplyDrop_Meteor_Gauntlet.AthenaSupplyDrop_Meteor_Gauntlet_C", true);
 		FVector RandLocation;
-		std::random_device rd; // obtain a random number from hardware
-		std::mt19937 gen(rd()); // seed the generator
+		std::random_device rd;
+		std::mt19937 gen(rd());
 
 		std::uniform_int_distribution<> Xdistr(-40000, 128000);
 		std::uniform_int_distribution<> Ydistr(-90000, 70000);
-		std::uniform_int_distribution<> Zdistr(-1000, 20000); // doesnt matter
+		std::uniform_int_distribution<> Zdistr(-1000, 20000);
 
 		RandLocation.X = Xdistr(gen);
 		RandLocation.Y = Ydistr(gen);
@@ -75,10 +76,10 @@ namespace Ashton {
 		FVector* Loc = reinterpret_cast<FVector*>(__int64(Params) + LocOffset);
 		UObject** ItemToSpawn = Object->Member<UObject*>("ItemDefToSpawn");
 		if (ItemToSpawn && *ItemToSpawn) {
-			std::cout << "\nGauntlet Spawned!\n";
+			std::cout << "\Stone Spawned!\n";
 			Helper::SummonPickup(nullptr, *ItemToSpawn, *Loc, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
 		}
-		return true;
+		return false;
 	}
 
 	void InitAshton() {
@@ -86,23 +87,17 @@ namespace Ashton {
 	}
 
 	void SpawnRandomStone() {
-		//(TODO) Spawn Randomly on the Map
 		UObject* Class = FindObject("/Game/Athena/Playlists/Ashton/Rocks/AthenaSupplyDrop_Rock_P.AthenaSupplyDrop_Rock_P_C", true);
 		FVector RandLocation;
-		std::random_device rd; // obtain a random number from hardware
-		std::mt19937 gen(rd()); // seed the generator
-
-		// CHAPTER 1
+		std::random_device rd;
+		std::mt19937 gen(rd());
 
 		std::uniform_int_distribution<> Xdistr(-40000, 128000);
 		std::uniform_int_distribution<> Ydistr(-90000, 70000);
-		std::uniform_int_distribution<> Zdistr(-1000, 20000); // doesnt matter
 
 		RandLocation.X = Xdistr(gen);
 		RandLocation.Y = Ydistr(gen);
-		RandLocation.Z = Zdistr(gen);
-
-		//RandLocation = FVector{ 1250, 1818, 6000 };
+		RandLocation.Z = 10000.0f;
 
 		Easy::SpawnActor(Class, RandLocation, {});
 	}

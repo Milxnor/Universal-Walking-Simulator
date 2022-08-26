@@ -10,8 +10,8 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 	struct FCurveTableRowHandle
 	{
 	public:
-		UObject* CurveTable;        // UCurveTable                                 // 0x0(0x8)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpeci`erPublic)
-		FName                                  RowName;                                           // 0x8(0x8)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		UObject* CurveTable;
+		FName RowName;
 	};
 
 	auto BuildingResourceAmountOverride = BuildingActor->Member<FCurveTableRowHandle>("BuildingResourceAmountOverride");
@@ -19,35 +19,10 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 	if (!BuildingResourceAmountOverride->RowName.ComparisonIndex) // player placed replacement
 		return;
 
-	/* using FRealCurve = void;
-
-	struct skunkedCurveTable : public UObject {
-		TMap<FName, FRealCurve*>	RowMap;
-	};
-
-	static auto curveTableClass = FindObject("Class /Script/Engine.CurveTable");
-	skunkedCurveTable* curveTable = (skunkedCurveTable*)BuildingResourceAmountOverride->CurveTable;
-
-	if (!curveTable)
-		return;
-
-	int offsetToRowMap = sizeof(UObject);
-	std::cout << "offset: " << offsetToRowMap << '\n';
-	auto rowMap = &curveTable->RowMap; // (TMap<FName, FRealCurve*>*)(__int64(curveTable) + offsetToRowMap);
-
-	std::cout << "Amount of rows: " << rowMap->Pairs.Elements.Data.Num() << '\n';
-
-	for (int i = 0; i < rowMap->Pairs.Elements.Data.Num(); i++)
-	{
-		auto& currentRow = rowMap->Pairs.Elements.Data.At(i).ElementData.Value;
-
-		std::cout << std::format("[{}] {}", i, currentRow.First.ToString());
-	} */
-
-	std::random_device rd; // obtain a random number from hardware
-	std::mt19937 gen(rd()); // seed the generator
+	std::random_device rd;
+	std::mt19937 gen(rd());
 	auto MaxResourcesToSpawn = 6; // *BuildingActor->Member<int>("MaxResourcesToSpawn");
-	std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn); // define the range
+	std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
 
 	auto Random = distr(gen);
 
@@ -57,9 +32,9 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 	if (HitWeakspot)
 	{
-		std::random_device rd; // obtain a random number from hardware
-		std::mt19937 gen(rd()); // seed the generator
-		std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn); // define the range
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
 
 		funne += distr(gen);
 	}
@@ -68,13 +43,12 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 	struct
 	{
-		UObject* BuildingSMActor;                                          // (Parm, ZeroConstructor, IsPlainOldData)
-		TEnumAsByte<EFortResourceType>                     PotentialResourceType;                                    // (Parm, ZeroConstructor, IsPlainOldData)
-		int                                                PotentialResourceCount;                                   // (Parm, ZeroConstructor, IsPlainOldData)
-		bool                                               bDestroyed;                                               // (Parm, ZeroConstructor, IsPlainOldData)
-		bool                                               bJustHitWeakspot;                                         // (Parm, ZeroConstructor, IsPlainOldData)
-	} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(("ResourceType")),
-		 funne, false, HitWeakspot }; // ender weakspotrs
+		UObject* BuildingSMActor;
+		TEnumAsByte<EFortResourceType> PotentialResourceType;
+		int PotentialResourceCount;
+		bool bDestroyed;
+		bool bJustHitWeakspot;
+	} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(("ResourceType")), funne, false, HitWeakspot }; // ender weakspotrs
 
 	static auto ClientReportDamagedResourceBuilding = Controller->Function(("ClientReportDamagedResourceBuilding"));
 
@@ -123,7 +97,7 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void* Parameters)
 {
 	static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
-	
+
 	if (BuildingActor->IsA(BuildingSMActorClass)) // || BuildingActor->GetFullName().contains(("Car_")))
 	{
 		auto InstigatedByOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("InstigatedBy"));
@@ -140,9 +114,6 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 
 		static auto FortPlayerControllerAthenaClass = FindObject(("Class /Script/FortniteGame.FortPlayerControllerAthena"));
 
-		// if (DamageTags)
-			// std::cout << ("DamageTags: ") << DamageTags->ToStringSimple(false) << '\n';
-
 		if (InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass) &&
 			DamageCauser->GetFullName().contains("B_Melee_Impact_Pickaxe_Athena_C")) // cursed
 		{
@@ -155,15 +126,14 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 				DoHarvesting(InstigatedBy, BuildingActor, *Damage);
 			}
 		}
-;	}
+		;
+	}
 
 	return false;
 }
 
 inline bool BlueprintCanAttemptGenerateResourcesHook(UObject* BuildingActor, UFunction* Function, void* Parameters)
 {
-	// very wrong idek whats happening
-
 	struct parms {
 		FGameplayTagContainer InTags;
 		UObject* InstigatorController; // AController*
