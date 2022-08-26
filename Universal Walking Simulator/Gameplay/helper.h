@@ -767,6 +767,7 @@ namespace Helper
 
 	static void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false)
 	{
+		UObject* FinalActor;
 		if (FnVerDouble < 18.00) // wrong probs
 		{
 			// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
@@ -782,6 +783,8 @@ namespace Helper
 
 				if (fn)
 					BuildingActor->ProcessEvent(fn, &IBAParams);
+
+				FinalActor = BuildingActor;
 			}
 		}
 		else
@@ -800,8 +803,11 @@ namespace Helper
 
 				if (fn)
 					BuildingActor->ProcessEvent(fn, &IBAParams);
+				FinalActor = BuildingActor;
 			}
 		}
+		
+		*FinalActor->Member<uint8_t>("Team") = Controller->Member<UObject*>("PlayerState")->Member<uint8_t>("TeamIndex");
 	}
 
 	static UObject* SpawnChip(UObject* Controller, FVector ChipLocation)
