@@ -618,13 +618,6 @@ void RequestExitWithStatusHook(bool Force, uint8_t ReturnCode)
 	return;
 }
 
-DWORD WINAPI WinThread(LPVOID)
-{
-
-
-	return 0;
-}
-
 inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Parameters)
 {
 	if (DeadPC && Parameters)
@@ -632,6 +625,17 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		auto DeadPawn = *DeadPC->Member<UObject*>(("Pawn"));
 		auto DeadPlayerState = *DeadPC->Member<UObject*>(("PlayerState"));
 		auto GameState = Helper::GetGameState();
+
+		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
+		static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
+
+		auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
+		auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
+
+		UObject* KillerController = nullptr;
+
+		if (KillerPawn)
+			KillerController = *KillerPawn->Member<UObject*>(("Controller"));
 
 		struct parms { __int64 DeathReport; };
 
@@ -736,25 +740,23 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			if (*PlayersLeft == 1)
 			{
-				// win
-				// CreateThread(0, 0, WinThread, 0, 0, 0);
 
+				struct
+				{
+					UObject* FinisherPawn;          // APawn                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					UObject* FinishingWeapon; // UFortWeaponItemDefinition                                          // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					EDeathCause                                        DeathCause;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				} AFortPlayerControllerAthena_ClientNotifyWon_Params{KillerPawn, nullptr, EDeathCause::SniperNoScope};
 
+				static auto ClientNotifyWon = KillerController->Function("ClientNotifyWon");
+
+				if (ClientNotifyWon)
+					KillerController->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
 			}
 		}
 
-		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
-		static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
-
-		auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
-		auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
-
 		if (false)
 		{
-			UObject* KillerController = nullptr;
-
-			if (KillerPawn)
-				KillerController = *KillerPawn->Member<UObject*>(("Controller"));
 
 			if (KillerPlayerState)
 			{
