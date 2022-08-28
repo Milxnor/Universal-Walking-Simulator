@@ -1203,7 +1203,7 @@ namespace Helper
 
 	}
 
-	DWORD WINAPI DumpObjects(LPVOID)
+	void DumpObjects()
 	{
 		std::ofstream objects("Objects.log");
 
@@ -1216,8 +1216,7 @@ namespace Helper
 
 			objects << std::format("[{}] {}\n", Object->InternalIndex, Object->GetFullName()); // TODO: add the offset
 		}
-
-		return 0;
+		objects.close();
 	}
 
 	void SetHealth(UObject* Pawn, float Health)

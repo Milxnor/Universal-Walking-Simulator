@@ -661,8 +661,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					if (ImGui::Button(("Dump Objects (Win64/Objects.log)")))
 					{
-						std::cout << "Creating DumpObjects Thread \n";
-						CreateThread(0, 0, Helper::DumpObjects, 0, 0, 0);
+						Helper::DumpObjects();
 					}
 					/*if (ImGui::Button(("SetupTurrets"))) {
 						Henchmans::SpawnHenchmans();

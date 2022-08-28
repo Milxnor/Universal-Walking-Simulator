@@ -190,6 +190,9 @@ namespace Events {
 				if (JL)
 				{
 					JerkyLoaderActual = JL;
+					UObject* Func = JL->Function("LoadJerkyLevel");
+					bool Condition = true;
+					JL->ProcessEvent(Func, &Condition);
 				}				
 			}
 			if (Version == 10.40f) {
@@ -220,7 +223,7 @@ namespace Events {
 				UObject* Func = BF->Function(("LoadButterflySublevel"));
 				BF->ProcessEvent(Func);
 
-				static auto scripting = FindObjectOld("BP_IslandScripting_C_", true);
+				static auto scripting = FindObjectOld("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
 				scripting->ProcessEvent("LoadDynamicLevels");
 
 				scripting->ProcessEvent("OnRep_CachedTime");
@@ -247,11 +250,8 @@ namespace Events {
 			}
 
 			if (Version == 12.41f) {
-				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
-				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
-			
-				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
-				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
+				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
+				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
 
 				if (JerkyBPLoader && JerkyPlayerInteraction)
 				{
@@ -303,7 +303,7 @@ namespace Events {
 			}
 
 			else if (Version == 10.40f) {
-				//The End C1 (Crashes)
+				//The End C1
 				UObject* NN = FindObject("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2"); // FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));
 				if (NN)
 				{
@@ -324,7 +324,6 @@ namespace Events {
 			}
 			else if (Version == 8.51f) {
 				//Unvaulting
-
 				UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
 				UObject* Func = BSS->Function("FinalSequence");
 				BSS->ProcessEvent(Func);
