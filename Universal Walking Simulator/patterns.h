@@ -160,7 +160,7 @@ void InitializePatterns()
 		GetPlayerViewpointSig = ("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 50 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 D0 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB ? ? ? ? ? 75 41");
 
 		// paddin
-		CanActivateAbilitySig = ("4C 89 4C 24 20 55 56 57 41 56 48 8D 6C 24 D1");
+		CanActivateAbilitySig = ("4C 89 4C 24 ? 89 54 24 10 55 53 57 41 54 48 8D 6C 24");
 		HasClientLoadedCurrentWorldSig = ("48 89 5C 24 ? 57 48 83 EC 20 48 8B 99 ? ? ? ? 48 8B F9 48 85 DB 74 23 E8 ? ? ? ? 48 8B 53 10 4C 8D 40 30 48 63 40 38 3B 42 38 7F 0D 48 8B C8 48 8B 42 30 4C 39 04 C8 74 17 48 8B 1D ? ? ? ? 48 85 DB");
 		ClientTravelSig = ("48 83 EC 48 45 84 C9 74 0D 41 83 F8 02 75 07 66 FF 81 ? ? ? ? 48 8B 44 24 ? 0F 10 00");
 		CreateNetDriverSig = ("48 89 5C 24 08 57 48 83 EC ? 49 8B D8 48 8B F9 E8 ? ? ? ? 48 8B D0");

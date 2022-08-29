@@ -20,9 +20,12 @@ namespace Carmine {
 		for (int i = 0; i < GrantedAbilities->Num(); i++) {
 			Abilities::GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
 		}
-
-		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_FallDamageImmune.GE_Carmine_FallDamageImmune_C"));
-
+		
+		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Speed.GE_Carmine_Speed_C"));
+		//Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Health.GE_Carmine_Health_C"));
+		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_FallDamageImmune.GE_Carmine_FallDamageImmune_C"));
+		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_DisableCrouch.GE_Carmine_DisableCrouch_C"));
+		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Equipped.GE_Carmine_Equipped_C"));
 		//UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
 	}
 
@@ -47,7 +50,7 @@ namespace Carmine {
 
 	void InitCarmine() {
 		AddHook("Function /Game/Athena/SupplyDrops/AthenaSupplyDrop.AthenaSupplyDrop_C.BndEvt__ProjectileMovement_K2Node_ComponentBoundEvent_0_OnProjectileStopDelegate__DelegateSignature", OnProjectileStop_Hook);
-		AddHook("Function /Game/Athena/Playlists/Carmine/MeteorDrop/AthenaSupplyDrop_Meteor_Gauntlet.AthenaSupplyDrop_Meteor_Gauntlet_C.ReceiveBeginPlay", ReceiveBeginPlay_Hook);
+		AddHook("Function /Game/Athena/Playlists/Carmine/MeteorDrop/AthenaSupplyDrop_Meteor_Gauntlet.AthenaSupplyDrop_Meteor_Gauntlet_C.UserConstructionScript", ReceiveBeginPlay_Hook);
 	}
 
 	void SpawnGauntlet() {

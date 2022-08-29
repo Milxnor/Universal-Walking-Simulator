@@ -236,8 +236,12 @@ namespace Abilities {
         Params.Level = 1.0f;
         Params.EffectContext = FGameplayEffectContextHandle();
 
-
-        AbilitySystemComponent->ProcessEvent(Func, &Params);
+        if (AbilitySystemComponent) {
+            AbilitySystemComponent->ProcessEvent(Func, &Params);
+        }
+        else {
+            std::cout << "Faield to apply GE!";
+        }
     }
 
     static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
