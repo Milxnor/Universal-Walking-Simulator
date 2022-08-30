@@ -1910,9 +1910,8 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 				}
 			}
 		}
+		return ProcessEventO(Object, Function, Parameters);
 	}
-
-	return ProcessEventO(Object, Function, Parameters);
 }
 
 __int64 __fastcall FixCrashDetour(int32_t* PossiblyNull, __int64 a2, int* a3)

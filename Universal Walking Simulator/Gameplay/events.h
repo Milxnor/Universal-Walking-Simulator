@@ -9,6 +9,13 @@ static UObject* JerkyPlayerInteraction = nullptr;
 
 namespace EventHelper
 {
+	std::string UV_ItemName = "DrumGun";
+	void UnvaultItem(FName ItemName) {
+		UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
+		UObject* Func = BSS->Function("PillarsConcluded");
+		BSS->ProcessEvent(Func, &ItemName);
+	}
+
 	void TeleportPlayersToButterfly()
 	{
 		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);

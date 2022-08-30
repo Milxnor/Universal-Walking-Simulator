@@ -753,6 +753,16 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (ImGui::Button(("Start Event")))
 						Events::StartEvent();
 
+					if (FnVerDouble == 8.51) {
+						ImGui::InputText("Item to Unvault (DrumGun, Bouncer, Sword, Grappler, Tac)", &EventHelper::UV_ItemName);
+						
+						if (ImGui::Button("Unvault Item")) {
+							FString InStr;
+							InStr.Set(std::wstring(EventHelper::UV_ItemName.begin(), EventHelper::UV_ItemName.end()).c_str());
+							EventHelper::UnvaultItem(Helper::Conversion::StringToName(InStr));
+						}
+					}
+
 					if (FnVerDouble == 12.41 && ImGui::Button("Fly players up"))
 						EventHelper::BoostUpTravis();
 
