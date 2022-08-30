@@ -3,13 +3,60 @@
 #include <UE/structs.h>
 #include <Gameplay/helper.h>
 
-static UObject* JerkyBPLoader;
-static UObject* JerkyLoaderActual;
-static UObject* JerkyPlayerInteraction;
+static UObject* JerkyBPLoader = nullptr;
+static UObject* JerkyLoaderActual = nullptr;
+static UObject* JerkyPlayerInteraction = nullptr;
 
-namespace EventHelper // credits spooky man
+namespace EventHelper
 {
-	void ApplyGEs()
+	void TeleportPlayersToButterfly()
+	{
+		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
+
+		if (!scripting)
+		{
+			std::cout << "[WARNING] Unable to find IslandScripting!\n";
+			return;
+		}
+
+		UObject* ButterflyBP = *scripting->Member<UObject*>("ButterflyBP");
+		auto Locations = ButterflyBP->Member<TArray<FTransform>>("PlayerLocations");
+
+		std::cout << "Num PlayerLocations: " << Locations->Num() << '\n';
+
+		auto World = Helper::GetWorld();
+
+		if (World)
+		{
+			auto NetDriver = *World->Member<UObject*>(("NetDriver"));
+			if (NetDriver)
+			{
+				auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+
+				if (ClientConnections)
+				{
+					for (int i = 0; i < ClientConnections->Num(); i++)
+					{
+						auto Connection = ClientConnections->At(i);
+
+						if (!Connection)
+							continue;
+
+						auto Controller = *Connection->Member<UObject*>(("PlayerController"));
+
+						if (Controller)
+						{
+							auto NewPawn = *Controller->Member<UObject*>("Pawn");
+							Helper::SetActorLocation(NewPawn, Locations->At(i).Translation);
+						}
+					}
+				}
+			}
+		}
+
+	}
+	
+	void ApplyGEsTravis()
 	{
 		auto World = Helper::GetWorld();
 		if (World)
@@ -43,7 +90,6 @@ namespace EventHelper // credits spooky man
 							}
 
 						}
-
 					}
 
 				}
@@ -52,7 +98,40 @@ namespace EventHelper // credits spooky man
 		}
 	}
 
-	void BoostUp()
+	// idk if this works
+	void LoadAndUnloadLake(bool bAfterEvent = true) // load the after event lake and unload the old one
+	{
+		static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
+		static auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
+		static auto Lake2 = FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
+
+		Helper::ShowBuilding(FloatingIsland, !bAfterEvent);
+		Helper::ShowBuilding(Lake, !bAfterEvent);
+		Helper::ShowBuilding(Lake2, bAfterEvent);
+
+		// OnRep_ShowLakeRainbow
+	}
+
+	// 5.30 Event hook for spawning the Cube
+	bool SpawnCube(UObject* EventComponents, UFunction*, void* Parameters)
+	{
+		static auto bAlreadySpawned = false;
+
+		if (!bAlreadySpawned)
+		{
+			auto Cube = FindObject(("CUBE_C /Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2"));
+
+			if (Cube) {
+				auto Func = Cube->Function(("SpawnCube"));
+				Cube->ProcessEvent(Func);
+			}
+
+			bAlreadySpawned = true;
+		}
+		return false;
+	}
+
+	void BoostUpTravis()
 	{
 		TArray<UObject*> Pawns;
 
@@ -104,7 +183,7 @@ namespace EventHelper // credits spooky man
 namespace Events {
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
+		return (Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 5.30f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
@@ -130,6 +209,9 @@ namespace Events {
 				if (JL)
 				{
 					JerkyLoaderActual = JL;
+					UObject* Func = JL->Function("LoadJerkyLevel");
+					bool Condition = true;
+					JL->ProcessEvent(Func, &Condition);
 				}				
 			}
 			if (Version == 10.40f) {
@@ -146,10 +228,6 @@ namespace Events {
 				bool Condition = true;
 				CD->ProcessEvent(Func, &Condition);
 			}
-			/*if (Version == 8.51f) {
-				UObject* SS = FindObject("");
-				UObject* Func = SS->Function("FinalSequence");
-			}*/
 			if (Version == 7.20f) {
 				//Ice King
 				UObject* ML = FindObject(("BP_MooneyLoader_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_MooneyLoader_2"));
@@ -164,11 +242,26 @@ namespace Events {
 				UObject* Func = BF->Function(("LoadButterflySublevel"));
 				BF->ProcessEvent(Func);
 
-				static auto scripting = FindObjectOld("BP_IslandScripting_C_", true);
+				static auto scripting = FindObjectOld("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
 				scripting->ProcessEvent("LoadDynamicLevels");
 
 				scripting->ProcessEvent("OnRep_CachedTime");
 				scripting->ProcessEvent("TrySetIslandLocation");
+			}
+			if (Version == 5.30f) {
+				//Cube Spawn
+				UObject* AEC = FindObject(("BP_Athena_Event_Components_C /Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
+
+				UObject* Func = AEC->Function(("OnRep_CrackProgression"));
+				UObject* Func2 = AEC->Function(("OnRep_Corruption"));
+
+				*AEC->Member<float>(("CrackOpacity")) = 0.0f; // Hide the initial crack
+				AEC->ProcessEvent(Func);
+				*AEC->Member<float>(("Corruption")) = 1.0f; // Show the smaller purple crack
+				AEC->ProcessEvent(Func2);
+
+				//Hooked it here because it's not loaded in yet when hooking other functions in hooks.h
+				AddHook("Function /Game/Athena/Events/BP_Athena_Event_Components.BP_Athena_Event_Components_C.DisableFinalLightning", EventHelper::SpawnCube);
 			}
 		}
 	}
@@ -179,21 +272,18 @@ namespace Events {
 			std::cout << ("Starting Event!\n");
 
 			if (Version == 12.61f) {
-				auto AP = FindObject(("LevelSequencePlayer /Fritter/Level/FritterSequenceLevel.FritterSequenceLevel.PersistentLevel.Fritter_2.AnimationPlayer"));
+				auto FL = FindObject(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0"));
 				
-				if (AP)
+				if (FL)
 				{
-					auto Function = FindObject(("Function /Script/MovieScene.MovieSceneSequencePlayer.Play"));
-					AP->ProcessEvent(Function);
+					auto Function = FL->Function("startevent");
+					FL->ProcessEvent(Function);
 				}
 				else
-					std::cout << "Failed to find Fritter AP!\n";
+					std::cout << "Failed to find Fritter!\n";
 			}
 
 			if (Version == 12.41f) {
-				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
-				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
-			
 				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
 				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
 
@@ -206,7 +296,7 @@ namespace Events {
 
 					JerkyBPLoader->ProcessEvent(TeleportDistant);
 					JerkyBPLoader->ProcessEvent(DebugStartSequence, &SequenceTime);
-					EventHelper::ApplyGEs();
+					EventHelper::ApplyGEsTravis();
 					
 					auto World = Helper::GetWorld();
 					if (World)
@@ -232,17 +322,7 @@ namespace Events {
 
 									auto Controller = *Connection->Member<UObject*>(("PlayerController"));
 
-									auto ItemInstances = Inventory::GetItemInstances(Controller);
-
-									for (int i = 0; i < ItemInstances->Num(); i++)
-									{
-										auto CurrentItemInstance = ItemInstances->At(i);
-
-										if (CurrentItemInstance->IsA(BuildingItemData_Wall) || CurrentItemInstance->IsA(BuildingItemData_Floor) || CurrentItemInstance->IsA(BuildingItemData_Stair_W) || CurrentItemInstance->IsA(BuildingItemData_RoofS))
-											continue;
-
-										Inventory::TakeItem(Controller, Inventory::GetItemGuid(CurrentItemInstance), *FFortItemEntry::GetCount(GetItemEntryFromInstance(CurrentItemInstance)), true);
-									}
+									ClearInventory(Controller, true);
 								}
 							}
 						}
@@ -257,18 +337,18 @@ namespace Events {
 			}
 
 			else if (Version == 10.40f) {
-				//The End C1 (Crashes)
-				UObject* NN = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight_3.AnimationPlayer"); // FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));
+				//The End C1
+				UObject* NN = FindObject("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2"); // FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));
 				if (NN)
 				{
-					UObject* Func = NN->Function(("Play"));
+					UObject* Func = NN->Function(("startevent"));
 					if (Func)
 						NN->ProcessEvent(Func);
 					else
-						std::cout << ("Unable to find Night Night Play function!\n");
+						std::cout << ("Unable to find Night Night Start function!\n");
 				}
 				else
-					std::cout << ("No NightNight LevelSequence!\n");
+					std::cout << ("No NightNight!\n");
 			}
 			else if (Version == 9.40f) {
 				//Final Showdown
@@ -278,35 +358,17 @@ namespace Events {
 			}
 			else if (Version == 8.51f) {
 				//Unvaulting
-				/*UObject* SS = FindObject(("LevelSequencePlayer /Temp/Game/Athena/Maps/POI/Athena_POI_Lake_004c_e347d57e.Athena_POI_Lake_004c.PersistentLevel.SnowSequence_2.AnimationPlayer"));
-
-				if (SS)
-				{
-					UObject* Func = SS->Function(("Play"));
-					if (Func)
-					{
-						SS->ProcessEvent(Func);
-						HostingWebHook.send_message(("Started Unvaulting Event!\n"));
-						std::cout << ("Started Event!\n");
-					}
-					else
-						std::cout << ("No play func!\n");
-				}
-				else
-					std::cout << ("No Player!\n");*/
-
 				UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
 				UObject* Func = BSS->Function("FinalSequence");
 				BSS->ProcessEvent(Func);
-
-					//(TODO: GD) Find a way to auto destroy death barrier and load the Map for all players when the screen goes white (Map Name: Next2)
-					// (MILXNOR) ^ ClientTravel?
+				//(TODO) Teleport back after unvaulting part is done.
 			}
 			else if (Version == 7.30f) {
 				//Marshmello
 				UObject* FS = FindObject((".PersistentLevel.FestivusSequence_01_2.AnimationPlayer2"));
 				UObject* Func = FS->Function(("Play"));
 				FS->ProcessEvent(Func);
+				//(TODO) Fix audio
 			}
 			else if (Version == 7.20f) {
 				//Ice King
@@ -319,15 +381,12 @@ namespace Events {
 				UObject* BF = FindObject(("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
 				UObject* Func = BF->Function(("ButterflySequence"));
 				BF->ProcessEvent(Func);
-				//(TODO) Fix screen going white when cube explodes
-
-				/*
-				
-					void ButterflyScriptingReady();
-					void ButterflyStart();
-					void CubeEvent();
-
-				*/
+			}
+			else if (Version == 5.30f) {
+				//Cube Spawn
+				UObject* AEC = FindObject(("BP_Athena_Event_Components_C /Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
+				UObject* Func = AEC->Function(("Final"));
+				AEC->ProcessEvent(Func);
 			}
 			else if (Version == 4.5f) {
 				//Rocket

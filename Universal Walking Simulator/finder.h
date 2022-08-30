@@ -181,3 +181,8 @@ namespace Finder
 		}
 	}
 }
+
+int GetVirtualIdx(UFunction* Func)
+{
+
+}

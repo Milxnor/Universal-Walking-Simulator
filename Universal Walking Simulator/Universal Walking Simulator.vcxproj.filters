@@ -133,5 +133,8 @@
     <ClInclude Include="AI.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
+    <ClInclude Include="Gameplay\carmine.h">
+      <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

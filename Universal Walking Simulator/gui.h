@@ -336,7 +336,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (std::floor(FnVerDouble) == 8 || Engine_Version >= 424)
+				if (FnVerDouble >= 8.51 || FnVerDouble == 4.1)
 				{
 					if (ImGui::BeginTabItem(("Thanos")))
 					{
@@ -358,9 +358,17 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 				}
 
-				if (ImGui::BeginTabItem(("Credits")))
+				if (ImGui::BeginTabItem(("Settings")))
 				{
 					Tab = 6;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem(("Credits")))
+				{
+					Tab = 7;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
@@ -377,6 +385,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
+					ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
 
 					// ImGui::Checkbox(("Use Beacons"), &bUseBeacons);
 
@@ -426,9 +435,19 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					if (serverStatus == EServerStatus::Up)
 					{
-						if (Engine_Version < 423 || FnVerDouble >= 16.00) // I do not know how to start the bus on S8+
+						
+
+						if (ImGui::Button("Freecam"))
 						{
-							if (ImGui::Button(("Start Aircraft Normal")))
+							FString StartAircraftCmd;
+							StartAircraftCmd.Set(L"toggledebugcamera");
+
+							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+						}
+
+						//if (Engine_Version < 423 || FnVerDouble >= 16.00) // I do not know how to start the bus on S8+
+						{
+							if (ImGui::Button(("Start Aircraft")))
 							{
 								FString StartAircraftCmd;
 								StartAircraftCmd.Set(L"startaircraft");
@@ -437,8 +456,15 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								auto gameState = Helper::GetGameState();
 
-								/*if (Helper::IsSmallZoneEnabled())
+								
+
+								if (Helper::IsSmallZoneEnabled())
 								{
+									bClearInventoryOnAircraftJump = false;
+									FString StartAircraftCmd;
+									StartAircraftCmd.Set(L"startaircraft");
+
+									Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 									auto Aircraft = gameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
 
 									if (Aircraft)
@@ -456,13 +482,13 @@ DWORD WINAPI GuiThread(LPVOID)
 											if (FlightSpeed)
 												*FlightSpeed = 0;
 
-											// auto RandomPOI = Helper::GetRandomPOIActor();
+											static auto RandomMPLocationStatic = Helper::getRandomLocation();
 
 											if (true) // RandomPOI)
 											{
-												// auto RandomPOILocation = Helper::GetActorLocation(RandomPOI);
+												AircraftLocationToUse = RandomMPLocationStatic;
 
-												*FlightStartLocation = getRandomLocation();//AircraftLocationToUse;
+												*FlightStartLocation = AircraftLocationToUse;
 												Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
 												std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
 											}
@@ -475,14 +501,13 @@ DWORD WINAPI GuiThread(LPVOID)
 											ifrogor.Set(L"startsafezone");
 											Helper::Console::ExecuteConsoleCommand(ifrogor);
 											*gameState->Member<float>("SafeZonesStartTime") = 0.f;
-											std::cout << ("Started aircraft!\n");
 										}
 									}
 									else
 										std::cout << "No Aircraft!\n";
-								}*/
+								}
 
-
+								std::cout << ("Started aircraft!\n");
 
 								static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
 
@@ -490,63 +515,19 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								ExistingBuildings.clear();
 							}
-							if (ImGui::Button(("Start LateGame Aircraft"))) {
-								bIsLateGame = true;
-								FString StartAircraftCmd;
-								StartAircraftCmd.Set(L"startaircraft");
-
-								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
-
-								auto gameState = Helper::GetGameState();
-								auto Aircraft = gameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
-
-								if (Aircraft)
-								{
-									auto FlightInfo = Aircraft->Member<__int64>("FlightInfo");
-
-									if (FlightInfo)
-									{
-										static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
-										static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
-
-										auto FlightSpeed = (float*)(__int64(FlightInfo) + FlightSpeedOffset);
-										auto FlightStartLocation = (FVector*)(__int64(FlightInfo) + FlightStartLocationOffset);
-
-										if (FlightSpeed)
-											*FlightSpeed = 0;
-
-										// auto RandomPOI = Helper::GetRandomPOIActor();
-
-
-										*FlightStartLocation = AircraftLocationToUse;
-										Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
-										std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
-
-
-										*gameState->Member<bool>("bAircraftIsLocked") = false;
-
-										FString ifrogor;
-										ifrogor.Set(L"startsafezone");
-										Helper::Console::ExecuteConsoleCommand(ifrogor);
-										*gameState->Member<float>("SafeZonesStartTime") = 0.f;
-										std::cout << ("Started aircraft!\n");
-										FString ShrinkSafeZone;
-										ShrinkSafeZone.Set(L"startshrinksafezone");
-										Helper::Console::ExecuteConsoleCommand(ShrinkSafeZone);
-									}
-								}
-								else
-									std::cout << "No Aircraft!\n";
-							}
-
-
-							static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
-
-							// Helper::DestroyAll(BuildingSMActorClass);
-
-							ExistingBuildings.clear();
 						}
-						
+						FString StartShrinkSafeZone;
+						StartShrinkSafeZone.Set(L"startshrinksafezone");
+
+						FString SkipShrinkSafeZone;
+						SkipShrinkSafeZone.Set(L"skipshrinksafezone");
+
+						if (ImGui::Button("Shrink SafeZone")) {
+							Helper::Console::ExecuteConsoleCommand(StartShrinkSafeZone);
+						}
+						if (ImGui::Button("Skip SafeZone")) {
+							Helper::Console::ExecuteConsoleCommand(SkipShrinkSafeZone);
+						}
 						// else
 						{
 							if (ImGui::Button(("Change Phase to Aircraft"))) // TODO: Improve phase stuff
@@ -575,17 +556,6 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								ExistingBuildings.clear();
 							}
-						}
-						if (ImGui::Button(("Skip SafeZone"))) {
-							FString ShrinkSafeZone;
-							ShrinkSafeZone.Set(L"startshrinksafezone");
-							Helper::Console::ExecuteConsoleCommand(ShrinkSafeZone);
-						}
-
-						if (ImGui::Button(("Shrink SafeZone"))) {
-							FString SkipSafeZone;
-							SkipSafeZone.Set(L"skipshrinksafezone");
-							Helper::Console::ExecuteConsoleCommand(SkipSafeZone);
 						}
 
 						if (ImGui::Button(("Summon Llamas")))
@@ -712,8 +682,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					if (ImGui::Button(("Dump Objects (Win64/Objects.log)")))
 					{
-						std::cout << "Creating DumpObjects Thread \n";
-						CreateThread(0, 0, Helper::DumpObjects, 0, 0, 0);
+						Helper::DumpObjects();
 					}
 					/*if (ImGui::Button(("SetupTurrets"))) {
 						Henchmans::SpawnHenchmans();
@@ -783,115 +752,22 @@ DWORD WINAPI GuiThread(LPVOID)
 				}
 
 				case 4:
-					if(ImGui::Button(("Spawn Mind Stone"))) {
-						FVector RandLocation;
-						std::random_device rd; // obtain a random number from hardware
-						std::mt19937 gen(rd()); // seed the generator
+					if (bStarted == true) {
+						if (FnVerDouble >= 8.51 && ImGui::Button(("Init Ashton"))) {
+							Ashton::InitAshton();
+						}
+						if (FnVerDouble >= 8.51 && ImGui::Button(("Spawn Stone"))) {
+							Ashton::SpawnRandomStone();
+						}
 
-						// CHAPTER 1
-
-						std::uniform_int_distribution<> Xdistr(-40000, 128000);
-						std::uniform_int_distribution<> Ydistr(-90000, 70000);
-						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
-
-						RandLocation.X = Xdistr(gen);
-						RandLocation.Y = Ydistr(gen);
-						RandLocation.Z = Zdistr(gen);
-
-						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_Y.AshtonRockItemDef_Y"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						if (FnVerDouble == 4.1 && ImGui::Button(("Init Carmine"))) {
+							Carmine::InitCarmine();
+						}
+						if (FnVerDouble == 4.1 && ImGui::Button(("Spawn Gauntlet"))) {
+							Carmine::SpawnGauntlet();
+						}
 					}
-					if (ImGui::Button(("Spawn Reality Stone"))) {
-						FVector RandLocation;
-						std::random_device rd; // obtain a random number from hardware
-						std::mt19937 gen(rd()); // seed the generator
-
-						// CHAPTER 1
-
-						std::uniform_int_distribution<> Xdistr(-40000, 128000);
-						std::uniform_int_distribution<> Ydistr(-90000, 70000);
-						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
-
-						RandLocation.X = Xdistr(gen);
-						RandLocation.Y = Ydistr(gen);
-						RandLocation.Z = Zdistr(gen);
-
-						RandLocation = { 1250, 1818, 3284 };
-
-						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_R.AshtonRockItemDef_R"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
-						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_R.AshtonRockItemDef_R"), RandLocation, {});
-					}
-					if (ImGui::Button(("Spawn Power Stone"))) {
-						FVector RandLocation;
-						std::random_device rd; // obtain a random number from hardware
-						std::mt19937 gen(rd()); // seed the generator
-
-						// CHAPTER 1
-
-						std::uniform_int_distribution<> Xdistr(-40000, 128000);
-						std::uniform_int_distribution<> Ydistr(-90000, 70000);
-						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
-
-						RandLocation.X = Xdistr(gen);
-						RandLocation.Y = Ydistr(gen);
-						RandLocation.Z = Zdistr(gen);
-
-						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_P.AshtonRockItemDef_P"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
-						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_P.AshtonRockItemDef_P"), RandLocation, {});
-					}
-					if (ImGui::Button(("Spawn Soul Stone"))) {
-						FVector RandLocation;
-						std::random_device rd; // obtain a random number from hardware
-						std::mt19937 gen(rd()); // seed the generator
-
-						// CHAPTER 1
-
-						std::uniform_int_distribution<> Xdistr(-40000, 128000);
-						std::uniform_int_distribution<> Ydistr(-90000, 70000);
-						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
-
-						RandLocation.X = Xdistr(gen);
-						RandLocation.Y = Ydistr(gen);
-						RandLocation.Z = Zdistr(gen);
-
-						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_O.AshtonRockItemDef_O"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
-						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_O.AshtonRockItemDef_O"), RandLocation, {});
-					}
-					if (ImGui::Button(("Spawn Time Stone"))) {
-						FVector RandLocation;
-						std::random_device rd; // obtain a random number from hardware
-						std::mt19937 gen(rd()); // seed the generator
-
-						// CHAPTER 1
-
-						std::uniform_int_distribution<> Xdistr(-40000, 128000);
-						std::uniform_int_distribution<> Ydistr(-90000, 70000);
-						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
-
-						RandLocation.X = Xdistr(gen);
-						RandLocation.Y = Ydistr(gen);
-						RandLocation.Z = Zdistr(gen);
-
-						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_G.AshtonRockItemDef_G"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
-						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_G.AshtonRockItemDef_G"), RandLocation, {});
-					}
-					if (ImGui::Button(("Spawn Space Stone"))) {
-						FVector RandLocation;
-						std::random_device rd; // obtain a random number from hardware
-						std::mt19937 gen(rd()); // seed the generator
-
-						// CHAPTER 1
-
-						std::uniform_int_distribution<> Xdistr(-40000, 128000);
-						std::uniform_int_distribution<> Ydistr(-90000, 70000);
-						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
-
-						RandLocation.X = Xdistr(gen);
-						RandLocation.Y = Ydistr(gen);
-						RandLocation.Z = Zdistr(gen);
-
-						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_B.AshtonRockItemDef_B"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
-						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_B.AshtonRockItemDef_B"), RandLocation, {});
-					}
+					
 					break;
 
 				case 5:
@@ -899,10 +775,42 @@ DWORD WINAPI GuiThread(LPVOID)
 						Events::StartEvent();
 
 					if (FnVerDouble == 12.41 && ImGui::Button("Fly players up"))
-						EventHelper::BoostUp();
+						EventHelper::BoostUpTravis();
+
+					if (FnVerDouble == 6.21)
+					{
+						/* if (ImGui::Button("Show Before Event Lake"))
+							EventHelper::LoadAndUnloadLake(false);
+						if (ImGui::Button("Show After Event Lake"))
+							EventHelper::LoadAndUnloadLake(true);
+						if (ImGui::Button("Teleport Players to Butterfly"))
+							EventHelper::TeleportPlayersToButterfly(); */
+					}
 					break;
 
-				case 6:
+				case 6: // settings
+					ImGui::Checkbox("Custom Settings", &bUseCustomSettings);
+					if (bUseCustomSettings) {
+						ImGui::InputText("First Slot", &StartingSlot1.first);
+						ImGui::InputInt("First Slot Amount", &StartingSlot1.second);
+						ImGui::NewLine();
+						ImGui::InputText("Second Slot", &StartingSlot2.first);
+						ImGui::InputInt("Second Slot Amount", &StartingSlot2.second);
+						ImGui::NewLine();
+						ImGui::InputText("Third Slot", &StartingSlot3.first);
+						ImGui::InputInt("Third Slot Amount", &StartingSlot3.second);
+						ImGui::NewLine();
+						ImGui::InputText("Fourth Slot", &StartingSlot4.first);
+						ImGui::InputInt("Fourth Slot Amount", &StartingSlot4.second);
+						ImGui::NewLine();
+						ImGui::InputText("Fifth Slot", &StartingSlot5.first);
+						ImGui::InputInt("Fifth Slot Amount", &StartingSlot5.second);
+						ImGui::NewLine();
+					}
+					
+
+					break;
+				case 7:
 					TextCentered(("Credits:"));
 					TextCentered(("Milxnor: Made the base, main developer"));
 					TextCentered(("GD: Added events, cleans up code and adds features."));

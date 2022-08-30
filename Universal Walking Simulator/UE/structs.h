@@ -387,6 +387,16 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 		return std::format("{} {}{}", ClassPrivate->GetName(), temp, this->GetName());
 	}
 
+	INL std::string GetFullNameWOCP()
+	{
+		std::string temp;
+
+		for (auto outer = OuterPrivate; outer; outer = outer->OuterPrivate)
+			temp = std::format("{}.{}", outer->GetName(), temp);
+
+		return std::format("{}{}", temp, this->GetName());
+	}
+
 	INL std::wstring GetFullNFame()
 	{
 		std::wstring temp;
@@ -443,7 +453,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 				Index = 103;
 			else if (Engine_Version == 424)
 				Index = 106; // got on 11.01
-			else if (Engine_Version >= 425)
+			else if (Engine_Version == 425)
 				Index = 114;
 			else
 				std::cout << ("Unable to determine CreateDefaultObject Index!\n");
@@ -451,7 +461,7 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 
 		if (Index != 0)
 		{
-			if (Engine_Version < 424)
+			if (Engine_Version < 424 || Engine_Version == 425)
 				return GetVFunction<UObject* (*)(UObject*)>(this, Index)(this);
 			else
 			{
@@ -606,6 +616,9 @@ static UObject* (*StaticLoadObjectO)(
 // Class and name are required
 static UObject* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name)
 {
+	if (!StaticLoadObjectO)
+		return nullptr;
+
 	auto Name = std::wstring(name.begin(), name.end()).c_str();
 	return StaticLoadObjectO(Class, Outer, Name, nullptr, 0, nullptr, false, nullptr);
 }
@@ -903,10 +916,10 @@ auto GetMembersAsObjects(UObject* Object, bool bOnlyMembers = false, bool bOnlyF
 	else if (Engine_Version >= 422 && Engine_Version <= 424)
 		Members = GetMembers<UClass_FTT, UProperty_FTO, UObject>(Object);
 
-	else if (Engine_Version >= 425 && Engine_Version < 500)
+	else if (Engine_Version >= 425 && FnVerDouble < 20)
 		Members = GetMembersFProperty<UClass_CT, FProperty, UObject>(Object, bOnlyMembers, bOnlyFunctions);
 
-	else if (Engine_Version >= 500)
+	else if (FnVerDouble >= 20)
 		Members = GetMembersFProperty<UClass_CT, FProperty, UObject>(Object, bOnlyMembers, bOnlyFunctions);
 
 	return Members;
@@ -918,7 +931,10 @@ std::vector<std::string> GetMemberNames(UObject* Object, bool bOnlyMembers = fal
 	std::vector<UObject*> Members = GetMembersAsObjects(Object, bOnlyMembers, bOnlyFunctions);
 
 	for (auto Member : Members)
-		Names.push_back(Member->GetName());
+	{
+		if (Member)
+			Names.push_back(Member->GetName());
+	}
 
 	return Names;
 }

@@ -93,6 +93,7 @@ inline void initStuff()
 				//auto BotManagerClass = FindObject("FortServerBotManagerAthena /Script/FortniteGame.Default__FortServerBotManagerAthena");
 
 				//*AuthGameMode->Member<UObject*>("ServerBotManagerClass") = BotManagerClass;
+				
 				// *AuthGameMode->Member<bool>(("bAlwaysDBNO")) = true;
 
 				// Is this correct?
@@ -269,6 +270,7 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 	std::cout << "OnSafeZoneStateChange!\n";
 
 	if (Indicator && Parameters && Helper::IsSmallZoneEnabled())
+
 	{
 		struct ASafeZoneIndicator_C_OnSafeZoneStateChange_Params
 		{
@@ -281,15 +283,19 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 
 		std::random_device rd; // obtain a random number from hardware
 		std::mt19937 gen(rd()); // seed the generator
-		std::uniform_int_distribution<> distr(300.f, 5000.f);
+		std::uniform_int_distribution<> distr(100.f, 1000.f);
 
 		std::random_device rd1; // obtain a random number from hardware
 		std::mt19937 gen1(rd1()); // seed the generator
-		std::uniform_int_distribution<> distr1(300.f, 5000.f);
+		std::uniform_int_distribution<> distr1(100.f, 1000.f);
 
 		std::random_device rd2; // obtain a random number from hardware
 		std::mt19937 gen2(rd2()); // seed the generator
-		std::uniform_int_distribution<> distr2(300.f, 5000.f);
+		std::uniform_int_distribution<> distr2(100.f, 1000.f);
+
+
+
+
 
 		auto world = Helper::GetWorld();
 		auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
@@ -297,21 +303,84 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 
 		bool bIsStartZone = SafeZonePhase == 0; // Params->NewState == EFortSafeZoneState::Starting
 		
-		// *Indicator->Member<float>("SafeZoneStartShrinkTime") // how fast the storm iwll shrink
+		//*Indicator->Member<float>("SafeZoneStartShrinkTime"); // how fast the storm iwll shrink
 
 		auto Radius = *Indicator->Member<float>("Radius");
-		*Indicator->Member<float>("NextRadius") = bIsStartZone ? 10000 : Radius / 2;
+		//*Indicator->Member<float>("NextRadius") = bIsStartZone ? 10000 : Radius / 2;
 
 		auto NextCenter = Indicator->Member<FVector>("NextCenter");
-		
-		if (bIsStartZone)
+		auto MainCenter = Indicator->Member<FVector>("Center");
+
+		/*if (bIsStartZone)
 		{
 			*Indicator->Member<float>("Radius") = 14000;
 			*NextCenter = AircraftLocationToUse;
 		}
-		else
-			std::cout << "Something went wrong with storm code!\n";
-			//*NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
+		else {
+			*NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
+		}*/
+		static auto GameState = *world->Member<UObject*>(("GameState"));
+		auto Aircraft = GameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
+		static FVector AircraftLocationStatic = Helper::GetActorLocation(Aircraft);
+
+		FString StartShrinkSafeZone;
+		StartShrinkSafeZone.Set(L"startshrinksafezone");
+
+		FString SkipShrinkSafeZone;
+		SkipShrinkSafeZone.Set(L"skipshrinksafezone");
+		if (SafeZonePhase == 0) {
+			Helper::Console::ExecuteConsoleCommand(SkipShrinkSafeZone);
+			*Indicator->Member<float>("Radius") = 20000;
+			*Indicator->Member<float>("NextRadius") = 20000;
+			*NextCenter = AircraftLocationToUse;
+		}
+		if (SafeZonePhase == 1) {
+			Helper::Console::ExecuteConsoleCommand(SkipShrinkSafeZone);
+			*Indicator->Member<float>("NextRadius") = 20000;
+			*NextCenter = AircraftLocationToUse;
+		}
+		if (SafeZonePhase == 2) {
+			Helper::Console::ExecuteConsoleCommand(SkipShrinkSafeZone);
+			*Indicator->Member<float>("NextRadius") = 20000;
+			*NextCenter = AircraftLocationToUse;
+		}
+		if (SafeZonePhase == 3) {
+			Helper::Console::ExecuteConsoleCommand(SkipShrinkSafeZone);
+			*Indicator->Member<float>("NextRadius") = 20000;
+			*NextCenter = AircraftLocationToUse;
+		}
+		if (SafeZonePhase == 4) {
+			Helper::Console::ExecuteConsoleCommand(StartShrinkSafeZone);
+			*Indicator->Member<float>("NextRadius") = 9500;
+			*NextCenter = AircraftLocationToUse;
+		}
+		if (SafeZonePhase == 5) {
+			Helper::Console::ExecuteConsoleCommand(StartShrinkSafeZone);
+			*Indicator->Member<float>("NextRadius") = 4000;
+			*NextCenter = AircraftLocationToUse;
+		}
+		if (SafeZonePhase == 6) {
+			Helper::Console::ExecuteConsoleCommand(StartShrinkSafeZone);
+			*Indicator->Member<float>("NextRadius") = 1000;
+			*NextCenter = AircraftLocationToUse;
+		}
+		if (SafeZonePhase == 7) {
+			Helper::Console::ExecuteConsoleCommand(StartShrinkSafeZone);
+			*Indicator->Member<float>("NextRadius") = 0;
+			*NextCenter = AircraftLocationToUse;
+		}
+		if (SafeZonePhase == 8) {
+			Helper::Console::ExecuteConsoleCommand(StartShrinkSafeZone);
+			*Indicator->Member<float>("NextRadius") = 0;
+			*NextCenter = AircraftLocationToUse;
+		}
+		if (SafeZonePhase == 9) {
+			Helper::Console::ExecuteConsoleCommand(StartShrinkSafeZone);
+			*Indicator->Member<float>("NextRadius") = 0;
+			*NextCenter = AircraftLocationToUse;
+		}
+		
+			
 	}
 
 	return true;
@@ -448,6 +517,9 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 			if (Aircraft)
 			{
+				if (bClearInventoryOnAircraftJump)
+					ClearInventory(PlayerController);
+
 				auto ExitLocation = Helper::GetActorLocation(Aircraft);
 
 				Helper::InitPawn(PlayerController, false, ExitLocation);
@@ -615,13 +687,6 @@ void RequestExitWithStatusHook(bool Force, uint8_t ReturnCode)
 	return;
 }
 
-DWORD WINAPI WinThread(LPVOID)
-{
-
-
-	return 0;
-}
-
 inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Parameters)
 {
 	if (DeadPC && Parameters)
@@ -633,6 +698,17 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		struct parms { __int64 DeathReport; };
 
 		auto Params = (parms*)Parameters;
+
+		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
+		static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
+
+		auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
+		auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
+
+		UObject* KillerController = nullptr;
+
+		if (KillerPawn)
+			KillerController = *KillerPawn->Member<UObject*>(("Controller"));
 
 		static auto DeathLocationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathLocation"));	
 		auto DeathInfo = DeadPlayerState->Member<__int64>(("DeathInfo"));
@@ -733,25 +809,23 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			if (*PlayersLeft == 1)
 			{
-				// win
-				// CreateThread(0, 0, WinThread, 0, 0, 0);
 
+				struct
+				{
+					UObject* FinisherPawn;          // APawn                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					UObject* FinishingWeapon; // UFortWeaponItemDefinition                                          // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					EDeathCause                                        DeathCause;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				} AFortPlayerControllerAthena_ClientNotifyWon_Params{KillerPawn, nullptr, EDeathCause::SniperNoScope};
 
+				static auto ClientNotifyWon = KillerController->Function("ClientNotifyWon");
+
+				if (ClientNotifyWon)
+					KillerController->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
 			}
 		}
 
-		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
-		static auto KillerPlayerStateOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPlayerState"));
-
-		auto KillerPawn = *(UObject**)(__int64(&Params->DeathReport) + KillerPawnOffset);
-		auto KillerPlayerState = *(UObject**)(__int64(&Params->DeathReport) + KillerPlayerStateOffset);
-
 		if (false)
 		{
-			UObject* KillerController = nullptr;
-
-			if (KillerPawn)
-				KillerController = *KillerPawn->Member<UObject*>(("Controller"));
 
 			if (KillerPlayerState)
 			{
@@ -1271,6 +1345,11 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				Inventory::GiveItem(Controller, newDef, EFortQuickBars::Primary, 1, 1);
 			}
 
+			if (ReceivingActorName.contains("Portapotty")) // dont work rn
+			{
+				return true;
+			}
+
 			// Looting::Tables::HandleSearch(ReceivingActor);
 			LootingV2::HandleSearch(ReceivingActor);
 		}
@@ -1295,6 +1374,14 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 
 		if (Zipline && *Zipline)
 		{
+			// TWeakObjectPtr<class AFortPlayerPawn>  CurrentInteractingPawn
+			
+			TWeakObjectPtr<UObject>* CurrentInteractingPawn = (*Zipline)->Member<TWeakObjectPtr<UObject>>("CurrentInteractingPawn");
+			CurrentInteractingPawn->ObjectIndex = Pawn->InternalIndex;
+			CurrentInteractingPawn->ObjectSerialNumber = GetSerialNumber(Pawn);
+			
+			// *Pawn->Member<__int64>("ZiplineState") = Params->ZiplineState; // doesnt work ofc
+
 			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_AutonomousProxy);
 			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_Authority); // UNTESTED
 			// Helper::SetRemoteRole(*Zipline, ENetRole::ROLE_Authority);
@@ -1689,16 +1776,86 @@ bool boomboxHook(UObject* ability, UFunction* Function, void* Parameters)
 	return false;
 }
 
+bool throwableConsumablesHook(UObject* ability, UFunction*, void* Parameters)
+{
+	if (ability)
+	{
+		// ability->Server_SpawnProjectile
+		// ability->ThrowConsumable
+		
+		auto memberNames = GetMemberNames(ability, true, false);
+
+		for (auto& MemberName : memberNames)
+			std::cout << "memberName: " << MemberName << '\n';
+
+		std::cout << "throwable!\n";
+	}
+
+	return false;
+}
+
+bool riftItemHook(UObject* ability, UFunction* Function, void* Parameters)
+{
+	std::cout << "rift!\n";
+
+	if (ability)
+	{
+		UObject* Pawn; // Helper::GetOwner(ability);
+		ability->ProcessEvent("GetActivatingPawn", &Pawn);
+		Helper::TeleportToSkyDive(Pawn, 11000);
+
+		__int64* SkydiveAbilitySpec = nullptr;
+
+		auto FindSkydiveAbility = [&SkydiveAbilitySpec](__int64* Spec) -> void {
+			auto Ability = *Abilities::GetAbilityFromSpec(Spec);
+			if (Ability && Ability->GetFullName().contains("GA_Rift_Athena_Skydive_C"))
+			{
+				SkydiveAbilitySpec = Spec;
+			}
+		};
+
+		auto ASC = *Pawn->Member<UObject*>("AbilitySystemComponent");
+		Abilities::LoopSpecs(ASC, FindSkydiveAbility);
+
+		if (SkydiveAbilitySpec)
+		{
+			std::cout << "foujd spec!\n";
+			// std::cout << "found skydive ability: " << SkydiveAbilitySpec->GetFullName() << '\n';
+
+			(*Abilities::GetAbilityFromSpec(SkydiveAbilitySpec))->ProcessEvent("K2_ActivateAbility"); // does nothing
+		}
+		else
+			std::cout << "failed to fmind skydive ability!\n";
+	}
+
+	return false;
+}
+
+bool OnRep_ParachuteAttachmentHook(UObject* pawn, UFunction* Function, void* Parameters)
+{
+	return true;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
 		AddHook(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
+	AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
-	AddHook("Function /Game/Athena/Items/Consumables/Grenade/GA_Athena_Grenade_WithTrajectory.GA_Athena_Grenade_WithTrajectory_C.Server_SpawnProjectile", boomboxHook);
 
+	AddHook("Function /Game/Athena/Items/Consumables/RiftItem/GA_Athena_Rift_Item.GA_Athena_Rift_Item_C.Triggered_1B4C20DD4792D45069FE6C8D47581114", riftItemHook);
+
+	if (Engine_Version > 424)
+	{
+		// AddHook(("Function /Game/Athena/Items/Consumables/Parents/GA_Athena_Consumable_ThrowWithTrajectory_Parent.GA_Athena_Consumable_ThrowWithTrajectory_Parent_C.Server_SpawnProjectile"), throwableConsumablesHook); // wrong func
+	}
+
+	// AddHook("Function /Script/FortniteGame.FortPlayerPawn.OnRep_ParachuteAttachment", OnRep_ParachuteAttachmentHook);
+	
+	// AddHook("Function /Game/Athena/Items/Consumables/Grenade/GA_Athena_Grenade_WithTrajectory.GA_Athena_Grenade_WithTrajectory_C.Server_SpawnProjectile", boomboxHook);
 	// AddHook("Function /Game/Athena/Items/Consumables/TowerGrenade/GA_Athena_TowerGrenadeWithTrajectory.GA_Athena_TowerGrenadeWithTrajectory_C.Server_SpawnProjectile", Server_SpawnProjectileHook);
 	// AddHook("Function /Game/Athena/Items/Consumables/Balloons/GA_Athena_Balloons_Consumable_Passive.GA_Athena_Balloons_Consumable_Passive_C.K2_ActivateAbility", balloonFunHook);
 
@@ -1706,10 +1863,12 @@ void FinishInitializeUHooks()
 		AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	else
 		AddHook(("Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
-	// AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook); // "fix" (temporary) for aircraft after it ends on newer versions.
-	//AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
+
+	// AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook);
+	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
 	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
+
 	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
 	AddHook("Function /Script/Engine.PlayerController.ClientWasKicked", ClientWasKickedHook);
@@ -1870,18 +2029,6 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 }
 
 __int64(__fastcall* idkbroke)(UObject* a1);
-
-__int64 idkbrokeDetour(UObject* a1)
-{
-	std::cout << ("Idk\n");
-	return 0;
-}
-
-void __fastcall HookToFixMaybeDetour(__int64 a1, unsigned int a2)
-{
-	std::cout << "Funne Called!\n";
-	return;
-}
 
 void InitializeHooks()
 {

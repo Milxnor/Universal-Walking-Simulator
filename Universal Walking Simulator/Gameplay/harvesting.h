@@ -5,9 +5,24 @@
 
 void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.f)
 {
-	std::random_device rd; // obtain a random number from hardware
-	std::mt19937 gen(rd()); // seed the generator
-	std::uniform_int_distribution<> distr(4, 6); // define the range
+	// HasDestructionLoot
+
+	struct FCurveTableRowHandle
+	{
+	public:
+		UObject* CurveTable;
+		FName RowName;
+	};
+
+	auto BuildingResourceAmountOverride = BuildingActor->Member<FCurveTableRowHandle>("BuildingResourceAmountOverride");
+
+	if (!BuildingResourceAmountOverride->RowName.ComparisonIndex) // player placed replacement
+		return;
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	auto MaxResourcesToSpawn = 6; // *BuildingActor->Member<int>("MaxResourcesToSpawn");
+	std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
 
 	auto Random = distr(gen);
 
@@ -17,22 +32,23 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 	if (HitWeakspot)
 	{
-		std::random_device rd; // obtain a random number from hardware
-		std::mt19937 gen(rd()); // seed the generator
-		std::uniform_int_distribution<> distr(4, 5); // define the range
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
 
 		funne += distr(gen);
 	}
 
+	std::cout << "StaticGameplayTags: " << BuildingActor->Member<FGameplayTagContainer>("StaticGameplayTags")->ToStringSimple(true) << '\n';
+
 	struct
 	{
-		UObject* BuildingSMActor;                                          // (Parm, ZeroConstructor, IsPlainOldData)
-		TEnumAsByte<EFortResourceType>                     PotentialResourceType;                                    // (Parm, ZeroConstructor, IsPlainOldData)
-		int                                                PotentialResourceCount;                                   // (Parm, ZeroConstructor, IsPlainOldData)
-		bool                                               bDestroyed;                                               // (Parm, ZeroConstructor, IsPlainOldData)
-		bool                                               bJustHitWeakspot;                                         // (Parm, ZeroConstructor, IsPlainOldData)
-	} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(("ResourceType")),
-		 funne, false, HitWeakspot }; // ender weakspotrs
+		UObject* BuildingSMActor;
+		TEnumAsByte<EFortResourceType> PotentialResourceType;
+		int PotentialResourceCount;
+		bool bDestroyed;
+		bool bJustHitWeakspot;
+	} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(("ResourceType")), funne, false, HitWeakspot }; // ender weakspotrs
 
 	static auto ClientReportDamagedResourceBuilding = Controller->Function(("ClientReportDamagedResourceBuilding"));
 
@@ -41,8 +57,6 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		auto Params = &AFortPlayerController_ClientReportDamagedResourceBuilding_Params;
 
 		Controller->ProcessEvent(ClientReportDamagedResourceBuilding, &AFortPlayerController_ClientReportDamagedResourceBuilding_Params);
-
-		// idk y hook no work
 
 		auto Pawn = *Controller->Member<UObject*>(("Pawn"));
 
@@ -61,6 +75,8 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		auto ItemInstance = Inventory::FindItemInInventory(Controller, ItemDef);
 
 		int AmountToGive = Params->PotentialResourceCount;
+
+		// IMPROPER, we should add weakspot here.
 
 		if (ItemInstance && Pawn)
 		{
@@ -81,7 +97,7 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void* Parameters)
 {
 	static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
-	
+
 	if (BuildingActor->IsA(BuildingSMActorClass)) // || BuildingActor->GetFullName().contains(("Car_")))
 	{
 		auto InstigatedByOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("InstigatedBy"));
@@ -96,27 +112,9 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 		auto DamageOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("Damage"));
 		auto Damage = (float*)(__int64(Parameters) + DamageOffset);
 
-		struct Bitfield
-		{
-			unsigned char                                      UnknownData09 : 1;                                        // 0x0544(0x0001)
-			unsigned char                                      bWorldReadyCalled : 1;                                    // 0x0544(0x0001) (Transient)
-			unsigned char                                      bBeingRotatedOrScaled : 1;                                // 0x0544(0x0001) (Transient)
-			unsigned char                                      bBeingTranslated : 1;                                     // 0x0544(0x0001) (Transient)
-			unsigned char                                      bRotateInPlaceEditor : 1;                                 // 0x0544(0x0001)
-			unsigned char                                      bEditorPlaced : 1;                                        // 0x0544(0x0001) (Net, Transient)
-			unsigned char                                      bPlayerPlaced : 1;                                        // 0x0544(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, Net, DisableEditOnTemplate)
-			unsigned char                                      bShouldTick : 1;
-		};
-
-		auto BitField = BuildingActor->Member<Bitfield>(("bPlayerPlaced"));
-		auto bPlayerPlaced = false; // BitField->bPlayerPlaced;
-
 		static auto FortPlayerControllerAthenaClass = FindObject(("Class /Script/FortniteGame.FortPlayerControllerAthena"));
 
-		// if (DamageTags)
-			// std::cout << ("DamageTags: ") << DamageTags->ToStringSimple(false) << '\n';
-
-		if (!bPlayerPlaced && InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass) &&
+		if (InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass) &&
 			DamageCauser->GetFullName().contains("B_Melee_Impact_Pickaxe_Athena_C")) // cursed
 		{
 			// TODO: Not hardcode the PickaxeDef, do like slot 0  or something
@@ -128,15 +126,14 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 				DoHarvesting(InstigatedBy, BuildingActor, *Damage);
 			}
 		}
-;	}
+		;
+	}
 
 	return false;
 }
 
 inline bool BlueprintCanAttemptGenerateResourcesHook(UObject* BuildingActor, UFunction* Function, void* Parameters)
 {
-	// very wrong idek whats happening
-
 	struct parms {
 		FGameplayTagContainer InTags;
 		UObject* InstigatorController; // AController*

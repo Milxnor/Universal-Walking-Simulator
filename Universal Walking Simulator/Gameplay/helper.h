@@ -182,6 +182,86 @@ namespace Easy
 
 namespace Helper
 {
+	namespace Conversion
+	{
+		UObject* SoftObjectToObject(TSoftObjectPtr SoftObject)
+		{
+			// Function /Script/Engine.KismetSystemLibrary.Conv_SoftObjectReferenceToObject
+
+			static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+
+			static auto fn = KSLClass->Function(("Conv_SoftObjectReferenceToObject"));
+
+			UObject* Object;
+
+			struct {
+				TSoftObjectPtr SoftObject;
+				UObject* ReturnValue;
+			} params{ SoftObject, nullptr };
+
+			if (fn)
+				KSLClass->ProcessEvent(fn, &Object);
+
+			return params.ReturnValue;
+		}
+
+		FText StringToText(FString String)
+		{
+			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
+
+			FText text;
+
+			if (KTL)
+			{
+				static auto fn = KTL->Function(("Conv_StringToText"));
+
+				struct {
+					FString InText;
+					FText ReturnValue;
+				} params{ String };
+
+				if (fn)
+					KTL->ProcessEvent(fn, &params);
+				else
+					std::cout << ("Unable to find Conv_StringToText!\n");
+
+				text = params.ReturnValue;
+			}
+			else
+				std::cout << ("Unable to find KTL!\n");
+
+			return text;
+		}
+
+		std::string TextToString(FText Text)
+		{
+			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
+
+			FString String;
+
+			if (KTL)
+			{
+				static auto fn = KTL->Function(("Conv_TextToString"));
+
+				struct {
+					FText InText;
+					FString ReturnValue;
+				} params{ Text };
+
+				if (fn)
+					KTL->ProcessEvent(fn, &params);
+				else
+					std::cout << ("Unable to find Conv_TextToString!\n");
+
+				String = params.ReturnValue;
+			}
+			else
+				std::cout << ("Unable to find KTL!\n");
+
+			return String.Data.GetData() ? String.ToString() : "INVALID_STRING";
+		}
+	}
+
 	FVector GetActorLocation(UObject* Actor)
 	{
 		if (!Actor)
@@ -217,12 +297,16 @@ namespace Helper
 		return FRotator();
 	}
 
-	void ShowBuilding(UObject* Foundation)
+
+	void ShowBuilding(UObject* Foundation, bool bShow = true)
 	{
 		if (!Foundation)
 			return;
 
-		*Foundation->Member<uint8_t>(("DynamicFoundationType")) = 0;
+		auto DynamicFoundationType = Foundation->Member<uint8_t>(("DynamicFoundationType"));
+		
+		if (DynamicFoundationType && *DynamicFoundationType)
+			*DynamicFoundationType = bShow ? 0 : 3;
 
 		struct BITMF
 		{
@@ -230,8 +314,53 @@ namespace Helper
 			uint8_t                                        bServerStreamedInLevel : 1;
 		};
 
-		Foundation->Member<BITMF>("bServerStreamedInLevel")->bServerStreamedInLevel = true;
+		Foundation->Member<BITMF>("bServerStreamedInLevel")->bServerStreamedInLevel = bShow; // fixes hlods
 		Foundation->ProcessEvent("OnRep_ServerStreamedInLevel");
+	}
+
+	float GetTimeSeconds()
+	{
+		static auto GSCClass = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+
+		struct { UObject* world; float timeseconds; } parms{ GetWorldW() };
+
+		static auto GetTimeSeconds = GSCClass->Function("GetTimeSeconds");
+
+		if (GetTimeSeconds)
+			GSCClass->ProcessEvent(GetTimeSeconds, &parms);
+
+		return parms.timeseconds;
+	}
+
+	void TeleportToSkyDive(UObject* Pawn, float Height = 10000)
+	{
+		struct { float HeightAboveGround; }TeleportToSkyDiveParams{ Height };
+
+		static auto TeleportToSkyDiveFn = Pawn->Function(("TeleportToSkyDive"));
+
+		if (TeleportToSkyDiveFn)
+			Pawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
+	}
+
+	UObject* LoadLevelInstance(const FString& LevelName)
+	{
+		struct ULevelStreamingDynamic_LoadLevelInstance_Params
+		{
+			UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FString                                     LevelName;                                                // (Parm, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FVector                                     Location;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FRotator                                    Rotation;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
+			bool                                               bOutSuccess;                                              // (Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			UObject* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		} ULevelStreamingDynamic_LoadLevelInstance_Params{GetWorldW(), LevelName, AircraftLocationToUse, FRotator()};
+
+		static auto levelStreamingDynamicClass = FindObject("LevelStreamingDynamic /Script/Engine.Default__LevelStreamingDynamic");
+		static auto LoadLevelInstance = levelStreamingDynamicClass->Function("LoadLevelInstance");
+
+		if (LoadLevelInstance)
+			levelStreamingDynamicClass->ProcessEvent(LoadLevelInstance, &ULevelStreamingDynamic_LoadLevelInstance_Params);
+
+		return ULevelStreamingDynamic_LoadLevelInstance_Params.ReturnValue;
 	}
 
 	//Show Missing POIs. Credit to Ultimanite for most of this.
@@ -248,8 +377,33 @@ namespace Helper
 			static auto idfk = FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")); // polar peak?
 			ShowBuilding(idfk);
 
-			// static auto tilted = FindObject("ahh /Game/Athena/Maps/Buildings/5x5/Athena_URB_5x5_Shops_a");
-			// ShowBuilding(tilted);
+			static auto tiltedtower = FindObject("BuildingFoundation5x5 /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.ShopsNew");
+			ShowBuilding(tiltedtower);
+
+		}
+
+		if (Season >= 7 && Engine_Version < 424)
+		{
+			static auto TheBlock = FindObject("BuildingFoundationSlab_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_2"); // SLAB_3 is blank
+			ShowBuilding(TheBlock);
+
+			/* FString dababy;
+			dababy.Set(L"Dababy");
+			*TheBlock->Member<FText>("CreatorName") = Helper::Conversion::StringToText(dababy); */
+
+			// LevelSequencePlayer /Game/Athena/Prototype/Blueprints/Slab/Replicated_LevelSequence.Default__Replicated_LevelSequence_C.AnimationPlayer
+
+			/*
+			
+			Block_25x25_ColossalCompound - 7.40
+
+			Block_25x25_HarmonyHotel - 8.10
+
+			Block_25x25_TrickyTracks - 8.50
+
+			Block_25x25_AlienSanctuary - 8.50
+			
+			*/
 		}
 
 		//Marshamello
@@ -265,7 +419,7 @@ namespace Helper
 
 			ShowBuilding(FloatingIsland);
 			ShowBuilding(Lake);
-			ShowBuilding(Lake2);
+			// ShowBuilding(Lake2); // this is for after the event
 
 			// *scripting->Member<FVector>("IslandPosition") = Helper::GetActorLocation(FloatingIsland);
 
@@ -614,6 +768,7 @@ namespace Helper
 
 	static void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false)
 	{
+		UObject* FinalActor = nullptr;
 		if (FnVerDouble < 18.00) // wrong probs
 		{
 			// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
@@ -629,6 +784,8 @@ namespace Helper
 
 				if (fn)
 					BuildingActor->ProcessEvent(fn, &IBAParams);
+
+				FinalActor = BuildingActor;
 			}
 		}
 		else
@@ -647,8 +804,11 @@ namespace Helper
 
 				if (fn)
 					BuildingActor->ProcessEvent(fn, &IBAParams);
+				FinalActor = BuildingActor;
 			}
 		}
+		
+		*FinalActor->Member<uint8_t>("Team") = *(*Controller->Member<UObject*>("PlayerState"))->Member<uint8_t>("TeamIndex");
 	}
 
 	static UObject* SpawnChip(UObject* Controller, FVector ChipLocation)
@@ -739,6 +899,11 @@ namespace Helper
 	EAthenaGamePhase* GetGamePhase()
 	{
 		return GetGameState()->Member<EAthenaGamePhase>(("GamePhase"));
+	}
+
+	bool HasAircraftStarted()
+	{
+		return *GetGamePhase() == EAthenaGamePhase::Aircraft;
 	}
 
 	FVector GetPlayerStart()
@@ -960,10 +1125,68 @@ namespace Helper
 	{
 		return bIsLateGame;
 	}
+	static FVector getRandomLocation()
+	{
+		static std::vector<FVector> Locations = {
+
+			{ 24426, 37710, 25000 }, // retail row
+			{ 50018, 73844, 25000 }, // lonely lodge
+			{ 39781, 61621, 25000 }, // Moisty Mire
+			{ -26479, 41847, 20000 }, // Prison
+			{ 56771, 32818, 20000 }, // Containers/crates
+			{ -75353, -8694, 20000 }, //Lucky Landing
+			{ 34278, 867, 25000 }, // dusty depot / factories
+			{ 79710, 15677, 25000 }, // tomato town
+			{ 103901, -20203, 25000 }, // ANARCHY acres
+			{ 86766, -83071, 25000 }, // pleasant park
+			{ 2399, -96255, 25000 }, // greasy grove
+			{ -35037, -463, 25000 }, // fatal fields
+			{ 83375, 50856, 25000 }, // Wailing Woods
+			{ 35000, -60121, 25000 }, // Tilted Towers
+			{ 40000, -127121, 25000 }, // Snobby Shores
+			{ 5000, -60121, 25000 }, // shifty shafts
+			{ 110088, -115332, 25000 }, // Haunted Hills
+			{ 119126, -86354, 25000 }, // Junk Houses
+			{ 130036, -105092, 25000 }, // Junk Junction
+			{ -68000, -63521, 25000 }, // Flush Factory
+			{ 3502, -9183, 25000 }, // Salty Springs
+			{ 7760, 76702, 25000 }, //race track
+			{ 38374, -94726, 25000 }, //Soccer field
+			{ 70000, -40121, 35000 }, // Loot Lake
+			//New Locations: 7/4/22
+			{ 117215, -53654, 25000 }, //motel
+			{ 106521, -69597, 25000 }, //Pleasant Park Mountain
+			{ 86980, -105015, 25000 }, //Pleasant Park Mountain 2
+			{ 76292, -104977, 25000 }, //Haunted/Pleasant House
+			{ 56131, -106880, 25000 }, //Snobby Mountain (Before Villain Lair)
+			{ 29197, -109347, 25000 }, //Snobby Mountain 2
+			{ -29734, -60767, 25000 }, //chair
+			{ -19903, -26194, 25000 }, //Grandma's house
+			{ -26851, 16299, 25000 }, //Tunnel near Fatal Fields
+			{ -63592, 35933, 25000 }, //Random bush circle I've never seen before
+			{ -75810, 33594, 25000 }, //Crab behind Moisty
+			{ 28374, -94726, 25000 }, //Soccer mountain
+			{ 73770, -19009, 25000 }, //Random Location 1
+			{ 29050, -21225, 25000 }, //Dusty Mountain
+			{ 18325, -17881, 25000 }, //Salty Mountain
+			{ 6621, 18784, 25000 }, //Random Location 2
+			{ -6702, 33251, 25000 }, //Random Location 3/bridge
+			//Off map
+			{ 137767, 40939, 25000 }, //off map near where risky would be
+			{ 136084, -46013, 25000 }, //off map near motel
+			{ -2450, -127394, 25000 }, //off map bottom left
+			{ -26584, -90150, 25000 }, //off map bottom left 2
+			{ 70000, -40121, 35000 } // Loot Lake
+			//{ -123778, -112480, 20000 } //Spawn Island
+		};
+
+		auto Location = Locations[rand() % Locations.size()];
+		return Location;
+	}
 
 	static UObject* GetRandomFoundation()
 	{
-		/* if (Helper::IsSmallZoneEnabled())
+		/*if (Helper::IsSmallZoneEnabled())
 		{
 			auto POIManager = *Helper::GetGameState()->Member<UObject*>("PoiManager");
 
@@ -979,7 +1202,7 @@ namespace Helper
 						return POI;
 				}
 			}
-		} */
+		}*/
 
 		static auto FoundationClass = FindObject("Class /Script/FortniteGame.BuildingFoundation");
 		auto AllFoundations = GetAllActorsOfClass_(FoundationClass);
@@ -1039,7 +1262,7 @@ namespace Helper
 
 	}
 
-	DWORD WINAPI DumpObjects(LPVOID)
+	void DumpObjects()
 	{
 		std::ofstream objects("Objects.log");
 
@@ -1052,8 +1275,7 @@ namespace Helper
 
 			objects << std::format("[{}] {}\n", Object->InternalIndex, Object->GetFullName()); // TODO: add the offset
 		}
-
-		return 0;
+		objects.close();
 	}
 
 	void SetHealth(UObject* Pawn, float Health)
@@ -1106,7 +1328,7 @@ namespace Helper
 		else
 			std::cout << ("Could not find Possess!\n");
 
-		Helper::SetOwner(Pawn, PC); // prob not needed
+		Helper::SetOwner(Pawn, PC); //prob not needed
 
 		// *Pawn->Member<float>(("NetUpdateFrequency")) = 200;
 
@@ -1211,86 +1433,6 @@ namespace Helper
 			return *gameState->Member<UObject*>(("CurrentPlaylistData"));
 
 		return nullptr;
-	}
-	
-	namespace Conversion
-	{
-		UObject* SoftObjectToObject(TSoftObjectPtr SoftObject)
-		{
-			// Function /Script/Engine.KismetSystemLibrary.Conv_SoftObjectReferenceToObject
-
-			static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
-
-			static auto fn = KSLClass->Function(("Conv_SoftObjectReferenceToObject"));
-
-			UObject* Object;
-
-			struct {
-				TSoftObjectPtr SoftObject;
-				UObject* ReturnValue;
-			} params{SoftObject, nullptr};
-
-			if (fn)
-				KSLClass->ProcessEvent(fn, &Object);
-
-			return params.ReturnValue;
-		}
-
-		FText StringToText(FString String)
-		{
-			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
-
-			FText text;
-
-			if (KTL)
-			{
-				static auto fn = KTL->Function(("Conv_StringToText"));
-
-				struct {
-					FString InText;
-					FText ReturnValue;
-				} params{ String };
-
-				if (fn)
-					KTL->ProcessEvent(fn, &params);
-				else
-					std::cout << ("Unable to find Conv_StringToText!\n");
-
-				text = params.ReturnValue;
-			}
-			else
-				std::cout << ("Unable to find KTL!\n");
-
-			return text;
-		}
-
-		std::string TextToString(FText Text)
-		{
-			static auto KTL = FindObject(("KismetTextLibrary /Script/Engine.Default__KismetTextLibrary"));
-
-			FString String;
-
-			if (KTL)
-			{
-				static auto fn = KTL->Function(("Conv_TextToString"));
-
-				struct {
-					FText InText;
-					FString ReturnValue;
-				} params{ Text };
-
-				if (fn)
-					KTL->ProcessEvent(fn, &params);
-				else
-					std::cout << ("Unable to find Conv_TextToString!\n");
-
-				String = params.ReturnValue;
-			}
-			else
-				std::cout << ("Unable to find KTL!\n");
-
-			return String.Data.GetData() ? String.ToString() : "INVALID_STRING";
-		}
 	}
 
 	void SilentDie(UObject* BuildingActor)
