@@ -416,12 +416,20 @@ namespace LootingV2
 				auto Location = Helper::GetCorrectLocation(BuildingContainer); // GetLootSpawnLocation
 
 				{
+					auto WeaponInRow = GetRandomItem(ItemType::Weapon);
+					auto WeaponDef = WeaponInRow.Definition;
+
+
 					static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
 
 					Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
 					Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
 					Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
 					Helper::SummonPickup(nullptr, Minis, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 6);
+					if (WeaponDef)
+					{
+						Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 1);
+					}
 
 					// OnRep_Looted
 					// SpawnLoot

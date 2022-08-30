@@ -254,7 +254,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	// itementrysize 0xb0 on 2.4.2
 
-	if (Engine_Version >= 420)
+	if (Engine_Version >= 420 && bUseCustomSettings)
 	{
 		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
@@ -278,6 +278,57 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			Inventory::GiveMats(PlayerController);
 		}
 
+		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
+	}
+
+	if (Engine_Version >= 420 && !bUseCustomSettings)
+	{
+		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+		static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
+		static auto SlurpJuice = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff"));
+		static auto GoldAR = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03"));
+		static auto RiftToGO = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/RiftItem/Athena_Rift_Item.Athena_Rift_Item"));
+		static auto ImpulseGrenade = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/KnockGrenade/Athena_KnockGrenade.Athena_KnockGrenade"));
+		static auto BluePump = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03");
+		static auto BigShield = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/Shields/Athena_Shields.Athena_Shields");
+
+		Inventory::CreateAndAddItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0, 1);
+
+
+		
+		if (!Helper::HasAircraftStarted() || !bClearInventoryOnAircraftJump) {
+			Inventory::CreateAndAddItem(PlayerController, GoldAR, EFortQuickBars::Primary, 1, 1);
+		
+			if (FnVerDouble < 9.10)
+			{
+			static auto GoldPump = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_SR_Ore_T03.WID_Shotgun_Standard_Athena_SR_Ore_T03"));
+			static auto HeavySniper = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Sniper_Heavy_Athena_SR_Ore_T03.WID_Sniper_Heavy_Athena_SR_Ore_T03"));
+
+			if (!GoldPump)
+				GoldPump = BluePump; // blue pump
+
+			if (!RiftToGO)
+				RiftToGO = ImpulseGrenade; //normal impulse grenade
+
+			Inventory::CreateAndAddItem(PlayerController, GoldPump, EFortQuickBars::Primary, 2, 1);
+			Inventory::CreateAndAddItem(PlayerController, RiftToGO, EFortQuickBars::Primary, 3, 1);
+
+			}
+			else
+			{
+			static auto BurstSMG = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Pistol_BurstFireSMG_Athena_R_Ore_T03.WID_Pistol_BurstFireSMG_Athena_R_Ore_T03"));
+			static auto CombatShotgun = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Combat_Athena_SR_Ore_T03.WID_Shotgun_Combat_Athena_SR_Ore_T03"));
+
+			Inventory::CreateAndAddItem(PlayerController, CombatShotgun, EFortQuickBars::Primary, 2, 1);
+			Inventory::CreateAndAddItem(PlayerController, BurstSMG, EFortQuickBars::Primary, 3, 1);
+			}
+
+			Inventory::CreateAndAddItem(PlayerController, Minis, EFortQuickBars::Primary, 4, 6);
+			Inventory::CreateAndAddItem(PlayerController, BigShield, EFortQuickBars::Primary, 5, 2);
+
+			Inventory::GiveAllAmmo(PlayerController);
+			Inventory::GiveMats(PlayerController);
+		}
 		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
 	}
 

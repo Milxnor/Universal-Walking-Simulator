@@ -463,7 +463,7 @@ EServerStatus serverStatus = EServerStatus::Down;
 // modes:
 
 static bool bIsPlayground = false;
-static bool bIsLateGame = false;
+static bool bIsLateGame = true;
 
 static std::vector<UObject*> ExistingBuildings;
 
@@ -471,7 +471,10 @@ static bool bUseBeacons = true;
 
 static bool bDoubleBuildFix = false;
 static bool bClearInventoryOnAircraftJump = !bIsPlayground;
+static bool bUseCustomSettings = false;
 static bool bIsInEvent = false;
+
+
 
 std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
 

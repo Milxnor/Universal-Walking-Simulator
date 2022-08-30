@@ -435,6 +435,8 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					if (serverStatus == EServerStatus::Up)
 					{
+						
+
 						if (ImGui::Button("Freecam"))
 						{
 							FString StartAircraftCmd;
@@ -454,8 +456,15 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								auto gameState = Helper::GetGameState();
 
+								
+
 								if (Helper::IsSmallZoneEnabled())
 								{
+									bClearInventoryOnAircraftJump = false;
+									FString StartAircraftCmd;
+									StartAircraftCmd.Set(L"startaircraft");
+
+									Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 									auto Aircraft = gameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
 
 									if (Aircraft)
@@ -473,11 +482,11 @@ DWORD WINAPI GuiThread(LPVOID)
 											if (FlightSpeed)
 												*FlightSpeed = 0;
 
-											auto RandomFoundation = Helper::GetRandomFoundation();
+											static auto RandomMPLocationStatic = Helper::getRandomLocation();
 
 											if (true) // RandomPOI)
 											{
-												AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{0, 0, 5000};
+												AircraftLocationToUse = RandomMPLocationStatic;
 
 												*FlightStartLocation = AircraftLocationToUse;
 												Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
@@ -506,6 +515,18 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								ExistingBuildings.clear();
 							}
+						}
+						FString StartShrinkSafeZone;
+						StartShrinkSafeZone.Set(L"startshrinksafezone");
+
+						FString SkipShrinkSafeZone;
+						SkipShrinkSafeZone.Set(L"skipshrinksafezone");
+
+						if (ImGui::Button("Shrink SafeZone")) {
+							Helper::Console::ExecuteConsoleCommand(StartShrinkSafeZone);
+						}
+						if (ImGui::Button("Skip SafeZone")) {
+							Helper::Console::ExecuteConsoleCommand(SkipShrinkSafeZone);
 						}
 						// else
 						{
@@ -753,16 +774,6 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (ImGui::Button(("Start Event")))
 						Events::StartEvent();
 
-					if (FnVerDouble == 8.51) {
-						ImGui::InputText("Item to Unvault (DrumGun, Bouncer, Sword, Grappler, Tac)", &EventHelper::UV_ItemName);
-						
-						if (ImGui::Button("Unvault Item")) {
-							FString InStr;
-							InStr.Set(std::wstring(EventHelper::UV_ItemName.begin(), EventHelper::UV_ItemName.end()).c_str());
-							EventHelper::UnvaultItem(Helper::Conversion::StringToName(InStr));
-						}
-					}
-
 					if (FnVerDouble == 12.41 && ImGui::Button("Fly players up"))
 						EventHelper::BoostUpTravis();
 
@@ -778,22 +789,25 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 
 				case 6: // settings
-
-					ImGui::InputText("First Slot", &StartingSlot1.first);
-					ImGui::InputInt("First Slot Amount", &StartingSlot1.second);
-					ImGui::NewLine();
-					ImGui::InputText("Second Slot", &StartingSlot2.first);
-					ImGui::InputInt("Second Slot Amount", &StartingSlot2.second);
-					ImGui::NewLine();
-					ImGui::InputText("Third Slot", &StartingSlot3.first);
-					ImGui::InputInt("Third Slot Amount", &StartingSlot3.second);
-					ImGui::NewLine();
-					ImGui::InputText("Fourth Slot", &StartingSlot4.first);
-					ImGui::InputInt("Fourth Slot Amount", &StartingSlot4.second);
-					ImGui::NewLine();
-					ImGui::InputText("Fifth Slot", &StartingSlot5.first);
-					ImGui::InputInt("Fifth Slot Amount", &StartingSlot5.second);
-					ImGui::NewLine();
+					ImGui::Checkbox("Custom Settings", &bUseCustomSettings);
+					if (bUseCustomSettings) {
+						ImGui::InputText("First Slot", &StartingSlot1.first);
+						ImGui::InputInt("First Slot Amount", &StartingSlot1.second);
+						ImGui::NewLine();
+						ImGui::InputText("Second Slot", &StartingSlot2.first);
+						ImGui::InputInt("Second Slot Amount", &StartingSlot2.second);
+						ImGui::NewLine();
+						ImGui::InputText("Third Slot", &StartingSlot3.first);
+						ImGui::InputInt("Third Slot Amount", &StartingSlot3.second);
+						ImGui::NewLine();
+						ImGui::InputText("Fourth Slot", &StartingSlot4.first);
+						ImGui::InputInt("Fourth Slot Amount", &StartingSlot4.second);
+						ImGui::NewLine();
+						ImGui::InputText("Fifth Slot", &StartingSlot5.first);
+						ImGui::InputInt("Fifth Slot Amount", &StartingSlot5.second);
+						ImGui::NewLine();
+					}
+					
 
 					break;
 				case 7:
