@@ -443,7 +443,6 @@ DWORD WINAPI GuiThread(LPVOID)
 							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 						}
 
-						//if (Engine_Version < 423 || FnVerDouble >= 16.00) // I do not know how to start the bus on S8+
 						{
 							if (ImGui::Button(("Start Aircraft")))
 							{
@@ -499,41 +498,6 @@ DWORD WINAPI GuiThread(LPVOID)
 								}
 
 								std::cout << ("Started aircraft!\n");
-
-								static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
-
-								// Helper::DestroyAll(BuildingSMActorClass);
-
-								ExistingBuildings.clear();
-							}
-						}
-						// else
-						{
-							if (ImGui::Button(("Change Phase to Aircraft"))) // TODO: Improve phase stuff
-							{
-								auto world = Helper::GetWorld();
-								auto gameState = *world->Member<UObject*>(("GameState"));
-
-								*gameState->Member<EAthenaGamePhase>(("GamePhase")) = EAthenaGamePhase::Aircraft;
-
-								struct {
-									EAthenaGamePhase OldPhase;
-								} params2{ EAthenaGamePhase::None };
-
-								static const auto fnGamephase = gameState->Function(("OnRep_GamePhase"));
-
-								// if (fnGamephase)
-									// gameState->ProcessEvent(fnGamephase);
-
-								std::cout << ("Changed Phase to Aircraft.");
-
-								// TODO: Hook a func for this
-
-								static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
-
-								// Helper::DestroyAll(BuildingSMActorClass);
-
-								ExistingBuildings.clear();
 							}
 						}
 
