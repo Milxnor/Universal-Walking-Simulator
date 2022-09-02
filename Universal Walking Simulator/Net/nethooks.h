@@ -101,11 +101,11 @@ auto getPair(T map, int index)
 
 UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole RemoteRole, FURL& URL, void* UniqueId, FString& Error, uint8_t NetPlayerIndex)
 {
-	static int LastResetNum = 824524899135;
-
-	if (LastResetNum != AmountOfRestarts)
+	static bool bHasdonething = false;
+	
+	if (!bHasdonething)
 	{
-		LastResetNum = AmountOfRestarts;
+		bHasdonething = true;
 
 		if (Engine_Version >= 423)
 			Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol
