@@ -947,7 +947,7 @@ namespace Helper
 
 		auto GamePhase = *GetGamePhase();
 
-		if (WarmupClass && ActorsNum != 0 && Engine_Version < 423 && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
+		if (WarmupClass && ActorsNum != 0 && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
 		{
 			auto ActorToUseNum = RandomIntInRange(0, ActorsNum);
 			auto ActorToUse = (OutActors)[ActorToUseNum];
