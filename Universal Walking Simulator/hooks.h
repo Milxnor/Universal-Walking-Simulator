@@ -428,7 +428,7 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 
 bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
-	if (FnVerDouble >= 16.00)
+	if (FnVerDouble >= 10.00)
 		PlayerController = Helper::GetOwnerOfComponent(PlayerController);
 
 	struct Param{
@@ -1790,7 +1790,7 @@ void FinishInitializeUHooks()
 	// AddHook("Function /Game/Athena/Items/Consumables/TowerGrenade/GA_Athena_TowerGrenadeWithTrajectory.GA_Athena_TowerGrenadeWithTrajectory_C.Server_SpawnProjectile", Server_SpawnProjectileHook);
 	// AddHook("Function /Game/Athena/Items/Consumables/Balloons/GA_Athena_Balloons_Consumable_Passive.GA_Athena_Balloons_Consumable_Passive_C.K2_ActivateAbility", balloonFunHook);
 
-	if (FnVerDouble < 16.00)
+	if (FnVerDouble < 10.00)
 		AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	else
 		AddHook(("Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
