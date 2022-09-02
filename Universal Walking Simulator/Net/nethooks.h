@@ -101,13 +101,16 @@ auto getPair(T map, int index)
 
 UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole RemoteRole, FURL& URL, void* UniqueId, FString& Error, uint8_t NetPlayerIndex)
 {
-	static bool bSpawnedFloorLoot = false;
+	static int LastResetNum = 824524899135;
 
-	if (!bSpawnedFloorLoot)
+	if (LastResetNum != AmountOfRestarts)
 	{
-		bSpawnedFloorLoot = true;
-	}
+		LastResetNum = AmountOfRestarts;
 
+		if (Engine_Version >= 423)
+			Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol
+	}
+	
 	std::cout << ("SpawnPlayActor called!\n");
 	auto PlayerController = SpawnPlayActor(Helper::GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex); // crashes 0x356 here sometimes when rejoining
 	static auto FortPlayerControllerAthenaClass = FindObject(("Class /Script/FortniteGame.FortPlayerControllerAthena"));
