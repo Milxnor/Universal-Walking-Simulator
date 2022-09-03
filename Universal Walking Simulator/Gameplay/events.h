@@ -119,25 +119,6 @@ namespace EventHelper
 		// OnRep_ShowLakeRainbow
 	}
 
-	// 5.30 Event hook for spawning the Cube
-	bool SpawnCube(UObject* EventComponents, UFunction*, void* Parameters)
-	{
-		static auto bAlreadySpawned = false;
-
-		if (!bAlreadySpawned)
-		{
-			auto Cube = FindObject(("CUBE_C /Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2"));
-
-			if (Cube) {
-				auto Func = Cube->Function(("SpawnCube"));
-				Cube->ProcessEvent(Func);
-			}
-
-			bAlreadySpawned = true;
-		}
-		return false;
-	}
-
 	void BoostUpTravis()
 	{
 		TArray<UObject*> Pawns;
@@ -266,9 +247,6 @@ namespace Events {
 				AEC->ProcessEvent(Func);
 				*AEC->Member<float>(("Corruption")) = 1.0f; // Show the smaller purple crack
 				AEC->ProcessEvent(Func2);
-
-				//Hooked it here because it's not loaded in yet when hooking other functions in hooks.h
-				AddHook("Function /Game/Athena/Events/BP_Athena_Event_Components.BP_Athena_Event_Components_C.DisableFinalLightning", EventHelper::SpawnCube);
 			}
 		}
 	}
@@ -394,6 +372,17 @@ namespace Events {
 				UObject* AEC = FindObject(("BP_Athena_Event_Components_C /Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
 				UObject* Func = AEC->Function(("Final"));
 				AEC->ProcessEvent(Func);
+
+				static auto bCubeSpawned = false;
+
+				if (!bCubeSpawned)
+				{
+					UObject* Cube = FindObject(("CUBE_C /Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2"));
+					UObject* Func2 = Cube->Function(("Final"));
+					Cube->ProcessEvent(Func2);
+
+					bCubeSpawned = true;
+				}
 			}
 			else if (Version == 4.5f) {
 				//Rocket
