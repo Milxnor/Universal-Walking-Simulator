@@ -11,8 +11,6 @@ Clean up Project and add comments to the code.<br>
 
 # CURRENT ISSUES
 
-Battle Bus Crashes on S8+<br>
-
 Code is everywhere.<br>
 Console Colors are a 30/70.<br>
 
