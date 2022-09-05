@@ -673,7 +673,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							continue;
 
 						// if (ImGui::Button(Helper::GetfPlayerName(PlayerState).ToString().c_str()))
-						if (ImGui::Button(wstring_to_utf8(std::wstring(Helper::GetfPlayerName(PlayerState).Data.GetData())).c_str()))
+						if (ImGui::Button(wstring_to_utf8(std::wstring(Helper::GetfPlayerName((*Player.first->Member<UObject*>("Controller"))).Data.GetData())).c_str()))
 						{
 							PlayerTab = i;
 						}
@@ -708,6 +708,15 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 						if (FnVerDouble == 4.1 && ImGui::Button(("Spawn Gauntlet"))) {
 							Carmine::SpawnGauntlet();
+						}
+					}
+					else {
+						ImGui::Text("Press The Button under this text to setup Thanos for your Version!");
+						if (FnVerDouble == 4.1 && ImGui::Button(("Init Carmine"))) {
+							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Carmine/Playlist_Carmine.Playlist_Carmine";
+						}
+						if (FnVerDouble >= 8.51 && ImGui::Button(("Init Ashton"))) {
+							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Ashton/Playlist_Ashton_Lg.Playlist_Ashton_Lg";
 						}
 					}
 					

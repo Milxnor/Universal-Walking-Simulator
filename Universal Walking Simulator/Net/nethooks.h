@@ -123,7 +123,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	if (!PlayerState) // this happened somehow
 		return PlayerController;
 
-	auto OPlayerName = Helper::GetPlayerName(PlayerState);
+	auto OPlayerName = Helper::GetPlayerName(PlayerController);
 	std::string PlayerName = OPlayerName;
 	std::transform(OPlayerName.begin(), OPlayerName.end(), OPlayerName.begin(), ::tolower);
 
@@ -268,7 +268,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		static auto Fifth = FindObject(StartingSlot5.first);
 
 		Inventory::CreateAndAddItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0, 1);
-
+		// Gives the needed items like edit tool and builds
+		Inventory::GiveStartingItems(PlayerController); 
 		if (!Helper::HasAircraftStarted() || !bClearInventoryOnAircraftJump)
 		{
 			Inventory::CreateAndAddItem(PlayerController, First, EFortQuickBars::Primary, 1, StartingSlot1.second);
@@ -281,7 +282,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			Inventory::GiveMats(PlayerController);
 		}
 
-		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
+		
 	}
 
 	if (false && FnVerDouble >= 7.40)
