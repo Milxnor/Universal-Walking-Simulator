@@ -138,7 +138,7 @@ namespace Easy
 			AllActors.Free();
 			// Helper::SetActorLocation(ActorWeWant, Location);
 			return ActorWeWant;
-			
+
 			/* struct {
 				UObject* WorldContextObject;
 				UObject* ActorClass;
@@ -331,7 +331,7 @@ namespace Helper
 			return;
 
 		auto DynamicFoundationType = Foundation->Member<uint8_t>(("DynamicFoundationType"));
-		
+
 		if (DynamicFoundationType && *DynamicFoundationType)
 			*DynamicFoundationType = bShow ? 0 : 3;
 
@@ -379,7 +379,7 @@ namespace Helper
 			FRotator                                    Rotation;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
 			bool                                               bOutSuccess;                                              // (Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 			UObject* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		} ULevelStreamingDynamic_LoadLevelInstance_Params{GetWorldW(), LevelName, AircraftLocationToUse, FRotator()};
+		} ULevelStreamingDynamic_LoadLevelInstance_Params{ GetWorldW(), LevelName, AircraftLocationToUse, FRotator() };
 
 		static auto levelStreamingDynamicClass = FindObject("LevelStreamingDynamic /Script/Engine.Default__LevelStreamingDynamic");
 		static auto LoadLevelInstance = levelStreamingDynamicClass->Function("LoadLevelInstance");
@@ -421,7 +421,7 @@ namespace Helper
 			// LevelSequencePlayer /Game/Athena/Prototype/Blueprints/Slab/Replicated_LevelSequence.Default__Replicated_LevelSequence_C.AnimationPlayer
 
 			/*
-			
+
 			Block_25x25_ColossalCompound - 7.40
 
 			Block_25x25_HarmonyHotel - 8.10
@@ -429,7 +429,7 @@ namespace Helper
 			Block_25x25_TrickyTracks - 8.50
 
 			Block_25x25_AlienSanctuary - 8.50
-			
+
 			*/
 		}
 
@@ -464,7 +464,7 @@ namespace Helper
 		}
 
 		/*
-		
+
 		[51709] Function /Script/FortniteGame.BuildingFoundation.OnLevelShown
 		[51710] Function /Script/FortniteGame.BuildingFoundation.OnLevelStreamedIn
 		[51711] Function /Script/FortniteGame.BuildingFoundation.OnRep_DynamicFoundationRepData
@@ -472,7 +472,7 @@ namespace Helper
 
 		*/
 	}
-	
+
 	UObject* GetWorld()
 	{
 		return GetWorldW();
@@ -511,7 +511,7 @@ namespace Helper
 			return false;
 
 		static auto fn = Controller->Function(("IsInAircraft"));
-		
+
 		bool bIsInAircraft = false;
 
 		if (fn)
@@ -688,7 +688,7 @@ namespace Helper
 
 				static auto Rep_ReplicateMovement = Pickup->Function(("OnRep_ReplicateMovement"));
 				Pickup->ProcessEvent(Rep_ReplicateMovement);
-				
+
 				static auto ProjectileMovementComponentClass = FindObject("Class /Script/Engine.ProjectileMovementComponent");
 
 				auto MovementComponent = Pickup->Member<UObject*>("MovementComponent");
@@ -745,7 +745,7 @@ namespace Helper
 
 	void DestroyActor(UObject* Actor)
 	{
-		if (!Actor) 
+		if (!Actor)
 			return;
 
 		static auto fn = Actor->Function(("K2_DestroyActor"));
@@ -823,7 +823,7 @@ namespace Helper
 				UObject* SpawningController;
 				bool bUsePlayerBuildAnimations; // I think this is not on some versions
 				UObject* ReplacedBuilding;
-			} IBAParams{ BuildingActor, Controller, bUsePlayerBuildAnimations, nullptr};
+			} IBAParams{ BuildingActor, Controller, bUsePlayerBuildAnimations, nullptr };
 
 			if (Controller && BuildingActor)
 			{
@@ -834,7 +834,7 @@ namespace Helper
 				FinalActor = BuildingActor;
 			}
 		}
-		
+
 		*FinalActor->Member<uint8_t>("Team") = *(*Controller->Member<UObject*>("PlayerState"))->Member<uint8_t>("TeamIndex");
 	}
 
@@ -976,7 +976,7 @@ namespace Helper
 			bool bZOverride;
 			bool bIgnoreFallDamage;
 			bool bPlayFeedbackEvent;
-		} LCJParans {LaunchVelocity, bXYOverride, bZOverride, bIgnoreFallDamage, bPlayFeedbackEvent };
+		} LCJParans{ LaunchVelocity, bXYOverride, bZOverride, bIgnoreFallDamage, bPlayFeedbackEvent };
 		auto LaunchPlayerFn = Pawn->Function("LaunchCharacterJump");
 		Pawn->ProcessEvent(LaunchPlayerFn, &LCJParans);
 	}
@@ -1044,7 +1044,7 @@ namespace Helper
 				UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData)
 				FString                                     Command;                                                  // (Parm, ZeroConstructor)
 				UObject* SpecificPlayer;                                           // (Parm, ZeroConstructor, IsPlainOldData)
-			} params{Helper::GetWorld(), Command, nullptr};
+			} params{ Helper::GetWorld(), Command, nullptr };
 
 			static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
 
@@ -1133,19 +1133,11 @@ namespace Helper
 			Actor->ProcessEvent(SetActorScaleFn, &params);
 	}
 
-	static FString GetfPlayerName(UObject* PlayerState)
+	static FString GetfPlayerName(UObject* PC)
 	{
-		FString Name; // = *PlayerState->Member<FString>(("PlayerNamePrivate"));
+		static auto MCPPG = *PC->Member<UObject*>("McpProfileGroup");
 
-		if (PlayerState)
-		{
-			static auto fn = PlayerState->Function(("GetPlayerName"));
-
-			if (fn)
-				PlayerState->ProcessEvent(fn, &Name);
-		}
-
-		return Name;
+		return *MCPPG->Member<FString>("PlayerName");
 	}
 
 	static bool IsSmallZoneEnabled()
@@ -1190,9 +1182,9 @@ namespace Helper
 		return nullptr;
 	}
 
-	static std::string GetPlayerName(UObject* PlayerState)
+	static std::string GetPlayerName(UObject* PC)
 	{
-		auto name = GetfPlayerName(PlayerState);
+		auto name = GetfPlayerName(PC);
 		return name.Data.GetData() ? name.ToString() : "";
 	}
 
@@ -1266,7 +1258,7 @@ namespace Helper
 			return nullptr;
 
 		static auto SetReplicateMovementFn = Pawn->Function(("SetReplicateMovement"));
-		struct { bool b; } bruh{true};
+		struct { bool b; } bruh{ true };
 		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh);
 		// Pawn->Member<bool>("bReplicateMovement", 1);
 
@@ -1343,7 +1335,7 @@ namespace Helper
 
 			auto CharacterPartsToLoad = (TArray<UObject*>*)(__int64(CurrentAssetsToLoad) + CharacterPartsOffset);
 		}
-		
+
 		static auto headPart = Engine_Version >= 423 ? FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_TreasureHunterFashion.CP_Head_F_TreasureHunterFashion")) :
 			FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
 		static auto bodyPart = Engine_Version >= 423 ? FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_TreasureHunterFashion.CP_Body_Commando_F_TreasureHunterFashion")) :
@@ -1375,7 +1367,7 @@ namespace Helper
 
 		return Pawn;
 	}
-	
+
 	UObject* SoftObjectToObject(TSoftObjectPtr SoftObject)
 	{
 		return FindObject(SoftObject.ObjectID.AssetPathName.ToString());
@@ -1450,7 +1442,7 @@ namespace Helper
 	{
 		static auto fn = Actor->Function(("K2_SetActorLocationAndRotation"));
 
-		struct 
+		struct
 		{
 			struct FVector                                     NewLocation;                                              // (Parm, IsPlainOldData)
 			struct FRotator                                    NewRotation;                                              // (Parm, IsPlainOldData)
@@ -1580,7 +1572,7 @@ namespace Helper
 			FVector                                     WorldLoc;                                                 // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
 			FBuildingSupportCellIndex                   OutGridIndices;                                           // (Parm, OutParm)
 			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
-		} UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params{Location};
+		} UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params{ Location };
 
 		static auto K2_GetGridIndicesFromWorldLoc = StructuralSupportSystem->Function("K2_GetGridIndicesFromWorldLoc");
 

@@ -324,16 +324,8 @@ namespace Events {
 			else if (Version == 10.40f) {
 				//The End C1
 				UObject* NN = FindObject("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2"); // FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));
-				if (NN)
-				{
-					UObject* Func = NN->Function(("startevent"));
-					if (Func)
-						NN->ProcessEvent(Func);
-					else
-						std::cout << ("Unable to find Night Night Start function!\n");
-				}
-				else
-					std::cout << ("No NightNight!\n");
+				UObject* Func = NN->Function(("startevent"));
+				NN->ProcessEvent(Func);
 			}
 			else if (Version == 9.40f) {
 				//Final Showdown
@@ -388,8 +380,7 @@ namespace Events {
 				//Rocket
 				UObject* LR = FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/Events/Athena_Gameplay_Geode.Athena_Gameplay_Geode.PersistentLevel.LevelSequence_LaunchRocket.AnimationPlayer"));
 				UObject* Func = LR->Function(("Play"));
-				if (Func)
-					LR->ProcessEvent(Func);
+				LR->ProcessEvent(Func);
 			}
 		}
 	}
