@@ -22,7 +22,8 @@ If your code edits some existing code, lets say inventory, explain what it does.
 
 ## NOTICE
 <br>
-This Project was made for fun and was Open Sourced for Educational Purposes. If you are an Epic Employee and want this project taken down contact me on Discord: Milxnor#3531
+This Project was made for fun and was Open Sourced for Educational Purposes. If you are an Epic Employee and want this project taken down contact me on Discord: Milxnor#3531<br>
+
 # CREDITS
 
 If you take anything from here, please credit the appropiate person and link the repository.<br>
