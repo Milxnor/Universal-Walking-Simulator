@@ -268,8 +268,10 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		static auto Fifth = FindObject(StartingSlot5.first);
 
 		Inventory::CreateAndAddItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0, 1);
-		// Gives the needed items like edit tool and builds
-		Inventory::GiveStartingItems(PlayerController); 
+		if (FnVerDouble < 5.0) {
+			// Gives the needed items like edit tool and builds
+			Inventory::GiveStartingItems(PlayerController);
+		}
 		if (!Helper::HasAircraftStarted() || !bClearInventoryOnAircraftJump)
 		{
 			Inventory::CreateAndAddItem(PlayerController, First, EFortQuickBars::Primary, 1, StartingSlot1.second);
@@ -281,8 +283,10 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			Inventory::GiveAllAmmo(PlayerController);
 			Inventory::GiveMats(PlayerController);
 		}
-
-		
+		if (FnVerDouble >= 5.0) {
+			// Gives the needed items like edit tool and builds
+			Inventory::GiveStartingItems(PlayerController);
+		}
 	}
 
 	if (false && FnVerDouble >= 7.40)
