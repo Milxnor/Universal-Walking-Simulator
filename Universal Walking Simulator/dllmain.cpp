@@ -1,20 +1,22 @@
+// TODO: Refactor this file
+
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <iostream>
 
-#include <Net/nethooks.h>
 #include <MinHook/MinHook.h>
 
-#include "patterns.h"
 #include "gui.h"
 #include <hooks.h>
-#include <Gameplay/abilities.h>
+#include <Gameplay/ability.h>
 #include <Gameplay/build.h>
-#include <Gameplay/harvesting.h>
+
+#include "Gameplay/harvesting.h"
+#include "UE/patterns.h"
 
 DWORD WINAPI InputThread(LPVOID)
 {
-    while (1)
+    while (true)
     {
         if (GetAsyncKeyState(VK_F5) & 1)
         {
@@ -36,12 +38,12 @@ DWORD WINAPI InputThread(LPVOID)
 
         else if (GetAsyncKeyState(VK_F8) & 1)
         {
-            Listen(7777);
+            Server::Listen(7777);
         }
 
         else if (GetAsyncKeyState(VK_F9) & 1)
         {
-            InitializeNetHooks();
+            NetHooks::InitHooks();
 
             std::cout << ("Initialized NetHooks!\n");
         }
@@ -96,23 +98,23 @@ DWORD WINAPI Main(LPVOID)
         return 1;
     }
 
-    if (Engine_Version >= 425)
+    if (EngineVersion >= 425)
     {
-        RequestExitWSAddr = FindPattern(RequestExitWSSig);
+        RequestExitWsAddress = FindPattern(RequestExitWSSig);
 
-        if (!RequestExitWSAddr)
+        if (!RequestExitWsAddress)
         {
-            if (Engine_Version >= 426)
+            if (EngineVersion >= 426)
                 std::cout << ("[WARNING] Could not find RequestExitWithStatus, game will probably close!\n");
         }
         else
         {
-            CheckPattern(("RequestExitWithStatus"), RequestExitWSAddr, &RequestExitWithStatus);
+            CheckPattern(("RequestExitWithStatus"), RequestExitWsAddress, &RequestExitWithStatus);
 
-            if (RequestExitWSAddr)
+            if (RequestExitWsAddress)
             {
-                MH_CreateHook((PVOID)RequestExitWSAddr, RequestExitWithStatusHook, (void**)&RequestExitWithStatus);
-                MH_EnableHook((PVOID)RequestExitWSAddr);
+                MH_CreateHook((PVOID)RequestExitWsAddress, RequestExitWithStatusHook, (void**)&RequestExitWithStatusHook);
+                MH_EnableHook((PVOID)RequestExitWsAddress);
             }
         }
     }
@@ -121,14 +123,14 @@ DWORD WINAPI Main(LPVOID)
 
     std::cout << ("Initialized Patterns!\n");
 
-    InitializeNetUHooks();
+    NetHooks::InitUHooks();
 
-    if (GiveAbilityAddr)
-        Abilities::InitializeAbilityHooks();
+    if (GiveAbilityAddress)
+        Ability::InitHooks();
 
-    InitializeInventoryHooks();
-    Building::InitializeBuildHooks();
-    InitializeHarvestingHooks();
+    Inventory::InitHooks();
+    Building::InitHooks();
+    Harvesting::InitHooks();
 
     FinishInitializeUHooks();
 
@@ -141,13 +143,13 @@ DWORD WINAPI Main(LPVOID)
     CreateThread(0, 0, BotThread, 0, 0, 0);
 #endif
 
-    if (FnVerDouble < 18.00)
-        Looting::Tables::Init(nullptr);
+    if (FortniteVersion < 18.00)
+        Looting::Init();
 
     SetConsoleTitleA(("Project Reboot Server"));
     std::cout << ("Found all loot!\n");
 
-    if (Engine_Version < 422)
+    if (EngineVersion < 422)
         std::cout << ("Press play button to host!\n");
     else
         std::cout << ("Press F5 to host!\n");
@@ -155,11 +157,8 @@ DWORD WINAPI Main(LPVOID)
     std::cout << dye::aqua(("[Base Address] ")) << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
     std::cout << dye::green(("[ServerReplicateActors] ")) << std::format("0x{:x}\n", ServerReplicateActorsOffset);
     
-    std::cout << dye::blue(("[DEBUG] ")) << std::format("Size of Entry: 0x{:x}.\n", GetEntrySize());
     std::cout << dye::blue(("[DEBUG] ")) << std::format("ReplicatedEntries Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ReplicatedEntries")));
     std::cout << dye::blue(("[DEBUG] ")) << std::format("ItemInstances Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances")));
-
-    Abilities::TestAbilitySizeDifference();
 
     // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "DeltaFlags") << '\n'; // 256 12.41
     // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "ArrayReplicationKey") << '\n'; // 84 12.41

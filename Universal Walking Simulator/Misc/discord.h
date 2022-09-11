@@ -3,8 +3,6 @@
 #define CURL_STATICLIB
 #define DPP_DISABLED
 
-// ^ Why? You need all these dlls n stuff in your win64 in order for the dll to actually work witso.
-
 #include <string>
 #include <curl/curl.h>
 #include <iostream>
@@ -14,11 +12,8 @@
 #include <dpp/dpp.h>
 #endif
 
-#include <Gameplay/helper.h>
-
-#include <curl/curl.h>
-
-class DiscordWebhook {
+class DiscordWebhook
+{
 public:
     // Parameters:
     // - webhook_url: the discord HostingWebHook url
@@ -31,27 +26,32 @@ private:
     CURL* curl;
 };
 
-DiscordWebhook::DiscordWebhook(const char* webhook_url) {
+DiscordWebhook::DiscordWebhook(const char* webhook_url)
+{
     curl_global_init(CURL_GLOBAL_ALL);
     curl = curl_easy_init();
-    if (curl) {
+    if (curl)
+    {
         curl_easy_setopt(curl, CURLOPT_URL, webhook_url);
 
         // Discord webhooks accept json, so we set the content-type to json data.
         curl_slist* headers = curl_slist_append(NULL, "Content-Type: application/json");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     }
-    else {
+    else
+    {
         std::cerr << "Error: curl_easy_init() returned NULL pointer" << std::endl;
     }
 }
 
-DiscordWebhook::~DiscordWebhook() {
+DiscordWebhook::~DiscordWebhook()
+{
     curl_global_cleanup();
     curl_easy_cleanup(curl);
 }
 
-void DiscordWebhook::send_message(const std::string& message) {
+void DiscordWebhook::send_message(const std::string& message)
+{
     // The POST json data must be in this format:
     // {
     //      "content": "<MESSAGE HERE>"
@@ -60,16 +60,19 @@ void DiscordWebhook::send_message(const std::string& message) {
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json.c_str());
 
     CURLcode res = curl_easy_perform(curl);
-    if (res != CURLE_OK) {
+    if (res != CURLE_OK)
+    {
         std::cerr << "Error: curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
     }
 }
 
 
-namespace Information 
+namespace Information
 {
-	constexpr const char* HostingWebHook =																		    ("https://discord.com/api/webhooks/1001654597275889814/ppB8aDRcSqznp1deKoe43VnNk-WJx-LLdEvJhISKicpSsb-scZgA0BurRPF4hHZck3G_");
-    constexpr const char* LogWebHook =                                                                              ("https://discord.com/api/webhooks/1000234422739665048/UFQl0aQpY02rHWUP3Dzq9Zfc016GCSC6aI5auqxhMaFMtX3e8rQfaNSgXz0FyJVyV8ve");
+    constexpr const char* HostingWebHook = (
+        "https://discord.com/api/webhooks/1001654597275889814/ppB8aDRcSqznp1deKoe43VnNk-WJx-LLdEvJhISKicpSsb-scZgA0BurRPF4hHZck3G_");
+    constexpr const char* LogWebHook = (
+        "https://discord.com/api/webhooks/1000234422739665048/UFQl0aQpY02rHWUP3Dzq9Zfc016GCSC6aI5auqxhMaFMtX3e8rQfaNSgXz0FyJVyV8ve");
 }
 
 static DiscordWebhook HostingWebHook(Information::HostingWebHook);
@@ -77,12 +80,12 @@ static DiscordWebhook LogWebHook(Information::LogWebHook);
 
 void SendDiscordStart()
 {
-    HostingWebHook.send_message(std::format("Servers are up on version: {}!", FN_Version));
+    HostingWebHook.send_message(std::format("Servers are up on version: {}!", FortniteVersion));
 }
 
 void SendDiscordEnd()
 {
-    HostingWebHook.send_message(std::format("Servers are down on version: {}.", FN_Version));
+    HostingWebHook.send_message(std::format("Servers are down on version: {}.", FortniteVersion));
 }
 
 #ifndef DPP_DISABLED
@@ -94,7 +97,7 @@ bool comp(std::pair<std::string, int> a, std::pair<std::string, int> b) {
     return a.second > b.second;
 }
 
-static bool bIsBotRunning = false;
+static bool IsBotRunning = false;
 
 DWORD WINAPI BotThread(LPVOID) {
     dpp::cluster bot(BOT_TOKEN, dpp::i_default_intents | dpp::i_message_content);
@@ -232,7 +235,7 @@ DWORD WINAPI BotThread(LPVOID) {
         }
         });
 
-    bIsBotRunning = true; // we probably dont need a bool for this..
+    IsBotRunning = true; // we probably dont need a bool for this..
 
     bot.start(dpp::st_wait);
 

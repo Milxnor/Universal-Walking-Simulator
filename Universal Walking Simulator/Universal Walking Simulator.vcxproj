@@ -114,31 +114,30 @@
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="anticheat.h" />
-    <ClInclude Include="AI.h" />
-    <ClInclude Include="Gameplay\carmine.h" />
-    <ClInclude Include="offsets.h" />
-    <ClInclude Include="UE\DataTables.h" />
-    <ClInclude Include="discord.h" />
-    <ClInclude Include="finder.h" />
-    <ClInclude Include="fontawesome.h" />
+    <ClInclude Include="Gameplay\anticheat.h" />
+    <ClInclude Include="Gameplay\bot.h" />
+    <ClInclude Include="Gameplay\gamemode.h" />
+    <ClInclude Include="Gameplay\item.h" />
+    <ClInclude Include="Gameplay\ltm.h" />
     <ClInclude Include="Gameplay\build.h" />
-    <ClInclude Include="Gameplay\abilities.h" />
-    <ClInclude Include="Gameplay\events.h" />
+    <ClInclude Include="Gameplay\ability.h" />
+    <ClInclude Include="Gameplay\event.h" />
     <ClInclude Include="Gameplay\helper.h" />
     <ClInclude Include="Gameplay\inventory.h" />
     <ClInclude Include="Gameplay\loot.h" />
     <ClInclude Include="Gameplay\harvesting.h" />
     <ClInclude Include="gui.h" />
-    <ClInclude Include="patterns.h" />
-    <ClInclude Include="Net\funcs.h" />
     <ClInclude Include="hooks.h" />
+    <ClInclude Include="Misc\discord.h" />
+    <ClInclude Include="Misc\fontawesome.h" />
+    <ClInclude Include="Net\functions.h" />
     <ClInclude Include="Net\nethooks.h" />
     <ClInclude Include="Net\server.h" />
     <ClInclude Include="Gameplay\player.h" />
     <ClInclude Include="Net\replication.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="UE\other.h" />
+    <ClInclude Include="UE\finder.h" />
+    <ClInclude Include="UE\hooks.h" />
+    <ClInclude Include="UE\patterns.h" />
     <ClInclude Include="UE\structs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

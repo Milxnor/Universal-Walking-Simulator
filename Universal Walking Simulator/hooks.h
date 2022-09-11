@@ -1,32 +1,30 @@
+// TODO: Refactor this file
+
 #pragma once
 
 #include <UE/structs.h>
-#include <functional>
 
 #include "color.hpp"
-#include <Net/server.h>
 #include <Gameplay/helper.h>
-#include <Net/funcs.h>
 #include <Net/nethooks.h>
-#include <Gameplay/abilities.h>
-#include <Gameplay/events.h>
+#include <Gameplay/ability.h>
+#include <Gameplay/event.h>
 
-#include <mutex>
-#include <Gameplay/player.h>
+#include "Gameplay/anticheat.h"
+#include "Gameplay/loot.h"
+#include "Net/server.h"
 
 #define LOGGING
 
-// HEAVILY INSPIRED BY KEMOS UFUNCTION HOOKING
-
-static bool bStarted = false;
-static bool bLogRpcs = false;
-static bool bLogProcessEvent = false;
+static bool Started = false;
+static bool LogRpcs = false;
+static bool LogProcessEvent = false;
 
 inline void initStuff()
 {
-	if (!bStarted && bTraveled)
+	if (!Started && NetHooks::Traveled)
 	{
-		bStarted = true;
+		Started = true;
 
 		CreateThread(0, 0, Helper::Console::Setup, 0, 0, 0);
 
@@ -39,7 +37,7 @@ inline void initStuff()
 
 			*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = 100; // GameState->GetMaxPlaylistPlayers()
 
-			if (FnVerDouble >= 8 && AuthGameMode)
+			if (FortniteVersion >= 8 && AuthGameMode)
 			{
 				static auto PlayerControllerClass = FindObject(("BlueprintGeneratedClass /Game/Athena/Athena_PlayerController.Athena_PlayerController_C"));
 				std::cout << ("PlayerControllerClass: ") << PlayerControllerClass << '\n';
@@ -64,7 +62,7 @@ inline void initStuff()
 				std::cout << "FriendlyFireType is not valid!\n";
 			}
 
-			if (Engine_Version >= 420)
+			if (EngineVersion >= 420)
 			{
 				*gameState->Member<EAthenaGamePhase>(("GamePhase")) = EAthenaGamePhase::Warmup;
 
@@ -82,7 +80,7 @@ inline void initStuff()
 			{
 				AuthGameMode->ProcessEvent(AuthGameMode->Function(("StartPlay")), nullptr);
 
-				auto FNVer = FnVerDouble;
+				auto FNVer = FortniteVersion;
 
 				if (std::floor(FNVer) == 3 || FNVer >= 8.0) 
 				{
@@ -105,11 +103,9 @@ inline void initStuff()
 				
 				auto SSVFn = *AuthGameMode->Member<bool>(("ShouldSpawnVehicle")) = true;*/
 				 
-				auto Playlist = FindObject(PlaylistToUse);
-
-				bIsPlayground = PlaylistToUse == "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
-
-				if (FnVerDouble >= 6.10) // WRONG
+				auto Playlist = FindObject(GameMode::PlaylistName);
+				
+				if (FortniteVersion >= 6.10) // WRONG
 				{
 					auto OnRepPlaylist = gameState->Function(("OnRep_CurrentPlaylistInfo"));
 
@@ -128,7 +124,7 @@ inline void initStuff()
 						{
 							*BasePlaylist = Playlist;
 							(*PlaylistReplicationKey)++;
-							if (Engine_Version <= 422)
+							if (EngineVersion <= 422)
 								((FFastArraySerializerOL*)PlaylistInfo)->MarkArrayDirty();
 							else
 								((FFastArraySerializerSE*)PlaylistInfo)->MarkArrayDirty();
@@ -166,7 +162,7 @@ inline void initStuff()
 				std::cout << dye::yellow(("[WARNING] ")) << ("Failed to find AuthorityGameMode!\n");
 			}
 
-			if (Engine_Version != 421)
+			if (EngineVersion != 421)
 			{
 				auto PlayersLeft = gameState->Member<int>(("PlayersLeft"));
 
@@ -186,19 +182,20 @@ inline void initStuff()
 
 		*PlayerController->Member<UObject*>("CheatManager") = Easy::SpawnObject(FindObject("Class /Script/Engine.CheatManager"), PlayerController);
 
-		Listen(7777);
+		Server::Listen(7777);
 		// CreateThread(0, 0, MapLoadThread, 0, 0, 0);
 
-		InitializeNetHooks();
+		
+		NetHooks::InitHooks();
 
 		std::cout << ("Initialized NetHooks!\n");
 
-		if (Engine_Version >= 420) {
-			Events::LoadEvents();
+		if (EngineVersion >= 420) {
+			Event::Load();
 			Helper::FixPOIs();
 		}
 		 
-		LootingV2::InitializeWeapons(nullptr);
+		Looting::Init();
 
 		/* auto bUseDistanceBasedRelevancy = (*world->Member<UObject*>("NetworkManager"))->Member<bool>("bUseDistanceBasedRelevancy");
 		std::cout << "bUseDistanceBasedRelevancy: " << *bUseDistanceBasedRelevancy << '\n';
@@ -308,7 +305,7 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 		if (bIsStartZone)
 		{
 			*Indicator->Member<float>("Radius") = 14000;
-			*NextCenter = AircraftLocationToUse;
+			*NextCenter = GameMode::AircraftLocation;
 		}
 		else
 			*NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
@@ -428,7 +425,7 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 
 bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
-	if (Engine_Version >= 424)
+	if (EngineVersion >= 424)
 		PlayerController = Helper::GetOwnerOfComponent(PlayerController);
 
 	struct Param{
@@ -448,8 +445,8 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 			if (Aircraft)
 			{
-				if (bClearInventoryOnAircraftJump)
-					ClearInventory(PlayerController);
+				if (!GameMode::IsPlayground())
+					Inventory::Clear(PlayerController);
 
 				auto ExitLocation = Helper::GetActorLocation(Aircraft);
 
@@ -479,10 +476,11 @@ void LoadInMatch()
 	{
 		static auto SwitchLevelFn = PlayerController->Function(("SwitchLevel"));
 		FString Map;
-		Map.Set(GetMapName());
+		Map.Set(GameMode::GetMapName());
 		PlayerController->ProcessEvent(SwitchLevelFn, &Map);
 		// Map.Free();
-		bTraveled = true;
+		
+		NetHooks::Traveled = true;
 	}
 	else
 	{
@@ -647,14 +645,14 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		auto DeathLocation = Helper::GetActorLocation(DeadPawn); // *(FVector*)(__int64(&*DeathInfo) + DeathLocationOffset);
 
 		if (Helper::IsRespawnEnabled())
-			Player::RespawnPlayer(DeadPC);
+			Player::Respawn(DeadPC);
 		else
 		{
 			// PlayersLeft--;
 
 			// DeadPC->ClientSendMatchStatsForPlayer(DeadPC->GetMatchReport()->MatchStats);
 
-			auto ItemInstances = Inventory::GetItemInstances(DeadPC);
+			auto ItemInstances = Player::GetItems(DeadPC);
 
 			if (ItemInstances)
 			{
@@ -668,7 +666,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 						{
 							FGuid                                       ItemGuid;                                                 // (Parm, ZeroConstructor, IsPlainOldData)
 							int                                                Count;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
-						} AFortPlayerController_ServerAttemptInventoryDrop_Params{ Inventory::GetItemGuid(ItemInstance), *FFortItemEntry::GetCount(GetItemEntryFromInstance<__int64>(ItemInstance)) };
+						} AFortPlayerController_ServerAttemptInventoryDrop_Params{ Item::GetGuid(ItemInstance), *Item::GetCount(Item::GetEntry(ItemInstance)) };
 
 						// ServerAttemptInventoryDropHook(DeadPC, nullptr, &AFortPlayerController_ServerAttemptInventoryDrop_Params);
 
@@ -687,7 +685,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				}
 			}
 
-			if (Engine_Version >= 423) // wrong
+			if (EngineVersion >= 423) // wrong
 			{
 				auto Chip = Helper::SpawnChip(DeadPC, DeathLocation);
 
@@ -811,7 +809,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		{
 			(*KillerPlayerState->Member<int>(("KillScore")))++;
 
-			if (Engine_Version >= 423) // idgaf wrong
+			if (EngineVersion >= 423) // idgaf wrong
 				(*KillerPlayerState->Member<int>(("TeamKillScore")))++;
 
 			static auto OnRep_Kills = KillerPlayerState->Function(("OnRep_Kills"));
@@ -853,7 +851,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 	auto EmoteAsset = EmoteParams->EmoteAsset;
 
-	if (Controller /* && !Controller->IsInAircraft() */ && Pawn && EmoteAsset && Engine_Version < 424 && Engine_Version >= 421)
+	if (Controller /* && !Controller->IsInAircraft() */ && Pawn && EmoteAsset && EngineVersion < 424 && EngineVersion >= 421)
 	{
 		struct {
 			TEnumAsByte<EFortCustomBodyType> BodyType;
@@ -866,7 +864,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 		{
 			EmoteAsset->ProcessEvent(fn, &GAHRParams);
 			auto Montage = GAHRParams.AnimMontage;
-			if (Montage && Engine_Version < 426)
+			if (Montage && EngineVersion < 426)
 			{
 				std::cout << ("Playing Montage: ") << Montage->GetFullName() << '\n';
 
@@ -875,7 +873,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 				TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Specs;
 
-				if (Engine_Version <= 422)
+				if (EngineVersion <= 422)
 					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
 				else
 					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))).Items;
@@ -1036,7 +1034,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 {
 	UObject* Controller = Controllera;
 
-	if (Engine_Version >= 423)
+	if (EngineVersion >= 423)
 	{
 		Controller = Helper::GetOwnerOfComponent(Controllera);
 	}
@@ -1087,7 +1085,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 				// TODO: Implement bitfields better
 
-				if (Engine_Version < 424)
+				if (EngineVersion < 424)
 				{
 					auto BitField = ReceivingActor->Member<BitField_Container>(("bAlreadySearched"));
 					BitField->bAlreadySearched = true;
@@ -1107,7 +1105,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				}
 			}
 
-			if (bIsPlayground && ReceivingActorName.contains(("B_Athena_VendingMachine")))
+			if (GameMode::IsPlayground() && ReceivingActorName.contains(("B_Athena_VendingMachine")))
 			{
 				static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
 				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
@@ -1121,9 +1119,10 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 				if (CurrentMaterial == WoodItemData)
 				{
-					auto WoodGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, WoodItemData));
+					auto WoodGUID = Item::GetGuid(Inventory::FindItem(Controller, WoodItemData));
 
-					if (*Inventory::GetCount(Inventory::GetItemInstanceFromGuid(Controller, WoodGUID)) >= CostAmount)
+					
+					if (*Item::GetCount(Player::GetItemByGuid(Controller, WoodGUID)) >= CostAmount)
 					{
 						Inventory::TakeItem(Controller, WoodGUID, CostAmount);
 					}
@@ -1136,8 +1135,8 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				}
 				else if (CurrentMaterial == StoneItemData)
 				{
-					auto StoneGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, StoneItemData));
-					if (*Inventory::GetCount(Inventory::GetItemInstanceFromGuid(Controller, StoneGUID)) >= CostAmount)
+					auto StoneGUID = Item::GetGuid(Inventory::FindItem(Controller, StoneItemData));
+					if (*Item::GetCount(Player::GetItemByGuid(Controller, StoneGUID)) >= CostAmount)
 					{
 						Inventory::TakeItem(Controller, StoneGUID, CostAmount);
 					}
@@ -1149,8 +1148,8 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				}
 				else if (CurrentMaterial == MetalItemData)
 				{
-					auto MetalGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, MetalItemData));
-					if (*Inventory::GetCount(Inventory::GetItemInstanceFromGuid(Controller, MetalGUID)) >= CostAmount)
+					auto MetalGUID = Item::GetGuid(Inventory::FindItem(Controller, MetalItemData));
+					if (*Item::GetCount(Player::GetItemByGuid(Controller, MetalGUID)) >= CostAmount)
 					{
 						Inventory::TakeItem(Controller, MetalGUID, CostAmount);
 					}
@@ -1214,7 +1213,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				// Helper::SetLocalRole(ReceivingActor, ENetRole::ROLE_AutonomousProxy);
 			}
 
-			if (Engine_Version >= 424 && ReceivingActorName.contains("Wumba")) // Workbench/Upgrade Bench
+			if (EngineVersion >= 424 && ReceivingActorName.contains("Wumba")) // Workbench/Upgrade Bench
 			{
 				auto CurrentWeapon = *Pawn->Member<UObject*>(("CurrentWeapon"));
 				auto CurrentWeaponDefinition = *CurrentWeapon->Member<UObject*>(("WeaponData"));
@@ -1264,9 +1263,9 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
 				static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
-				auto WoodGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, WoodItemData));
-				auto StoneGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, StoneItemData));
-				auto MetalGUID = Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, MetalItemData));
+				auto WoodGUID = Item::GetGuid(Inventory::FindItem(Controller, WoodItemData));
+				auto StoneGUID = Item::GetGuid(Inventory::FindItem(Controller, StoneItemData));
+				auto MetalGUID = Item::GetGuid(Inventory::FindItem(Controller, MetalItemData));
 
 				Inventory::TakeItem(Controller, WoodGUID, CostPerMat);
 				Inventory::TakeItem(Controller, StoneGUID, CostPerMat);
@@ -1282,7 +1281,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 			}
 
 			// Looting::Tables::HandleSearch(ReceivingActor);
-			LootingV2::HandleSearch(ReceivingActor);
+			Looting::HandleSearch(ReceivingActor);
 		}
 	}
 
@@ -1334,7 +1333,7 @@ inline bool ClientWasKickedHook(UObject* Controller, UFunction*, void* Params)
 {
 	std::cout << "ClientWasKicked!\n";
 
-	if (FnVerDouble >= 16.00)
+	if (FortniteVersion >= 16.00)
 	{
 		return true;
 	}
@@ -1497,23 +1496,23 @@ inline bool ServerChoosePartHook(UObject* Pawn, UFunction* Function, void* Param
 
 inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void* Parameters) // credits: Pro100kat
 {
-	if (BuildingActor && bStarted)
+	if (BuildingActor && Started)
 	{
-		if (bDoubleBuildFix)
+		if (GameMode::UseDoubleBuildFix)
 		{
 			static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
-			if (ExistingBuildings.size() > 0 && BuildingActor->IsA(BuildingSMActorClass))
+			if (GameMode::Buildings.size() > 0 && BuildingActor->IsA(BuildingSMActorClass))
 			{
-				for (int i = 0; i < ExistingBuildings.size(); i++)
+				for (int i = 0; i < GameMode::Buildings.size(); i++)
 				{
-					auto Building = ExistingBuildings[i];
+					auto Building = GameMode::Buildings[i];
 
 					if (!Building)
 						continue;
 
 					if (Building == BuildingActor)
 					{
-						ExistingBuildings.erase(ExistingBuildings.begin() + i);
+						GameMode::Buildings.erase(GameMode::Buildings.begin() + i);
 						break;
 					}
 				}
@@ -1544,7 +1543,7 @@ inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void*
 
 		if (BuildingActor->IsA(BuildingContainerClass) && !BuildingActor->Member<BitField_Container>("bAlreadySearched")->bAlreadySearched)
 		{
-			Looting::Tables::HandleSearch(BuildingActor);
+			Looting::HandleSearch(BuildingActor);
 		}
 	}
 
@@ -1586,7 +1585,7 @@ static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UOb
 		if (World && NetDriver)
 			return ReplicationGraph_EnableDetour(NetDriver, World);
 		else
-			return ReplicationGraph_Enable(NetDriver, World);
+			return EnableReplicationGraph(NetDriver, World);
 	}
 }
 
@@ -1738,7 +1737,7 @@ bool riftItemHook(UObject* ability, UFunction* Function, void* Parameters)
 		__int64* SkydiveAbilitySpec = nullptr;
 
 		auto FindSkydiveAbility = [&SkydiveAbilitySpec](__int64* Spec) -> void {
-			auto Ability = *Abilities::GetAbilityFromSpec(Spec);
+			auto Ability = *Ability::GetAbilityFromSpec(Spec);
 			if (Ability && Ability->GetFullName().contains("GA_Rift_Athena_Skydive_C"))
 			{
 				SkydiveAbilitySpec = Spec;
@@ -1746,14 +1745,14 @@ bool riftItemHook(UObject* ability, UFunction* Function, void* Parameters)
 		};
 
 		auto ASC = *Pawn->Member<UObject*>("AbilitySystemComponent");
-		Abilities::LoopSpecs(ASC, FindSkydiveAbility);
+		Ability::LoopSpecs(ASC, FindSkydiveAbility);
 
 		if (SkydiveAbilitySpec)
 		{
 			std::cout << "foujd spec!\n";
 			// std::cout << "found skydive ability: " << SkydiveAbilitySpec->GetFullName() << '\n';
 
-			(*Abilities::GetAbilityFromSpec(SkydiveAbilitySpec))->ProcessEvent("K2_ActivateAbility"); // does nothing
+			(*Ability::GetAbilityFromSpec(SkydiveAbilitySpec))->ProcessEvent("K2_ActivateAbility"); // does nothing
 		}
 		else
 			std::cout << "failed to fmind skydive ability!\n";
@@ -1769,83 +1768,83 @@ bool OnRep_ParachuteAttachmentHook(UObject* pawn, UFunction* Function, void* Par
 
 void FinishInitializeUHooks()
 {
-	if (Engine_Version < 422)
-		AddHook(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
+	if (EngineVersion < 422)
+		Hooks::Add(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
-	AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
-	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
-	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
-	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
+	Hooks::Add("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", AntiCheat::CommitExecuteWeapon);
+	Hooks::Add("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
+	Hooks::Add(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
+	Hooks::Add(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
 
-	AddHook("Function /Game/Athena/Items/Consumables/RiftItem/GA_Athena_Rift_Item.GA_Athena_Rift_Item_C.Triggered_1B4C20DD4792D45069FE6C8D47581114", riftItemHook);
+	Hooks::Add("Function /Game/Athena/Items/Consumables/RiftItem/GA_Athena_Rift_Item.GA_Athena_Rift_Item_C.Triggered_1B4C20DD4792D45069FE6C8D47581114", riftItemHook);
 
-	if (Engine_Version > 424)
+	if (EngineVersion > 424)
 	{
-		// AddHook(("Function /Game/Athena/Items/Consumables/Parents/GA_Athena_Consumable_ThrowWithTrajectory_Parent.GA_Athena_Consumable_ThrowWithTrajectory_Parent_C.Server_SpawnProjectile"), throwableConsumablesHook); // wrong func
+		// Hooks::Add(("Function /Game/Athena/Items/Consumables/Parents/GA_Athena_Consumable_ThrowWithTrajectory_Parent.GA_Athena_Consumable_ThrowWithTrajectory_Parent_C.Server_SpawnProjectile"), throwableConsumablesHook); // wrong func
 	}
 
-	// AddHook("Function /Script/FortniteGame.FortPlayerPawn.OnRep_ParachuteAttachment", OnRep_ParachuteAttachmentHook);
+	// Hooks::Add("Function /Script/FortniteGame.FortPlayerPawn.OnRep_ParachuteAttachment", OnRep_ParachuteAttachmentHook);
 	
-	// AddHook("Function /Game/Athena/Items/Consumables/Grenade/GA_Athena_Grenade_WithTrajectory.GA_Athena_Grenade_WithTrajectory_C.Server_SpawnProjectile", boomboxHook);
-	// AddHook("Function /Game/Athena/Items/Consumables/TowerGrenade/GA_Athena_TowerGrenadeWithTrajectory.GA_Athena_TowerGrenadeWithTrajectory_C.Server_SpawnProjectile", Server_SpawnProjectileHook);
-	// AddHook("Function /Game/Athena/Items/Consumables/Balloons/GA_Athena_Balloons_Consumable_Passive.GA_Athena_Balloons_Consumable_Passive_C.K2_ActivateAbility", balloonFunHook);
+	// Hooks::Add("Function /Game/Athena/Items/Consumables/Grenade/GA_Athena_Grenade_WithTrajectory.GA_Athena_Grenade_WithTrajectory_C.Server_SpawnProjectile", boomboxHook);
+	// Hooks::Add("Function /Game/Athena/Items/Consumables/TowerGrenade/GA_Athena_TowerGrenadeWithTrajectory.GA_Athena_TowerGrenadeWithTrajectory_C.Server_SpawnProjectile", Server_SpawnProjectileHook);
+	// Hooks::Add("Function /Game/Athena/Items/Consumables/Balloons/GA_Athena_Balloons_Consumable_Passive.GA_Athena_Balloons_Consumable_Passive_C.K2_ActivateAbility", balloonFunHook);
 
-	if (FnVerDouble < 9) // idk if right
-		AddHook(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
-	else if (Engine_Version < 424)
-		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
+	if (FortniteVersion < 9) // idk if right
+		Hooks::Add(("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
+	else if (EngineVersion < 424)
+		Hooks::Add(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 	else
-		AddHook(("Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
+		Hooks::Add(("Function /Script/FortniteGame.FortControllerComponent_Aircraft.ServerAttemptAircraftJump"), ServerAttemptAircraftJumpHook);
 
-	// AddHook(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook);
-	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
-	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
-	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
+	// Hooks::Add(("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone"), AircraftExitedDropZoneHook);
+	// Hooks::Add(("Function /Script/FortniteGame.FortPlayerController.ServerSuicide"), ServerSuicideHook);
+	// Hooks::Add(("Function /Script/FortniteGame.FortPlayerController.ServerCheat"), ServerCheatHook); // Commands Hook
+	// Hooks::Add(("Function /Script/FortniteGame.FortPlayerController.ServerClientPawnLoaded"), ServerClientPawnLoadedHook);
 
-	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
-	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
-	AddHook("Function /Script/Engine.PlayerController.ClientWasKicked", ClientWasKickedHook);
-	// AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateUnreliable"), ServerUpdateVehicleInputStateUnreliableHook)
+	Hooks::Add(("Function /Script/FortniteGame.FortPlayerControllerZone.ClientOnPawnDied"), ClientOnPawnDiedHook);
+	Hooks::Add(("Function /Script/FortniteGame.FortPlayerPawn.ServerSendZiplineState"), ServerSendZiplineStateHook);
+	Hooks::Add("Function /Script/Engine.PlayerController.ClientWasKicked", ClientWasKickedHook);
+	// Hooks::Add(("Function /Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateUnreliable"), ServerUpdateVehicleInputStateUnreliableHook)
 
-	if (Engine_Version >= 420)
-		AddHook(("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);
+	if (EngineVersion >= 420)
+		Hooks::Add(("Function /Script/FortniteGame.FortAthenaVehicle.ServerUpdatePhysicsParams"), ServerUpdatePhysicsParamsHook);
 
 	if (PlayMontage)
-		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
+		Hooks::Add(("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 
-	if (Engine_Version < 423)
+	if (EngineVersion < 423)
 	{ // ??? Idk why we need the brackets
-		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInteract"), ServerAttemptInteractHook);
+		Hooks::Add(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInteract"), ServerAttemptInteractHook);
 	}
 	else
-		AddHook(("Function /Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract"), ServerAttemptInteractHook);
+		Hooks::Add(("Function /Script/FortniteGame.FortControllerComponent_Interaction.ServerAttemptInteract"), ServerAttemptInteractHook);
 
-	AddHook(("Function /Script/FortniteGame.FortPlayerControllerZone.ServerAttemptExitVehicle"), ServerAttemptExitVehicleHook);
+	Hooks::Add(("Function /Script/FortniteGame.FortPlayerControllerZone.ServerAttemptExitVehicle"), ServerAttemptExitVehicleHook);
 
-	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerChoosePart"), ServerChoosePartHook);
+	Hooks::Add(("Function /Script/FortniteGame.FortPlayerPawn.ServerChoosePart"), ServerChoosePartHook);
 
-	AddHook("Function /Script/FortniteGame.FortPlayerPawn.ServerReviveFromDBNO", ServerReviveFromDBNOHook);
+	Hooks::Add("Function /Script/FortniteGame.FortPlayerPawn.ServerReviveFromDBNO", ServerReviveFromDBNOHook);
 
-	AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerSendSquadFriend", ServerSendSquadFriendHook);
+	Hooks::Add("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerSendSquadFriend", ServerSendSquadFriendHook);
 
-	for (auto& Func : FunctionsToHook)
+	for (auto& Func : Hooks::FunctionsToHook)
 	{
 		if (!Func.first)
 			std::cout << ("Detected null UFunction!\n");
 	}
 
-	std::cout << std::format("Hooked {} UFunctions!\n", std::to_string(FunctionsToHook.size()));
+	std::cout << std::format("Hooked {} UFunctions!\n", std::to_string(Hooks::FunctionsToHook.size()));
 }
 
 void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 {
 	if (Object && Function)
 	{
-		if (bStarted && bListening && (bLogRpcs || bLogProcessEvent))
+		if (Started && Server::Listening && (LogRpcs || LogProcessEvent))
 		{
 			auto FunctionName = Function->GetFullName();
 			// if (Function->FunctionFlags & 0x00200000 || Function->FunctionFlags & 0x01000000) // && FunctionName.find("Ack") == -1 && FunctionName.find("AdjustPos") == -1))
-			if (bLogRpcs && (FunctionName.starts_with(("Server")) || FunctionName.starts_with(("Client")) || FunctionName.starts_with(("OnRep_"))))
+			if (LogRpcs && (FunctionName.starts_with(("Server")) || FunctionName.starts_with(("Client")) || FunctionName.starts_with(("OnRep_"))))
 			{
 				if (!FunctionName.contains("ServerUpdateCamera") && !FunctionName.contains("ServerMove")
 					&& !FunctionName.contains(("ServerUpdateLevelVisibility"))
@@ -1855,7 +1854,7 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 				}
 			}
 
-			if (bLogProcessEvent)
+			if (LogProcessEvent)
 			{
 				if (!strstr(FunctionName.c_str(), ("EvaluateGraphExposedInputs")) &&
 					!strstr(FunctionName.c_str(), ("Tick")) &&
@@ -1902,7 +1901,7 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 			}
 		}
 
-		for (auto& Func : FunctionsToHook)
+		for (auto& Func : Hooks::FunctionsToHook)
 		{
 			if (Function == Func.first)
 			{
@@ -1942,7 +1941,7 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 				auto Loc = Helper::GetActorLocation(TheViewTarget);
 				*a2 = Loc;
 
-				// if (bTraveled)
+				// if (NetHooks::Traveled)
 					// std::cout << std::format("X: {} Y: {} Z {}\n", Loc.X, Loc.Y, Loc.Z);
 			}
 			if (a3)
@@ -1967,18 +1966,18 @@ void InitializeHooks()
 	MH_CreateHook((PVOID)ProcessEventAddr, ProcessEventDetour, (void**)&ProcessEventO);
 	MH_EnableHook((PVOID)ProcessEventAddr);
 
-	if (Engine_Version >= 423)
+	if (EngineVersion >= 423)
 	{
-		MH_CreateHook((PVOID)FixCrashAddr, FixCrashDetour, (void**)&FixCrash);
-		MH_EnableHook((PVOID)FixCrashAddr);
+		MH_CreateHook((PVOID)FixCrashAddress, FixCrashDetour, (void**)&FixCrash);
+		MH_EnableHook((PVOID)FixCrashAddress);
 	}
 
-	if (GetPlayerViewpointAddr) //Engine_Version == 423)
+	if (GetPlayerViewpointAddress) //EngineVersion == 423)
 	{
 		// fixes flashing
 
-		MH_CreateHook((PVOID)GetPlayerViewpointAddr, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
-		MH_EnableHook((PVOID)GetPlayerViewpointAddr);
+		MH_CreateHook((PVOID)GetPlayerViewpointAddress, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
+		MH_EnableHook((PVOID)GetPlayerViewpointAddress);
 	}
 	else
 		std::cout << ("[WARNING] Could not fix flashing!\n");

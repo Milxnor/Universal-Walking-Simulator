@@ -2,12 +2,13 @@
 
 // 3.5 Patterns are from raider, some patterns are not mine.
 
-#include "Net/funcs.h"
 #include "finder.h"
+#include "Gameplay/ability.h"
+#include "Net/functions.h"
 
-std::string RequestExitWSSig = "48 89 5C 24 ? 57 48 83 EC 40 41 B9 ? ? ? ? 0F B6 F9 44 38 0D ? ? ? ? 0F B6 DA 72 24 89 5C 24 30 48 8D 05 ? ? ? ? 89 7C 24 28 4C 8D 05 ? ? ? ? 33 D2 48 89 44 24 ?  33 C9 E8";
+inline std::string RequestExitWSSig = "48 89 5C 24 ? 57 48 83 EC 40 41 B9 ? ? ? ? 0F B6 F9 44 38 0D ? ? ? ? 0F B6 DA 72 24 89 5C 24 30 48 8D 05 ? ? ? ? 89 7C 24 28 4C 8D 05 ? ? ? ? 33 D2 48 89 44 24 ?  33 C9 E8";
 
-void InitializePatterns()
+inline void InitializePatterns()
 {
 	// { // 4.21 patterns by default
 	std::string MallocSig = ("48 83 EC ? 48 8B 0D ? ? ? ? 48 85 C9 75 ? 33 D2 B9 ? ? ? ? E8 ? ? ? ? 48 8B 4C 24 58");
@@ -18,7 +19,7 @@ void InitializePatterns()
 	std::string SetWorldSig = ("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0");
 	std::string InitListenSig = ("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0");
 	std::string WelcomePlayerSig = ("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 59 30 48 8B F1 48 8B CA 48 8B FA E8 ? ? ? ? 48 8B CB E8 ? ? ? ? 48 8D 54 24 ? 48 8D 8D ? ? ? ? 4C 8B");
-	std::string World_NotifyControlMessageSig = ("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B D9 89 7C 24 54");
+	std::string WorldNotifyControlMessageSig = ("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B D9 89 7C 24 54");
 	std::string SpawnPlayActorSig = ("48 8B C4 4C 89 48 20 44 89 40 18 48 89 50 10 48 89 48 08 55 56");
 	std::string ReceiveUniqueIdReplSig = ("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9 0F 84 ? ? ? ? F6 41 2B 02");
 	std::string ReceiveFStringSig = ("48 89 5C 24 18 55 56 57 41 56 41 57 48 8D 6C 24 C9 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 0F B6 41 28");
@@ -65,11 +66,11 @@ void InitializePatterns()
 	std::string SendClientAdjustmentSig = "40 53 48 83 EC 20 48 8B 99 ? ? ? ? 48 39 99 ? ? ? ? 74 0A 48 83 B9 ? ? ? ? ? 74 78 48 85 DB 75 0C 48 8B 99 ? ? ? ? 48 85 DB 74 67 80 BB ? ? ? ? ? 75 5E 48 8B 81 ? ? ? ? 33 D2 48 89 54 24 ? 48 3B C2 74 09"; // ud    // }
 	std::string CallPreReplicationSig = "";
 
-	if (Engine_Version == 419)
+	if (EngineVersion == 419)
 	{
 		ReallocSig = "4C 8B D1 48 8B 0D ? ? ? ? 48 85 C9 75 08 49 8B CA E9 ? ? ? ? 48 8B 01 45 8B C8 4C 8B C2 49 8B D2 48 FF 60 18";// ud
 		TickFlushSig = "4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 45 0F 29 43 ? 45 0F 29 4B ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 7B E8 48 8B F9 4D 89 6B D8 45 33 ED 4D 89 7B C8"; // ud
-		World_NotifyControlMessageSig = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 33 FF 48 89 4D D0 89 7C 24 58 49 8B D9";// ud
+		WorldNotifyControlMessageSig = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 33 FF 48 89 4D D0 89 7C 24 58 49 8B D9";// ud
 		SpawnPlayActorSig = "44 89 44 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 33 F6 48 8D 05 ? ? ? ? 89 75 67 4D 8B E9 4C 8B 65 77 49 39 04 24 74"; // ud
 		KickPlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 49 8B F0 48 8B DA 48 85 D2 74 78 48 8B BA ? ? ? ? 48 85 FF 74 6C E8 ? ? ? ? 48 8B 57 10 4C 8D 88";// ud
 		Beacon_NotifyControlMessageSig = "40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 33 FF 48 89 4C 24 ? 89 7C 24 60 4D 8B F1 48 8B 41 10 45 0F"; // ud
@@ -109,10 +110,10 @@ void InitializePatterns()
 		CreateNetDriver_LocalSig = "4C 89 44 24 ? 53 56 57 41 56 41 57 48 83 EC 70 48 8B B9 ? ? ? ? 48 8D 1D ? ? ? ? 48 63 81 ? ? ? ? 45 33 FF 4C 8B F2 48 8D 0C 40 4C 8D 0C CF 49 3B F9 74 22 44 8B 94 24 ? ? ? ? 44 39 57 04 0F 94 C1 44 39 07 0F 94 C0";
 	}
 
-	if (Engine_Version == 416)
+	if (EngineVersion == 416)
 	{
 		TickFlushSig = "4C 8B DC 55 53 56 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 41 0F 29 7B ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 70 48 8B 01 48 8B F1";
-		World_NotifyControlMessageSig = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 F6 48 89 4D 90 44 89 74 24 ? 49 8B D9 48 8B 41 10 45 0F B6 E0 48 8B F2 4C 8B E9";
+		WorldNotifyControlMessageSig = "40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 F6 48 89 4D 90 44 89 74 24 ? 49 8B D9 48 8B 41 10 45 0F B6 E0 48 8B F2 4C 8B E9";
 		SpawnPlayActorSig = "44 89 44 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 33 F6 48 8D 05 ? ? ? ? 89 75 67 4D 8B E9 4C 8B 65 77 49 39 04";
 		PauseBeaconRequestsSig = "40 53 48 83 EC 30 48 8B D9 84 D2 74 6F 80 3D ? ? ? ? ? 72 33 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 41 B9 ? ? ? ? 48 89 44 24 ? 48 8D 05 ? ? ? ? 48 8D";
 		Beacon_NotifyControlMessageSig = "40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 33 FF 48 89 4C";
@@ -121,7 +122,7 @@ void InitializePatterns()
 		ReplicateActorSig = "40 55 53 57 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8D 59 68 4C 8B F1 48 8B 0B 48 8B 01 FF 90 ? ? ? ? 41 8B 4E 30 48 8D 3D";
 	}
 
-	if (Engine_Version == 420)
+	if (EngineVersion == 420)
 	{
 		CrashPatchSig = ("0F 29 78 D8 44 0F 29 40 ? F3 45 0F 10 80 ? ? ? ? F3 41 0F 10 B0 ? ? ? ? F3 41 0F 10 88 ? ? ? ? F3 41 0F 10 A0 ? ? ? ? 44 0F 29 58 ? 44 0F 29 60 ? 45 0F 57 E4 48 8B 81 ? ? ? ? 48 05 ? ? ? ? F3 0F 58 48 ? F3 44 0F 10 18 F3 0F 10 78 ? 41 0F 28 D3 F3 0F 10 68 ? F3 41 0F 5C D0 0F 28 DF 0F 28 C5 F3 0F 58 0D E0 FA 75 02"); //4.5 Only
 
@@ -140,7 +141,7 @@ void InitializePatterns()
 		InitHostSig = ("48 8B C4 48 81 EC ? ? ? ? 48 89 58 18 4C 8D 05 ? ? ? ?");
 		Beacon_NotifyControlMessageSig = ("40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 33 FF 48 89 4C 24 ? 89 7C 24 60 49 8B F1 48 8B 41 10 45 0F B6 E0 4C 8B F2 48 8B D9 44 8B FF 48 39 78 78 0F 85 ? ? ? ? 80 3D ? ? ? ? ?");
 		WelcomePlayerSig = ("48 8B C4 55 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 20");
-		World_NotifyControlMessageSig = ("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 F6 49 8B D9 44 89 74 24 ? 45 8B E6 48 8B 41 10 45 0F B6 F8 48 8B FA 4C 8B E9 4C 39 60 78");
+		WorldNotifyControlMessageSig = ("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 F6 49 8B D9 44 89 74 24 ? 45 8B E6 48 8B 41 10 45 0F B6 F8 48 8B FA 4C 8B E9 4C 39 60 78");
 		SpawnPlayActorSig = ("44 89 44 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 33 F6 48 8D 05 ? ? ? ? 89 75 67 4D 8B E9 4C 8B 65 77 49 39 04 24 74 2A 41 89 74 24 ? 41 39 74 24 ?");
 		World_NotifyAcceptingConnectionSig = ("40 55 48 83 EC 50 48 8B 41 10 48 8B E9 48 83 78 ? ? 74 45 80 3D ? ? ? ? ? 72 34 48 8B 05 ? ? ? ? 4C 8D 44 24 ? 48 89 44 24 ? 48 8D 0D ? ? ? ? 48 8D 05 ? ? ? ? 41 B9 ? ? ? ? BA ? ? ? ? 48 89 44 24 ?");
 		GetNetModeSig = ("48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 33 C0 48 C7 44 24");
@@ -172,13 +173,13 @@ void InitializePatterns()
 		ValidationFailureSig = ("bbbb");
 	}
 
-	else if (Engine_Version >= 422 && Engine_Version < 424)
+	else if (EngineVersion >= 422 && EngineVersion < 424)
 	{
 		ReallocSig = ("48 89 5C 24 08 48 89 74 24 10 57 48 83 EC ? 48 8B F1 41 8B D8 48 8B 0D");
 		TickFlushSig = ("4C 8B DC 55 49 8D AB 78 FE FF FF 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 00 01 00 00 49 89 5B 18");
 		InitListenSig = ("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0");
 		WelcomePlayerSig = ("48 8B C4 55 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 58 18 48 8B 59 30 48 89 78 E8 48 8B FA 4C 89 68 D8");
-		World_NotifyControlMessageSig = ("48 89 5C 24 10 48 89 74 24 18 48 89 7C 24 20 48 89 4C 24 08 55 41 54 41 55 41 56 41 57 48 8D AC 24 D0 F9 FF FF");
+		WorldNotifyControlMessageSig = ("48 89 5C 24 10 48 89 74 24 18 48 89 7C 24 20 48 89 4C 24 08 55 41 54 41 55 41 56 41 57 48 8D AC 24 D0 F9 FF FF");
 		SpawnPlayActorSig = ("48 8B C4 4C 89 48 20 44 89 40 18 48 89 50 10 48 89 48 08 55 56");
 		ReceiveUniqueIdReplSig = ("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9 0F 84 ? ? ? ? F6 41 2B 02");
 		ReceiveFStringSig = ("48 89 5C 24 18 55 56 57 41 56 41 57 48 8D 6C 24 C9 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 0F B6 41 28");
@@ -214,10 +215,10 @@ void InitializePatterns()
 		CreateNetDriver_LocalSig = ("4C 89 44 24 ? 53 56 57 41 56 41 57 48 83 EC 70 48 8B B9 ? ? ? ? 48 8D 1D ? ? ? ? 48 63 81 ? ? ? ? 45 33 FF 4C 8B F2 48 8D 0C 40 4C 8D 0C CF 49 3B F9 74 22 44 8B 94 24 ? ? ? ? 44 39 57 04 0F 94 C1 44 39 07 0F 94 C0");
 	}
 
-	else if (Engine_Version == 424)
+	else if (EngineVersion == 424)
 	{
 		TickFlushSig = ("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0");
-		World_NotifyControlMessageSig = ("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF");
+		WorldNotifyControlMessageSig = ("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF");
 		SpawnPlayActorSig = ("48 8B C4 4C 89 48 20 44 89 40 18 48 89 50 10 48 89 48 08 55 56 48 8D 68 B9 48 81 EC ? ? ? ? 48 89 78 E0 33 F6 4C 89 60 D8 49 8B F9 4C 89 68 D0 4C 8D 2D ? ? ? ? 89 75 AF 4C 8B 65 77");
 		ReceiveUniqueIdReplSig = ("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9 0F 84 ? ? ? ? F6 41 2B 04 0F 85 ? ? ? ? 48 8B 4A 08 33 F6 48 85 C9 74 16 48 8B 01 FF 50 20 84 C0 74 0C");
 		ReceiveFStringSig = ("48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 F6 41 28 01 48 8B F2 48 8B F9 0F 84 ? ? ? ? 48");
@@ -252,10 +253,10 @@ void InitializePatterns()
 		ReplicationGraph_EnableSig = ("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 70 8B 99 ? ? ? ? 48 8B F2 4C 8B F1 BA ? ? ? ? 8B 89 ? ? ? ? E8 ? ? ? ? 85 DB 41");
 	}
 
-	else if (Engine_Version >= 425)
+	else if (EngineVersion >= 425)
 	{
 		TickFlushSig = ("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 49 89 7B E8 48 8B F9");
-		World_NotifyControlMessageSig = ("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 45 0F B6 E0 89 7C 24 74");
+		WorldNotifyControlMessageSig = ("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 45 0F B6 E0 89 7C 24 74");
 		SpawnPlayActorSig = ("48 8B C4 44 89 40 18 48 89 50 10 48 89 48 08 55 57 48 8D 68 B9 48 81 EC ? ? ? ? 48 89 70 E0 33 FF 4C 89 60 D8 49 8B F1 4C 89 68 D0");
 		ReceiveUniqueIdReplSig = ("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 80 79 28 00 48 8B FA 48 8B D9 0F 8D ? ? ? ? F6 41 2B 08 0F 85 ? ? ? ? 48 8B 4A 08 33 F6 48 85 C9");
 		ReceiveFStringSig = ("48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 00 F6 41 28 01 4C 8B F2 48 8B F9 0F 84 ? ? ? ? 48 8B 49 08");
@@ -279,10 +280,10 @@ void InitializePatterns()
 		CanActivateAbilitySig = "48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 49 8B F0";
 	}
 
-	if (Engine_Version >= 426)
+	if (EngineVersion >= 426)
 	{
 		TickFlushSig = ("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 7B C8");
-		World_NotifyControlMessageSig = ("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 45 0F B6 E0");
+		WorldNotifyControlMessageSig = ("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 45 0F B6 E0");
 		SpawnPlayActorSig = ("48 8B C4 44 89 40 18 48 89 50 10 48 89 48 08 55 57 48 8D 68 B9 48 81 EC ? ? ? ? 48 89 70 E0 33 FF 4C 89 60 D8 49 8B F1 4C 89 68 D0 4C 8D 25 ? ? ? ? 4C 89 70 C8 45 8B E8 4C");
 		// LocalPlayerSpawnPlayActorSig = ("48 8B C4 48 89 58 20 44 89 40 18 48 89 50 10 55 56 57 41 54 41 55 41 56 41 57 48 8D 68 B9 48 81 EC ? ? ? ? 33 DB 4C 8D 35 ? ? ? ? 89 5D 4F 49 8B F9 48 8B 75 77 4C 8B E9 4C 39 36 74 24 8B 46 0C 8B CB 89 5E 08 85 C0 74 10 33 D2 48 8B CE");
 		InitHostSig = ("48 8B C4 48 81 EC ? ? ? ? 48 89 58 10 4C 8D 05 ? ? ? ?");
@@ -297,10 +298,10 @@ void InitializePatterns()
 		CollectGarbageSig = "40 55 57 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 80 3D ? ? ? ? ? 0F B6 FA 44 8B F9 74 3B 80 3D ? ? ? ? ? 0F 82 ? ? ? ? 48 8D";
 	}
 
-	if (FnVerDouble >= 16.00)
+	if (FortniteVersion >= 16.00)
 	{
 		TickFlushSig = ("48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B F9 48 89 4D 38 48");
-		World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89";
+		WorldNotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89";
 		ReceiveFStringSig = "48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 00 F6 41 28 01 48 8B F2 48 8B F9 0F 84";
 		ReceiveUniqueIdReplSig = "40 55 53 57 48 8B EC 48 83 EC 40 80 79 28 00 48 8B FA 48 8B D9 7C 1A 4C 8D 4D 20 48 8B D3 48 8B CF E8 ? ? ? ? 48 8B C3 48 83 C4 40 5F 5B 5D C3 F6 41 2B 08 75 E0 48 8B CF E8 ? ? ? ? 84 C0 0F 85 ? ? ? ?";
 		WelcomePlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 60 48 8B 71 30";
@@ -317,7 +318,7 @@ void InitializePatterns()
 		StaticFindObjectSig = "40 55 53 57 41 54 41 55 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 80 3D ? ? ? ? ? 45 0F B6 E1 49 8B F8 48 8B DA 4C 8B F9 0F 85 ? ? ? ? 45 33 ED";
 	}
 
-	if (FnVerDouble >= 17.00)
+	if (FortniteVersion >= 17.00)
 	{
 		TickFlushSig = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 8A 81 ? ? ? ? 48";
 		GetPlayerViewpointSig = "48 8B C4 48 89 58 10 48 89 70 18 55 57 41 54 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 0F 29 70 C8 45 33 E4 0F 29 78 B8 49 8B F0 44 0F 29 40 ? 48 8B FA 44 0F 29 48";
@@ -328,11 +329,11 @@ void InitializePatterns()
 		StaticFindObjectSig = "40 55 53 57 41 54 41 55 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 80 3D ? ? ? ? ? 45 0F B6 E1 49 8B F8 48 8B DA 4C 8B F9";
 	}
 
-	if (FnVerDouble >= 18.00)
+	if (FortniteVersion >= 18.00)
 	{
 		TickFlushSig = "48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 44 0F B6 A1";
 		InitListenSig = "4C 8B DC 49 89 5B 10 49 89 73 18 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0 48 8B 01 48 8B D9 49 89 7B D0 45 88 4B C8 4D 8B C8 4C 8B C2 33 D2 FF 90 ? ? ? ? 84 C0";
-		World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89 6C 24 ? 49 8B D9";
+		WorldNotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89 6C 24 ? 49 8B D9";
 		SpawnPlayActorSig = "48 89 5C 24 ? 44 89 44 24 ? 48 89 54 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 81 EC ? ? ? ? 48 8B 5D 68 4C 8D 35 ? ? ? ? 33 FF 49 8B F1 4C 8B E9 89 7D 40 4C 39 33 74 24 8B 43 0C 8B CF";
 		PauseBeaconRequestsSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 30 33 F6 48 8B F9 84 D2 74 42 80 3D ? ? ? ? ? 72 20 48 8D 05 ? ? ? ? 33 D2 44 8D 4E 06 48 89 44 24 ? 4C 8D 05 ? ? ? ? 33 C9 E8 ? ? ? ? 48 8B 8F ? ? ?";
 		InitHostSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 48 8B F1 4C 8D 35 ? ? ? ? 4D 8B C6 48 8D 4D D7 45 33 C9 33 D2 E8 ? ? ? ? E8 ? ? ? ? 48 8B C8 4C 8D 45 67 48 8D 15 ? ? ? ? E8 ? ? ? ? 33 FF 84 C0 74 0D 8B 45 67 85 C0";
@@ -346,10 +347,10 @@ void InitializePatterns()
 		StaticFindObjectSig = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 60 45 33 ED 45 8A F9 44 38 2D ? ? ? ? 49 8B F8 48 8B F2 4C 8B E1 0F 85 ? ? ? ? 44";
 	}
 
-	if (FnVerDouble >= 19.00)
+	if (FortniteVersion >= 19.00)
 	{
 		ReceiveUniqueIdReplSig = "40 55 53 57 48 8B EC 48 83 EC 40 80 79 28 00 48 8B FA 48 8B D9 7C 1A 4C 8D 4D 20 48 8B D3 48 8B CF E8 ? ? ? ? 48 8B C3 48 83 C4 40 5F 5B 5D C3 F6 41 2B 10 75 E0 48 8B CF";
-		World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 41 0F B6 F8 44 89 BD ? ? ? ? 49 8B D9 48 8B 41 10 48 8B F2 4C 8B E9 45 8B E7 4C 39 B8 ? ? ? ? 0F";
+		WorldNotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 41 0F B6 F8 44 89 BD ? ? ? ? 49 8B D9 48 8B 41 10 48 8B F2 4C 8B E9 45 8B E7 4C 39 B8 ? ? ? ? 0F";
 		SpawnPlayActorSig = "48 89 5C 24 ? 44 89 44 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 4C 8B 75 77 48 8D 3D ? ? ? ? 4C 8B EA 4C 8B F9 33 DB 48";
 		PauseBeaconRequestsSig = "48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 57 48 83 EC 20 33 ED 48 8B F1 84 D2 74 27 80 3D ? ? ? ? ? 72 05 E8 ? ? ? ? 48 8B 8E ? ? ? ? 33 D2 48 8B 01";
 		InitHostSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 55 41 56 41 57 48 8D 68 A1 48 81 EC ? ? ? ? 4C 8B F1 48 8D 3D ? ? ? ? 4C 8B C7 48 8D 4D D7 45 33 C9 33 D2 E8 ? ? ? ? E8";
@@ -359,351 +360,351 @@ void InitializePatterns()
 		KickPlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 83 EC 50 48 8B DA 4C 8B F1 48 8D 15 ? ? ? ? 49 8B F0 48 8D 4D E0 E8 ? ? ? ? 48 8B 8B";
 	}
 
-	if (FnVerDouble >= 19.10)
+	if (FortniteVersion >= 19.10)
 	{
 		KickPlayerSig = "48 89 5C 24 ? 48 89 7C 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 50 48 8B DA 4C 8B F9 48 8D 15 ? ? ? ? 4D 8B F0 48 8D 4D E0 E8 ? ? ? ? 48 8B 8B ? ? ? ? 48 85 C9 74 2A 48 81 C1 ? ? ? ? 48 8D 55 F0 E8";
-		World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 41 0F B6 F8 44 89 7C 24 ? 49 8B D9 48 8B 41 10 4C 8B F2 4C 8B E9";
+		WorldNotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 41 0F B6 F8 44 89 7C 24 ? 49 8B D9 48 8B 41 10 4C 8B F2 4C 8B E9";
 		SpawnPlayActorSig = "44 89 44 24 ? 48 89 54 24 ? 55 53 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 4C 8B 7D 77 48 8D 3D ? ? ? ? 4C 8B F1 33 DB";
 		Beacon_NotifyControlMessageSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 E4 41 0F B6 D8 4C";
 	}
 
-	if (FnVerDouble >= 20.00)
+	if (FortniteVersion >= 20.00)
 	{
 		ReceiveUniqueIdReplSig = "40 55 53 57 48 8B EC 48 83 EC 30 80 79 28 00 48 8B FA 48 8B D9 7C 1A 4C 8D 4D 20 48 8B D3 48 8B CF E8 ? ? ? ? 48 8B C3 48 83 C4 30 5F 5B 5D C3 F6 41 2B 10";
 		WelcomePlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 70 48 8B 71 30 48 8B DA 45 33 FF 48 8B D1 4C 89 7D B0 48 8B F9 4C 89 7D B8 E8 ? ? ? ? 44 38 B8";
-		World_NotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89 6C 24 ? 49 8B F1 48 8B 41 10";
+		WorldNotifyControlMessageSig = "48 8B C4 48 89 58 10 48 89 70 18 48 89 78 20 48 89 48 08 55 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 ED 45 0F B6 F0 44 89 6C 24 ? 49 8B F1 48 8B 41 10";
 		Beacon_NotifyControlMessageSig = "48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 45 33 E4 41 0F B6 D8 4C 8D";
 		KickPlayerSig = "48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 50 48 83 65 ? ? 4C 8B F2 83 65 E8 00 4C 8B E1 83 65 EC 00 48 8D";
 	}
 
-	static auto ReallocAddr = FindPattern(ReallocSig);
-	// FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddr); // we don't need this I think
-	CheckPattern(("FMemory::Realloc"), ReallocAddr, &FMemory::Realloc);
+	static auto ReallocAddress = FindPattern(ReallocSig);
+	// FMemory::Realloc = decltype(FMemory::Realloc)(ReallocAddress); // we don't need this I think
+	CheckPattern(("FMemory::Realloc"), ReallocAddress, &FMemory::Realloc);
 
-	static auto StaticFindObjectAddr = FindPattern(StaticFindObjectSig);
+	static auto StaticFindObjectAddress = FindPattern(StaticFindObjectSig);
 
-	if (!StaticFindObjectAddr)
+	if (!StaticFindObjectAddress)
 	{
-		if (!StaticFindObjectAddr)
+		if (!StaticFindObjectAddress)
 		{
-			StaticFindObjectAddr = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 52 48 8B 05")); // S7
+			StaticFindObjectAddress = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 54 41 56 41 57 48 8B EC 48 83 EC 60 80 3D ? ? ? ? ? 45 0F B6 F1 49 8B F8 48 8B DA 4C 8B F9 74 52 48 8B 05")); // S7
 
-			if (!StaticFindObjectAddr)
+			if (!StaticFindObjectAddress)
 				std::cout << ("[WARNING] You will not be able to utilize the fast speeds of StaticFindObject!\n");
 		}
 	}
 
-	StaticFindObjectO = decltype(StaticFindObjectO)(StaticFindObjectAddr);
+	StaticFindObjectO = decltype(StaticFindObjectO)(StaticFindObjectAddress);
 
-	if (Engine_Version < 424)
+	if (EngineVersion < 424)
 	{
-		GetNetModeAddr = FindPattern(GetNetModeSig);
+		GetNetModeAddress = FindPattern(GetNetModeSig);
 
-		if (!GetNetModeAddr)
-			GetNetModeAddr = FindPattern(("48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 49 8B C8 48 C1 E9 20 85 C9 0F 94 C2 41 81 F8 ? ? ? ?"));
+		if (!GetNetModeAddress)
+			GetNetModeAddress = FindPattern(("48 89 5C 24 ? 57 48 83 EC 20 48 8B 01 48 8B D9 FF 90 ? ? ? ? 4C 8B 83 ? ? ? ? 48 8B F8 49 8B C8 48 C1 E9 20 85 C9 0F 94 C2 41 81 F8 ? ? ? ?"));
 
-		if (!GetNetModeAddr)
+		if (!GetNetModeAddress)
 			std::cout << ("[WARNING] Pawns will probably get desynced!\n");
 
-		// CheckPattern(("GetNetMode"), GetNetModeAddr, &GetNetMode);
+		// CheckPattern(("GetNetMode"), GetNetModeAddress, &GetNetMode);
 	}
 
-	LP_SpawnPlayActorAddr = FindPattern(LocalPlayerSpawnPlayActorSig);
+	LpSpawnPlayActorAddress = FindPattern(LocalPlayerSpawnPlayActorSig);
 
-	if (!LP_SpawnPlayActorAddr)
+	if (!LpSpawnPlayActorAddress)
 		std::cout << ("[WARNING] Will not be able to prevent the creation of the player controller! Must be logged in to Fortnite to host.\n");
 
-	//CheckPattern(("LocalPlayer::SpawnPlayActor"), LP_SpawnPlayActorAddr, &LP_SpawnPlayActor);
+	//CheckPattern(("LocalPlayer::SpawnPlayActor"), LpSpawnPlayActorAddress, &LP_SpawnPlayActor);
 
-	CollectGarbageAddr = FindPattern(CollectGarbageSig);
-	if (!CollectGarbageAddr)
+	CollectGarbageAddress = FindPattern(CollectGarbageSig);
+	if (!CollectGarbageAddress)
 		std::cout << ("[WARNING] Could not find CollectGarbage! Probably going to crash down the line.\n");
 	else
-		CollectGarbage = decltype(CollectGarbage)(CollectGarbageAddr);
+		CollectGarbage = decltype(CollectGarbage)(CollectGarbageAddress);
 
-	InitListenAddr = FindPattern(InitListenSig);
+	InitListenAddress = FindPattern(InitListenSig);
 
-	if (!InitListenAddr)
-		InitListenAddr = FindPattern(("4C 8B DC 49 89 5B 08 49 89 73 10 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0"));
+	if (!InitListenAddress)
+		InitListenAddress = FindPattern(("4C 8B DC 49 89 5B 08 49 89 73 10 57 48 83 EC 50 48 8B BC 24 ? ? ? ? 49 8B F0"));
 
-	CheckPattern(("InitListen"), InitListenAddr, &InitListen);
+	CheckPattern(("InitListen"), InitListenAddress, &InitListen);
 
-	NoReserveAddr = FindPattern(NoReserveSig);
+	NoReserveAddress = FindPattern(NoReserveSig);
 
-	if (!NoReserveAddr)
+	if (!NoReserveAddress)
 	{
-		if (Engine_Version >= 424)
+		if (EngineVersion >= 424)
 			std::cout << ("[WARNING] Unable to find No Reserve! Players will probably get kicked on join!\n");
 	}
 	else
-		NoReserve = decltype(NoReserve)(NoReserveAddr);
+		NoReserve = decltype(NoReserve)(NoReserveAddress);
 
-	TickFlushAddr = FindPattern(TickFlushSig);
+	TickFlushAddress = FindPattern(TickFlushSig);
 
-	if (!TickFlushAddr)
-		TickFlushAddr = FindPattern(("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 48 8D 05 ? ? ? ? 49 89 73 F0 33 F6 40 38 35 ? ? ? ? 49 89 7B E8 48 8B F9 48 0F 45 C6"));
+	if (!TickFlushAddress)
+		TickFlushAddress = FindPattern(("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 48 8D 05 ? ? ? ? 49 89 73 F0 33 F6 40 38 35 ? ? ? ? 49 89 7B E8 48 8B F9 48 0F 45 C6"));
 
-	if (!TickFlushAddr)
-		TickFlushAddr = FindPattern(("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0"));
+	if (!TickFlushAddress)
+		TickFlushAddress = FindPattern(("4C 8B DC 55 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 49 89 5B 18 49 89 73 F0 48 8B F1 49 89 7B E8 48 8D 0D ? ? ? ? 4D 89 73 D0"));
 
-	if (!TickFlushAddr && Engine_Version > 424 && FnVerDouble < 18.00)
+	if (!TickFlushAddress && EngineVersion > 424 && FortniteVersion < 18.00)
 	{
-		Finder::Functions::GetTickFlush(35, &TickFlushAddr);
+		Finder::GetTickFlush(35, &TickFlushAddress);
 	}
 
-	CheckPattern(("TickFlush"), TickFlushAddr, &TickFlush);
+	CheckPattern(("TickFlush"), TickFlushAddress, &TickFlush);
 
-	if (Engine_Version >= 420)
+	if (EngineVersion >= 420)
 	{
-		ReceiveFStringAddr = FindPattern(ReceiveFStringSig);
+		ReceiveFStringAddress = FindPattern(ReceiveFStringSig);
 
-		if (!ReceiveFStringAddr)
-			ReceiveFStringAddr = FindPattern(("48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 F6 41 28 01 48 8B F2 48 8B F9 0F 84 ? ? ? ? 48 8B 49"));
+		if (!ReceiveFStringAddress)
+			ReceiveFStringAddress = FindPattern(("48 89 5C 24 ? 55 56 57 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 27 F6 41 28 01 48 8B F2 48 8B F9 0F 84 ? ? ? ? 48 8B 49"));
 
-		CheckPattern(("ReceiveFString"), ReceiveFStringAddr, &ReceiveFString);
+		CheckPattern(("ReceiveFString"), ReceiveFStringAddress, &ReceiveFString);
 
-		ReceiveUniqueIdReplAddr = FindPattern(ReceiveUniqueIdReplSig);
+		ReceiveUniqueIdReplAddress = FindPattern(ReceiveUniqueIdReplSig);
 
-		if (!ReceiveUniqueIdReplAddr)
-			ReceiveUniqueIdReplAddr = FindPattern(("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9"));
+		if (!ReceiveUniqueIdReplAddress)
+			ReceiveUniqueIdReplAddress = FindPattern(("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 40 F6 41 28 40 48 8B FA 48 8B D9"));
 
-		CheckPattern(("ReceiveUniqueIdRepl"), ReceiveUniqueIdReplAddr, &ReceiveUniqueIdRepl);
+		CheckPattern(("ReceiveUniqueIdRepl"), ReceiveUniqueIdReplAddress, &ReceiveUniqueIdRepl);
 
-		WelcomePlayerAddr = FindPattern(WelcomePlayerSig);
+		WelcomePlayerAddress = FindPattern(WelcomePlayerSig);
 	}
 
-	CanActivateAbilityAddr = FindPattern(CanActivateAbilitySig);
+	CanActivateAbilityAddress = FindPattern(CanActivateAbilitySig);
 
-	if (!CanActivateAbilityAddr)
+	if (!CanActivateAbilityAddress)
 	{
-		CanActivateAbilityAddr = FindPattern(("48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 49 8B F0 8B DA 48 8B F9 4D 85 C0 0F 84 ? ? ? ? 49 8D 48 10 E8 ? ? ? ? 48 85"));
+		CanActivateAbilityAddress = FindPattern(("48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 49 8B F0 8B DA 48 8B F9 4D 85 C0 0F 84 ? ? ? ? 49 8D 48 10 E8 ? ? ? ? 48 85"));
 
-		if (!CanActivateAbilityAddr)
+		if (!CanActivateAbilityAddress)
 			std::cout << ("[WARNING] Abilities may fail!\n");
 	}
 	else
-		Abilities::o_CanActivateAbility = decltype(Abilities::o_CanActivateAbility)(CanActivateAbilityAddr);
+		Ability::OCanActivateAbility = decltype(Ability::OCanActivateAbility)(CanActivateAbilityAddress);
 
-	if (!WelcomePlayerAddr) // s6
+	if (!WelcomePlayerAddress) // s6
 	{
-		WelcomePlayerAddr = FindPattern(("48 8B C4 55 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 20 48 8B F1 48 89 78 F0 48 8B CA 4C 89 70 E8 48 8B FA"));
+		WelcomePlayerAddress = FindPattern(("48 8B C4 55 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 20 48 8B F1 48 89 78 F0 48 8B CA 4C 89 70 E8 48 8B FA"));
 
-		if (!WelcomePlayerAddr)
-			WelcomePlayerAddr = FindPattern(("48 8B C4 55 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 89 70 20 48 8B F1 48 89 78 F0 48 8B CA 4C 89 70 E8 48 8B FA E8 ? ? ? ? 48 8B 8E ? ? ? ? E8 ? ? ? ? 48 8D 54 24 ? 48 8D 8D ? ? ? ? 4C 8B 40 18"));
+		if (!WelcomePlayerAddress)
+			WelcomePlayerAddress = FindPattern(("48 8B C4 55 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 89 70 20 48 8B F1 48 89 78 F0 48 8B CA 4C 89 70 E8 48 8B FA E8 ? ? ? ? 48 8B 8E ? ? ? ? E8 ? ? ? ? 48 8D 54 24 ? 48 8D 8D ? ? ? ? 4C 8B 40 18"));
 	}
 
-	CheckPattern(("WelcomePlayer"), WelcomePlayerAddr, &WelcomePlayer);
+	CheckPattern(("WelcomePlayer"), WelcomePlayerAddress, &WelcomePlayer);
 
-	World_NotifyControlMessageAddr = FindPattern(World_NotifyControlMessageSig);
+	WorldNotifyControlMessageAddress = FindPattern(WorldNotifyControlMessageSig);
 
-	if (!World_NotifyControlMessageAddr)
-		World_NotifyControlMessageAddr = FindPattern(("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 F6 49 8B D9"));
+	if (!WorldNotifyControlMessageAddress)
+		WorldNotifyControlMessageAddress = FindPattern(("40 55 53 56 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 F6 49 8B D9"));
 
-	if (!World_NotifyControlMessageAddr)
-		World_NotifyControlMessageAddr = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B D9 89 7C 24 60"));
+	if (!WorldNotifyControlMessageAddress)
+		WorldNotifyControlMessageAddress = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 48 89 4C 24 ? 55 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B D9 89 7C 24 60"));
 
-	CheckPattern(("World_NotifyControlMessage"), World_NotifyControlMessageAddr, &World_NotifyControlMessage);
+	CheckPattern(("WorldNotifyControlMessage"), WorldNotifyControlMessageAddress, &WorldNotifyControlMessage);
 
-	SpawnPlayActorAddr = FindPattern(SpawnPlayActorSig);
+	SpawnPlayActorAddress = FindPattern(SpawnPlayActorSig);
 
-	if (!SpawnPlayActorAddr)
-		SpawnPlayActorAddr = FindPattern(("48 8B C4 44 89 40 18 48 89 50 10 48 89 48 08 55 56 48 8D 68 B9 48 81 EC ? ? ? ?"));
+	if (!SpawnPlayActorAddress)
+		SpawnPlayActorAddress = FindPattern(("48 8B C4 44 89 40 18 48 89 50 10 48 89 48 08 55 56 48 8D 68 B9 48 81 EC ? ? ? ?"));
 
-	CheckPattern(("SpawnPlayActor"), SpawnPlayActorAddr, &SpawnPlayActor);
+	CheckPattern(("SpawnPlayActor"), SpawnPlayActorAddress, &SpawnPlayActor);
 
-	NetDebugAddr = FindPattern(NetDebugSig);
+	NetDebugAddress = FindPattern(NetDebugSig);
 
-	if (Engine_Version >= 419 && FnVerDouble < 17.00)
-		CheckPattern(("NetDebug"), NetDebugAddr, &NetDebug);
+	if (EngineVersion >= 419 && FortniteVersion < 17.00)
+		CheckPattern(("NetDebug"), NetDebugAddress, &NetDebug);
 
-	if (Engine_Version >= 420) // && FnVerDouble < 18.00)
+	if (EngineVersion >= 420) // && FortniteVersion < 18.00)
 	{
-		GiveAbilityAddr = FindPattern(GiveAbilitySig);
+		GiveAbilityAddress = FindPattern(GiveAbilitySig);
 
-		if (!GiveAbilityAddr)
+		if (!GiveAbilityAddress)
 		{
-			GiveAbilityAddr = FindPattern(("48 89 5C 24 10 48 89 6C 24 18 48 89 7C 24 20 41 56 48 83 EC ? 83 B9 60 05"));
+			GiveAbilityAddress = FindPattern(("48 89 5C 24 10 48 89 6C 24 18 48 89 7C 24 20 41 56 48 83 EC ? 83 B9 60 05"));
 
-			if (!GiveAbilityAddr)
+			if (!GiveAbilityAddress)
 			{
-				GiveAbilityAddr = FindPattern(("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 51 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01"));
+				GiveAbilityAddress = FindPattern(("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 51 48 63 9F ? ? ? ? 48 81 C7 ? ? ? ? 8D 43 01"));
 
-				if (!GiveAbilityAddr)
-					GiveAbilityAddr = FindPattern(("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 52 48 63 9F"));
+				if (!GiveAbilityAddress)
+					GiveAbilityAddress = FindPattern(("48 89 5C 24 ? 48 89 6C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 83 B9 ? ? ? ? ? 49 8B E8 4C 8B F2 48 8B F9 7E 52 48 63 9F"));
 			}
 		}
 
-		if (!GiveAbilityAddr)
+		if (!GiveAbilityAddress)
 		{
 			std::cout << ("[WARNING] Failed to find GiveAbility, abilities will be disabled!\n");
 		}
 		else
 		{
-			if (Engine_Version < 426)
-				CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbility);
-			else if (Engine_Version == 426)
-				CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityFTS);
+			if (EngineVersion < 426)
+				CheckPattern(("GiveAbility"), GiveAbilityAddress, &GiveAbility);
+			else if (EngineVersion == 426)
+				CheckPattern(("GiveAbility"), GiveAbilityAddress, &GiveAbilityFts);
 			else
-				CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityNewer);
+				CheckPattern(("GiveAbility"), GiveAbilityAddress, &GiveAbilityNewer);
 
-			InternalTryActivateAbilityAddr = FindPattern(InternalTryActivateAbilitySig);
+			InternalTryActivateAbilityAddress = FindPattern(InternalTryActivateAbilitySig);
 
-			if (!InternalTryActivateAbilityAddr)
-				InternalTryActivateAbilityAddr = FindPattern(("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 8B DA 4C 8B F1 E8 ? ? ? ? 4D 8D BE ? ? ? ? 33 D2 49"));
+			if (!InternalTryActivateAbilityAddress)
+				InternalTryActivateAbilityAddress = FindPattern(("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 8B DA 4C 8B F1 E8 ? ? ? ? 4D 8D BE ? ? ? ? 33 D2 49"));
 
-			if (!InternalTryActivateAbilityAddr)
-				InternalTryActivateAbilityAddr = FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 48 8D 05 ? ? ? ? 44 38 3D ? ? ? ? 8B"); // 5.10
+			if (!InternalTryActivateAbilityAddress)
+				InternalTryActivateAbilityAddress = FindPattern("4C 89 4C 24 ? 4C 89 44 24 ? 89 54 24 10 55 53 57 41 54 41 55 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 45 33 FF 48 8D 05 ? ? ? ? 44 38 3D ? ? ? ? 8B"); // 5.10
 
-			if (Engine_Version < 426)
-				CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbility);
+			if (EngineVersion < 426)
+				CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddress, &InternalTryActivateAbility);
 			else
-				CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbilityFTS);
+				CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddress, &InternalTryActivateAbilityFts);
 
-			/* MarkAbilitySpecDirtyAddr = FindPattern(MarkAbilitySpecDirtySig);
+			/* MarkAbilitySpecDirtyAddress = FindPattern(MarkAbilitySpecDirtySig);
 
-			if (!MarkAbilitySpecDirtyAddr)
-				MarkAbilitySpecDirtyAddr = FindPattern(("48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 D8 4C 8B F2 48 8B F9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 46 10 48 89 6C 24 ? 48 89 74"));
+			if (!MarkAbilitySpecDirtyAddress)
+				MarkAbilitySpecDirtyAddress = FindPattern(("48 89 5C 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 8B 01 41 0F B6 D8 4C 8B F2 48 8B F9 FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 46 10 48 89 6C 24 ? 48 89 74"));
 
-			if (Engine_Version < 426)
-				CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyOld);
+			if (EngineVersion < 426)
+				CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddress, &MarkAbilitySpecDirtyOld);
 			else
-				CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddr, &MarkAbilitySpecDirtyFTS); */
+				CheckPattern(("MarkAbilitySpecDirty"), MarkAbilitySpecDirtyAddress, &MarkAbilitySpecDirtyFTS); */
 		}
 	}
 
-	if (Engine_Version >= 420)
+	if (EngineVersion >= 420)
 	{
-		GetPlayerViewpointAddr = FindPattern(GetPlayerViewpointSig);
+		GetPlayerViewpointAddress = FindPattern(GetPlayerViewpointSig);
 
-		if (!GetPlayerViewpointAddr)
-			GetPlayerViewpointAddr = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 38 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB"));
+		if (!GetPlayerViewpointAddress)
+			GetPlayerViewpointAddress = FindPattern(("48 89 5C 24 ? 48 89 74 24 ? 55 41 56 41 57 48 8B EC 48 83 EC 40 48 8B F2 48 C7 45 ? ? ? ? ? 48 8B 55 38 4D 8B F0 48 8B D9 45 33 FF E8 ? ? ? ? 84 C0 74 4A 80 BB"));
 
-		if (FnVerDouble < 17.00)
-			CheckPattern(("GetPlayerViewPoint"), GetPlayerViewpointAddr, &GetPlayerViewPoint);
+		if (FortniteVersion < 17.00)
+			CheckPattern(("GetPlayerViewPoint"), GetPlayerViewpointAddress, &GetPlayerViewPoint);
 	}
 
-	if (Engine_Version >= 421 && Engine_Version <= 423)
+	if (EngineVersion >= 421 && EngineVersion <= 423)
 	{
-		if (FnVerDouble >= 5 && FnVerDouble < 7)
+		if (FortniteVersion >= 5 && FortniteVersion < 7)
 		{
-			IdkfAddr = FindPattern(IdkfSig);
-			CheckPattern(("Idkf"), IdkfAddr, &Idkf);
+			ChallengeAddress = FindPattern(IdkfSig);
+			CheckPattern(("Idkf"), ChallengeAddress, &Challenge);
 
-			SendChallengeAddr = FindPattern(SendChallengeSig);
+			SendChallengeAddress = FindPattern(SendChallengeSig);
 
-			if (!SendChallengeAddr)
-				SendChallengeAddr = FindPattern(("48 89 5C 24 ? 55 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B DA 48 85 D2 0F 84 ? ? ? ? 83 BA ? ? ? ? ? 0F 86 ? ? ? ? 48 83 7A ? ? 0F 84 ? ? ? ? 48 8D 4D 68 48 89 BC 24 ? ? ? ? FF 15 ? ? ? ? 44 8B 45 68 48 8D 15 ? ? ? ? 48 8D 4C 24 ? E8 ? ? ? ? 48 8D 44 24 ? 48 8D BB ? ? ? ? 48 3B F8 74 25 48 8B 0F 48 85 C9 74 05 E8 ? ? ? ? 48 8B 44 24 ? 48 89 07 8B 44 24 38 89 47 08 8B 44 24 3C 89 47 0C EB 0F 48 8B 4C 24 ? 48 85 C9 74 05 E8 ? ? ? ? B2 05 48 8B CB E8 ? ? ? ? 48 8B 83 ? ? ? ?"));
+			if (!SendChallengeAddress)
+				SendChallengeAddress = FindPattern(("48 89 5C 24 ? 55 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B DA 48 85 D2 0F 84 ? ? ? ? 83 BA ? ? ? ? ? 0F 86 ? ? ? ? 48 83 7A ? ? 0F 84 ? ? ? ? 48 8D 4D 68 48 89 BC 24 ? ? ? ? FF 15 ? ? ? ? 44 8B 45 68 48 8D 15 ? ? ? ? 48 8D 4C 24 ? E8 ? ? ? ? 48 8D 44 24 ? 48 8D BB ? ? ? ? 48 3B F8 74 25 48 8B 0F 48 85 C9 74 05 E8 ? ? ? ? 48 8B 44 24 ? 48 89 07 8B 44 24 38 89 47 08 8B 44 24 3C 89 47 0C EB 0F 48 8B 4C 24 ? 48 85 C9 74 05 E8 ? ? ? ? B2 05 48 8B CB E8 ? ? ? ? 48 8B 83 ? ? ? ?"));
 
-			CheckPattern(("SendChallenge"), SendChallengeAddr, &SendChallenge);
+			CheckPattern(("SendChallenge"), SendChallengeAddress, &SendChallenge);
 		}
 
-		if (Engine_Version == 423)
+		if (EngineVersion == 423)
 		{
-			HasClientLoadedCurrentWorldAddr = FindPattern(HasClientLoadedCurrentWorldSig);
-			CheckPattern(("HasClientLoadedCurrentWorld"), HasClientLoadedCurrentWorldAddr, &HasClientLoadedCurrentWorld);
+			HasClientLoadedCurrentWorldAddress = FindPattern(HasClientLoadedCurrentWorldSig);
+			CheckPattern(("HasClientLoadedCurrentWorld"), HasClientLoadedCurrentWorldAddress, &HasClientLoadedCurrentWorld);
 
-			malformedAddr = FindPattern(malformedSig);
-			CheckPattern(("malformed"), malformedAddr, &malformed);
+			MalformedAddress = FindPattern(malformedSig);
+			CheckPattern(("malformed"), MalformedAddress, &Malformed);
 		}
 	}
 
-	if (Engine_Version >= 424 || Engine_Version < 420 || Engine_Version == 421)
+	if (EngineVersion >= 424 || EngineVersion < 420 || EngineVersion == 421)
 	{
-		ValidationFailureAddr = FindPattern(ValidationFailureSig);
+		ValidationFailureAddress = FindPattern(ValidationFailureSig);
 
-		if (ValidationFailureAddr)
-			ValidationFailure = decltype(ValidationFailure)(ValidationFailureAddr);
+		if (ValidationFailureAddress)
+			ValidationFailure = decltype(ValidationFailure)(ValidationFailureAddress);
 
-		// CheckPattern(("ValidationFailure"), ValidationFailureAddr, &ValidationFailure);
+		// CheckPattern(("ValidationFailure"), ValidationFailureAddress, &ValidationFailure);
 
-		if (Engine_Version < 426) // it becomes virtual bruh
+		if (EngineVersion < 426) // it becomes virtual bruh
 		{
-			SetWorldAddr = FindPattern(SetWorldSig);
+			SetWorldAddress = FindPattern(SetWorldSig);
 
-			if (!SetWorldAddr)
-				SetWorldAddr = FindPattern(("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
+			if (!SetWorldAddress)
+				SetWorldAddress = FindPattern(("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
 
-			if (Engine_Version >= 419)
-				CheckPattern(("SetWorld"), SetWorldAddr, &SetWorld);
+			if (EngineVersion >= 419)
+				CheckPattern(("SetWorld"), SetWorldAddress, &SetWorld);
 		}
 	}
 
-	PlayMontageAddr = FindPattern(PlayMontageSig);
+	PlayMontageAddress = FindPattern(PlayMontageSig);
 
-	if (!PlayMontageAddr)
+	if (!PlayMontageAddress)
 		std::cout << ("[WARNING] Emoting will not work!\n");
 	else
-		PlayMontage = decltype(PlayMontage)(PlayMontageAddr);
+		PlayMontage = decltype(PlayMontage)(PlayMontageAddress);
 
-	PauseBeaconRequestsAddr = FindPattern(PauseBeaconRequestsSig);
-	CheckPattern(("PauseBeaconRequests"), PauseBeaconRequestsAddr, &PauseBeaconRequests);
+	PauseBeaconRequestsAddress = FindPattern(PauseBeaconRequestsSig);
+	CheckPattern(("PauseBeaconRequests"), PauseBeaconRequestsAddress, &PauseBeaconRequests);
 
-	InitHostAddr = FindPattern(InitHostSig);
-	CheckPattern(("InitHost"), InitHostAddr, &InitHost);
+	InitHostAddress = FindPattern(InitHostSig);
+	CheckPattern(("InitHost"), InitHostAddress, &InitHost);
 
-	Beacon_NotifyControlMessageAddr = FindPattern(Beacon_NotifyControlMessageSig);
+	BeaconNotifyControlMessageAddress = FindPattern(Beacon_NotifyControlMessageSig);
 
-	if (!Beacon_NotifyControlMessageAddr)
-		Beacon_NotifyControlMessageAddr = FindPattern(("40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 48 89 4C 24 ?"));
+	if (!BeaconNotifyControlMessageAddress)
+		BeaconNotifyControlMessageAddress = FindPattern(("40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 33 FF 48 89 4C 24 ?"));
 
-	if (!Beacon_NotifyControlMessageAddr)
-		Beacon_NotifyControlMessageAddr = FindPattern(("4C 8B DC 49 89 5B 18 49 89 73 20 49 89 4B 08 55 57 41 54 41 56 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B F1"));
+	if (!BeaconNotifyControlMessageAddress)
+		BeaconNotifyControlMessageAddress = FindPattern(("4C 8B DC 49 89 5B 18 49 89 73 20 49 89 4B 08 55 57 41 54 41 56 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 FF 49 8B F1"));
 
-	if (!Beacon_NotifyControlMessageAddr)
-		Beacon_NotifyControlMessageAddr = FindPattern(("4C 8B DC 49 89 5B 18 49 89 73 20 55 57 41 54 41 55 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 F6 49 8B F9 8B DE 45 0F B6 E0 89 5C 24 68"));
+	if (!BeaconNotifyControlMessageAddress)
+		BeaconNotifyControlMessageAddress = FindPattern(("4C 8B DC 49 89 5B 18 49 89 73 20 55 57 41 54 41 55 41 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 33 F6 49 8B F9 8B DE 45 0F B6 E0 89 5C 24 68"));
 
-	if (!Beacon_NotifyControlMessageAddr)
+	if (!BeaconNotifyControlMessageAddress)
 	{
-		// auto NCMSig = Finder::Functions::GetBeaconNotifyControlMessage(35, &Beacon_NotifyControlMessageAddr);
+		// auto NCMSig = Finder::GetBeaconNotifyControlMessage(35, &BeaconNotifyControlMessageAddress);
 	}
 
-	if (FnVerDouble < 20.00)
-		CheckPattern(("Beacon_NotifyControlMessage"), Beacon_NotifyControlMessageAddr, &Beacon_NotifyControlMessage);
-	HandleReloadCostAddr = FindPattern(HandleReloadCostSig);
+	if (FortniteVersion < 20.00)
+		CheckPattern(("Beacon_NotifyControlMessage"), BeaconNotifyControlMessageAddress, &BeaconNotifyControlMessage);
+	HandleReloadCostAddress = FindPattern(HandleReloadCostSig);
 
-	if (!HandleReloadCostAddr)
+	if (!HandleReloadCostAddress)
 		std::cout << ("[WARNING] Unable to find HandleReloadCost! Will not be able to deplete ammo.\n");
 	else
-		HandleReloadCost = decltype(HandleReloadCost)(HandleReloadCostAddr);
+		HandleReloadCost = decltype(HandleReloadCost)(HandleReloadCostAddress);
 
-	StaticLoadObjectAddr = FindPattern(StaticLoadObjectSig);
+	StaticLoadObjectAddress = FindPattern(StaticLoadObjectSig);
 
-	if (!StaticLoadObjectAddr) {
-		StaticLoadObjectAddr = FindPattern("4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 33 D2");
+	if (!StaticLoadObjectAddress) {
+		StaticLoadObjectAddress = FindPattern("4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 33 D2");
 	}
 
-	if (!StaticLoadObjectAddr)
+	if (!StaticLoadObjectAddress)
 	{
-		Finder::Functions::GetStaticLoadObject(35, &StaticLoadObjectAddr);
+		Finder::GetStaticLoadObject(35, &StaticLoadObjectAddress);
 	}
 
-	CheckPattern(("StaticLoadObject"), StaticLoadObjectAddr, &StaticLoadObjectO);
+	CheckPattern(("StaticLoadObject"), StaticLoadObjectAddress, &StaticLoadObjectO);
 
-	if (Engine_Version < 424 || FnVerDouble >= 16.00)
+	if (EngineVersion < 424 || FortniteVersion >= 16.00)
 	{
-		KickPlayerAddr = FindPattern(KickPlayerSig);
-		CheckPattern(("KickPlayer"), KickPlayerAddr, &KickPlayer);
+		KickPlayerAddress = FindPattern(KickPlayerSig);
+		CheckPattern(("KickPlayer"), KickPlayerAddress, &KickPlayer);
 	}
 
-	if (Engine_Version < 420)
+	if (EngineVersion < 420)
 	{
-		CreateChannelAddr = FindPattern(CreateChannelSig);
-		CheckPattern(("CreateChannel"), CreateChannelAddr, &CreateChannel);
+		CreateChannelAddress = FindPattern(CreateChannelSig);
+		CheckPattern(("CreateChannel"), CreateChannelAddress, &CreateChannel);
 	}
 
-	if (Engine_Version < 420)
+	if (EngineVersion < 420)
 	{
-		ReplicateActorAddr = FindPattern(ReplicateActorSig);
-		CheckPattern(("ReplicateActor"), ReplicateActorAddr, &ReplicateActor);
+		ReplicateActorAddress = FindPattern(ReplicateActorSig);
+		CheckPattern(("ReplicateActor"), ReplicateActorAddress, &ReplicateActor);
 
-		SetChannelActorAddr = FindPattern(SetChannelActorSig);
-		CheckPattern(("SetChannelActor"), SetChannelActorAddr, &SetChannelActor);
+		SetChannelActorAddress = FindPattern(SetChannelActorSig);
+		CheckPattern(("SetChannelActor"), SetChannelActorAddress, &SetChannelActor);
 
-		CallPreReplicationAddr = FindPattern(CallPreReplicationSig);
-		CheckPattern(("CallPreReplication"), CallPreReplicationAddr, &CallPreReplication);
+		CallPreReplicationAddress = FindPattern(CallPreReplicationSig);
+		CheckPattern(("CallPreReplication"), CallPreReplicationAddress, &CallPreReplication);
 	}
 
-	if (FnVerDouble == 4.5)
+	if (FortniteVersion == 4.5)
 	{
 		uintptr_t CrashFix = FindPattern(CrashPatchSig);
 		if (CrashFix) {

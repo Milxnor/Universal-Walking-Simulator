@@ -1,10 +1,14 @@
+// TODO: Rewrite and split this piece of legacy
+
 #pragma once
 
 #include <iostream>
 #include <fstream>
 #include <UE/structs.h>
-#include <Net/funcs.h>
 #include <dpp/nlohmann/json.hpp>
+
+#include "gamemode.h"
+#include "Net/functions.h"
 
 static bool bPickupAnimsEnabled = true;
 
@@ -107,7 +111,7 @@ namespace Easy
 		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 		spawnParams.bAllowDuringConstructionScript = true;
 
-		if (FnVerDouble < 19.00)
+		if (FortniteVersion < 19.00)
 			return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, spawnParams);
 		else
 		{
@@ -379,7 +383,7 @@ namespace Helper
 			FRotator                                    Rotation;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
 			bool                                               bOutSuccess;                                              // (Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 			UObject* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		} ULevelStreamingDynamic_LoadLevelInstance_Params{ GetWorldW(), LevelName, AircraftLocationToUse, FRotator() };
+		} ULevelStreamingDynamic_LoadLevelInstance_Params{ GetWorldW(), LevelName, GameMode::AircraftLocation, FRotator() };
 
 		static auto levelStreamingDynamicClass = FindObject("LevelStreamingDynamic /Script/Engine.Default__LevelStreamingDynamic");
 		static auto LoadLevelInstance = levelStreamingDynamicClass->Function("LoadLevelInstance");
@@ -392,8 +396,7 @@ namespace Helper
 
 	//Show Missing POIs. Credit to Ultimanite for most of this.
 	void FixPOIs() {
-		float Version = std::stof(FN_Version);
-		int Season = (int)Version;
+		int Season = (int)FortniteVersion;
 		//Volcano
 		if (Season == 8) {
 			static auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
@@ -409,7 +412,7 @@ namespace Helper
 
 		}
 
-		if (Season >= 7 && Engine_Version < 424)
+		if (Season >= 7 && EngineVersion < 424)
 		{
 			static auto TheBlock = FindObject("BuildingFoundationSlab_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_2"); // SLAB_3 is blank
 			ShowBuilding(TheBlock);
@@ -434,7 +437,7 @@ namespace Helper
 		}
 
 		//Marshamello
-		if (Version == 7.30f) {
+		if (FortniteVersion == 7.30f) {
 			static auto PleasantPark = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"));
 			ShowBuilding(PleasantPark);
 		}
@@ -639,7 +642,7 @@ namespace Helper
 				{
 					static auto TossPickupFn = Pickup->Function(("TossPickup"));
 
-					if (Engine_Version < 426)
+					if (EngineVersion < 426)
 					{
 						struct {
 							FVector FinalLocation;
@@ -789,14 +792,13 @@ namespace Helper
 
 	static bool IsRespawnEnabled()
 	{
-		bool Respawning = bIsPlayground;
-		return Respawning;
+		return GameMode::IsPlayground();
 	}
 
 	static void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false)
 	{
 		UObject* FinalActor = nullptr;
-		if (FnVerDouble < 18.00) // wrong probs
+		if (FortniteVersion < 18.00) // wrong probs
 		{
 			// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
 			struct {
@@ -1142,7 +1144,7 @@ namespace Helper
 
 	static bool IsSmallZoneEnabled()
 	{
-		return bIsLateGame;
+		return GameMode::IsLateGame();
 	}
 
 	static UObject* GetRandomFoundation()
@@ -1336,9 +1338,9 @@ namespace Helper
 			auto CharacterPartsToLoad = (TArray<UObject*>*)(__int64(CurrentAssetsToLoad) + CharacterPartsOffset);
 		}
 
-		static auto headPart = Engine_Version >= 423 ? FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_TreasureHunterFashion.CP_Head_F_TreasureHunterFashion")) :
+		static auto headPart = EngineVersion >= 423 ? FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_TreasureHunterFashion.CP_Head_F_TreasureHunterFashion")) :
 			FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-		static auto bodyPart = Engine_Version >= 423 ? FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_TreasureHunterFashion.CP_Body_Commando_F_TreasureHunterFashion")) :
+		static auto bodyPart = EngineVersion >= 423 ? FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_TreasureHunterFashion.CP_Body_Commando_F_TreasureHunterFashion")) :
 			FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01")); */
 
 		static auto headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
@@ -1357,7 +1359,7 @@ namespace Helper
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
 			Helper::ChoosePart(Pawn, EFortCustomPartType::Backpack, noBackpack);
 
-			static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
+			static auto OnRep_Parts = (FortniteVersion >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
 
 			if (OnRep_Parts)
 				PlayerState->ProcessEvent(OnRep_Parts, nullptr);
@@ -1378,7 +1380,7 @@ namespace Helper
 		auto world = Helper::GetWorld();
 		auto gameState = *world->Member<UObject*>(("GameState"));
 
-		if (FnVerDouble >= 6.10) // WRONG
+		if (FortniteVersion >= 6.10) // WRONG
 		{
 			static auto BasePlaylistOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("BasePlaylist"));
 			if (BasePlaylistOffset)

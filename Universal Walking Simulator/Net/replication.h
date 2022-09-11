@@ -1,385 +1,275 @@
 #pragma once
 
-#include <patterns.h>
-#include <Net/funcs.h>
+#include "functions.h"
 
-std::vector<UObject*> ObjectList;
-
-int PrepConnections(UObject* NetDriver)
+namespace Replication
 {
-    int ReadyConnections = 0;
-
-    auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
-
-    for (int ConnIdx = 0; ConnIdx < ClientConnections->Num(); ConnIdx++)
+    inline auto PrepConnections(UObject* NetDriver)
     {
-        UObject* Connection = ClientConnections->At(ConnIdx);
-
-        if (!Connection)
-            continue;
-
-        UObject* OwningActor = *Connection->Member<UObject*>(("OwningActor"));
-
-        if (OwningActor)
+        auto ReadyConnections = 0;
+        const auto ClientConnections = NetDriver->Member<TArray<UObject*>>("ClientConnections");
+        for (auto ConnIdx = 0; ConnIdx < ClientConnections->Num(); ConnIdx++)
         {
+            const auto Connection = ClientConnections->At(ConnIdx);
+            if (!Connection)
+            {
+                continue;
+            }
+
+            UObject* OwningActor = *Connection->Member<UObject*>(("OwningActor"));
+
+            if (!OwningActor)
+            {
+                *Connection->Member<UObject*>(("ViewTarget")) = nullptr;
+                continue;
+            }
+
             ReadyConnections++;
             UObject* DesiredViewTarget = OwningActor;
 
-            auto PlayerController = *Connection->Member<UObject*>(("PlayerController"));
-
-            if (PlayerController)
+            const auto PlayerController = *Connection->Member<UObject*>(("PlayerController"));
+            if (!PlayerController)
             {
-                static auto GetViewTarget = PlayerController->Function(("GetViewTarget"));
-                UObject* ViewTarget = nullptr;
-
-                if (GetViewTarget)
-                    PlayerController->ProcessEvent(GetViewTarget, &ViewTarget);
-               
-                if (ViewTarget)
-                    DesiredViewTarget = ViewTarget;
+                *Connection->Member<UObject*>(("ViewTarget")) = DesiredViewTarget;
+                continue;
             }
 
+            UObject* ViewTarget = nullptr;
+            if (static const auto GetViewTarget = PlayerController->Function("GetViewTarget"))
+            {
+                PlayerController->ProcessEvent(GetViewTarget, &ViewTarget);
+            }
+
+            if (ViewTarget)
+            {
+                DesiredViewTarget = ViewTarget;
+            }
             *Connection->Member<UObject*>(("ViewTarget")) = DesiredViewTarget;
-
-            /* for(int ChildIdx = 0; ChildIdx < Connection->Children.Num(); ++ChildIdx)
-            {
-                UNetConnection* ChildConnection = Connection->Children[ChildIdx];
-                if (ChildConnection && ChildConnection->PlayerController && ChildConnection->ViewTarget)
-                {
-                    ChildConnection->ViewTarget = DesiredViewTarget;
-                }
-            } */
         }
-        else
-        {
-            *Connection->Member<UObject*>(("ViewTarget")) = nullptr;
 
-            /* for (int ChildIdx = 0; ChildIdx < Connection->Children.Num(); ++ChildIdx)
-            {
-                UNetConnection* ChildConnection = Connection->Children[ChildIdx];
-                if (ChildConnection && ChildConnection->PlayerController && ChildConnection->ViewTarget)
-                {
-                    ChildConnection->ViewTarget = nullptr;
-                }
-            } */
-        }
+        return ReadyConnections;
     }
 
-    return ReadyConnections;
-}
-
-UObject* FindChannel(UObject* Actor, UObject* Connection)
-{
-    auto OpenChannels = Connection->Member<TArray<UObject*>>(("OpenChannels"));
-
-    for (int i = 0; i < OpenChannels->Num(); i++)
+    inline auto FindChannel(const UObject* Actor, UObject* Connection)
     {
-        auto Channel = OpenChannels->At(i);
+        const auto OpenChannels = Connection->Member<TArray<UObject*>>("OpenChannels");
 
-        if (Channel && Channel->ClassPrivate)
+        for (auto Index = 0; Index < OpenChannels->Num(); Index++)
         {
-            static UObject* ActorChannelClass = FindObject(("Class /Script/Engine.ActorChannel"));
-            if (Channel->ClassPrivate == ActorChannelClass)
+            const auto Channel = OpenChannels->At(Index);
+            if (!Channel || !Channel->ClassPrivate)
             {
-                if (*Channel->Member<UObject*>(("Actor")) == Actor)
-                    return Channel;
+                continue;
             }
+
+            if (static const auto ActorChannelClass = FindObject("Class /Script/Engine.ActorChannel"); Channel->
+                ClassPrivate != ActorChannelClass)
+            {
+                continue;
+            }
+
+            if (*Channel->Member<UObject*>("Actor") != Actor)
+            {
+                continue;
+            }
+
+            return Channel;
         }
+
+        return nullptr;
     }
 
-    return nullptr;
-}
-
-TArray<UObject*> GetAllActors(UObject* World)
-{
-    /* if (!World) return nullptr;
-
-    auto Level = World->Member<UObject*>(("PersistentLevel"));
-
-    if (!*Level || !Level) return nullptr;
-
-    auto OwningWorld = (*Level)->Member<UObject*>(("OwningWorld"));
-
-    if (!*OwningWorld || !OwningWorld) return nullptr;
-
-    return (TArray<UObject*>*)(__int64(&*OwningWorld) - 32); */
-
-    static auto ActorsClass = FindObjectOld("Class /Script/Engine.Actor", true);
-    // auto AllActors = Helper::GetAllActorsOfClass(ActorsClass, World);
-
-    TArray<UObject*> AllActors;
-
-    for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
+    inline auto GetNetworkObjectList(UObject* NetDriver)
     {
-        auto Object = GetByIndex(i);
-
-        if (Object->IsA(ActorsClass))
+        auto Offset = 0;
+        if (EngineVersion == 419)
         {
-            AllActors.Add(Object);
+            Offset = 0x490;
         }
+
+        return EngineVersion < 420
+                   ? reinterpret_cast<TSharedPtr<FNetworkObjectList>*>(reinterpret_cast<long long>(NetDriver) + Offset)
+                   ->Get()
+                   : reinterpret_cast<TSharedPtrOld<FNetworkObjectList>*>(reinterpret_cast<long long>(NetDriver) +
+                       Offset)->Get();
     }
 
-    return AllActors;
-}
-
-FNetworkObjectList* GetNetworkObjectList(UObject* NetDriver)
-{
-    auto Offset = 0;
-
-    if (Engine_Version == 419) // got on 2.4.2
-        Offset = 0x490;
-
-    if (Engine_Version < 420)
-        return ((TSharedPtr<FNetworkObjectList>*)(__int64(NetDriver) + Offset))->Get();
-    else
-        return ((TSharedPtrOld<FNetworkObjectList>*)(__int64(NetDriver) + Offset))->Get();
-}
-
-struct Bitfield_242
-{
-    unsigned char                                      bHidden : 1;                                              // 0x0084(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, Net)
-    unsigned char                                      bNetTemporary : 1;                                        // 0x0084(0x0001)
-    unsigned char                                      bNetStartup : 1;                                          // 0x0084(0x0001)
-    unsigned char                                      bOnlyRelevantToOwner : 1;                                 // 0x0084(0x0001) (Edit, BlueprintVisible, BlueprintReadOnly, DisableEditOnInstance)
-    unsigned char                                      bAlwaysRelevant : 1;                                      // 0x0084(0x0001) (Edit, BlueprintVisible, DisableEditOnInstance)
-    unsigned char                                      bReplicateMovement : 1;                                   // 0x0084(0x0001) (Edit, Net, DisableEditOnInstance)
-    unsigned char                                      bTearOff : 1;                                             // 0x0084(0x0001) (Net)
-    unsigned char                                      bExchangedRoles : 1;                                      // 0x0084(0x0001) (Transient)
-};
-
-struct Bitfield2_242
-{
-    unsigned char                                      AutoDestroyWhenFinished : 1;                             // 0x013C(0x0001) (BlueprintVisible)
-    unsigned char                                      bCanBeDamaged : 1;                                        // 0x013C(0x0001) (Edit, BlueprintVisible, Net, SaveGame)
-    unsigned char                                      bActorIsBeingDestroyed : 1;                               // 0x013C(0x0001) (Transient, DuplicateTransient)
-    unsigned char                                      bCollideWhenPlacing : 1;                                  // 0x013C(0x0001)
-    unsigned char                                      bFindCameraComponentWhenViewTarget : 1;                   // 0x013C(0x0001) (Edit, BlueprintVisible)
-    unsigned char                                      bRelevantForNetworkReplays : 1;                           // 0x013C(0x0001)
-    unsigned char                                      bGenerateOverlapEventsDuringLevelStreaming : 1;           // 0x013C(0x0001) (Edit, BlueprintVisible)
-    unsigned char                                      bCanBeInCluster : 1;
-};
-
-void ServerReplicateActors_BuildConsiderList(UObject* NetDriver, TArray<FNetworkObjectInfo*>& OutConsiderList)
-{
-    static auto WorldOffset = GetOffset(NetDriver, "World");
-    auto World = *(UObject**)(__int64(NetDriver) + WorldOffset);
-
-    if (!World)
-        return;
-
-    auto ObjectList = GetNetworkObjectList(NetDriver);
-    auto& ActiveNetworkObjects = ObjectList->ActiveNetworkObjects;
-
-    std::cout << ("NumActors: ") << ActiveNetworkObjects.Elements.Data.Num() << '\n';
-
-    TArray<UObject*> ActorsToRemove;
-
-    for (int j = 0; j < ActiveNetworkObjects.Elements.Data.Num(); j++)
+    // TODO: Check NetDriver Name
+    inline void ServerReplicateActorsBuildConsiderList(UObject* NetDriver, TArray<FNetworkObjectInfo*>& OutConsiderList)
     {
-        auto& ActorIdk = ActiveNetworkObjects.Elements.Data.At(j);
-        auto ActorInfo = ActorIdk.ElementData.Value.Get();
-
-        if (!ActorInfo)
-            continue;
-
-        auto Actor = ActorInfo->Actor;
-
-    /* TArray<UObject*> Actors = GetAllActors(World);
-
-    std::cout << ("NumActors: ") << Actors.Num() << '\n';
-
-    for (int i = 0; i < Actors.Num(); i++)
-    {
-        auto Actor = Actors.At(i); */
-
-        if (!Actor)
-            continue;
-
-        // std::cout << "RemoteRoleOffset: " << RemoteRoleOffset << '\n';
-
-        static auto RemoteRoleOffset = GetOffset(Actor, "RemoteRole");
-
-        if (((TEnumAsByte<ENetRole>*)(__int64(Actor) + RemoteRoleOffset))->Get() == ENetRole::ROLE_None)
+        static auto WorldOffset = GetOffset(NetDriver, "World");
+        if (const auto World = *reinterpret_cast<UObject**>(reinterpret_cast<long long>(NetDriver) + WorldOffset); !
+            World)
         {
-            // std::cout << "actor: " << Actor << '\n';
-            continue;
+            return;
         }
 
-        static auto bActorIsBeingDestroyedOffset = GetOffset(Actor, "bActorIsBeingDestroyed");
+        const auto ObjectList = GetNetworkObjectList(NetDriver);
+        const auto [Elements, Hash, HashSize] = ObjectList->ActiveNetworkObjects;
 
-        if ((((Bitfield2_242*)(__int64(Actor) + bActorIsBeingDestroyedOffset))->bActorIsBeingDestroyed))
+        for (int j = 0; j < Elements.Data.Num(); j++)
         {
-            std::cout << "bActorIsBeingDestroyed!\n";
-            continue;
-        }
+            const auto ActorIdk = Elements.Data.At(j);
+            const auto ActorInfo = ActorIdk.ElementData.Value.Get();
+            if (!ActorInfo)
+            {
+                continue;
+            }
 
-        static auto NetDormancyOffset = GetOffset(Actor, "NetDormancy");
-        static auto bNetStartupOffset = GetOffset(Actor, "bNetStartup");
+            auto Actor = ActorInfo->Actor;
+            if (!Actor)
+            {
+                continue;
+            }
 
-        if ((*(ENetDormancy*)(__int64(Actor) + NetDormancyOffset) == ENetDormancy::DORM_Initial) && ((Bitfield_242*)(__int64(Actor) + bNetStartupOffset))->bNetStartup)
-        {
-            continue;
-        }
+            static const auto RemoteRoleOffset = GetOffset(Actor, "RemoteRole");
 
-        // TODO: Check NetDriver Name
+            if (reinterpret_cast<TEnumAsByte<ENetRole>*>(reinterpret_cast<long long>(Actor) + RemoteRoleOffset)->Get()
+                == ENetRole::ROLE_None)
+            {
+                continue;
+            }
 
-        {
+            if (static auto ActorIsBeingDestroyedOffset = GetOffset(Actor, "bActorIsBeingDestroyed"); reinterpret_cast<
+                    Bitfield2_242*>(reinterpret_cast<long long>(Actor) + ActorIsBeingDestroyedOffset)->
+                bActorIsBeingDestroyed)
+            {
+                continue;
+            }
+
+            static const auto NetDormancyOffset = GetOffset(Actor, "NetDormancy");
+            if (static const auto NetStartupOffset = GetOffset(Actor, "bNetStartup");
+                *reinterpret_cast<ENetDormancy*>(reinterpret_cast<long long>(Actor) + NetDormancyOffset) ==
+                ENetDormancy::DORM_Initial
+                && reinterpret_cast<Bitfield_242*>(reinterpret_cast<long long>(Actor) + NetStartupOffset)->bNetStartup)
+            {
+                continue;
+            }
+
             CallPreReplication(Actor, NetDriver);
             OutConsiderList.Add(ActorInfo);
         }
     }
 
-    // Actors.Free();
-}
-
-static bool bInThing = false;
-
-int32_t ServerReplicateActors(UObject* NetDriver)
-{
-    bInThing = true;
-
-    if (!NetDriver)
+    inline int32_t ServerReplicateActors(UObject* NetDriver)
     {
-        bInThing = false;
-        return -1;
-    }
-
-	// Supports replicationgraph
-
-    if (Engine_Version >= 420)
-    {
-        static auto ReplicationDriverOffset = GetOffset(NetDriver, "ReplicationDriver");
-        auto ReplicationDriver = (UObject**)(__int64(NetDriver) + ReplicationDriverOffset);
-
-        if (ReplicationDriver && *ReplicationDriver)
+        if (!NetDriver)
         {
-            if (RepGraph_ServerReplicateActors)
-            {
-                RepGraph_ServerReplicateActors(*ReplicationDriver);
-                return 50; // pretty sure replicationdriver ticks like 50 connections max
-            }
+            return -1;
         }
 
-        return -1;
-    }
-
-    // ReplicationFrame
-    if (Engine_Version == 419)
-        ++*(int32_t*)(NetDriver + 0x2C8);
-    if (Engine_Version == 424)
-        ++*(int32_t*)(NetDriver + 0x410);
-
-    auto NumClientsToTick = PrepConnections(NetDriver);
-
-    if (NumClientsToTick == 0)
-        return NumClientsToTick;
-
-    TArray<FNetworkObjectInfo*> ConsiderList;
-    ConsiderList.Reserve(GetNetworkObjectList(NetDriver)->ActiveNetworkObjects.Elements.Data.Num());
-
-    ServerReplicateActors_BuildConsiderList(NetDriver, ConsiderList);
-
-    std::cout << ("Considering: ") << ConsiderList.Num() << '\n';
-
-    auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
-
-    for (int i = 0; i < ClientConnections->Num(); i++)
-    {
-        auto Connection = ClientConnections->At(i);
-
-        if (!Connection)
-            continue;
-
-        static auto ViewTargetOffset = GetOffset(Connection, "ViewTarget");
-        auto ViewTarget = (UObject**)(__int64(Connection) + ViewTargetOffset);
-
-        if (i >= NumClientsToTick)
-            break; // Only tick on ready connections
-
-        else if (ViewTarget && *ViewTarget)
+        if (EngineVersion >= 420)
         {
-            static auto PlayerControllerOffset = GetOffset(Connection, "PlayerController");
-            auto PlayerControllerR = (UObject**)(__int64(Connection) + PlayerControllerOffset);
-
-            if (!(PlayerControllerR && *PlayerControllerR))
-                continue;
-            
-            auto PlayerController = *PlayerControllerR;
-
-            if (SendClientAdjustment && PlayerController)
-                SendClientAdjustment(PlayerController);
-
-            std::cout << "a\n";
-
-            int j = 0;
-
-            while(j < ConsiderList.Num())
+            static const auto ReplicationDriverOffset = GetOffset(NetDriver, "ReplicationDriver");
+            if (const auto ReplicationDriver = reinterpret_cast<UObject**>(reinterpret_cast<long long>(NetDriver) +
+                ReplicationDriverOffset); ReplicationDriver && *ReplicationDriver)
             {
-                std::cout << "b\n";
+                if (RepGraphServerReplicateActors)
+                {
+                    RepGraphServerReplicateActors(*ReplicationDriver);
+                    return 50;
+                }
+            }
 
-                auto ActorInfo = ConsiderList.At(j);
+            return -1;
+        }
 
+        if (EngineVersion == 419)
+        {
+            ++*reinterpret_cast<int32_t*>(NetDriver + 0x2C8);
+        }
+        else if (EngineVersion == 424)
+        {
+            ++*reinterpret_cast<int32_t*>(NetDriver + 0x410);
+        }
+
+        const auto NumClientsToTick = PrepConnections(NetDriver);
+
+        if (NumClientsToTick == 0)
+        {
+            return NumClientsToTick;
+        }
+
+        TArray<FNetworkObjectInfo*> ConsiderList;
+        ConsiderList.Reserve(GetNetworkObjectList(NetDriver)->ActiveNetworkObjects.Elements.Data.Num());
+
+        ServerReplicateActorsBuildConsiderList(NetDriver, ConsiderList);
+
+        const auto ClientConnections = NetDriver->Member<TArray<UObject*>>("ClientConnections");
+        for (int i = 0; i < ClientConnections->Num(); i++)
+        {
+            const auto Connection = ClientConnections->At(i);
+            if (!Connection)
+            {
+                continue;
+            }
+
+            static auto ViewTargetOffset = GetOffset(Connection, "ViewTarget");
+            const auto ViewTarget = reinterpret_cast<UObject**>(reinterpret_cast<long long>(Connection) +
+                ViewTargetOffset);
+            if (i >= NumClientsToTick)
+            {
+                break;
+            }
+
+            if (!ViewTarget || !*ViewTarget)
+            {
+                continue;
+            }
+
+            static auto PlayerControllerOffset = GetOffset(Connection, "PlayerController");
+            const auto PlayerControllerR = reinterpret_cast<UObject**>(reinterpret_cast<long long>(Connection) +
+                PlayerControllerOffset);
+
+            if (!PlayerControllerR || !*PlayerControllerR)
+            {
+                continue;
+            }
+
+            const auto PlayerController = *PlayerControllerR;
+            if (SendClientAdjustment && PlayerController)
+            {
+                SendClientAdjustment(PlayerController);
+            }
+
+            auto j = 0;
+            while (j < ConsiderList.Num())
+            {
+                const auto ActorInfo = ConsiderList.At(j);
                 if (!ActorInfo)
+                {
                     continue;
+                }
 
-                auto Actor = ActorInfo->Actor;
-
-                static auto PlayerControllerClass = FindObject(("Class /Script/Engine.PlayerController"));
-
-                if (Actor->IsA(PlayerControllerClass) && Actor != PlayerController)
+                const auto Actor = ActorInfo->Actor;
+                if (static auto PlayerControllerClass = FindObject("Class /Script/Engine.PlayerController"); Actor->
+                    IsA(PlayerControllerClass) && Actor != PlayerController)
+                {
                     continue;
+                }
 
                 auto Channel = FindChannel(Actor, Connection);
-
                 if (!Channel)
                 {
-
-                    // EName ActorEName = EName::Actor;
-
-                    // FNameEntryId ActorEntryId = FromValidEName(ActorEName);
-
-                   //  FName ActorName = FName(ActorEName);
-
-                    FName ActorName(102); // Helper::StringToName(idk)
-
-                    // std::cout << ("Comparison Index: ") << ActorName.ComparisonIndex << '\n';
-                    // std::cout << ("Number: ") << ActorName.Number << '\n';
-
-                    if (Engine_Version >= 422)
-                        Channel = CreateChannelByName(Connection, &ActorName, EChannelCreateFlags::OpenedLocally, -1);
-                    else
-                        Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
-
+                    FName ActorName(102);
+                    Channel = EngineVersion >= 422
+                                  ? CreateChannelByName(Connection, &ActorName, EChannelCreateFlags::OpenedLocally, -1)
+                                  : CreateChannel(Connection, CHTYPE_Actor, true, -1);
                     if (Channel)
                     {
                         SetChannelActor(Channel, Actor);
-                        // std::cout << ("Created Channel for Actor => ") << Actor->GetFullName() << '\n';
-                    }
-                    else
-                    {
-                        std::cout << ("Unable to Create Channel!\n");
                     }
                 }
 
                 if (Channel)
                 {
-                    // if (IsActorRelevantToConnection(Actor, ConnectionViewers) || Actor->bAlwaysRelevant) // temporary
-                    {
-                        ReplicateActor(Channel);
-                    }
-                    // else // techinally we should wait like 5 seconds but whatever.
-                    {
-                        // todo get pattern
-                        // Native::ActorChannel::Close(Channel);
-                    }
+                    ReplicateActor(Channel);
                 }
 
                 j++;
             }
         }
+
+        return NumClientsToTick;
     }
-
-    bInThing = false;
-
-    return NumClientsToTick;
 }

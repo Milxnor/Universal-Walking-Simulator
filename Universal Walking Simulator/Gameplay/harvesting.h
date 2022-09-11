@@ -3,165 +3,132 @@
 #include <Gameplay/helper.h>
 #include <Gameplay/inventory.h>
 
-void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.f)
+namespace Harvesting
 {
-	// HasDestructionLoot
+    inline int GetResourcesAmount(UObject* BuildingActor)
+    {
+        std::random_device RandomDevice;
+        std::mt19937 Generator(RandomDevice());
+        const auto MaxResourcesToSpawn = *BuildingActor->Member<int>("MaxResourcesToSpawn");
+        std::uniform_int_distribution Distribution(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
+        return Distribution(Generator);
+    }
 
-	struct FCurveTableRowHandle
-	{
-	public:
-		UObject* CurveTable;
-		FName RowName;
-	};
+    inline void HarvestItem(UObject* Controller, UObject* BuildingActor, const float Damage = 0.f)
+    {
+        // Player placed replacement
+        if (const auto BuildingResourceAmountOverride = BuildingActor->Member<CurveTableRowHandle>(
+                "BuildingResourceAmountOverride");
+            !BuildingResourceAmountOverride->RowName.ComparisonIndex)
+        {
+            return;
+        }
 
-	auto BuildingResourceAmountOverride = BuildingActor->Member<FCurveTableRowHandle>("BuildingResourceAmountOverride");
+        const auto MaxDamage = Damage == 100.f;
+        const auto Amount = MaxDamage
+                                ? GetResourcesAmount(BuildingActor) + GetResourcesAmount(BuildingActor)
+                                : GetResourcesAmount(BuildingActor);
+        const auto Type = *BuildingActor->Member<TEnumAsByte<EFortResourceType>>("ResourceType");
+        ReportDamagedResourceBuildingParameters Parameters{BuildingActor, Type, Amount, false, MaxDamage};
 
-	if (!BuildingResourceAmountOverride->RowName.ComparisonIndex) // player placed replacement
-		return;
+        static auto ClientReportDamagedResourceBuilding = Controller->Function("ClientReportDamagedResourceBuilding");
+        if (!ClientReportDamagedResourceBuilding)
+        {
+            return;
+        }
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	auto MaxResourcesToSpawn = 6; // *BuildingActor->Member<int>("MaxResourcesToSpawn");
-	std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
+        Controller->ProcessEvent(ClientReportDamagedResourceBuilding, &Parameters);
 
-	auto Random = distr(gen);
+        const auto Pawn = *Controller->Member<UObject*>("Pawn");
+        const auto ItemDef = Item::GetMaterial(Parameters.PotentialResourceType.Get());
+        const auto ItemInstance = Inventory::FindItem(Controller, ItemDef);
+        const auto AmountToGive = Parameters.PotentialResourceCount;
 
-	auto HitWeakspot = (Damage) == 100.f;
+        // TODO: Take into account weakspot to determine quantity of loot
+        if (ItemInstance && Pawn)
+        {
+            if (const auto Entry = ItemInstance->Member<long long>("ItemEntry"); *Item::GetCount(Entry) >=
+                999)
+            {
+                // BUG: You lose some mats if you have like 998
+                Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn),
+                                     EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, AmountToGive);
+                return;
+            }
+        }
 
-	auto funne = distr(gen);
+        Inventory::GiveItem(Controller, ItemDef, EFortQuickBars::Secondary, 1, AmountToGive);
+    }
 
-	if (HitWeakspot)
-	{
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_int_distribution<> distr(MaxResourcesToSpawn / 2, MaxResourcesToSpawn);
+    // TODO: Not hardcode the PickaxeDef, do like slot 0 or something
+    inline bool OnDamageServerHook(UObject* BuildingActor, [[maybe_unused]] UFunction* Function, void* Parameters)
+    {
+        static const auto BuildingSMActorClass = FindObject("Class /Script/FortniteGame.BuildingSMActor");
+        if (!BuildingActor->IsA(BuildingSMActorClass))
+        {
+            return false;
+        }
 
-		funne += distr(gen);
-	}
+        static const auto FortPlayerControllerAthenaClass = FindObject(
+            "Class /Script/FortniteGame.FortPlayerControllerAthena");
+        const auto InstigatedByOffset = FindOffsetStruct("Function /Script/FortniteGame.BuildingActor.OnDamageServer",
+                                                         "InstigatedBy");
+        const auto InstigatedBy = *reinterpret_cast<UObject**>(reinterpret_cast<long long>(Parameters) +
+            InstigatedByOffset);
+        if (!InstigatedBy || !InstigatedBy->IsA(FortPlayerControllerAthenaClass))
+        {
+            return false;
+        }
 
-	std::cout << "StaticGameplayTags: " << BuildingActor->Member<FGameplayTagContainer>("StaticGameplayTags")->ToStringSimple(true) << '\n';
+        const auto DamageCauserOffset = FindOffsetStruct("Function /Script/FortniteGame.BuildingActor.OnDamageServer",
+                                                         "DamageCauser");
+        if (const auto DamageCauser = *reinterpret_cast<UObject**>(reinterpret_cast<long long>(Parameters) +
+                DamageCauserOffset);
+            !DamageCauser->GetFullName().contains("B_Melee_Impact_Pickaxe_Athena_C"))
+        {
+            return false;
+        }
 
-	struct
-	{
-		UObject* BuildingSMActor;
-		TEnumAsByte<EFortResourceType> PotentialResourceType;
-		int PotentialResourceCount;
-		bool bDestroyed;
-		bool bJustHitWeakspot;
-	} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(("ResourceType")), funne, false, HitWeakspot }; // ender weakspotrs
+        const auto DamageOffset = FindOffsetStruct("Function /Script/FortniteGame.BuildingActor.OnDamageServer",
+                                                   "Damage");
+        const auto Damage = reinterpret_cast<float*>(reinterpret_cast<long long>(Parameters) + DamageOffset);
+        if (const auto CurrentWeapon = *(*InstigatedBy->Member<UObject*>("MyFortPawn"))->Member<UObject*>(
+                "CurrentWeapon");
+            !CurrentWeapon || *CurrentWeapon->Member<UObject*>("WeaponData") != Item::Pickaxe)
+        {
+            return false;
+        }
 
-	static auto ClientReportDamagedResourceBuilding = Controller->Function(("ClientReportDamagedResourceBuilding"));
+        HarvestItem(InstigatedBy, BuildingActor, *Damage);
+        return false;
+    }
 
-	if (ClientReportDamagedResourceBuilding)
-	{
-		auto Params = &AFortPlayerController_ClientReportDamagedResourceBuilding_Params;
+    // TODO: Not hardcode the PickaxeDef, do like slot 0 or something
+    inline bool BlueprintCanAttemptGenerateResourcesHook(UObject* BuildingActor, UFunction* Function, void* Parameters)
+    {
+        const auto Params = static_cast<InstigatorParameters*>(Parameters);
+        ProcessEventO(BuildingActor, Function, Params);
+        if (!Params || !Params->Ret)
+        {
+        }
 
-		Controller->ProcessEvent(ClientReportDamagedResourceBuilding, &AFortPlayerController_ClientReportDamagedResourceBuilding_Params);
+        const auto Pawn = *Params->InstigatorController->Member<UObject*>("MyFortPawn");
+        if (const auto CurrentWeapon = *Pawn->Member<UObject*>("CurrentWeapon"); !CurrentWeapon || *CurrentWeapon->
+            Member<UObject*>("WeaponData") != Item::Pickaxe)
+        {
+            return false;
+        }
 
-		auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+        HarvestItem(Params->InstigatorController, BuildingActor);
+        return false;
+    }
 
-		static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
-		static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
-		static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
-
-		UObject* ItemDef = WoodItemData;
-
-		if (Params->PotentialResourceType.Get() == EFortResourceType::Stone)
-			ItemDef = StoneItemData;
-
-		if (Params->PotentialResourceType.Get() == EFortResourceType::Metal)
-			ItemDef = MetalItemData;
-
-		auto ItemInstance = Inventory::FindItemInInventory(Controller, ItemDef);
-
-		int AmountToGive = Params->PotentialResourceCount;
-
-		// IMPROPER, we should add weakspot here.
-
-		if (ItemInstance && Pawn)
-		{
-			auto Entry = ItemInstance->Member<__int64>(("ItemEntry"));
-
-			// BUG: You lose some mats if you have like 998 or idfk
-			if (*FFortItemEntry::GetCount(Entry) >= 999)
-			{
-				Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, AmountToGive);
-				return;
-			}
-		}
-
-		Inventory::GiveItem(Controller, ItemDef, EFortQuickBars::Secondary, 1, AmountToGive);
-	}
-}
-
-inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void* Parameters)
-{
-	static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
-
-	if (BuildingActor->IsA(BuildingSMActorClass)) // || BuildingActor->GetFullName().contains(("Car_")))
-	{
-		auto InstigatedByOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("InstigatedBy"));
-		auto InstigatedBy = *(UObject**)(__int64(Parameters) + InstigatedByOffset);
-
-		auto DamageCauserOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("DamageCauser"));
-		auto DamageCauser = *(UObject**)(__int64(Parameters) + DamageCauserOffset);
-
-		auto DamageTagsOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("DamageTags"));
-		auto DamageTags = (FGameplayTagContainer*)(__int64(Parameters) + DamageTagsOffset);
-
-		auto DamageOffset = FindOffsetStruct(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), ("Damage"));
-		auto Damage = (float*)(__int64(Parameters) + DamageOffset);
-
-		static auto FortPlayerControllerAthenaClass = FindObject(("Class /Script/FortniteGame.FortPlayerControllerAthena"));
-
-		if (InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass) &&
-			DamageCauser->GetFullName().contains("B_Melee_Impact_Pickaxe_Athena_C")) // cursed
-		{
-			// TODO: Not hardcode the PickaxeDef, do like slot 0  or something
-			static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-			auto CurrentWeapon = *(*InstigatedBy->Member<UObject*>(("MyFortPawn")))->Member<UObject*>(("CurrentWeapon"));
-
-			if (CurrentWeapon && *CurrentWeapon->Member<UObject*>(("WeaponData")) == PickaxeDef)
-			{
-				DoHarvesting(InstigatedBy, BuildingActor, *Damage);
-			}
-		}
-		;
-	}
-
-	return false;
-}
-
-inline bool BlueprintCanAttemptGenerateResourcesHook(UObject* BuildingActor, UFunction* Function, void* Parameters)
-{
-	struct parms {
-		FGameplayTagContainer InTags;
-		UObject* InstigatorController; // AController*
-		bool ret;
-	};
-
-	auto Params = (parms*)Parameters;
-
-	ProcessEventO(BuildingActor, Function, Params);
-
-	static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-	auto CurrentWeapon = *(*Params->InstigatorController->Member<UObject*>(("MyFortPawn")))->Member<UObject*>(("CurrentWeapon"));
-
-	if (CurrentWeapon && *CurrentWeapon->Member<UObject*>(("WeaponData")) == PickaxeDef)
-	{
-		if (Params && Params->ret)
-		{
-			DoHarvesting(Params->InstigatorController, BuildingActor);
-		}
-	}
-
-	return false;
-}
-
-void InitializeHarvestingHooks()
-{
-	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDamageServer"), OnDamageServerHook);
-
-	if (Engine_Version > 424)
-		AddHook("Function /Script/FortniteGame.BuildingSMActor.BlueprintCanAttemptGenerateResources", BlueprintCanAttemptGenerateResourcesHook);
+    inline void InitHooks()
+    {
+        Hooks::Add("Function /Script/FortniteGame.BuildingActor.OnDamageServer", OnDamageServerHook);
+        if (EngineVersion > 424)
+        {
+            Hooks::Add("Function /Script/FortniteGame.BuildingSMActor.BlueprintCanAttemptGenerateResources", BlueprintCanAttemptGenerateResourcesHook);
+        }
+    }
 }

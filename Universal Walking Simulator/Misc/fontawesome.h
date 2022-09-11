@@ -1,3 +1,5 @@
+// ReSharper disable CppClangTidyClangDiagnosticUnusedMacros
+
 #pragma once
 
 #define FONT_ICON_FILE_NAME_FAL "fa-light-300.ttf"
