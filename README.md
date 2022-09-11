@@ -1,6 +1,9 @@
 # Hello this code is terrible, don't learn from it, I will rewrite and make it way better.
 ### FYI: This isn't 100% universal, there are bugs on almost every season and some seasons have no support at all.<br> <a href="https://discord.gg/reboot">Discord Server</a>.
 
+# Download
+You can find and download the most recent commit from [here](https://nightly.link/Milxnor/Universal-Walking-Simulator/workflows/msbuild/master/Release.zip)
+
 # Supported Versions
 Currently Supported: ~S4-S15<br>
 
