@@ -31,7 +31,7 @@ namespace Finder
     }
 
     inline auto FindBytes(Memcury::Scanner& Scanner, const std::vector<uint8_t>& Bytes, const int Count = 255, const int SkipBytes = 0,
-                          const bool BGoUp = false, int Skip = 0)
+                          const bool BGoUp = false, int Skip = 0) -> int
     {
         for (int i = 0 + SkipBytes; i < Count + SkipBytes; i++)
         {
@@ -78,7 +78,7 @@ namespace Finder
             }
         }
 
-        return "";
+        return std::string("");
     }
 
     inline auto GetTickFlush(const int Length = 35, uintptr_t* Address = nullptr)
@@ -95,7 +95,7 @@ namespace Finder
             }
         }
 
-        return "";
+        return std::string("");
     }
 
     inline auto GetStaticLoadObject(const int Length = 35, uintptr_t* Address = nullptr)
@@ -113,6 +113,6 @@ namespace Finder
             }
         }
 
-        return "";
+        return std::string("");
     }
 }

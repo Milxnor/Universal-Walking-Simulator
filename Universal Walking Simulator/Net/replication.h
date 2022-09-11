@@ -4,6 +4,51 @@
 
 namespace Replication
 {
+    inline auto GetSize()
+    {
+        if (FortniteVersion >= 3 && FortniteVersion < 4)
+        {
+            return 0xC8;
+        }
+        
+        if (FortniteVersion > 3 && FortniteVersion < 7.40)
+        {
+            return 0xD0;
+        }
+
+        if (FortniteVersion >= 7.40 && EngineVersion <= 424)
+        {
+            return 0x120;
+        }
+
+        if (EngineVersion == 425)
+        {
+            return 0x150;
+        }
+
+        if (EngineVersion >= 426 && FortniteVersion < 14.60)
+        {
+            return 0x160;
+        }
+        
+        if (FortniteVersion == 14.60) {
+            return 0x180;
+        }
+        
+        if (FortniteVersion >= 15 && FortniteVersion < 18)
+        {
+            return 0x190;
+        }
+        
+        if (FortniteVersion >= 18)
+        {
+            return 0x1A0;
+        }
+
+        return -1;
+    }
+
+    
     inline auto PrepConnections(UObject* NetDriver)
     {
         auto ReadyConnections = 0;
@@ -50,7 +95,7 @@ namespace Replication
         return ReadyConnections;
     }
 
-    inline auto FindChannel(const UObject* Actor, UObject* Connection)
+    inline auto FindChannel(const UObject* Actor, UObject* Connection) -> UObject*
     {
         const auto OpenChannels = Connection->Member<TArray<UObject*>>("OpenChannels");
 

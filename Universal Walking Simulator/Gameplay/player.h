@@ -1,6 +1,7 @@
 #pragma once
 
 #include "item.h"
+#include "Net/replication.h"
 
 namespace Player
 {
@@ -89,29 +90,32 @@ namespace Player
         return static_cast<UObject*>(Controller->ProcessEvent(Function, &Guid));
     }
 
-    inline auto GetReplicatedEntries(UObject* Controller)
+    template <typename ReplicatedType>
+    auto GetReplicatedEntries(UObject* Controller) 
     {
         static const auto ReplicatedEntriesOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortItemList",
                                                                      "ReplicatedEntries");
         auto Inventory = GetInventory(Controller);
-        return reinterpret_cast<TArray<FFastArraySerializerItem>*>(reinterpret_cast<long long>(Inventory) +
+        return reinterpret_cast<TArray<ReplicatedType>*>(reinterpret_cast<long long>(Inventory) +
             ReplicatedEntriesOffset);
     }
-
+    
     inline auto AddToReplicatedEntries(UObject* Controller, UObject* FortItem)
     {
         if (!Controller || !FortItem)
         {
             return -1;
         }
-
-        const auto ItemEntry = Item::GetEntry(FortItem);
-        return ItemEntry ? GetReplicatedEntries(Controller)->Add(*ItemEntry) : -1;
+        
+        struct ItemEntryType { unsigned char Unk00[Replication::GetSize()]; };
+        const auto ItemEntry = Item::GetEntry<ItemEntryType>(FortItem);
+        return ItemEntry ? GetReplicatedEntries<ItemEntryType>(Controller)->Add(*ItemEntry) : -1;
     }
 
     inline auto RemoveGuidFromReplicatedEntries(UObject* Controller, const FGuid& Guid)
     {
-        const auto ReplicatedEntries = GetReplicatedEntries(Controller);
+        struct ItemEntryType { unsigned char Unk00[Replication::GetSize()]; };
+        const auto ReplicatedEntries = GetReplicatedEntries<ItemEntryType>(Controller);
 
         bool AnyMatch = false;
 
@@ -139,9 +143,9 @@ namespace Player
         {
             return false;
         }
-
-
-        const auto ReplicatedEntries = GetReplicatedEntries(Controller);
+        
+        struct ItemEntryType { unsigned char Unk00[Replication::GetSize()]; };
+        const auto ReplicatedEntries = GetReplicatedEntries<ItemEntryType>(Controller);
         for (int x = 0; x < ReplicatedEntries->Num(); x++)
         {
             auto ItemEntry = ReplicatedEntries->At(x);

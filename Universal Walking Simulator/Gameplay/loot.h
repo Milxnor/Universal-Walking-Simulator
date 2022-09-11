@@ -24,7 +24,7 @@ namespace Looting
             return LootPackagesSoft->ObjectID.SubPathString.ToString();
         }
 
-        return "/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client";
+        return std::string("/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client");
     }
 
     inline auto GetLootPackages() -> UObject*
@@ -88,20 +88,20 @@ namespace Looting
     {
         if (DefinitionString.contains("Weapon"))
         {
-            return Item::Type::Weapon;
+            return ItemType::Weapon;
         }
 
         if (DefinitionString.contains("Consumable"))
         {
-            return Item::Type::Consumable;
+            return ItemType::Consumable;
         }
 
         if (DefinitionString.contains("Ammo"))
         {
-            return Item::Type::Ammo;
+            return ItemType::Ammo;
         }
 
-        return Item::Type::None;
+        return ItemType::None;
     }
 
     inline void Init()
@@ -213,7 +213,7 @@ namespace Looting
     }
 
     // TODO: Optimize
-    inline auto GetRandomItem(const Item::Type Type, const int Row = LootRow)
+    inline auto GetRandomItem(const ItemType Type, const int Row = LootRow)
     {
         if (Row <= Items.size() ? Items[Row].empty() : true)
         {
@@ -272,7 +272,7 @@ namespace Looting
 
             if (RandomBoolWithWeight(0.35f))
             {
-                Helper::SummonPickup(nullptr, GetRandomItem(Item::Type::Consumable).Definition,
+                Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Consumable).Definition,
                                      Helper::GetCorrectLocation(BuildingContainer),
                                      EFortPickupSourceTypeFlag::FloorLoot,
                                      EFortPickupSpawnSource::Unset);
@@ -280,7 +280,7 @@ namespace Looting
                 continue;
             }
 
-            const auto [Definition, Weight, DropCount, RowName, Type] = GetRandomItem(Item::Type::Weapon);
+            const auto [Definition, Weight, DropCount, RowName, Type] = GetRandomItem(ItemType::Weapon);
 
             static auto GetAmmoWorldItemDefinitionBp = Definition->Function("GetAmmoWorldItemDefinition_BP");
             const auto WeaponPickup = Helper::SummonPickup(nullptr, Definition,
@@ -322,13 +322,13 @@ namespace Looting
             std::random_device RandomDevice;
             std::mt19937 Generator(RandomDevice());
 
-            std::uniform_int_distribution<> AbscissaDistribution(-40000, 128000);
-            std::uniform_int_distribution<> OrdinateDistribution(-90000, 70000);
-            std::uniform_int_distribution<> OtherDistribution(-40000, 30000); 
+            std::uniform_int_distribution AbscissaDistribution(-40000, 128000);
+            std::uniform_int_distribution OrdinateDistribution(-90000, 70000);
+            std::uniform_int_distribution OtherDistribution(-40000, 30000); 
 
-            RandLocation.X = AbscissaDistribution(Generator);
-            RandLocation.Y = OrdinateDistribution(Generator);
-            RandLocation.Z = OtherDistribution(Generator);
+            RandLocation.X = static_cast<float>(AbscissaDistribution(Generator));
+            RandLocation.Y = static_cast<float>(OrdinateDistribution(Generator));
+            RandLocation.Z = static_cast<float>(OtherDistribution(Generator));
 
             FRotator RandRotation;
             Easy::SpawnActor(LamaClass, RandLocation, RandRotation);
@@ -339,7 +339,7 @@ namespace Looting
 
     inline void HandleChestSearch(UObject* BuildingContainer)
     {
-        const auto [WeaponDef, WeaponWeight, WeaponCount, WeaponRow, WeaponType] = GetRandomItem(Item::Type::Weapon);
+        const auto [WeaponDef, WeaponWeight, WeaponCount, WeaponRow, WeaponType] = GetRandomItem(ItemType::Weapon);
         const auto GetAmmoWorldItemDefinitionBp = WeaponDef->Function("GetAmmoWorldItemDefinition_BP");
         if (!GetAmmoWorldItemDefinitionBp)
         {
@@ -363,7 +363,7 @@ namespace Looting
                                  EFortPickupSpawnSource::Chest, Count);
         }
 
-        if (const auto [Definition, Weight, DropCount, RowName, Type] = GetRandomItem(Item::Type::Consumable);
+        if (const auto [Definition, Weight, DropCount, RowName, Type] = GetRandomItem(ItemType::Consumable);
             Definition)
         {
             Helper::SummonPickup(nullptr, Definition, Location,
@@ -374,7 +374,7 @@ namespace Looting
 
     inline void HandleAmmoSearch(UObject* BuildingContainer)
     {
-        const auto [Definition, Weight, DropCount, RowName, Type] = GetRandomItem(Item::Type::Ammo);
+        const auto [Definition, Weight, DropCount, RowName, Type] = GetRandomItem(ItemType::Ammo);
         const auto AmmoDef = Definition;
         if (!AmmoDef)
         {
@@ -411,7 +411,7 @@ namespace Looting
     {
         for (int i = 0; i < 5; i++)
         {
-            Helper::SummonPickup(nullptr, GetRandomItem(Item::Type::Weapon, SupplyDropRow).Definition,
+            Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon, SupplyDropRow).Definition,
                                  Helper::GetCorrectLocation(BuildingContainer),
                                  EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 1);
         }
@@ -484,10 +484,10 @@ namespace Looting
                 static_cast<long long>(GetSizeOfStruct(CollectorUnitInfoClass)) * Index + reinterpret_cast<long long>(
                     ItemCollections->
                     GetData()))))
-            + OutputItemOffset) = GetRandomItem(Item::Type::Weapon).Definition;
+            + OutputItemOffset) = GetRandomItem(ItemType::Weapon).Definition;
     }
 
-    inline void FillVendingMachines(LPVOID) -> DWORD
+    inline auto FillVendingMachines(LPVOID) -> DWORD
     {
         static auto BuildingItemCollectorClass = FindObject("Class /Script/FortniteGame.BuildingItemCollectorActor");
         if (!BuildingItemCollectorClass)

@@ -4,6 +4,8 @@
 #include <UE/structs.h>
 #include <Gameplay/helper.h>
 
+#include "inventory.h"
+
 namespace Event
 {
     static constexpr auto MeteorEvent = 3.0; // Exact build is unknown
@@ -356,7 +358,7 @@ namespace Event
             Travis::Start();
             ApplyToPlayers([](auto Controller, auto)
             {
-                Clear(Controller, true);
+                Inventory::Clear(Controller, true);
             });
         }
     }

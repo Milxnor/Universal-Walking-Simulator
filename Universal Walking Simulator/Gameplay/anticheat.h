@@ -40,9 +40,8 @@ namespace AntiCheat
             return false;
         }
         
-        float TimeToNextFire = 0;
+        double TimeToNextFire = 0;
         CurrentWeapon->ProcessEvent("GetTimeToNextFire", &TimeToNextFire);
-        
         return TimeToNextFire > 0.02;
     }
 }

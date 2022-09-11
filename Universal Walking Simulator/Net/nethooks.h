@@ -267,7 +267,7 @@ namespace NetHooks
         return nullptr;
     }
 
-    inline auto GetRequestUrl(UObject* Connection)
+    inline auto GetRequestUrl(UObject* Connection) -> FString*
     {
         if (FortniteVersion >= 7 && EngineVersion < 424)
         {

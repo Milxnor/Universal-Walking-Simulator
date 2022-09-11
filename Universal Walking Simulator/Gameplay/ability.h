@@ -290,13 +290,13 @@ namespace Ability
 
         static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec",
                                                     "Handle");
-        auto NewSpec = GetGameplayAbilitySpec(DefaultObject, HandleOffset)();
+        auto NewSpec = GetGameplayAbilitySpec(DefaultObject, HandleOffset);
         if (!NewSpec)
         {
             return nullptr;
         }
 
-        const auto Handle = static_cast<FGameplayAbilitySpecHandle*>(static_cast<long long>(NewSpec) + HandleOffset);
+        const auto Handle = reinterpret_cast<FGameplayAbilitySpecHandle*>(reinterpret_cast<long long>(NewSpec) + HandleOffset);
 
         if (!NewSpec || DoesObjectHaveAbility(AbilitySystemComponent, *GetAbilityFromSpec(NewSpec)))
         {

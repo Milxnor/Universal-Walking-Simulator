@@ -4,11 +4,11 @@
 namespace Item
 {
     // Default items and quantities
-    static const auto StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
-    static const auto StartingSlot2 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03", 1 };
-    static const auto StartingSlot3 = { "", 0 };
-    static const auto StartingSlot4 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall", 3 };
-    static const auto StartingSlot5 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff", 1 };
+    static std::pair<std::string, int> StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
+    static std::pair<std::string, int> StartingSlot2 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03", 1 };
+    static std::pair<std::string, int> StartingSlot3 = { "", 0 };
+    static std::pair<std::string, int> StartingSlot4 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall", 3 };
+    static std::pair<std::string, int> StartingSlot5 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff", 1 };
 
     // Pickaxe
     static const auto Pickaxe = FindObject("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01");
@@ -49,7 +49,7 @@ namespace Item
     // TODO: Code maxes in, for version and arena
     static constexpr int MaxMaterials = 999;
 
-    inline auto GetMaterial(const EFortResourceType Type)
+    inline auto GetMaterial(const EFortResourceType Type) -> UObject*
     {
         switch (Type)
         {
@@ -64,21 +64,13 @@ namespace Item
         }
     }
 
-    enum class Type
-    {
-        None,
-        Weapon,
-        Consumable,
-        Ammo
-    };
-
     inline auto GetCount(long long* Entry) -> int*
     {
         static auto CountOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortItemEntry", "Count");
         return reinterpret_cast<int*>(Entry + CountOffset);
     }
 
-    inline auto GetCount(FFastArraySerializerItem* Entry) -> int*
+    inline auto GetCount(UObject* Entry) -> int*
     {
         if (!Entry)
         {
@@ -122,7 +114,19 @@ namespace Item
         return static_cast<UObject*>(Entry->ProcessEvent(Function));
     }
 
-    inline auto GetEntry(UObject* Instance) -> FFastArraySerializerItem*
+    inline auto GetDefinition(long long* Entry) -> UObject*
+    {
+        if (!Entry)
+        {
+            return nullptr;
+        }
+
+        static auto ItemDefinitionOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
+        return *reinterpret_cast<UObject**>(reinterpret_cast<long long>(&*Entry) + ItemDefinitionOffset);
+    }
+
+    template <typename EntryType = long long>
+    auto GetEntry(UObject* Instance) -> EntryType*
     {
         if (!Instance)
         {
@@ -130,7 +134,7 @@ namespace Item
         }
         
         static auto ItemEntryOffset = GetOffset(Instance, "ItemEntry");
-        return reinterpret_cast<FFastArraySerializerItem*>(reinterpret_cast<long long>(Instance) + ItemEntryOffset);
+        return reinterpret_cast<EntryType>(reinterpret_cast<long long>(Instance) + ItemEntryOffset);
     }
 
     inline auto IsResource(const UObject* Object)

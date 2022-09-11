@@ -33,8 +33,7 @@ namespace Building
             return;
         }
 
-        const auto Definition = Item::GetDefinition(Inventory::FindItem(Controller, MatDefinition));
-        if (*Item::GetCount(reinterpret_cast<FFastArraySerializerItem*>(Definition)) < 10)
+        if (const auto Definition = Item::GetDefinition(Inventory::FindItem(Controller, MatDefinition)); *Item::GetCount(Definition) < 10)
         {
             return;
         }
@@ -167,7 +166,7 @@ namespace Building
         return BuildingSmActorReplaceBuildingActorAddress;
     }
 
-    inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
+    inline bool ServerEditBuildingActorHook(UObject* Controller, [[maybe_unused]] UFunction* Function, void* Parameters)
     {
         const auto Params = static_cast<EditingParameters*>(Parameters);
         if (!Params || !Controller)
@@ -197,10 +196,8 @@ namespace Building
         }
 
         const auto BuildingActorAddress = GetBuildingReplacementAddress();
-
         auto BuildingSmActorReplaceBuildingActor = decltype(BuildingSmActorReplaceBuildingActor)(BuildingActorAddress);
-
-        if (BuildingSmActorReplaceBuildingActor)
+        if (!BuildingSmActorReplaceBuildingActor)
         {
             return false;
         }

@@ -221,7 +221,7 @@ namespace Inventory
         return ItemInstance;
     }
 
-    inline auto FindItem(UObject* Controller, const UObject* Definition)
+    inline auto FindItem(UObject* Controller, const UObject* Definition) -> UObject*
     {
         const auto ItemInstances = *Player::GetItems(Controller);
         for (int i = 0; i < ItemInstances.Num(); i++)
@@ -287,11 +287,11 @@ namespace Inventory
         *CurrentCount = NewCount;
 
         Player::ChangeReplicatedItems(Controller, Item::GetDefinition(Instance), "Count", NewCount, OldCount);
-        Update(Controller, -1, false, ItemEntry);
+        Update(Controller, -1, false, reinterpret_cast<FFastArraySerializerItem*>(ItemEntry));
         return true;
     }
 
-    inline auto Decrement(UObject* Controller, UObject* Definition, const int Count) -> FFastArraySerializerItem*
+    inline auto Decrement(UObject* Controller, UObject* Definition, const int Count) -> long long*
     {
         if (!Controller || !Definition)
         {
@@ -324,7 +324,7 @@ namespace Inventory
             *CurrentCount = NewCount;
 
             Player::ChangeReplicatedItems(Controller, Definition, "Count", NewCount);
-            Update(Controller, -1, false, ItemEntry);
+            Update(Controller, -1, false, reinterpret_cast<FFastArraySerializerItem*>(ItemEntry));
             return ItemEntry;
         }
 
@@ -348,15 +348,15 @@ namespace Inventory
 
         if (*Item::GetCount(Removed) != 0 || !DestroyIfEmpty)
         {
-            return Item::GetDefinition(reinterpret_cast<UObject*>(Removed));
+            return Item::GetDefinition(Removed);
         }
 
         RemoveItem(Controller, Guid);
-        return Item::GetDefinition(reinterpret_cast<UObject*>(Removed));
+        return Item::GetDefinition(Removed);
     }
 
     inline auto GetOverStack(UObject* Controller, UObject* Definition,
-                             const int Count) -> std::tuple<FFastArraySerializerItem*, int>
+                             const int Count) -> std::tuple<void*, int>
     {
         const auto ItemInstances = Player::GetItems(Controller);
         if (!ItemInstances)
@@ -374,7 +374,7 @@ namespace Inventory
         }
 
         const auto MaxStackCount = *Definition->Member<int>("MaxStackSize");
-        const auto ItemInstance = std::ranges::find_if(InstancesOfItem, [](auto Entry)
+        const auto ItemInstance = std::ranges::find_if(InstancesOfItem, [MaxStackCount](auto Entry)
         {
             const auto EntryCount = Item::GetCount(Item::GetEntry(Entry));
             return EntryCount && *EntryCount < MaxStackCount;
@@ -391,7 +391,7 @@ namespace Inventory
             return {nullptr, 0};
         }
 
-        const auto CurrentCount = Item::GetCount(ItemEntry);
+        const auto CurrentCount = Item::GetCount(reinterpret_cast<long long*>(ItemEntry));
         if (!CurrentCount)
         {
             return {ItemEntry, 0};
@@ -404,7 +404,7 @@ namespace Inventory
     }
 
     static UObject* GiveItem(UObject* Controller, UObject* Definition, const EFortQuickBars Bars, const int Slot,
-                             int Count = 1, bool* Skunk = nullptr)
+                             const int Count = 1)
     {
         if (!Controller || !Definition)
         {
@@ -695,17 +695,17 @@ namespace Inventory
 
         if (const auto WoodInstance = FindItem(Controller, Item::WoodMaterial))
         {
-            TakeItem(Controller, Item::GetGuid(WoodInstance), *Item::GetCount(reinterpret_cast<FFastArraySerializerItem*>(WoodInstance)), true);
+            TakeItem(Controller, Item::GetGuid(WoodInstance), *Item::GetCount(WoodInstance), true);
         }
 
         if (const auto StoneInstance = FindItem(Controller, Item::StoneMaterial))
         {
-            TakeItem(Controller, Item::GetGuid(StoneInstance), *Item::GetCount(reinterpret_cast<FFastArraySerializerItem*>(StoneInstance)), true);
+            TakeItem(Controller, Item::GetGuid(StoneInstance), *Item::GetCount(StoneInstance), true);
         }
 
         if (const auto MetalInstance = FindItem(Controller, Item::MetalMaterial))
         {
-            TakeItem(Controller, Item::GetGuid(MetalInstance), *Item::GetCount(reinterpret_cast<FFastArraySerializerItem*>(MetalInstance)),true);   
+            TakeItem(Controller, Item::GetGuid(MetalInstance), *Item::GetCount(MetalInstance),true);   
         }
     }
 

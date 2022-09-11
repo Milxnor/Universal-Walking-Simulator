@@ -16,8 +16,6 @@
 #include <regex>
 #include <unordered_set>
 
-#include "Gameplay/item.h"
-
 #define INL __forceinline
 
 static inline void (*ToStringO)(struct FName*, class FString&);
@@ -224,6 +222,9 @@ public:
     };
 
     INL auto GetData() const { return Data; }
+
+    auto begin() const { return GetData(); }
+    auto end() const { return GetData() + Num(); }
 };
 
 class FString
@@ -4297,13 +4298,21 @@ struct ClientPickupParameters
     bool PlayPickupSound;
 };
 
+enum class ItemType
+{
+    None,
+    Weapon,
+    Consumable,
+    Ammo
+};
+
 struct DefinitionInRow // 50 bytes
 {
     UObject* Definition = nullptr;
     float Weight;
     int DropCount = 1;
     std::string RowName;
-    Item::Type Type = Item::Type::None;
+    ItemType Type = ItemType::None;
 };
 
 struct FixFloorLootCrash {
