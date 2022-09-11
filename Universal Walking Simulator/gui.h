@@ -842,6 +842,13 @@ DWORD WINAPI GuiThread(LPVOID)
 									std::cout << ("Invalid WID! Please make sure it's a valid object.\n");
 							}
 
+							if (Engine_Version >= 424 && ImGui::Button("Spawn Crashpad at Player"))
+							{
+								static auto crashPadClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/Passives/AppleSun/BGA_AppleSun_Apple_Athena.BGA_AppleSun_Apple_Athena_C");
+
+								auto newCrashPad = Easy::SpawnActor(crashPadClass, Helper::GetActorLocation(Pawn));
+							}
+
 							ImGui::NewLine();
 
 							if (ImGui::Button(ICON_FA_BACKWARD " Back"))
