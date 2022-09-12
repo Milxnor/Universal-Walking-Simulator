@@ -9,10 +9,10 @@
 namespace Ability
 {
     template <typename T>
-    T* FindSpecByHandle(const FGameplayAbilitySpecHandle Handle, TArray<T> Specs)
+    auto FindSpecByHandle(const FGameplayAbilitySpecHandle Handle, TArray<T> Specs) -> T*
     {
         auto it = std::ranges::find_if(Specs, [Handle](auto Spec) { return Spec.Handle.Handle == Handle.Handle; });
-        return it == Specs.end() ? nullptr : *it;
+        return it == Specs.end() ? nullptr : it;
     }
 
     inline auto FindAbilitySpecFromHandle(UObject* Object, const FGameplayAbilitySpecHandle Handle)

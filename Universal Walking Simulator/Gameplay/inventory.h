@@ -291,7 +291,7 @@ namespace Inventory
         return true;
     }
 
-    inline auto Decrement(UObject* Controller, UObject* Definition, const int Count) -> long long*
+    inline auto Decrement(UObject* Controller, UObject* Definition, const int Count) -> UObject*
     {
         if (!Controller || !Definition)
         {

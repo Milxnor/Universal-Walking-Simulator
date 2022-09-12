@@ -124,9 +124,8 @@ namespace Item
         static auto ItemDefinitionOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
         return *reinterpret_cast<UObject**>(reinterpret_cast<long long>(&*Entry) + ItemDefinitionOffset);
     }
-
-    template <typename EntryType = long long>
-    auto GetEntry(UObject* Instance) -> EntryType*
+    
+    inline auto GetEntry(UObject* Instance) -> UObject*
     {
         if (!Instance)
         {
@@ -134,7 +133,7 @@ namespace Item
         }
         
         static auto ItemEntryOffset = GetOffset(Instance, "ItemEntry");
-        return reinterpret_cast<EntryType>(reinterpret_cast<long long>(Instance) + ItemEntryOffset);
+        return reinterpret_cast<UObject*>(reinterpret_cast<long long>(Instance) + ItemEntryOffset);
     }
 
     inline auto IsResource(const UObject* Object)

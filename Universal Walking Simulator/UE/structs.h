@@ -169,7 +169,25 @@ public:
         */
 
         return -1;
-    };
+    }
+
+    template <typename Type = void*>
+    int AddUnsafe(const Type& New, const int Size = sizeof(Type))
+    {
+        Reserve(1, Size);
+
+        if (Data)
+        {
+            Data[ArrayNum] = New;
+            ++ArrayNum;
+            ++ArrayMax;
+            return ArrayNum; // - 1;
+        }
+
+        std::cout << ("Invalid Data when adding!\n");
+
+        return -1;
+    }
 
 
     void RemoveAtSwapImpl(int Index, int Count = 1, bool bAllowShrinking = true)

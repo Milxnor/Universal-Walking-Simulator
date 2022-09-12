@@ -196,7 +196,9 @@ namespace Building
         }
 
         const auto BuildingActorAddress = GetBuildingReplacementAddress();
-        auto BuildingSmActorReplaceBuildingActor = decltype(BuildingSmActorReplaceBuildingActor)(BuildingActorAddress);
+
+        UObject* (__fastcall * BuildingSmActorReplaceBuildingActor)
+                 (UObject*, unsigned int, UObject*, unsigned int, int, uint8_t, UObject*) = reinterpret_cast<decltype(BuildingSmActorReplaceBuildingActor)>(BuildingActorAddress);
         if (!BuildingSmActorReplaceBuildingActor)
         {
             return false;

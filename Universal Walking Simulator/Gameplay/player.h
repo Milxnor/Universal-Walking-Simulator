@@ -90,13 +90,12 @@ namespace Player
         return static_cast<UObject*>(Controller->ProcessEvent(Function, &Guid));
     }
 
-    template <typename ReplicatedType>
-    auto GetReplicatedEntries(UObject* Controller) 
+    inline auto GetReplicatedEntries(UObject* Controller) 
     {
         static const auto ReplicatedEntriesOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortItemList",
                                                                      "ReplicatedEntries");
         auto Inventory = GetInventory(Controller);
-        return reinterpret_cast<TArray<ReplicatedType>*>(reinterpret_cast<long long>(Inventory) +
+        return reinterpret_cast<TArray<UObject*>*>(reinterpret_cast<long long>(Inventory) +
             ReplicatedEntriesOffset);
     }
     
@@ -107,15 +106,13 @@ namespace Player
             return -1;
         }
         
-        struct ItemEntryType { unsigned char Unk00[Replication::GetSize()]; };
-        const auto ItemEntry = Item::GetEntry<ItemEntryType>(FortItem);
-        return ItemEntry ? GetReplicatedEntries<ItemEntryType>(Controller)->Add(*ItemEntry) : -1;
+        const auto ItemEntry = Item::GetEntry(FortItem);
+        return ItemEntry ? GetReplicatedEntries(Controller)->Add(ItemEntry) : -1;
     }
 
     inline auto RemoveGuidFromReplicatedEntries(UObject* Controller, const FGuid& Guid)
     {
-        struct ItemEntryType { unsigned char Unk00[Replication::GetSize()]; };
-        const auto ReplicatedEntries = GetReplicatedEntries<ItemEntryType>(Controller);
+        const auto ReplicatedEntries = GetReplicatedEntries(Controller);
 
         bool AnyMatch = false;
 
@@ -137,20 +134,19 @@ namespace Player
 
     template <typename Type>
     bool ChangeReplicatedItems(UObject* Controller, UObject* Definition, const std::string& Name,
-                               Type NewVal, int Count = -1)
+                               Type NewVal, const int Count = -1)
     {
         if (!Controller || !Definition)
         {
             return false;
         }
         
-        struct ItemEntryType { unsigned char Unk00[Replication::GetSize()]; };
-        const auto ReplicatedEntries = GetReplicatedEntries<ItemEntryType>(Controller);
+        const auto ReplicatedEntries = GetReplicatedEntries(Controller);
         for (int x = 0; x < ReplicatedEntries->Num(); x++)
         {
             auto ItemEntry = ReplicatedEntries->At(x);
-            if (const auto EntryDefinition = Item::GetDefinition(reinterpret_cast<UObject*>(ItemEntry));
-                EntryDefinition != Definition || Count != -1 && Item::GetCount(ItemEntry) != Count)
+            if (const auto EntryDefinition = Item::GetDefinition(ItemEntry);
+                EntryDefinition != Definition || Count != -1 && *Item::GetCount(ItemEntry) != Count)
             {
                 continue;
             }
@@ -159,7 +155,7 @@ namespace Player
             *reinterpret_cast<Type*>(reinterpret_cast<long long>(&ItemEntry) + Offset) = NewVal;
 
             const auto Inventory = GetInventory(Controller);
-            MarkItemDirty(Inventory, &ItemEntry);
+            MarkItemDirty(Inventory, reinterpret_cast<FFastArraySerializerItem*>(ItemEntry));
 
             return true;
         }
