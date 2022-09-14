@@ -25,7 +25,7 @@ DWORD WINAPI InputThread(LPVOID)
 
         else if (GetAsyncKeyState(VK_F6) & 1)
         {
-            initStuff();
+            InitBaseHooks();
         }
 
         else if (GetAsyncKeyState(VK_F7) & 1)
@@ -122,12 +122,13 @@ DWORD WINAPI Main(LPVOID)
     InitializePatterns();
 
     std::cout << ("Initialized Patterns!\n");
-
+    
     NetHooks::InitUHooks();
-
+    
     if (GiveAbilityAddress)
         Ability::InitHooks();
 
+    Item::Init();
     Inventory::InitHooks();
     Building::InitHooks();
     Harvesting::InitHooks();
@@ -143,6 +144,7 @@ DWORD WINAPI Main(LPVOID)
     CreateThread(0, 0, BotThread, 0, 0, 0);
 #endif
 
+    std::cout << ("Looting");
     if (FortniteVersion < 18.00)
         Looting::Init();
 
@@ -159,7 +161,8 @@ DWORD WINAPI Main(LPVOID)
     
     std::cout << dye::blue(("[DEBUG] ")) << std::format("ReplicatedEntries Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ReplicatedEntries")));
     std::cout << dye::blue(("[DEBUG] ")) << std::format("ItemInstances Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances")));
-
+    std::cout << dye::blue(("[DEBUG] ")) << std::format("Hooked {} UFunctions!\n", std::to_string(Hooks::FunctionsToHook.size()));
+    
     // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "DeltaFlags") << '\n'; // 256 12.41
     // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "ArrayReplicationKey") << '\n'; // 84 12.41
 

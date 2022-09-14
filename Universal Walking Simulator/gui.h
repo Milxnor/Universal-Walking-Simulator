@@ -1,4 +1,4 @@
-// TODO: Refactor this file
+﻿// TODO: Refactor this file
 
 #pragma once
 
@@ -49,7 +49,6 @@ std::string wstring_to_utf8(const std::wstring& str)
 
 void InitStyle()
 {
-    ImGui::GetIO().Fonts->AddFontFromFileTTF("Reboot Resources/fonts/ruda-bold.ttf", 17);
     ImGui::GetStyle().FrameRounding = 4.0f;
     ImGui::GetStyle().GrabRounding = 4.0f;
 
@@ -231,7 +230,6 @@ DWORD WINAPI GuiThread(LPVOID)
     config.MergeMode = true;
     config.GlyphMinAdvanceX = 13.0f; // Use if you want to make the icon monospaced
     static const ImWchar icon_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-    io.Fonts->AddFontFromFileTTF("Reboot Resources/fonts/fontawesome-webfont.ttf", 13.0f, &config, icon_ranges);
 
     // Main loop
     bool done = false;
@@ -562,8 +560,7 @@ DWORD WINAPI GuiThread(LPVOID)
                                     }
                                 }
                             }
-                            else
-                                std::cout << "Failed to open playlist file!\n";
+                    
                         }
 
                         if (ImGui::Button("Dump Weapons")) // iirc ftext changed but idk
@@ -591,8 +588,6 @@ DWORD WINAPI GuiThread(LPVOID)
                                 }
                             }
                         }
-                        else
-                            std::cout << "Failed to open playlist file!\n";
 
                         /* if (ImGui::Button("idfk2"))
                         {

@@ -930,20 +930,25 @@ static ReturnType* FindObjectOld(const std::string& str, bool bIsEqual = false, 
         if (!Object) continue;
 
         auto ObjectName = bIsName ? Object->GetName() : Object->GetFullName();
-
-        // cant we do like if ((bIsEqual) ? ObjectName == str : ObjectName.contains(str))
         if (bIsEqual)
         {
             if (ObjectName == str)
+            {
+                std::cout << "Found using slow route " << str << ": " << ObjectName << std::endl;
                 return (ReturnType*)Object;
+            }
         }
         else
         {
             if (ObjectName.contains(str))
+            {
+                std::cout << "Found using slow route " << str << ": " << ObjectName << std::endl;
                 return (ReturnType*)Object;
+            }
         }
     }
 
+    std::cout << "No match for " << str << std::endl;
     return nullptr;
 }
 
@@ -951,20 +956,18 @@ template <typename ReturnType = UObject>
 static ReturnType* FindObject(const std::string& str, bool bIsEqual = false, bool bIsName = false,
                               bool bDoNotUseStaticFindObject = false, bool bSkipIfSFOFails = true)
 {
+    std::cout << "Has static find object? " << (StaticFindObjectO != nullptr ? "true" : "false") << std::endl; 
     if (StaticFindObjectO && !bDoNotUseStaticFindObject)
     {
         auto Object = StaticFindObject<ReturnType>(str.substr(str.find(" ") + 1));
         if (Object)
         {
-            // std::cout << ("Found SFO!\n");
+            std::cout << "Found using fast route " << str << std::endl;
             return Object;
         }
-        // std::cout << ("[WARNING] Failed to find object with SFO named: ") << str << " (if you're game doesn't crash soon, it means it's fine)\n";
-
-        if (bSkipIfSFOFails)
-            return nullptr;
     }
 
+    std::cout << "Using slow route for " << str << std::endl;
     return FindObjectOld<ReturnType>(str, bIsEqual, bIsName);
 }
 
@@ -4247,26 +4250,30 @@ struct CurveTableRowHandle
     FName RowName;
 };
 
-struct InstigatorParameters {
+struct InstigatorParameters
+{
     FGameplayTagContainer InTags;
     UObject* InstigatorController; // AController*
     bool Ret;
 };
 
-struct EquipWeaponParametersOld{
+struct EquipWeaponParametersOld
+{
     UObject* Def;
     FGuid Guid;
     UObject* Wep;
 };
 
-struct EquipWeaponParameters {
+struct EquipWeaponParameters
+{
     UObject* Def;
     FGuid Guid;
     FGuid TrackerGuid;
     UObject* Wep;
 };
 
-struct CreateTempItemParameters{
+struct CreateTempItemParameters
+{
     int Count;
     int Level;
     UObject* Instance;
@@ -4333,7 +4340,8 @@ struct DefinitionInRow // 50 bytes
     ItemType Type = ItemType::None;
 };
 
-struct FixFloorLootCrash {
+struct FixFloorLootCrash
+{
     uint8_t DoDelayedUpdateCullDistanceVolumes : 1;
     uint8_t IsRunningConstructionScript : 1;
     uint8_t ShouldSimulatePhysics : 1;

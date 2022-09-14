@@ -3,7 +3,6 @@
 // 3.5 Patterns are from raider, some patterns are not mine.
 
 #include "finder.h"
-#include "Gameplay/ability.h"
 #include "Net/functions.h"
 
 inline std::string RequestExitWSSig = "48 89 5C 24 ? 57 48 83 EC 40 41 B9 ? ? ? ? 0F B6 F9 44 38 0D ? ? ? ? 0F B6 DA 72 24 89 5C 24 30 48 8D 05 ? ? ? ? 89 7C 24 28 4C 8D 05 ? ? ? ? 33 D2 48 89 44 24 ?  33 C9 E8";
@@ -483,7 +482,7 @@ inline void InitializePatterns()
 			std::cout << ("[WARNING] Abilities may fail!\n");
 	}
 	else
-		Ability::OCanActivateAbility = decltype(Ability::OCanActivateAbility)(CanActivateAbilityAddress);
+
 
 	if (!WelcomePlayerAddress) // s6
 	{

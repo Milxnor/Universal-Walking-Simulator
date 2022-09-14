@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <UE/structs.h>
 
@@ -97,3 +97,4 @@ static void (*MarkAbilitySpecDirtyFts)(UObject*, FGameplayAbilitySpec<FGameplayA
 inline UObject* (*CreateNetDriverLocal)(UObject*, UObject*, FName);
 inline float (*PlayMontage)(UObject*, UObject*, FGameplayAbilityActivationInfo, UObject*, float, FName);
 inline long long (*CollectGarbage)(long long);
+static UObject* (__fastcall* ReplicationGraphEnable)(UObject*, UObject*);

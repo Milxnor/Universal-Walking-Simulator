@@ -1,14 +1,13 @@
-// TODO: Refactor this file
-
-#pragma once
+﻿#pragma once
 
 #include <UE/structs.h>
 
 #include "color.hpp"
 #include <Gameplay/helper.h>
 #include <Net/nethooks.h>
-#include <Gameplay/ability.h>
-#include <Gameplay/event.h>
+
+#include <mutex>
+#include <Gameplay/player.h>
 
 #include "Gameplay/anticheat.h"
 #include "Gameplay/loot.h"
@@ -16,11 +15,13 @@
 
 #define LOGGING
 
+// HEAVILY INSPIRED BY KEMOS UFUNCTION HOOKING
+
 static bool Started = false;
 static bool LogRpcs = false;
 static bool LogProcessEvent = false;
 
-inline void initStuff()
+inline void InitBaseHooks()
 {
 	if (!Started && NetHooks::Traveled)
 	{
@@ -104,7 +105,7 @@ inline void initStuff()
 				auto SSVFn = *AuthGameMode->Member<bool>(("ShouldSpawnVehicle")) = true;*/
 				 
 				auto Playlist = FindObject(GameMode::PlaylistName);
-				
+
 				if (FortniteVersion >= 6.10) // WRONG
 				{
 					auto OnRepPlaylist = gameState->Function(("OnRep_CurrentPlaylistInfo"));
@@ -185,7 +186,6 @@ inline void initStuff()
 		Server::Listen(7777);
 		// CreateThread(0, 0, MapLoadThread, 0, 0, 0);
 
-		
 		NetHooks::InitHooks();
 
 		std::cout << ("Initialized NetHooks!\n");
@@ -462,7 +462,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 bool ReadyToStartMatchHook(UObject* Object, UFunction* Function, void* Parameters)
 {
-	initStuff();
+	InitBaseHooks();
 	return false;
 }
 
@@ -479,7 +479,6 @@ void LoadInMatch()
 		Map.Set(GameMode::GetMapName());
 		PlayerController->ProcessEvent(SwitchLevelFn, &Map);
 		// Map.Free();
-		
 		NetHooks::Traveled = true;
 	}
 	else
@@ -869,14 +868,14 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				std::cout << ("Playing Montage: ") << Montage->GetFullName() << '\n';
 
 				auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
-				static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+				static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Ability/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
 				TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Specs;
 
 				if (EngineVersion <= 422)
-					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
+					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbility"))).Items;
 				else
-					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))).Items;
+					Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbility"))).Items;
 
 				UObject* DefaultObject = EmoteClass->CreateDefaultObject();
 
@@ -897,7 +896,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 						{
 							// STATIC_CreatePlayMontageAndWaitProxy
 
-							static auto def = FindObject("AbilityTask_PlayMontageAndWait /Script/GameplayAbilities.Default__AbilityTask_PlayMontageAndWait");
+							static auto def = FindObject("AbilityTask_PlayMontageAndWait /Script/GameplayAbility.Default__AbilityTask_PlayMontageAndWait");
 
 							struct
 							{
@@ -922,7 +921,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 							UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params.bStopWhenAbilityEnds = false;
 							UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params.AnimRootMotionTranslationScale = 1.0f;
 
-							static auto CreatePlayMontageAndWaitProxy = FindObject("Function /Script/GameplayAbilities.AbilityTask_PlayMontageAndWait.CreatePlayMontageAndWaitProxy");
+							static auto CreatePlayMontageAndWaitProxy = FindObject("Function /Script/GameplayAbility.AbilityTask_PlayMontageAndWait.CreatePlayMontageAndWaitProxy");
 
 							/* if (CreatePlayMontageAndWaitProxy)
 								def->ProcessEvent(CreatePlayMontageAndWaitProxy, &UAbilityTask_PlayMontageAndWait_CreatePlayMontageAndWaitProxy_Params);
@@ -1121,7 +1120,6 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				{
 					auto WoodGUID = Item::GetGuid(Inventory::FindItem(Controller, WoodItemData));
 
-					
 					if (*Item::GetCount(Player::GetItemByGuid(Controller, WoodGUID)) >= CostAmount)
 					{
 						Inventory::TakeItem(Controller, WoodGUID, CostAmount);
@@ -1585,7 +1583,7 @@ static UObject* __fastcall ReplicationGraph_EnableDetour(UObject* NetDriver, UOb
 		if (World && NetDriver)
 			return ReplicationGraph_EnableDetour(NetDriver, World);
 		else
-			return EnableReplicationGraph(NetDriver, World);
+			return ReplicationGraphEnable(NetDriver, World);
 	}
 }
 
@@ -1771,7 +1769,7 @@ void FinishInitializeUHooks()
 	if (EngineVersion < 422)
 		Hooks::Add(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
-	Hooks::Add("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", AntiCheat::CommitExecuteWeapon);
+	Hooks::Add("Function /Game/Ability/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", AntiCheat::CommitExecuteWeapon);
 	Hooks::Add("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	Hooks::Add(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	Hooks::Add(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
@@ -1976,7 +1974,7 @@ void InitializeHooks()
 	{
 		// fixes flashing
 
-		MH_CreateHook((PVOID)GetPlayerViewpointAddress, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
+
 		MH_EnableHook((PVOID)GetPlayerViewpointAddress);
 	}
 	else
