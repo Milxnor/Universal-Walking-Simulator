@@ -740,13 +740,13 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			if (*PlayersLeft == 1)
 			{
-				UObject* CurrentWeapon = nullptr;
-				if ( KillerPawn )
-					CurrentWeapon = *KillerPawn->Member<UObject*>( ("CurrentWeapon") );
+				UObject* CurrentWeapon = nullptr; // initializing CurrentWeapon pointer variable
+				if ( KillerPawn ) // checks if killerpawn is a valid pointer
+					CurrentWeapon = *KillerPawn->Member<UObject*>( ("CurrentWeapon") ); // gets the current player weapon, points to AFortWeapon class
 
-				UObject* WeaponData = nullptr;
-				if ( CurrentWeapon )
-					WeaponData = *CurrentWeapon->Member<UObject*>( ("WeaponData") );
+				UObject* WeaponData = nullptr; // initializing WeaponData pointer variable
+				if ( CurrentWeapon ) // checks if the currentweapon is a valid pointer
+					WeaponData = *CurrentWeapon->Member<UObject*>( ("WeaponData") ); // gets the currentweapon definition, points to UFortWeaponItemDefinition class
 
 				struct
 				{
@@ -760,6 +760,18 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				if (ClientNotifyWon)
 					KillerController->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
 			}
+
+			// shows the eliminated {player} message
+			auto ClientReportKill = KillerPlayerState->Function( ("ClientReportKill") );
+
+			struct {
+				UObject* Killed;
+			} ClientReportKill_params{DeadPlayerState};
+
+			if ( ClientReportKill )
+				KillerPlayerState->ProcessEvent( ClientReportKill, &ClientReportKill_params );
+
+			// todo: add a loop that sends the eliminated player message using ClientReceiveKillNotification to all world players (through PlayerArray)
 		}
 
 		if (false)
@@ -825,6 +837,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			if (OnRep_Kills)
 				KillerPlayerState->ProcessEvent(OnRep_Kills);
+
+
 		}
 	}
 	
