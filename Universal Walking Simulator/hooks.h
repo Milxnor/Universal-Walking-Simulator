@@ -740,13 +740,20 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			if (*PlayersLeft == 1)
 			{
+				UObject* CurrentWeapon = nullptr;
+				if ( KillerPawn )
+					CurrentWeapon = *KillerPawn->Member<UObject*>( ("CurrentWeapon") );
+
+				UObject* WeaponData = nullptr;
+				if ( CurrentWeapon )
+					WeaponData = *CurrentWeapon->Member<UObject*>( ("WeaponData") );
 
 				struct
 				{
 					UObject* FinisherPawn;          // APawn                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					UObject* FinishingWeapon; // UFortWeaponItemDefinition                                          // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					EDeathCause                                        DeathCause;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				} AFortPlayerControllerAthena_ClientNotifyWon_Params{KillerPawn, nullptr, EDeathCause::SniperNoScope};
+				} AFortPlayerControllerAthena_ClientNotifyWon_Params{KillerPawn, WeaponData, EDeathCause::SniperNoScope};
 
 				static auto ClientNotifyWon = KillerController->Function("ClientNotifyWon");
 
