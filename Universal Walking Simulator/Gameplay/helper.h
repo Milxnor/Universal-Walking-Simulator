@@ -295,7 +295,7 @@ namespace Helper
 		if (!Actor)
 			return FVector();
 
-		/* static */ auto K2_GetActorLocationFN = Actor->Function(("K2_GetActorLocation"));
+		static auto K2_GetActorLocationFN = Actor->Function(("K2_GetActorLocation"));
 
 		if (K2_GetActorLocationFN)
 		{
