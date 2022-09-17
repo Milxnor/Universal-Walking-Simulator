@@ -761,17 +761,28 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 					KillerController->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
 			}
 
-			// shows the eliminated {player} message
-			auto ClientReportKill = KillerPlayerState->Function( ("ClientReportKill") );
+			//// shows the chat message
+			//auto ClientReportKill = KillerPlayerState->Function( ("ClientReportKill") );
+
+			//struct {
+			//	UObject* Killed;
+			//} ClientReportKill_params{DeadPlayerState};
+
+			//if ( ClientReportKill )
+			//	KillerPlayerState->ProcessEvent( ClientReportKill, &ClientReportKill_params );
 
 			struct {
+				UObject* Killer;
 				UObject* Killed;
-			} ClientReportKill_params{DeadPlayerState};
+			} ClientReceiveKillNotification_params{KillerPlayerState, DeadPlayerState};
 
-			if ( ClientReportKill )
-				KillerPlayerState->ProcessEvent( ClientReportKill, &ClientReportKill_params );
+			auto ClientReceiveKillNotification = KillerPlayerState->Function( "ClientReceiveKillNotification" );
 
-			// todo: add a loop that sends the eliminated player message using ClientReceiveKillNotification to all world players (through PlayerArray)
+			if ( ClientReceiveKillNotification )
+			{
+				KillerPlayerState->ProcessEvent( ClientReceiveKillNotification, &ClientReceiveKillNotification_params );
+			}
+
 		}
 
 		if (false)
