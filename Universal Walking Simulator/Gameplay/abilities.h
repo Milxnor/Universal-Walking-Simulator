@@ -246,89 +246,92 @@ namespace Abilities {
 
     static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
     {
-        if (!GameplayAbilityClass || !TargetPawn)
-            return nullptr;
-
-        auto AbilitySystemComponent = *TargetPawn->Member<UObject*>(("AbilitySystemComponent"));
-
-        if (!AbilitySystemComponent)
-            return nullptr;
-
-        UObject* DefaultObject = nullptr;
-
-        if (!GameplayAbilityClass->GetFullName().contains("Class "))
-            DefaultObject = GameplayAbilityClass; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
-        else
-        {
-            auto name = GameplayAbilityClass->GetFullName();
-            // skunked class to default
-            auto ending = GameplayAbilityClass->GetFullName().substr(name.find_last_of(".") + 1);
-            auto path = name.substr(0, name.find_last_of(".") + 1);
-            DefaultObject = FindObject(std::format("{}Default__{}", path, ending));
-        }
-
-        if (!DefaultObject)
-        {
-            std::cout << "Failed to create defaultobject for GameplayAbilityClass: " << GameplayAbilityClass->GetFullName() << '\n';
-            return nullptr;
-        }
-
-        static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
-
-        auto GenerateNewSpec = [&]() -> void*
-        {
-            static auto GameplayAbilitySpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
-            static auto GameplayAbilitySpecSize = GetSizeOfStruct(GameplayAbilitySpecStruct);
-
-            if (Engine_Version < 426)
-                std::cout << "Size of GameplayAbilitySpec: " << GameplayAbilitySpecSize << '\n';
-
-            auto ptr = malloc(GameplayAbilitySpecSize);
-
-            if (!ptr)
+        if ((int)FnVerDouble != 13) {
+            if (!GameplayAbilityClass || !TargetPawn)
                 return nullptr;
 
-            RtlSecureZeroMemory(ptr, GameplayAbilitySpecSize);
+            auto AbilitySystemComponent = *TargetPawn->Member<UObject*>(("AbilitySystemComponent"));
 
-            FGameplayAbilitySpecHandle Handle{};
-            Handle.GenerateNewHandle();
+            if (!AbilitySystemComponent)
+                return nullptr;
 
-            ((FFastArraySerializerItem*)ptr)->MostRecentArrayReplicationKey = -1;
-            ((FFastArraySerializerItem*)ptr)->ReplicationID = -1;
-            ((FFastArraySerializerItem*)ptr)->ReplicationKey = -1;
+            UObject* DefaultObject = nullptr;
 
-            static auto AbilityOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
-            static auto LevelOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Level");
-            static auto InputIDOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputID");
+            if (!GameplayAbilityClass->GetFullName().contains("Class "))
+                DefaultObject = GameplayAbilityClass; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
+            else
+            {
+                auto name = GameplayAbilityClass->GetFullName();
+                // skunked class to default
+                auto ending = GameplayAbilityClass->GetFullName().substr(name.find_last_of(".") + 1);
+                auto path = name.substr(0, name.find_last_of(".") + 1);
+                DefaultObject = FindObject(std::format("{}Default__{}", path, ending));
+            }
 
-            *(FGameplayAbilitySpecHandle*)(__int64(ptr) + HandleOffset) = Handle;
-            *(UObject**)(__int64(ptr) + AbilityOffset) = DefaultObject;
-            *(int*)(__int64(ptr) + LevelOffset) = 1;
-            *(int*)(__int64(ptr) + InputIDOffset) = -1;
+            if (!DefaultObject)
+            {
+                std::cout << "Failed to create defaultobject for GameplayAbilityClass: " << GameplayAbilityClass->GetFullName() << '\n';
+                return nullptr;
+            }
 
-            return ptr;
-        };
+            static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
 
-        void* NewSpec = GenerateNewSpec();
+            auto GenerateNewSpec = [&]() -> void*
+            {
+                static auto GameplayAbilitySpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
+                static auto GameplayAbilitySpecSize = GetSizeOfStruct(GameplayAbilitySpecStruct);
 
-        if (!NewSpec)
-            return nullptr;
+                if (Engine_Version < 426)
+                    std::cout << "Size of GameplayAbilitySpec: " << GameplayAbilitySpecSize << '\n';
 
-        auto Handle = (FGameplayAbilitySpecHandle*)(__int64(NewSpec) + HandleOffset);
+                auto ptr = malloc(GameplayAbilitySpecSize);
 
-        if (!NewSpec || DoesASCHaveAbility(AbilitySystemComponent, *GetAbilityFromSpec(NewSpec)))
-            return nullptr;
+                if (!ptr)
+                    return nullptr;
 
-        // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232
+                RtlSecureZeroMemory(ptr, GameplayAbilitySpecSize);
 
-        if (Engine_Version < 426)
-            GiveAbility(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)NewSpec);
-        else if (Engine_Version == 426)
-            GiveAbilityFTS(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)NewSpec);
-        else
-            GiveAbilityNewer(AbilitySystemComponent, Handle, *(FGameplayAbilitySpecNewer*)NewSpec);
+                FGameplayAbilitySpecHandle Handle{};
+                Handle.GenerateNewHandle();
 
-        return *GetAbilityFromSpec(NewSpec);
+                ((FFastArraySerializerItem*)ptr)->MostRecentArrayReplicationKey = -1;
+                ((FFastArraySerializerItem*)ptr)->ReplicationID = -1;
+                ((FFastArraySerializerItem*)ptr)->ReplicationKey = -1;
+
+                static auto AbilityOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
+                static auto LevelOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Level");
+                static auto InputIDOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputID");
+
+                *(FGameplayAbilitySpecHandle*)(__int64(ptr) + HandleOffset) = Handle;
+                *(UObject**)(__int64(ptr) + AbilityOffset) = DefaultObject;
+                *(int*)(__int64(ptr) + LevelOffset) = 1;
+                *(int*)(__int64(ptr) + InputIDOffset) = -1;
+
+                return ptr;
+            };
+
+            void* NewSpec = GenerateNewSpec();
+
+            if (!NewSpec)
+                return nullptr;
+
+            auto Handle = (FGameplayAbilitySpecHandle*)(__int64(NewSpec) + HandleOffset);
+
+            if (!NewSpec || DoesASCHaveAbility(AbilitySystemComponent, *GetAbilityFromSpec(NewSpec)))
+                return nullptr;
+
+            // https://github.com/EpicGames/UnrealEngine/blob/4.22/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L232
+
+            if (Engine_Version < 426)
+                GiveAbility(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)NewSpec);
+            else if (Engine_Version == 426)
+                GiveAbilityFTS(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)NewSpec);
+            else
+                GiveAbilityNewer(AbilitySystemComponent, Handle, *(FGameplayAbilitySpecNewer*)NewSpec);
+
+            return *GetAbilityFromSpec(NewSpec);
+        }
+        return nullptr;
     }
 
     inline bool ServerTryActivateAbilityHook(UObject* AbilitySystemComponent, UFunction* Function, void* Parameters)

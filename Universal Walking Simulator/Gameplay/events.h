@@ -171,7 +171,7 @@ namespace EventHelper
 namespace Events {
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 5.30f || Version == 4.5f);
+		return (Version == 13.40f || Version == 13.30f || Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 5.30f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
@@ -179,7 +179,15 @@ namespace Events {
 
 		if (HasEvent()) {
 			std::cout << ("Loading Event!\n");
-
+			if (Version == 13.30f || Version == 13.40f) {
+				//WIP Water Level Adjustment (Currently crashes)
+				UObject* WL = FindObject("Apollo_WaterSetup_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2");
+				UObject* Func = WL->Function("SetWaterLevel");
+				UObject* Func2 = WL->Function("OnRep_CurrentWaterLevel");
+				int NewWaterLevel = 0;
+				WL->ProcessEvent(Func, &NewWaterLevel);
+				WL->ProcessEvent(Func2);
+			}
 			if (Version == 12.61f) {
 				auto FritterLoader = FindObject(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0"));
 				auto LoadFritterLevel = FindObject(("Function /Fritter/BP_Fritter_Loader.BP_Fritter_Loader_C.LoadFritterLevel"));
@@ -255,7 +263,11 @@ namespace Events {
 		float Version = std::stof(FN_Version);
 		if (HasEvent()) {
 			std::cout << ("Starting Event!\n");
-
+			if (Version == 13.30f || Version == 13.40f) {
+				UObject* Main_C = FindObject("AthenaQuestActor_SW_Main_C /Temp/Game/Athena/Apollo/Maps/Streaming/Apollo_Terrain_Sub_F1_61e6b1c6.Apollo_Terrain_Sub_F1.PersistentLevel.AthenaQuestActor_SW_Main2");
+				UObject* Function = Main_C->Function("PlayLaunchAnim");
+				Main_C->ProcessEvent(Function);
+			}
 			if (Version == 12.61f) {
 				auto FL = FindObject(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0"));
 				
