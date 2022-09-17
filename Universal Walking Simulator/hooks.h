@@ -740,20 +740,28 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			if (*PlayersLeft == 1)
 			{
-				UObject* CurrentWeapon = nullptr; // initializing CurrentWeapon pointer variable
-				if ( KillerPawn ) // checks if killerpawn is a valid pointer
-					CurrentWeapon = *KillerPawn->Member<UObject*>( ("CurrentWeapon") ); // gets the current player weapon, points to AFortWeapon class
+				static auto DamageCauserOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("DamageCauser"));
 
-				UObject* WeaponData = nullptr; // initializing WeaponData pointer variable
-				if ( CurrentWeapon ) // checks if the currentweapon is a valid pointer
-					WeaponData = *CurrentWeapon->Member<UObject*>( ("WeaponData") ); // gets the currentweapon definition, points to UFortWeaponItemDefinition class
+				auto DamageCauser = *(UObject**)(__int64(&Params->DeathReport) + DamageCauserOffset);
+
+				UObject* FinishingWeaponDefinition = nullptr;
+
+				if (DamageCauser)
+				{
+					static auto ProjectileClass = FindObject("Class /Script/FortniteGame.FortProjectileBase");
+
+					if (DamageCauser->IsA(ProjectileClass))
+						FinishingWeaponDefinition = *Helper::GetOwner(DamageCauser)->Member<UObject*>("WeaponData");
+					else
+						FinishingWeaponDefinition = *DamageCauser->Member<UObject*>("WeaponData"); // *(*KillerPawn->Member<UObject*>("CurrentWeapon"))->Member<UObject*>("WeaponData");
+				}
 
 				struct
 				{
 					UObject* FinisherPawn;          // APawn                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					UObject* FinishingWeapon; // UFortWeaponItemDefinition                                          // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					EDeathCause                                        DeathCause;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				} AFortPlayerControllerAthena_ClientNotifyWon_Params{KillerPawn, WeaponData, EDeathCause::SniperNoScope};
+				} AFortPlayerControllerAthena_ClientNotifyWon_Params{KillerPawn, FinishingWeaponDefinition, EDeathCause::SniperNoScope};
 
 				static auto ClientNotifyWon = KillerController->Function("ClientNotifyWon");
 
