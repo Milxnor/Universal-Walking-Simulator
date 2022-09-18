@@ -180,7 +180,7 @@ namespace Events {
 		if (HasEvent()) {
 			std::cout << ("Loading Event!\n");
 			if (Version == 13.30f || Version == 13.40f) {
-				//WIP Water Level Adjustment (Currently crashes)
+				//Water Level Adjustment
 				UObject* WL = FindObject("Apollo_WaterSetup_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2");
 				UObject* Func = WL->Function("SetWaterLevel");
 				UObject* Func2 = WL->Function("OnRep_CurrentWaterLevel");
@@ -265,9 +265,10 @@ namespace Events {
 			std::cout << ("Starting Event!\n");
 			if (Version == 13.30f || Version == 13.40f) {
 				UObject* Main_C = FindObject("AthenaQuestActor_SW_Main_C /Temp/Game/Athena/Apollo/Maps/Streaming/Apollo_Terrain_Sub_F1_61e6b1c6.Apollo_Terrain_Sub_F1.PersistentLevel.AthenaQuestActor_SW_Main2");
-				UObject* Function = Main_C->Function("PlayLaunchAnim");
+				UObject* Function = Main_C->Function("Test");
 				Main_C->ProcessEvent(Function);
 			}
+
 			if (Version == 12.61f) {
 				auto FL = FindObject(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0"));
 				

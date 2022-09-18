@@ -343,6 +343,14 @@ namespace Helper
 
 		Foundation->Member<BITMF>("bServerStreamedInLevel")->bServerStreamedInLevel = bShow; // fixes hlods
 		Foundation->ProcessEvent("OnRep_ServerStreamedInLevel");
+
+		if (FnVerDouble >= 10.0) {
+			void* DynamicFoundationRepData = Foundation->Member<void>("DynamicFoundationRepData");
+			static int EnabledState_Offset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DynamicBuildingFoundationRepData", "EnabledState");
+			*reinterpret_cast<uint8_t*>(__int64(DynamicFoundationRepData) + EnabledState_Offset) = 1;
+			*Foundation->Member<uint8_t>("FoundationEnabledState") = 1;
+			Foundation->ProcessEvent(Foundation->Function("OnRep_DynamicFoundationRepData"));
+		}
 	}
 
 	float GetTimeSeconds()
@@ -394,6 +402,42 @@ namespace Helper
 	void FixPOIs() {
 		float Version = std::stof(FN_Version);
 		int Season = (int)Version;
+		//Underwater POIs
+		if (Version == 13.30f || Version == 13.40f) {
+			static auto Frenzy = FindObject(("LF_Athena_Grid_64x64_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Frenzy_NormalFoundation"));
+			ShowBuilding(Frenzy);
+
+			static auto Pleasant = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Pleasant_NormalFoundation"));
+			ShowBuilding(Pleasant);
+			
+			static auto Sweaty = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Sweaty_NormalFoundation"));
+			ShowBuilding(Sweaty);
+			
+			static auto Fortilla = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Fortilla_Foundation"));
+			ShowBuilding(Fortilla);
+			
+			static auto Yacht = FindObject(("LF_Athena_POI_15x25_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Yacht_Foundation"));
+			ShowBuilding(Yacht);
+			
+			//Coral Castle
+			static auto R1 = FindObject(("LF_1x1_Foundation_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_1x1_RockIsland_1"));
+			ShowBuilding(R1);
+			
+			static auto R2 = FindObject(("LF_1x1_Foundation_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_1x1_RockIsland_2"));
+			ShowBuilding(R2);
+			
+			static auto R3 = FindObject(("LF_1x1_Foundation_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_1x1_RockIsland_3"));
+			ShowBuilding(R3);
+			
+			static auto Ruins1 = FindObject(("LF_Athena_POI_40x40_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.RuinsCenter_Foundation"));
+			ShowBuilding(Ruins1);
+			
+			static auto Ruins2 = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.RuinsFalls_Foundation"));
+			ShowBuilding(Ruins2);
+			
+			static auto Ruins3 = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Ruins_Foundation"));
+			ShowBuilding(Ruins3);
+		}
 		//Volcano
 		if (Season == 8) {
 			static auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
