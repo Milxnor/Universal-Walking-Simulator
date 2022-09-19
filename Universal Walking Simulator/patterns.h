@@ -481,8 +481,7 @@ void InitializePatterns()
 		if (!CanActivateAbilityAddr)
 			std::cout << ("[WARNING] Abilities may fail!\n");
 	}
-	else
-		Abilities::o_CanActivateAbility = decltype(Abilities::o_CanActivateAbility)(CanActivateAbilityAddr);
+	Abilities::o_CanActivateAbility = decltype(Abilities::o_CanActivateAbility)(CanActivateAbilityAddr);
 
 	if (!WelcomePlayerAddr) // s6
 	{
