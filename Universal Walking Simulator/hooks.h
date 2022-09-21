@@ -835,8 +835,9 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			if (OnRep_Kills)
 				KillerPlayerState->ProcessEvent(OnRep_Kills);
 		}
-
-		ProcessEventO(DeadPC, Function, Parameters);
+		
+		if (!Helper::IsRespawnEnabled())
+			ProcessEventO(DeadPC, Function, Parameters);
 
 		if (FnVerDouble < 6 && false)
 		{
