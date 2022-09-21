@@ -15,7 +15,6 @@
 
 static bool bTraveled = false;
 
-
 bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters)
 {
 	// std::cout << "execute\n";
@@ -173,7 +172,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	}
 
 	std::cout << ("SpawnPlayActor called!\n");
-	auto PlayerController = SpawnPlayActor(World, NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex);
+	auto PlayerController = SpawnPlayActor(Helper::GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex);
 	static auto FortPlayerControllerAthenaClass = FindObject(("Class /Script/FortniteGame.FortPlayerControllerAthena"));
 
 	// std::cout << "PC Name: " << PlayerController->GetFullName() << '\n';
