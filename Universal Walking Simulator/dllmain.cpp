@@ -36,6 +36,12 @@ DWORD WINAPI InputThread(LPVOID)
 
         else if (GetAsyncKeyState(VK_F8) & 1)
         {
+            auto AuthGameMode = *Helper::GetWorld()->Member<UObject*>(("AuthorityGameMode"));
+            auto bEnableReplicationGraph = AuthGameMode->Member<bool>("bEnableReplicationGraph");
+
+            if (bEnableReplicationGraph)
+                *bEnableReplicationGraph = true;
+
             Listen(7777);
         }
 
@@ -44,6 +50,17 @@ DWORD WINAPI InputThread(LPVOID)
             InitializeNetHooks();
 
             std::cout << ("Initialized NetHooks!\n");
+        }
+
+        else if (GetAsyncKeyState(VK_F10) & 1)
+        {
+            bStarted = false;
+            bTraveled = false;
+            bIsReadyToRestart = true;
+
+            initStuff();
+
+            std::cout << ("Initialized adf!\n");
         }
 
         Sleep(1000 / 30);
@@ -73,6 +90,144 @@ __int64 __fastcall CrashesDetour(__int64 a1, __int64* a2, char a3)
     */
 
     return 0;
+}
+
+void(__fastcall* buscrash2O)(__int64 a1, __int64 a2, unsigned int a3);
+
+void __fastcall buscrash2Detour(__int64 a1, __int64 a2, unsigned int a3)
+{
+    auto v3 = *(__int64*)(a1 + 80);
+    auto v6 = (char*)(v3 + 173);
+
+    if (!v6)
+    {
+        std::cout << "Prevented bus crash 2!\n";
+        return;
+    }
+
+    return buscrash2O(a1, a2, a3);
+}
+
+__int64(__fastcall* hookthis)(__int64 a1);
+
+__int64 __fastcall crashTFDetour(__int64 a1) // 3.5
+{
+    std::cout << "crashtf!\n";
+
+    // if (!(__int64*)(*(__int64*)(a1 + 544) + 0x4B0))
+    return 0;
+
+    auto result = *(__int64*)(a1 + 528);
+    *(__int64*)(*(__int64*)(a1 + 544) + 0x4B0) = result;
+
+    return result;
+}
+
+char __fastcall crash2Detour(__int64 a1, __int64 a2) // 3.5
+{
+    // std::cout << "crash2!\n";
+    return true;
+}
+
+__int64 __fastcall hookthisDetour(__int64 a1)
+{
+    std::cout << "hookthis!\n";
+    return 0;
+
+    auto result = (*(__int64(__fastcall**)(__int64))(*(__int64*)a1 + 320))(a1);
+    auto v3 = result;
+    auto v8 = *(__int64*)(*(__int64*)(v3 + 56) + 136);
+
+    if (!(int*)(v8 + 0x484))
+        return result;
+
+    return hookthis(a1);
+}
+
+char __fastcall CRASHMFDetour(__int64 a1, __int64 a2, __int64 a3, char* a4)
+{
+    std::cout << "stupid crash!\n";
+    return false;
+}
+
+__int64 (*idkO)(UObject* BuildingActor);
+
+__int64 idkDetour(UObject* BuildingActor)
+{
+    std::cout << "A1: " << BuildingActor << '\n';
+
+    if (BuildingActor)
+        std::cout << "A1 Name: " << BuildingActor->GetFullName() << '\n';
+
+    return idkO(BuildingActor);
+}
+
+void (__fastcall* sub_7FF700EF5E20O)(__int64 a1, int a2);
+
+void __fastcall sub_7FF700EF5E20Detour(__int64 a1, int a2)
+{
+    auto v5 = (__int64*)(a1 + 256);
+
+    if (!v5)
+        return;
+
+    return sub_7FF700EF5E20O(a1, a2);
+}
+
+char(__fastcall* stu8pduficnO)(__int64 a1, __int64 a2, __int64 a3, bool* a4);
+
+char __fastcall stu8pduficnDetour(__int64 a1, __int64 a2, __int64 a3, bool* a4)
+{
+    std::cout << "ur skiddeD!\n";
+
+    return true;
+}
+
+char (__fastcall* WorldOverlapCheckO)(UObject* a1, int* a2, __int64 a3, float* a4, __int64 a5, float* a6, __int64 a7, char a8, char* a9);
+
+char __fastcall WorldOverlapCheckDetour(UObject* a1, int* a2, __int64 a3, float* a4, __int64 a5, float* a6, __int64 a7, char a8, char* a9)
+{
+    /*
+    
+    a1 = StructuralSupportSystem
+    a2 = 0 (not the ptr)
+    a7 = not a uobject (maybe a int* to the internalindex?)
+   
+    */
+
+    std::cout << "a1: " << a1 << '\n';
+    std::cout << "a1 name: " << a1->GetFullName() << '\n';
+
+    std::cout << "a2: " << a2 << '\n';
+
+    if (a2)
+        std::cout << "a2 deref: " << *a2 << '\n';
+
+    std::cout << "a3: " << a3 << '\n';
+    std::cout << "a4: " << a4 << '\n';
+
+    if (a4)
+        std::cout << "a4 deref: " << *a4 << '\n';
+
+    std::cout << "a5: " << a5 << '\n';
+    std::cout << "a6: " << a6 << '\n';
+
+    if (a4)
+        std::cout << "a6 deref: " << *a6 << '\n';
+
+    std::cout << "a7: " << a7 << '\n';
+
+    std::cout << "a8: " << (bool)a8 << '\n';
+    std::cout << "a9: " << a9 << '\n';
+
+    if (a9)
+        std::cout << "a9 deref: " << *a9 << '\n';
+
+    auto bugha = WorldOverlapCheckO(a1, a2, a3, a4, a5, a6, a7, a8, a9);
+
+    std::cout << "res: " << (int)bugha << '\n';
+
+    return bugha;
 }
 
 DWORD WINAPI Main(LPVOID)
@@ -124,28 +279,26 @@ DWORD WINAPI Main(LPVOID)
     InitializeNetUHooks();
 
     if (GiveAbilityAddr)
-        Abilities::InitializeAbilityHooks();
+        InitializeAbilityHooks();
 
     InitializeInventoryHooks();
-    Building::InitializeBuildHooks();
-    InitializeHarvestingHooks();
+    InitializeBuildHooks();
+    // InitializeHarvestingHooks();
 
     FinishInitializeUHooks();
 
     InitializeHooks();
 
-    CreateThread(0, 0, InputThread, 0, 0, 0);
+    // CreateThread(0, 0, InputThread, 0, 0, 0);
     CreateThread(0, 0, GuiThread, 0, 0, 0);
     CreateThread(0, 0, Helper::Console::Setup , 0, 0, 0);
 #ifndef DPP_DISABLED
     CreateThread(0, 0, BotThread, 0, 0, 0);
 #endif
 
-    if (FnVerDouble < 18.00)
-        Looting::Tables::Init(nullptr);
+    std::cout << "f: " << FnVerDouble << '\n';
 
     SetConsoleTitleA(("Project Reboot Server"));
-    std::cout << ("Found all loot!\n");
 
     if (Engine_Version < 422)
         std::cout << ("Press play button to host!\n");
@@ -159,53 +312,70 @@ DWORD WINAPI Main(LPVOID)
     std::cout << dye::blue(("[DEBUG] ")) << std::format("ReplicatedEntries Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ReplicatedEntries")));
     std::cout << dye::blue(("[DEBUG] ")) << std::format("ItemInstances Offset: 0x{:x}.\n", FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances")));
 
-    Abilities::TestAbilitySizeDifference();
+    TestAbilitySizeDifference();
 
-    // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "DeltaFlags") << '\n'; // 256 12.41
-    // std::cout << "FUnny offset: " << FindOffsetStruct("ScriptStruct /Script/Engine.FastArraySerializer", "ArrayReplicationKey") << '\n'; // 84 12.41
+    std::cout << "SetWorld: " << SetWorld << '\n';
+    std::cout << "ReplicateActor: " << ReplicateActor << '\n';
+    std::cout << "SetChannelActor: " << SetChannelActor << '\n';
+    std::cout << "CreateChannel: " << CreateChannel << '\n';
+    std::cout << "SendClientAdjustment: " << SendClientAdjustment << '\n';
+    std::cout << "KickPlayer: " << KickPlayer << '\n';
+    std::cout << "GiveAbilityOLDDD: " << GiveAbilityOLDDD << '\n';
 
-    /* uint8_t* BusCrashAddr = (uint8_t*)FindPattern("0F 10 4C D1 ? 0F 11 88 ? ? ? ? F2 0F 10 44 D1 ? 48 8D 88 ? ? ? ? 48 8D 54 24 ? F2 0F 11 80 ? ? ? ? E8 ? ? ? ? 0F 28 44 24 ? 48 8D 54 24 ? 0F 29 44 24 ? 0F 57 C9 F3 0F 10 83 ? ? ? ?");
-
-    for (int i = 0; i < 11; i++)
+    if (FnVerDouble == 3.5)
     {
-        BusCrashAddr[i] = 0;
-    } */
+        static auto ahhhaddr = FindPattern("48 8B 91 ? ? ? ? 48 8B 81 ? ? ? ? 48 89 82 ? ? ? ? C3");
 
-    /* uintptr_t BusCrashAddr = FindPattern("0F 10 4C D1 ? 0F 11 88 ? ? ? ? F2 0F 10 44 D1 ? 48 8D 88 ? ? ? ? 48 8D 54 24 ? F2 0F 11 80 ? ? ? ? E8 ? ? ? ? 0F 28 44 24 ? 48 8D 54 24 ? 0F 29 44 24 ? 0F 57 C9 F3 0F 10 83 ? ? ? ?");
-    
-    if (BusCrashAddr) {
-        std::cout << "Applying bus crash fix!\n";
+        MH_CreateHook((PVOID)ahhhaddr, crashTFDetour, nullptr);
+        MH_EnableHook((PVOID)ahhhaddr);
 
-        for (int i = 0; i < 11; i++)
-        {
-            *reinterpret_cast<char*>(BusCrashAddr + i) = 0x00;
-        }
+        static auto heloaddr = FindPattern("48 8B C4 57 48 81 EC ? ? ? ? 4C 8B 82 ? ? ? ? 48 8B F9 0F 29 70 E8 0F 29 78 D8 44 0F 29 40 ? F3 45 0F 10 80 ? ? ? ? F3 41 0F 10 B0 ? ? ? ? F3");
+
+        MH_CreateHook((PVOID)heloaddr, crash2Detour, nullptr);
+        MH_EnableHook((PVOID)heloaddr);
     }
-    else
-        std::cout << "No BusCrashAddr!\n"; */
 
-    /* auto SpawnAircraftAddr = FindPattern("48 89 74 24 ? 57 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 ? ? ? ? 48 8B B9 ? ? ? ? 48 63 F2 48 85 FF 74 2D E8 ? ? ? ? 4C 8B 47 10 4C 8D 48 30 48 63 40 38 41 3B 40 38 7F 16 48 8B C8 49 8B 40 30");
-
-    if (SpawnAircraftAddr)
+    if (FnVerDouble == 7.30)
     {
-        MH_CreateHook((PVOID)SpawnAircraftAddr, SpawnsAircraftDetour, nullptr);
-        MH_EnableHook((PVOID)SpawnAircraftAddr);
+        static auto hookthisaddr = FindPattern("48 89 5C 24 ? 57 48 83 EC 30 48 8B 01 48 8B F9 FF 90 ? ? ? ? 48 8B D8 48 85 C0 0F 84 ? ? ? ? 48 83 78 ? ?");
+
+        MH_CreateHook((PVOID)hookthisaddr, hookthisDetour, (PVOID*)&hookthis);
+        MH_EnableHook((PVOID)hookthisaddr);
     }
-    else
-        std::cout << "No SpawnAircraftAddr!\n"; */
 
-    /* auto crashAddr = FindPattern("48 8B C4 48 89 48 08 55 41 55 48 8D 68 D8 48 81 EC ? ? ? ? 48 89 58 18 4C 8B EA 4C 89 70 D0 41 0F B6 D8 4C 8B F1 48 81 C1 ? ? ? ? E8 ? ? ? ? 49 8B 06 49 8B CE FF 90 ? ? ? ? 84 C0 0F 84 ? ? ? ? 49 8B 45 00 49 8B CD 48 89 B4 24 ? ? ? ?");
-
-    if (crashAddr)
+    if (FnVerDouble >= 19.00)
     {
-        Crashes = decltype(Crashes)(crashAddr);
-        MH_CreateHook((PVOID)crashAddr, CrashesDetour, (PVOID*)&Crashes);
-        MH_EnableHook((PVOID)crashAddr);
+        static auto craswhiffkaddr = FindPattern("40 55 41 54 41 55 41 56 41 57 48 83 EC 60 48 8D 6C 24 ? 48 89 5D 60 48 89 75 68 48 89 7D 70 48 8B 05 ? ? ? ? 48 33 C5 48 89 45 28 33 F6 4C 89 4D 18 41");
+     
+        MH_CreateHook((PVOID)craswhiffkaddr, CRASHMFDetour, nullptr);
+        MH_EnableHook((PVOID)craswhiffkaddr);
     }
-    else
-        std::cout << "No crashAddr!\n"; */
 
     return 0;
+}
+
+DWORD WINAPI MainTest(LPVOID)
+{
+    AllocConsole();
+
+    FILE* fptr;
+    freopen_s(&fptr, ("CONOUT$"), ("w"), stdout);
+
+    auto stat = MH_Initialize();
+
+    if (stat != MH_OK)
+    {
+        std::cout << std::format("Failed to initialize MinHook! Error: {}\n", MH_StatusToString(stat));
+        return 1;
+    }
+
+    if (!Setup())
+    {
+        std::cout << ("Failed setup!\n");
+        return 1;
+    }
+
+    std::cout << dye::aqua(("[Base Address] ")) << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -217,6 +387,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     {
     case DLL_PROCESS_ATTACH:
         CreateThread(0, 0, Main, 0, 0, 0);
+        // CreateThread(0, 0, MainTest, 0, 0, 0);
         break;
     case DLL_PROCESS_DETACH:
         std::cout << ("Disabling all Hooks!");

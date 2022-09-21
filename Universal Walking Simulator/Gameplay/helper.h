@@ -8,6 +8,56 @@
 
 static bool bPickupAnimsEnabled = true;
 
+int GetMaxBullets(UObject* Definition)
+{
+	if (!Definition)
+		return 0;
+
+	struct FDataTableRowHandle
+	{
+	public:
+		UObject* DataTable;                                         // 0x0(0x8)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		FName                                  RowName;                                           // 0x8(0x8)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	};
+
+	auto statHandle = Definition->Member<FDataTableRowHandle>("WeaponStatHandle");
+
+	if (!statHandle || !statHandle->DataTable || !statHandle->RowName.ComparisonIndex)
+		return 0;
+
+	auto RangedWeaponsTable = statHandle->DataTable;
+
+	// auto RangedWeaponRows = GetRowMap(RangedWeaponsTable);
+
+	static auto RowStructOffset = GetOffset(RangedWeaponsTable, "RowStruct");
+	auto& RangedWeaponRows = *(TMap<FName, uint8_t*>*)(__int64(RangedWeaponsTable) + (RowStructOffset + sizeof(UObject*))); // because after rowstruct is rowmap
+
+	static auto ClipSizeOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortBaseWeaponStats", "ClipSize");
+
+	// std::cout << "Number of RangedWeapons: " << RangedWeaponRows.Pairs.Elements.Data.Num() << '\n';
+
+	for (int i = 0; i < RangedWeaponRows.Pairs.Elements.Data.Num(); i++)
+	{
+		auto& Man = RangedWeaponRows.Pairs.Elements.Data.At(i);
+		auto& Pair = Man.ElementData.Value;
+		auto RowFName = Pair.First;
+
+		if (!RowFName.ComparisonIndex)
+			continue;
+
+		// if (RowFName.ToString() == statHandle->RowName.ToString())
+		if (RowFName.ComparisonIndex == statHandle->RowName.ComparisonIndex)
+		{
+			auto data = Pair.Second;
+			auto ClipSize = *(int*)(__int64(data) + ClipSizeOffset);
+			// std::cout << "ClipSize: " << ClipSize << '\n';
+			return ClipSize;
+		}
+	}
+
+	return 0;
+}
+
 UObject* GetWorldW(bool bReset = false)
 {
 	static auto GameViewportOffset = GetOffset(GetEngine(), "GameViewport");
@@ -43,6 +93,25 @@ static TArray<UObject*> GetAllActorsOfClass_(UObject* Class, UObject* World = nu
 	return Params.ReturnValue;
 }
 
+bool SetActorLocation_(UObject* Actor, const FVector& Location)
+{
+	static auto fn = Actor->Function(("K2_SetActorLocation"));
+
+	struct
+	{
+		FVector                                     NewLocation;                                              // (Parm, IsPlainOldData)
+		bool                                               bSweep;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+		char hitresult[0x88];
+		bool                                               bTeleport;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+		bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
+	} parms{ Location, false, 0, true };
+
+	if (fn)
+		Actor->ProcessEvent(fn, &parms);
+
+	return parms.ReturnValue;
+}
+
 namespace Easy
 {
 	UObject* SpawnObject(UObject* ObjectClass, UObject* Outer)
@@ -67,53 +136,106 @@ namespace Easy
 		return params.ReturnValue;
 	}
 
-	UObject* SpawnActor(UObject* Class, const FVector& Location = FVector(), const FRotator& Rotation = FRotator())
+	UObject* SpawnActor(UObject* Class, const FVector& Location = FVector(), const FRotator& Rotation = FRotator(), bool bUseOtherSpawning = false)
 	{
-		/* FTransform transform;
-		transform.Translation = Location;
-		transform.Rotation = Rotation.Quaternion();
-		transform.Scale3D = FVector(1, 1, 1);
+		if (!Class)
+			return nullptr;
 
-		struct
+		if (Location.ContainsNaN())
 		{
-			UObject* WorldContextObject;                                       // (ConstParm, Parm, ZeroConstructor, IsPlainOldData)
-			UObject* ActorClass;                                               // (Parm, ZeroConstructor, IsPlainOldData)
-			FTransform                                  SpawnTransform;                                           // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
-			bool                                               bNoCollisionFail;                                         // (Parm, ZeroConstructor, IsPlainOldData)
-			class AActor* Owner;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
-			class AActor* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
-		} params{Helper::GetWorld(), Class, transform, false, nullptr};
-
-		static auto GSC = FindObject(("Class /Script/Engine.GameplayStatics"));
-		static auto BeginSpawningActorFromClass = GSC->Function(("BeginSpawningActorFromClass"));
-
-		if (BeginSpawningActorFromClass) */
+			std::cout << "NAN LOCATION!\n";
+			return nullptr;
+		}
 
 		auto Loc = Location;
 		auto Rot = Rotation;
 
-		FQuat Ehh; // wrong
-		Ehh.W = 0;
-		Ehh.X = Rot.Pitch;
-		Ehh.Y = Rot.Roll;
-		Ehh.Z = Rot.Yaw;
-
 		FTransform transform;
 		transform.Translation = Loc;
-		transform.Rotation = Ehh;
+		transform.Rotation = FQuat(); // Rotation.Quaternion();
 		transform.Scale3D = { 1, 1, 1 };
 
 		FActorSpawnParameters spawnParams = FActorSpawnParameters();
 		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 		spawnParams.bAllowDuringConstructionScript = true;
+		spawnParams.bNoFail = true;
 
 		if (FnVerDouble < 19.00)
-			return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, spawnParams);
+		{
+			if (bUseOtherSpawning)
+			{
+				static auto GSC = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
+
+				UObject* NewActor = nullptr;
+
+				/* if (Engine_Version <= 422)
+				{
+					struct {
+						UObject* WorldContextObject;
+						UObject* ActorClass;
+						FTransform SpawnTransform;
+						bool bNoCollisionFail;
+						UObject* Owner;
+						UObject* NewActor;
+					} beginParams{ GetWorldW(), Class, transform, spawnParams.bNoFail, nullptr };
+
+					static auto BeginSpawningActorFromClass = GSC->Function("BeginSpawningActorFromClass");
+
+					if (BeginSpawningActorFromClass)
+						GSC->ProcessEvent(BeginSpawningActorFromClass, &beginParams);
+
+					NewActor = beginParams.NewActor;
+				}
+				else */
+				{
+					struct {
+						UObject* WorldContextObject;
+						UObject* ActorClass;
+						FTransform SpawnTransform;
+						ESpawnActorCollisionHandlingMethod CollisionHandlingOverride;
+						UObject* Owner;
+						UObject* NewActor;
+					} beginParams{ GetWorldW(), Class, transform, ESpawnActorCollisionHandlingMethod::AlwaysSpawn/* spawnParams.SpawnCollisionHandlingOverride */, nullptr};
+
+					static auto BeginDeferredActorSpawnFromClass = GSC->Function("BeginDeferredActorSpawnFromClass");
+
+					if (BeginDeferredActorSpawnFromClass)
+						GSC->ProcessEvent(BeginDeferredActorSpawnFromClass, &beginParams);
+
+					NewActor = beginParams.NewActor;
+				}
+
+				if (NewActor)
+				{
+					struct {
+						UObject* Actor;
+						FTransform Transform;
+						UObject* ret;
+					} finishParams{ NewActor, transform };
+
+					static auto FinishSpawningActor = GSC->Function("FinishSpawningActor");
+
+					if (GSC)
+						GSC->ProcessEvent(FinishSpawningActor, &finishParams);
+
+					return finishParams.ret;
+				}
+				else
+					std::cout << "Failed beginning spawning actor!\n";
+			}
+			else 
+			{
+				return SpawnActorO(GetWorldW(), Class, &Loc, &Rot, spawnParams);
+			}
+		}
 		else
 		{
 			auto GameInstance = *GetEngine()->Member<UObject*>(("GameInstance"));
 			auto& LocalPlayers = *GameInstance->Member<TArray<UObject*>>(("LocalPlayers"));
 			auto PlayerController = *LocalPlayers.At(0)->Member<UObject*>(("PlayerController"));
+
+			if (!PlayerController)
+				return nullptr;
 
 			auto CheatManager = *PlayerController->Member<UObject*>("CheatManager");
 
@@ -134,46 +256,17 @@ namespace Easy
 
 			auto AllActors = GetAllActorsOfClass_(Class);
 			std::cout << "All Actors Num: " << AllActors.Num() << '\n';
+
+			if (AllActors.Num() == 0)
+			{
+				std::cout << "Actor must have failed to spawn!\n";
+				return nullptr;
+			}
+
 			auto ActorWeWant = AllActors.At(AllActors.Num() - 1);
 			AllActors.Free();
-			// Helper::SetActorLocation(ActorWeWant, Location);
+			SetActorLocation_(ActorWeWant, Location);
 			return ActorWeWant;
-
-			/* struct {
-				UObject* WorldContextObject;
-				UObject* ActorClass;
-				FTransform SpawnTransform;
-				ESpawnActorCollisionHandlingMethod CollisionHandlingOverride;
-				UObject* Owner;
-				UObject* NewActor;
-			} beginParams{GetWorldW(), Class, transform, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn, nullptr};
-
-			static auto GSC = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
-
-			static auto BeginDeferredActorSpawnFromClass = GSC->Function("BeginDeferredActorSpawnFromClass");
-
-			if (BeginDeferredActorSpawnFromClass)
-				GSC->ProcessEvent(BeginDeferredActorSpawnFromClass, &beginParams);
-
-			if (beginParams.NewActor)
-			{
-				struct {
-					UObject* Actor;
-					FTransform Transform;
-					UObject* ret;
-				} finishParams{ beginParams.NewActor, transform };
-
-				static auto FinishSpawningActor = GSC->Function("FinishSpawningActor");
-
-				if (GSC)
-					GSC->ProcessEvent(FinishSpawningActor, &finishParams);
-
-				return finishParams.ret;
-			}
-			else
-				std::cout << "Failed beginning spawning actor!\n";
-
-			return SpawnActorOTrans(GetWorldW(), Class, &transform, spawnParams); */
 		}
 
 		return nullptr;
@@ -260,34 +353,21 @@ namespace Helper
 
 			return String.Data.GetData() ? String.ToString() : "INVALID_STRING";
 		}
+	}
 
-		FName StringToName(FString Str)
-		{
-			static auto KTL = FindObject(("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
+	static FName StringToName(FString Str)
+	{
+		static auto fn = FindObject(("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
+		static auto KSL = FindObject(("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
 
-			FName Ret;
+		struct {
+			FString InString;
+			FName ReturnValue;
+		} params{ Str };
 
-			if (KTL)
-			{
-				static auto fn = KTL->Function(("Conv_StringToName"));
+		KSL->ProcessEvent(fn, &params);
 
-				struct {
-					FString InStr;
-					FName ReturnValue;
-				} params{ Str };
-
-				if (fn)
-					KTL->ProcessEvent(fn, &params);
-				else
-					std::cout << ("Unable to find Conv_TextToString!\n");
-
-				Ret = params.ReturnValue;
-			}
-			else
-				std::cout << ("Unable to find KTL!\n");
-
-			return Ret;
-		}
+		return params.ReturnValue;
 	}
 
 	FVector GetActorLocation(UObject* Actor)
@@ -327,11 +407,11 @@ namespace Helper
 
 	void ShowBuilding(UObject* Foundation, bool bShow = true)
 	{
-		if (!Foundation)
+		if (!Foundation || bRestarting)
 			return;
 
 		auto DynamicFoundationType = Foundation->Member<uint8_t>(("DynamicFoundationType"));
-
+		
 		if (DynamicFoundationType && *DynamicFoundationType)
 			*DynamicFoundationType = bShow ? 0 : 3;
 
@@ -345,11 +425,11 @@ namespace Helper
 		Foundation->ProcessEvent("OnRep_ServerStreamedInLevel");
 
 		if (FnVerDouble >= 10.0) {
-			void* DynamicFoundationRepData = Foundation->Member<void>("DynamicFoundationRepData");
+			auto DynamicFoundationRepData = Foundation->Member<__int64>("DynamicFoundationRepData");
 			static int EnabledState_Offset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DynamicBuildingFoundationRepData", "EnabledState");
 			*reinterpret_cast<uint8_t*>(__int64(DynamicFoundationRepData) + EnabledState_Offset) = 1;
 			*Foundation->Member<uint8_t>("FoundationEnabledState") = 1;
-			Foundation->ProcessEvent(Foundation->Function("OnRep_DynamicFoundationRepData"));
+			Foundation->ProcessEvent("OnRep_DynamicFoundationRepData");
 		}
 	}
 
@@ -387,7 +467,7 @@ namespace Helper
 			FRotator                                    Rotation;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
 			bool                                               bOutSuccess;                                              // (Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 			UObject* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		} ULevelStreamingDynamic_LoadLevelInstance_Params{ GetWorldW(), LevelName, AircraftLocationToUse, FRotator() };
+		} ULevelStreamingDynamic_LoadLevelInstance_Params{GetWorldW(), LevelName, AircraftLocationToUse, FRotator()};
 
 		static auto levelStreamingDynamicClass = FindObject("LevelStreamingDynamic /Script/Engine.Default__LevelStreamingDynamic");
 		static auto LoadLevelInstance = levelStreamingDynamicClass->Function("LoadLevelInstance");
@@ -402,42 +482,6 @@ namespace Helper
 	void FixPOIs() {
 		float Version = std::stof(FN_Version);
 		int Season = (int)Version;
-		//Underwater POIs
-		if (Version == 13.30f || Version == 13.40f) {
-			static auto Frenzy = FindObject(("LF_Athena_Grid_64x64_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Frenzy_NormalFoundation"));
-			ShowBuilding(Frenzy);
-
-			static auto Pleasant = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Pleasant_NormalFoundation"));
-			ShowBuilding(Pleasant);
-			
-			static auto Sweaty = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Sweaty_NormalFoundation"));
-			ShowBuilding(Sweaty);
-			
-			static auto Fortilla = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Fortilla_Foundation"));
-			ShowBuilding(Fortilla);
-			
-			static auto Yacht = FindObject(("LF_Athena_POI_15x25_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Yacht_Foundation"));
-			ShowBuilding(Yacht);
-			
-			//Coral Castle
-			static auto R1 = FindObject(("LF_1x1_Foundation_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_1x1_RockIsland_1"));
-			ShowBuilding(R1);
-			
-			static auto R2 = FindObject(("LF_1x1_Foundation_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_1x1_RockIsland_2"));
-			ShowBuilding(R2);
-			
-			static auto R3 = FindObject(("LF_1x1_Foundation_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_1x1_RockIsland_3"));
-			ShowBuilding(R3);
-			
-			static auto Ruins1 = FindObject(("LF_Athena_POI_40x40_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.RuinsCenter_Foundation"));
-			ShowBuilding(Ruins1);
-			
-			static auto Ruins2 = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.RuinsFalls_Foundation"));
-			ShowBuilding(Ruins2);
-			
-			static auto Ruins3 = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Ruins_Foundation"));
-			ShowBuilding(Ruins3);
-		}
 		//Volcano
 		if (Season == 8) {
 			static auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
@@ -450,7 +494,6 @@ namespace Helper
 
 			static auto tiltedtower = FindObject("BuildingFoundation5x5 /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.ShopsNew");
 			ShowBuilding(tiltedtower);
-
 		}
 
 		if (Season >= 7 && Engine_Version < 424)
@@ -465,7 +508,7 @@ namespace Helper
 			// LevelSequencePlayer /Game/Athena/Prototype/Blueprints/Slab/Replicated_LevelSequence.Default__Replicated_LevelSequence_C.AnimationPlayer
 
 			/*
-
+			
 			Block_25x25_ColossalCompound - 7.40
 
 			Block_25x25_HarmonyHotel - 8.10
@@ -473,7 +516,7 @@ namespace Helper
 			Block_25x25_TrickyTracks - 8.50
 
 			Block_25x25_AlienSanctuary - 8.50
-
+			
 			*/
 		}
 
@@ -482,41 +525,55 @@ namespace Helper
 			static auto PleasantPark = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"));
 			ShowBuilding(PleasantPark);
 		}
+
+		if (Season == 13) {
+			UObject* WL = FindObject("Apollo_WaterSetup_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2");
+			UObject* Func = WL->Function("SetWaterLevel");
+			UObject* Func2 = WL->Function("OnRep_CurrentWaterLevel");
+			int NewWaterLevel = 0;
+			WL->ProcessEvent(Func, &NewWaterLevel);
+			WL->ProcessEvent(Func2);
+		}
+
 		//Loot Lake
 		if (Season == 6) {
-			static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
-			static auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
-			static auto Lake2 = FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
+			if (FnVerDouble != 6.10)
+			{
+				static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
+				static auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
+				static auto Lake2 = FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
 
-			ShowBuilding(FloatingIsland);
-			ShowBuilding(Lake);
-			// ShowBuilding(Lake2); // this is for after the event
+				ShowBuilding(FloatingIsland);
+
+				if (FnVerDouble <= 6.21)
+					ShowBuilding(Lake);
+				else
+					ShowBuilding(Lake2); // after event // do we have to do this lol
+			}
+			else
+			{
+				static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13"));
+				static auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest12"));
+
+				ShowBuilding(FloatingIsland);
+				ShowBuilding(Lake);
+			}
 
 			// *scripting->Member<FVector>("IslandPosition") = Helper::GetActorLocation(FloatingIsland);
 
-			/* static auto iforgot = FindObject("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13");
-
-			if (iforgot)
-			{
-				*iforgot->Member<uint8_t>(("DynamicFoundationType")) = 0;
-				iforgot->Member<BITMF>("bServerStreamedInLevel")->bServerStreamedInLevel = true;
-				iforgot->ProcessEvent("OnRep_ServerStreamedInLevel");
-			}
-			else
-				std::cout << "No I forgot!\n"; */
-
 		}
-
-		/*
-
-		[51709] Function /Script/FortniteGame.BuildingFoundation.OnLevelShown
-		[51710] Function /Script/FortniteGame.BuildingFoundation.OnLevelStreamedIn
-		[51711] Function /Script/FortniteGame.BuildingFoundation.OnRep_DynamicFoundationRepData
-		// OnRep_DynamicFoundationTransform
-
-		*/
 	}
 
+	void SetHealth()
+	{
+
+	}
+
+	void SetShield()
+	{
+
+	}
+	
 	UObject* GetWorld()
 	{
 		return GetWorldW();
@@ -524,29 +581,13 @@ namespace Helper
 
 	static void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart)
 	{
-		/* if (FnVerDouble >= 6) // TODO: make sure this is actually when they change it.
-		{
-			auto PlayerState = *Pawn->Member<UObject*>(("PlayerState"));
-			auto CustomCharacterParts = PlayerState->Member<__int64>(("CharacterParts")); // FCustomCharacterParts
-			struct ahh
-			{
-				char WasReplicatedFlags; // 0x00(0x01)
-				char UnknownData_1[0x7]; // 0x01(0x07)
-				UObject* Parts[0x06];
-			};
-			UObject** Parts = ((ahh*)CustomCharacterParts)->Parts;
-			Parts[Part.Get()] = ChosenCharacterPart;
-		}
-		else */
-		{
-			struct {
-				TEnumAsByte<EFortCustomPartType> Part;
-				UObject* ChosenCharacterPart;
-			} params{ Part, ChosenCharacterPart };
+		struct {
+			TEnumAsByte<EFortCustomPartType> Part;
+			UObject* ChosenCharacterPart;
+		} params{ Part, ChosenCharacterPart };
 
-			static auto chooseFn = Pawn->Function(("ServerChoosePart"));
-			Pawn->ProcessEvent(chooseFn, &params);
-		}
+		static auto chooseFn = Pawn->Function(("ServerChoosePart"));
+		Pawn->ProcessEvent(chooseFn, &params);
 	}
 
 	bool IsInAircraft(UObject* Controller)
@@ -555,7 +596,7 @@ namespace Helper
 			return false;
 
 		static auto fn = Controller->Function(("IsInAircraft"));
-
+		
 		bool bIsInAircraft = false;
 
 		if (fn)
@@ -617,39 +658,24 @@ namespace Helper
 	{
 		if (bPickupAnimsEnabled)
 		{
-			struct FFortPickupLocationData
-			{
-			public:
-				UObject* PickupTarget; // class AFortPawn* PickupTarget;                                      // 0x0(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				UObject* CombineTarget; // class AFortPickup* CombineTarget;                                     // 0x8(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				UObject* ItemOwner; // class AFortPawn* ItemOwner;                                         // 0x10(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				FVector                 LootInitialPosition;                               // 0x18(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				FVector                LootFinalPosition;                                 // 0x24(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				float                                        FlyTime;                                           // 0x30(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				FVector            StartDirection;                                    // 0x34(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				FVector                 FinalTossRestLocation;                             // 0x40(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				uint8_t TossState; // enum class EFortPickupTossState              TossState;                                         // 0x4C(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				bool                                         bPlayPickupSound;                                  // 0x4D(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				uint8_t                                        Pad_3687[0x2];                                     // Fixing Size After Last Property  [ Dumper-7 ]
-				FGuid                                 PickupGuid;                                        // 0x50(0x10)(ZeroConstructor, IsPlainOldData, RepSkip, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-			};
-
 			auto PickupLocationData = Pickup->Member<FFortPickupLocationData>("PickupLocationData");
 
 			if (PickupLocationData)
 			{
 				PickupLocationData->PickupTarget = Pawn;
-				PickupLocationData->ItemOwner = Pawn; // wrong I think
+				PickupLocationData->ItemOwner = Pawn;
 				// PickupLocationData->LootInitialPosition = Helper::GetActorLocation(Pickup);
 				PickupLocationData->FlyTime = FlyTime;
 				PickupLocationData->StartDirection = StartDirection;
 				static auto GuidOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemGuid"));
-				auto Guid = (FGuid*)(__int64(&*Pickup->Member<__int64>(("PrimaryPickupItemEntry"))) + GuidOffset);
-				PickupLocationData->PickupGuid = *Guid; // *FFortItemEntry::GetGuid(Pickup->Member<__int64>(("PrimaryPickupItemEntry")));
+				auto Guid = (FGuid*)(__int64(&*Pickup->CachedMember<__int64>(("PrimaryPickupItemEntry"))) + GuidOffset);
+
+				if (Guid)
+					PickupLocationData->PickupGuid = *Guid; // *FFortItemEntry::GetGuid(Pickup->Member<__int64>(("PrimaryPickupItemEntry")));
 			}
 		}
 
-		auto OnRep_PickupLocationData = Pickup->Function(("OnRep_PickupLocationData"));
+		static auto OnRep_PickupLocationData = Pickup->Function(("OnRep_PickupLocationData"));
 
 		if (OnRep_PickupLocationData)
 			Pickup->ProcessEvent(OnRep_PickupLocationData);
@@ -657,18 +683,58 @@ namespace Helper
 			std::cout << "Failed to find OnRep_PickupLocationData!\n";
 	}
 
-	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true)
+	static UObject* GetSkeletalMesh(UObject* Pawn)
 	{
-		static UObject* EffectClass = FindObject(("BlueprintGeneratedClass /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Default.B_Pickups_Default_C"));
+		if (!Pawn)
+			return nullptr;
+
+		auto Mesh = Pawn->Member<UObject*>(("Mesh"));
+
+		if (Mesh)
+			return *Mesh;
+
+		return nullptr;
+	}
+
+	static UObject* GetAnimInstance(UObject* Pawn)
+	{
+		if (!Pawn)
+			return nullptr;
+
+		auto Mesh = GetSkeletalMesh(Pawn);
+
+		if (!Mesh)
+			return nullptr;
+
+		static auto fn = Mesh->Function(("GetAnimInstance"));
+
+		struct {
+			UObject* ReturnValue; // UAnimInstance*
+		} params;
+
+		Mesh->ProcessEvent(fn, &params);
+
+		return params.ReturnValue;
+	}
+
+	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true, bool bMaxAmmo = true, int ammo = 0)
+	{
 		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena"));
 
-		auto Pickup = Easy::SpawnActor(PickupClass, Location);
+		auto Pickup = Easy::SpawnActor(PickupClass, Location, FRotator(), false && FnVerDouble < 19.00);
 
 		if (Pickup && Definition)
 		{
-			auto ItemEntry = Pickup->Member<void>(("PrimaryPickupItemEntry"));
+			auto ItemEntry = Pickup->CachedMember<__int64>(("PrimaryPickupItemEntry"));
+
 			static auto CountOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("Count"));
 			static auto ItemDefOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
+			static auto LoadedAmmoOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("LoadedAmmo"));
+
+			if (bMaxAmmo)
+				*(int*)(__int64(&*ItemEntry) + LoadedAmmoOffset) = GetMaxBullets(Definition);
+			else
+				*(int*)(__int64(&*ItemEntry) + LoadedAmmoOffset) = ammo;
 
 			static auto OnRep_PrimaryPickupItemEntry = Pickup->Function(("OnRep_PrimaryPickupItemEntry"));
 
@@ -678,6 +744,9 @@ namespace Helper
 				*(UObject**)(__int64(ItemEntry) + ItemDefOffset) = Definition;
 
 				Pickup->ProcessEvent(OnRep_PrimaryPickupItemEntry);
+
+				// UFortNotificationHandler
+				// what is this FFortPickupEntryData
 
 				if (bTossPickup)
 				{
@@ -690,7 +759,7 @@ namespace Helper
 							UObject* ItemOwner;
 							int OverrideMaxStackCount;
 							bool bToss;
-							EFortPickupSourceTypeFlag InPickupSourceTypeFlags; // Do these even exist on older versions?
+							EFortPickupSourceTypeFlag InPickupSourceTypeFlags;
 							EFortPickupSpawnSource InPickupSpawnSource;
 						} TPParams{ Location, Pawn, 6, true, PickupSource, SpawnSource };
 
@@ -705,7 +774,7 @@ namespace Helper
 							int OverrideMaxStackCount;
 							bool bToss;
 							bool bShouldCombinePickupsWhenTossCompletes;
-							EFortPickupSourceTypeFlag InPickupSourceTypeFlags; // Do these even exist on older versions?
+							EFortPickupSourceTypeFlag InPickupSourceTypeFlags;
 							EFortPickupSpawnSource InPickupSpawnSource;
 						} TPParams{ Location, Pawn, 6, true, true, PickupSource, SpawnSource };
 
@@ -724,16 +793,15 @@ namespace Helper
 						Pickup->ProcessEvent(OnRep_TossedFromContainer);
 				}
 
-				// physics go brr
-
 				static auto SetReplicateMovementFn = Pickup->Function(("SetReplicateMovement"));
 				struct { bool b; } bruh{ true };
 				Pickup->ProcessEvent(SetReplicateMovementFn, &bruh);
 
 				static auto Rep_ReplicateMovement = Pickup->Function(("OnRep_ReplicateMovement"));
 				Pickup->ProcessEvent(Rep_ReplicateMovement);
-
+				
 				static auto ProjectileMovementComponentClass = FindObject("Class /Script/Engine.ProjectileMovementComponent");
+				// UFortProjectileMovementComponent
 
 				auto MovementComponent = Pickup->Member<UObject*>("MovementComponent");
 				*MovementComponent = Easy::SpawnObject(ProjectileMovementComponentClass, Pickup);
@@ -741,26 +809,6 @@ namespace Helper
 		}
 
 		return Pickup;
-	}
-
-	bool RandomBoolWithWeight(float Weight)
-	{
-		static auto KSM = FindObject("KismetMathLibrary /Script/Engine.Default__KismetMathLibrary");
-
-		struct {
-			float weight;
-			bool Ret;
-		} parms{ Weight };
-
-		if (KSM)
-		{
-			static auto RandomBoolWithWeight = KSM->Function("RandomBoolWithWeight");
-
-			if (RandomBoolWithWeight)
-				KSM->ProcessEvent(RandomBoolWithWeight, &parms);
-		}
-
-		return parms.Ret;
 	}
 
 	UObject* GetOwnerOfComponent(UObject* Component)
@@ -789,7 +837,7 @@ namespace Helper
 
 	void DestroyActor(UObject* Actor)
 	{
-		if (!Actor)
+		if (!Actor) 
 			return;
 
 		static auto fn = Actor->Function(("K2_DestroyActor"));
@@ -810,6 +858,16 @@ namespace Helper
 		return *(UObject**)(__int64(PC) + PawnOffset);
 	}
 
+	UObject* GetPlayerStateFromController(UObject* PC)
+	{
+		if (!PC)
+			return nullptr;
+
+		static auto PlayerStateOffset = GetOffset(PC, "PlayerState");
+
+		return *(UObject**)(__int64(PC) + PlayerStateOffset);
+	}
+
 	static TArray<UObject*> GetAllActorsOfClass(UObject* Class, UObject* World = nullptr)
 	{
 		static auto GSCClass = FindObject(("GameplayStatics /Script/Engine.Default__GameplayStatics"));
@@ -826,77 +884,50 @@ namespace Helper
 		Params.World = World ? World : GetWorld();
 		Params.Class = Class;
 
-		ProcessEventO(GSCClass, GetAllActorsOfClass, &Params);
+		GSCClass->ProcessEvent(GetAllActorsOfClass, &Params);
 
 		return Params.ReturnValue;
 	}
 
 	static bool IsRespawnEnabled()
 	{
-		bool Respawning = bIsPlayground;
-		return Respawning;
+		bool bIsRespawningEnabled = bIsPlayground;
+		return bIsRespawningEnabled;
 	}
 
-	static void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false)
+	static void InitializeBuildingActor(UObject* Controller, UObject* BuildingActor, bool bUsePlayerBuildAnimations = false, UObject* ReplacedBuilding = nullptr)
 	{
-		UObject* FinalActor = nullptr;
-		if (FnVerDouble < 18.00) // wrong probs
+		struct {
+			UObject* BuildingOwner; // ABuildingActor
+			UObject* SpawningController;
+			bool bUsePlayerBuildAnimations; // I think this is not on some versions
+			UObject* ReplacedBuilding; // this also not on like below 18.00
+		} IBAParams{ BuildingActor, Controller, bUsePlayerBuildAnimations, ReplacedBuilding };
+
+		if (Controller && BuildingActor)
 		{
-			// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
-			struct {
-				UObject* BuildingOwner; // ABuildingActor
-				UObject* SpawningController;
-				bool bUsePlayerBuildAnimations; // I think this is not on some versions
-			} IBAParams{ BuildingActor, Controller, bUsePlayerBuildAnimations };
+			static auto fn = BuildingActor->Function(("InitializeKismetSpawnedBuildingActor"));
 
-			if (Controller && BuildingActor)
-			{
-				static auto fn = BuildingActor->Function(("InitializeKismetSpawnedBuildingActor"));
-
-				if (fn)
-					BuildingActor->ProcessEvent(fn, &IBAParams);
-
-				FinalActor = BuildingActor;
-			}
+			if (fn)
+				BuildingActor->ProcessEvent(fn, &IBAParams);
 		}
-		else
-		{
-			// 	void InitializeKismetSpawnedBuildingActor(class ABuildingActor* BuildingOwner, class AFortPlayerController* SpawningController, bool bUsePlayerBuildAnimations = true);
-			struct {
-				UObject* BuildingOwner; // ABuildingActor
-				UObject* SpawningController;
-				bool bUsePlayerBuildAnimations; // I think this is not on some versions
-				UObject* ReplacedBuilding;
-			} IBAParams{ BuildingActor, Controller, bUsePlayerBuildAnimations, nullptr };
-
-			if (Controller && BuildingActor)
-			{
-				static auto fn = BuildingActor->Function(("InitializeKismetSpawnedBuildingActor"));
-
-				if (fn)
-					BuildingActor->ProcessEvent(fn, &IBAParams);
-				FinalActor = BuildingActor;
-			}
-		}
-
-		*FinalActor->Member<uint8_t>("Team") = *(*Controller->Member<UObject*>("PlayerState"))->Member<uint8_t>("TeamIndex");
 	}
 
 	static UObject* SpawnChip(UObject* Controller, FVector ChipLocation)
 	{
-		static auto ChipClass = FindObject(("Class /Script/FortniteGame.BuildingGameplayActorSpawnChip"));
+		static auto ChipClass = FindObject(("/Game/Athena/Items/EnvironmentalItems/SCMachine/BGA_Athena_SCMachine_Pickup.BGA_Athena_SCMachine_Pickup_C"));
 
-		auto Pawn = Controller->Member<UObject*>(("Pawn"));
+		auto Pawn = Helper::GetPawnFromController(Controller);
 
-		if (ChipClass && Pawn && *Pawn)
+		if (ChipClass && Pawn)
 		{
-			auto PlayerState = (*Pawn)->Member<UObject*>(("PlayerState"));
+			auto PlayerState = Pawn->Member<UObject*>(("PlayerState"));
 
 			if (PlayerState && *PlayerState)
 			{
 				std::cout << ("Spawning Chip!\n");
 
-				auto Chip = Easy::SpawnActor(ChipClass, ChipLocation, Helper::GetActorRotation(*Pawn));
+				auto Chip = Easy::SpawnActor(ChipClass, ChipLocation, Helper::GetActorRotation(Pawn));
 
 				std::cout << ("Initializing Chip!\n");
 
@@ -904,6 +935,7 @@ namespace Helper
 
 				std::cout << ("Initialized Chip!\n");
 
+				*Chip->Member<int>("OwnerTeam") = *(*PlayerState)->Member<unsigned char>(("TeamIndex"));
 				*Chip->Member<UObject*>(("OwnerPlayerController")) = Controller;
 				*Chip->Member<UObject*>(("OwnerPlayerState")) = *PlayerState;
 				*Chip->Member<unsigned char>(("SquadId")) = *(*PlayerState)->Member<unsigned char>(("SquadId"));
@@ -936,6 +968,7 @@ namespace Helper
 		auto Location = GetActorLocation(Pawn);
 		SummonPickup(Pawn, def, Location, EFortPickupSourceTypeFlag::Tossed, EFortPickupSpawnSource::Chest, 1, true);
 	}
+
 	static void SpawnAshton(UObject* Pawn)
 	{
 		auto def = FindObject(("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/Ashton/AGID_AshtonPack.AGID_AshtonPack"));
@@ -947,7 +980,7 @@ namespace Helper
 	{
 		struct {
 			FVector& Location;
-			FRotator& Rotation; // DestinationActor->GetActorRotation());
+			FRotator& Rotation;
 			bool Res;
 		} params{ Location, Rot, false };
 
@@ -959,12 +992,91 @@ namespace Helper
 		return params.Res;
 	}
 
-	UObject* GetGameState()
+	UObject* GetGameState(UObject* World = nullptr)
 	{
-		auto world = Helper::GetWorld();
-		auto gameState = *world->Member<UObject*>(("GameState"));
+		auto world = World ? World : Helper::GetWorld();
+
+		static auto gameStateOffset = GetOffset(world, "GameState");
+		auto gameState = *(UObject**)(__int64(world) + gameStateOffset);
 
 		return gameState;
+	}
+
+	auto GetStructuralSupportSystem()
+	{
+		auto GameState = Helper::GetGameState();
+
+		return *GameState->Member<UObject*>("StructuralSupportSystem");
+	}
+
+	void IDoNotKnow(UObject* BuildingActor)
+	{
+		/* void(__fastcall * IDONTKNOW)(UObject * a1);
+
+		auto Addy = FindPattern("40 53 48 81 EC ? ? ? ? F6 81 ? ? ? ? ? 48 8B D9 0F 85 ? ? ? ? 48 8B 01 48 89 BC 24 ? ? ? ? FF 90 ? ? ? ? 48 8B C8 E8 ? ? ? ? 48 8B F8 0F B6 83 ? ? ? ? 24 40 75 4A 48 8B 8B ? ? ? ? 48 85 C9 74 3E 48 8B 01");
+
+		IDONTKNOW = decltype(IDONTKNOW)(Addy);
+
+		std::cout << "IDONTKNOW ADDY: " << IDONTKNOW << '\n';
+
+		return IDONTKNOW ? IDONTKNOW(BuildingActor) : void(); */
+
+		/* char(__fastcall * sub_7FF706A6EF90)(UObject * a1, UObject * a2, int* a3);
+
+		auto addy = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 81 EC ? ? ? ? 48 8B 02 48 8B F2 4D 8B F0 48 8D 55 D0 48 8B D9 33 FF 45");
+
+		sub_7FF706A6EF90 = decltype(sub_7FF706A6EF90)(addy);
+
+		std::cout << "ADXDY: " << addy << '\n';
+
+		int idk = -1;
+
+		if (sub_7FF706A6EF90)
+			sub_7FF706A6EF90(Helper::GetStructuralSupportSystem(), BuildingActor, &idk);
+
+		std::cout << "idk: " << idk << '\n'; */
+
+		// int someoutidk = -1;
+
+		// bool(__fastcall * hmmmmm)(UObject * StructuralSupportSystem, float* a2, int* someOut);
+
+		/* float idk;
+
+		__int64(__fastcall * bozoratio)(UObject* a1, float* a2, __int64 a3, __int64 a4);
+
+		bozoratio = decltype(bozoratio)(FindPattern("48 89 74 24 ? 48 89 7C 24 ? 55 48 8B EC 48 81 EC ? ? ? ? 48 8B FA 48 8B F1 4D 85 C0 74 17 41"));
+
+		bozoratio(BuildingActor, &idk, 0, 0);
+		
+		std::cout << "idk: " << idk << '\n'; */
+
+		/* auto addy = FindPattern("48 83 EC 28 F3 0F 10 99 ? ? ? ? 4D 8B D0 F3 0F 10 0D ? ? ? ? F3 0F 10 15 ? ? ? ? 0F 29 74 24 ? 0F 29 3C");
+
+		hmmmmm = decltype(hmmmmm)(addy);
+
+		std::cout << "hmmmmm addy: " << hmmmmm << '\n';
+
+		float idk = 0;
+		int v35[2];
+
+		auto reet = hmmmmm(Helper::GetStructuralSupportSystem(), &idk, v35);
+
+		std::cout << "idkafg9qu: " << someoutidk << '\n';
+
+		std::cout << "rett: " << reet << '\n'; */
+	}
+
+	char CanAddBuildingActorClass(UObject* BuildingActorClass)
+	{
+		auto Addy = FindPattern("40 55 56 57 41 55 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 83 B9 ? ? ? ? ? 4D 8B E8 48 8B F2 48 8B F9 74 1A 48 8B 89 ? ? ? ? 48 85 C9");
+	
+		char(__fastcall * CanAddBuildingActorClassToGrid)(UObject * World, UObject * a2, UObject * StructuralSupportSystem);
+
+		CanAddBuildingActorClassToGrid = decltype(CanAddBuildingActorClassToGrid)(Addy);
+
+		std::cout << "CanAddBuildingActorClassToGrid Addy: " << CanAddBuildingActorClassToGrid << '\n';
+
+		return CanAddBuildingActorClassToGrid ? CanAddBuildingActorClassToGrid(GetWorldW(), BuildingActorClass, GetStructuralSupportSystem()) : false;
 	}
 
 	EAthenaGamePhase* GetGamePhase()
@@ -974,10 +1086,63 @@ namespace Helper
 
 	bool HasAircraftStarted()
 	{
-		return *GetGamePhase() == EAthenaGamePhase::Aircraft;
+		return *GetGamePhase() >= EAthenaGamePhase::Aircraft;
 	}
 
-	FVector GetPlayerStart()
+	UObject* ReplaceBuildingActor(UObject* Controller, UObject* BuildingActor, UObject* NewBuildingClass, int RotationIterations, bool bMirrored)
+	{
+		static auto BuildingSMActorReplaceBuildingActorAddr = FindPattern("4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?");
+
+		if (!BuildingSMActorReplaceBuildingActorAddr)
+		{
+			if (Engine_Version < 421)
+			{
+				BuildingSMActorReplaceBuildingActorAddr = FindPattern("48 8B C4 4C 89 40 18 55 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 33 FF 40 38 3D ? ? ? ? 48 8B F1 4C 89 60 E0 44 8B E2 4C 89 70 D0 44 8B F7 4C 89 78 C8 48 8D 05 ? ? ? ?");
+			}
+			else
+			{
+				if (Engine_Version >= 426 && !BuildingSMActorReplaceBuildingActorAddr)
+				{
+					BuildingSMActorReplaceBuildingActorAddr = FindPattern("48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 ? 44 0F 29 48 ? 44 0F 29 90 ? ? ? ? 44 0F 29 B8 ? ? ? ? 48 8B 05");
+
+					if (!BuildingSMActorReplaceBuildingActorAddr) // c3
+						BuildingSMActorReplaceBuildingActorAddr = FindPattern("48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 ? 44 0F 29 48 ? 44 0F 29 90 ? ? ? ? 48 8B 05 ? ? ? ?");
+				}
+
+				if (!BuildingSMActorReplaceBuildingActorAddr || Engine_Version <= 421)
+					BuildingSMActorReplaceBuildingActorAddr = FindPattern("48 8B C4 44 89 48 20 55 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 33 FF 40 38 3D ? ? ? ? 48 8B F1 4C 89 60 E0 44 8B E2");
+			}
+		}
+
+		UObject* (__fastcall * BuildingSMActorReplaceBuildingActor)(UObject* BuildingSMActor, unsigned int ReplacementType, UObject* a3, unsigned int BuildingLevel, int a5, unsigned __int8 bMirrored, UObject * Controller);
+
+		BuildingSMActorReplaceBuildingActor = decltype(BuildingSMActorReplaceBuildingActor)(BuildingSMActorReplaceBuildingActorAddr);
+
+		if (BuildingSMActorReplaceBuildingActor)
+		{
+			auto newActor = BuildingSMActorReplaceBuildingActor(BuildingActor, 1, NewBuildingClass, 0, RotationIterations, bMirrored, Controller);
+			// std::cout << "new: " << newActor << '\n';
+
+			return newActor;
+		}
+		else
+			std::cout << "No BuildingSMActorReplaceBuildingActor!\n";
+
+		return nullptr;
+	}
+
+	void SetMirrored(UObject* BuildingActor, bool bMirrored)
+	{
+		if (!BuildingActor)
+			return;
+
+		static auto SetMirrored = BuildingActor->Function("SetMirrored");
+
+		if (SetMirrored)
+			BuildingActor->ProcessEvent(SetMirrored, &bMirrored);
+	}
+
+	FVector GetPlayerStart(UObject** PlayerStartActor = nullptr)
 	{
 		static auto WarmupClass = FindObject(("Class /Script/FortniteGame.FortPlayerStartWarmup"));
 		TArray<UObject*> OutActors = GetAllActorsOfClass(WarmupClass);
@@ -991,18 +1156,24 @@ namespace Helper
 
 		auto GamePhase = *GetGamePhase();
 
-		if (WarmupClass && ActorsNum != 0 && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
+		if (WarmupClass && Engine_Version != 419 && ActorsNum != 0 && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
 		{
-			auto ActorToUseNum = RandomIntInRange(0, ActorsNum);
+			auto ActorToUseNum = RandomIntInRange(1, ActorsNum);
 			auto ActorToUse = (OutActors)[ActorToUseNum];
 
 			while (!ActorToUse)
 			{
-				ActorToUseNum = RandomIntInRange(0, ActorsNum);
+				ActorToUseNum = RandomIntInRange(1, ActorsNum);
 				ActorToUse = (OutActors)[ActorToUseNum];
 			}
 
-			SpawnTransform.Translation = GetActorLocation(ActorToUse);
+			if (PlayerStartActor)
+				*PlayerStartActor = ActorToUse;
+
+			static auto ActorClass = FindObject("Class /Script/Engine.Actor");
+
+			if (ActorToUse->IsA(ActorClass)) // idfk why thisd happens
+				SpawnTransform.Translation = GetActorLocation(ActorToUse);
 
 			// PC->WarmupPlayerStart = static_cast<AFortPlayerStartWarmup*>(ActorToUse);
 		}
@@ -1020,8 +1191,10 @@ namespace Helper
 			bool bZOverride;
 			bool bIgnoreFallDamage;
 			bool bPlayFeedbackEvent;
-		} LCJParans{ LaunchVelocity, bXYOverride, bZOverride, bIgnoreFallDamage, bPlayFeedbackEvent };
-		auto LaunchPlayerFn = Pawn->Function("LaunchCharacterJump");
+		} LCJParans {LaunchVelocity, bXYOverride, bZOverride, bIgnoreFallDamage, bPlayFeedbackEvent };
+
+		static auto LaunchPlayerFn = Pawn->Function("LaunchCharacterJump");
+
 		Pawn->ProcessEvent(LaunchPlayerFn, &LCJParans);
 	}
 
@@ -1062,7 +1235,7 @@ namespace Helper
 			}
 
 			static auto ConsoleClass = FindObject(("Class /Script/Engine.Console"));
-			static auto GameViewport = Engine->Member<UObject*>(("GameViewport"));
+			auto GameViewport = Engine->Member<UObject*>(("GameViewport"));
 
 			while (!*GameViewport)
 			{
@@ -1082,13 +1255,13 @@ namespace Helper
 			return 0;
 		}
 
-		void ExecuteConsoleCommand(FString& Command)
+		void ExecuteConsoleCommand(FString Command)
 		{
 			struct {
 				UObject* WorldContextObject;                                       // (Parm, ZeroConstructor, IsPlainOldData)
 				FString                                     Command;                                                  // (Parm, ZeroConstructor)
 				UObject* SpecificPlayer;                                           // (Parm, ZeroConstructor, IsPlainOldData)
-			} params{ Helper::GetWorld(), Command, nullptr };
+			} params{Helper::GetWorld(), Command, nullptr};
 
 			static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
 
@@ -1177,11 +1350,19 @@ namespace Helper
 			Actor->ProcessEvent(SetActorScaleFn, &params);
 	}
 
-	static FString GetfPlayerName(UObject* PC)
+	static FString GetfPlayerName(UObject* PlayerState)
 	{
-		static auto MCPPG = *PC->Member<UObject*>("McpProfileGroup");
+		FString Name; // = *PlayerState->Member<FString>(("PlayerNamePrivate"));
 
-		return *MCPPG->Member<FString>("PlayerName");
+		if (PlayerState)
+		{
+			static auto fn = PlayerState->Function(("GetPlayerName"));
+
+			if (fn)
+				PlayerState->ProcessEvent(fn, &Name);
+		}
+
+		return Name;
 	}
 
 	static bool IsSmallZoneEnabled()
@@ -1191,7 +1372,9 @@ namespace Helper
 
 	static UObject* GetRandomFoundation()
 	{
-		/* if (Helper::IsSmallZoneEnabled())
+		srand(time(0));
+
+		if (Helper::IsSmallZoneEnabled())
 		{
 			auto POIManager = *Helper::GetGameState()->Member<UObject*>("PoiManager");
 
@@ -1202,33 +1385,19 @@ namespace Helper
 				if (AllPois)
 				{
 					auto POI = AllPois->At(rand() % (AllPois->Num()));
-
+					
 					if (POI)
 						return POI;
 				}
-			}
-		} */
-
-		static auto FoundationClass = FindObject("Class /Script/FortniteGame.BuildingFoundation");
-		auto AllFoundations = GetAllActorsOfClass_(FoundationClass);
-
-		if (AllFoundations.Num() > 0)
-		{
-			while (true)
-			{
-				auto Foundation = AllFoundations.At(rand() % (AllFoundations.Num()));;
-
-				if (Foundation)
-					return Foundation;
 			}
 		}
 
 		return nullptr;
 	}
 
-	static std::string GetPlayerName(UObject* PC)
+	static std::string GetPlayerName(UObject* PlayerState)
 	{
-		auto name = GetfPlayerName(PC);
+		auto name = GetfPlayerName(PlayerState);
 		return name.Data.GetData() ? name.ToString() : "";
 	}
 
@@ -1267,7 +1436,7 @@ namespace Helper
 
 	}
 
-	void DumpObjects()
+	DWORD WINAPI DumpObjects(LPVOID)
 	{
 		std::ofstream objects("Objects.log");
 
@@ -1280,7 +1449,8 @@ namespace Helper
 
 			objects << std::format("[{}] {}\n", Object->InternalIndex, Object->GetFullName()); // TODO: add the offset
 		}
-		objects.close();
+
+		return 0;
 	}
 
 	void SetHealth(UObject* Pawn, float Health)
@@ -1291,9 +1461,35 @@ namespace Helper
 			Pawn->ProcessEvent(SetHealth, &Health);
 	}
 
+	void SetMaxShield(UObject* Pawn, float MaxShield, UObject* PlayerState = nullptr)
+	{
+		if (!Pawn)
+			return;
+
+		if (Engine_Version <= 420)
+		{
+			*(PlayerState ? PlayerState : *Pawn->Member<UObject*>("PlayerState"))->Member<float>("MaxShield") = MaxShield;
+		}
+		else
+		{
+			static auto setMaxShieldFn = Pawn->Function(("SetMaxShield"));
+
+			if (setMaxShieldFn)
+				Pawn->ProcessEvent(setMaxShieldFn, &MaxShield);
+			else
+				std::cout << ("Unable to find setMaxShieldFn!\n");
+
+		}
+	}
+
+	UObject* GetGameData()
+	{
+		return *(*GetEngine()->Member<UObject*>("AssetManager"))->Member<UObject*>("GameData");
+	}
+
 	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart(), bool bResetTeams = false)
 	{
-		UObject* PlayerState = *PC->Member<UObject*>(("PlayerState"));
+		UObject* PlayerState = GetPlayerStateFromController(PC);
 
 		static auto PawnClass = FindObject(("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
 		auto Pawn = Easy::SpawnActor(PawnClass, Location, {});
@@ -1302,24 +1498,12 @@ namespace Helper
 			return nullptr;
 
 		static auto SetReplicateMovementFn = Pawn->Function(("SetReplicateMovement"));
-		struct { bool b; } bruh{ true };
+		struct { bool b; } bruh{true};
 		Pawn->ProcessEvent(SetReplicateMovementFn, &bruh);
-		// Pawn->Member<bool>("bReplicateMovement", 1);
+
+		// setBitfield(Pawn, "bReplicateMovement", true);
 
 		// prob not needed here from
-
-		static auto Rep_ReplicateMovement = Pawn->Function(("OnRep_ReplicateMovement"));
-		Pawn->ProcessEvent(Rep_ReplicateMovement);
-
-		static auto Rep_ReplicatedMovement = Pawn->Function(("OnRep_ReplicatedMovement"));
-		Pawn->ProcessEvent(Rep_ReplicatedMovement);
-
-		static auto Rep_ReplicatedBasedMovement = Pawn->Function(("OnRep_ReplicatedBasedMovement"));
-		Pawn->ProcessEvent(Rep_ReplicateMovement);
-
-		// here
-
-		// PC->Exec("Possess", Pawn);
 
 		static auto PossessFn = PC->Function(("Possess"));
 
@@ -1333,9 +1517,9 @@ namespace Helper
 		else
 			std::cout << ("Could not find Possess!\n");
 
-		Helper::SetOwner(Pawn, PC); //prob not needed
+		Helper::SetOwner(Pawn, PC); // prob not needed
 
-		// *Pawn->Member<float>(("NetUpdateFrequency")) = 200;
+		SetMaxShield(Pawn, 100, PlayerState);
 
 		static auto setMaxHealthFn = Pawn->Function(("SetMaxHealth"));
 		struct { float NewHealthVal; }healthParams{ 100 };
@@ -1345,71 +1529,65 @@ namespace Helper
 		else
 			std::cout << ("Unable to find setMaxHealthFn!\n");
 
-		static auto setMaxShieldFn = Pawn->Function(("SetMaxShield"));
-		struct { float NewValue; }shieldParams{ 100 };
-
-		if (setMaxShieldFn)
-			Pawn->ProcessEvent(setMaxShieldFn, &shieldParams);
-		else
-			std::cout << ("Unable to find setMaxShieldFn!\n");
-
-		/*
-
-		static const auto HeroType = FindObject(("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
-
-		*PlayerState->Member<UObject*>(("HeroType")) = HeroType;
-		static auto OnRepHeroType = PlayerState->Function(("OnRep_HeroType"));
-		PlayerState->ProcessEvent(OnRepHeroType);
-
-		*/
-
-		/*static auto FortCustomizationAssetLoader = FindObject(("FortCustomizationAssetLoader /Script/FortniteGame.Default__FortCustomizationAssetLoader"));
-		auto PawnCustomizationAssetLoader = Pawn->Member<UObject*>("CustomizationAssetLoader");
-		auto LocalPawnCustomizationAssetLoader = PC->Member<UObject*>("LocalPawnCustomizationAssetLoader");
-		*PawnCustomizationAssetLoader = FortCustomizationAssetLoader;
-		*LocalPawnCustomizationAssetLoader = FortCustomizationAssetLoader;*/
-
-		/* auto CustomizationAssetLoader = Pawn->Member<UObject*>(("CustomizationAssetLoader"));
-
-		if (CustomizationAssetLoader && *CustomizationAssetLoader)
+		if (FnVerDouble < 4)
 		{
-			void* CurrentAssetsToLoad = (*CustomizationAssetLoader)->Member<void>(("CurrentAssetsToLoad"));
+			static const auto HeroType = FindObject(("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
 
-			static auto CharacterPartsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortCustomizationAssetsToLoad"), ("CharacterParts"));
+			*PlayerState->Member<UObject*>(("HeroType")) = HeroType;
 
-			auto CharacterPartsToLoad = (TArray<UObject*>*)(__int64(CurrentAssetsToLoad) + CharacterPartsOffset);
+			static auto OnRepHeroType = PlayerState->Function(("OnRep_HeroType"));
+
+			if (OnRepHeroType)
+				PlayerState->ProcessEvent(OnRepHeroType);
 		}
 
-		static auto headPart = Engine_Version >= 423 ? FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_TreasureHunterFashion.CP_Head_F_TreasureHunterFashion")) :
-			FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-		static auto bodyPart = Engine_Version >= 423 ? FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_TreasureHunterFashion.CP_Body_Commando_F_TreasureHunterFashion")) :
-			FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01")); */
-
-		static auto headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
-		static auto bodyPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
-		static auto noBackpack = FindObject("CustomCharacterPart /Game/Characters/CharacterParts/Backpacks/NoBackpack.NoBackpack");
-
-		if (!headPart)
-			headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA"));
-
-		if (!bodyPart)
-			bodyPart = FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.CP_Body_Commando_F_RebirthDefaultA"));
-
-		if (headPart && bodyPart && bResetCharacterParts)
+		if (FnVerDouble < 19.00) // they are just automatic when you touch the ground lol
 		{
-			Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
-			Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
-			Helper::ChoosePart(Pawn, EFortCustomPartType::Backpack, noBackpack);
+			static auto headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
+			static auto bodyPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
+			static auto noBackpack = FindObject("CustomCharacterPart /Game/Characters/CharacterParts/Backpacks/NoBackpack.NoBackpack");
 
-			static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
+			if (!headPart)
+				headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA"));
 
-			if (OnRep_Parts)
-				PlayerState->ProcessEvent(OnRep_Parts, nullptr);
+			if (!bodyPart)
+				bodyPart = FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.CP_Body_Commando_F_RebirthDefaultA"));
+
+			if (headPart && bodyPart && bResetCharacterParts)
+			{
+				Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
+				Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
+				Helper::ChoosePart(Pawn, EFortCustomPartType::Backpack, noBackpack);
+
+				static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
+
+				if (OnRep_Parts)
+					PlayerState->ProcessEvent(OnRep_Parts, nullptr);
+			}
+			else
+				std::cout << ("Unable to find Head and Body!\n");
 		}
-		else
-			std::cout << ("Unable to find Head and Body!\n");
 
 		return Pawn;
+	}
+	
+	UObject* GetCurrentWeapon(UObject* Pawn)
+	{
+		static auto CurrentWeaponOffset = GetOffset(Pawn, "CurrentWeapon");
+
+		auto currentWeapon = (UObject**)(__int64(Pawn) + CurrentWeaponOffset);
+
+		return currentWeapon ? *currentWeapon : nullptr;
+	}
+
+	UObject* GetWeaponData(UObject* CurrentWeapon)
+	{
+		if (!CurrentWeapon)
+			return nullptr;
+
+		static auto WeaponDataOffset = GetOffset(CurrentWeapon, "WeaponData");
+
+		return *(UObject**)(__int64(CurrentWeapon) + WeaponDataOffset);
 	}
 
 	UObject* SoftObjectToObject(TSoftObjectPtr SoftObject)
@@ -1417,25 +1595,38 @@ namespace Helper
 		return FindObject(SoftObject.ObjectID.AssetPathName.ToString());
 	}
 
-	UObject* GetPlaylist()
+	UObject* GetPlaylist(UObject*** outAddr = nullptr)
 	{
+		if (bIsSTW)
+			return nullptr;
+
 		auto world = Helper::GetWorld();
-		auto gameState = *world->Member<UObject*>(("GameState"));
+		auto gameState = Helper::GetGameState();
 
 		if (FnVerDouble >= 6.10) // WRONG
 		{
 			static auto BasePlaylistOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("BasePlaylist"));
 			if (BasePlaylistOffset)
 			{
-				static auto PlaylistInfo = gameState->Member<void>(("CurrentPlaylistInfo"));
+				auto PlaylistInfo = gameState->Member<void>(("CurrentPlaylistInfo"));
 
 				auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
 
+				if (outAddr)
+					*outAddr = BasePlaylist;
+				
 				return BasePlaylist ? *BasePlaylist : nullptr;
 			}
 		}
 		else
-			return *gameState->Member<UObject*>(("CurrentPlaylistData"));
+		{
+			auto PlaylistData = gameState->Member<UObject*>(("CurrentPlaylistData"));
+
+			if (outAddr)
+				*outAddr = PlaylistData;
+
+			return *PlaylistData;
+		}
 
 		return nullptr;
 	}
@@ -1443,9 +1634,11 @@ namespace Helper
 	void SilentDie(UObject* BuildingActor)
 	{
 		static auto fn = BuildingActor->Function(("SilentDie"));
+		
+		bool bPropagateSilentDeath = true; // yes, this isn't on like below s16 or something, but passing in more args wont hurt.
 
 		if (fn)
-			BuildingActor->ProcessEvent(fn);
+			BuildingActor->ProcessEvent(fn, &bPropagateSilentDeath);
 	}
 
 	bool SetActorLocation(UObject* Actor, const FVector& Location)
@@ -1467,26 +1660,11 @@ namespace Helper
 		return parms.ReturnValue;
 	}
 
-	static FName StringToName(FString Str)
-	{
-		static auto fn = FindObject(("Function /Script/Engine.KismetStringLibrary.Conv_StringToName"));
-		static auto KSL = FindObject(("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
-
-		struct {
-			FString InString;
-			FName ReturnValue;
-		} params{ Str };
-
-		KSL->ProcessEvent(fn, &params);
-
-		return params.ReturnValue;
-	}
-
-	bool SetActorLocationAndRotation(UObject* Actor, FVector& Location, const FRotator& Rotation)
+	bool SetActorLocationAndRotation(UObject* Actor, const FVector& Location, const FRotator& Rotation)
 	{
 		static auto fn = Actor->Function(("K2_SetActorLocationAndRotation"));
 
-		struct
+		struct 
 		{
 			struct FVector                                     NewLocation;                                              // (Parm, IsPlainOldData)
 			struct FRotator                                    NewRotation;                                              // (Parm, IsPlainOldData)
@@ -1500,10 +1678,6 @@ namespace Helper
 			Actor->ProcessEvent(fn, &parms);
 
 		return parms.ReturnValue;
-	}
-	void SpawnVehicle(UObject* VehicleClass, const FVector& Location, const FRotator& Rotation = FRotator())
-	{
-		Easy::SpawnActor(VehicleClass, Location, Rotation);
 	}
 
 	namespace Abilities
@@ -1550,61 +1724,6 @@ namespace Helper
 			else
 				std::cout << ("Invalid component!\n");
 		}
-
-		void ServerSetReplicatedTargetData(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityHandle, const FPredictionKey& AbilityOriginalPredictionKey, const FGameplayAbilityTargetDataHandleOL& ReplicatedTargetDataHandle, const FGameplayTag& ApplicationTag, const FPredictionKey& CurrentPredictionKey)
-		{
-			struct
-			{
-				FGameplayAbilitySpecHandle AbilityHandle;
-				FPredictionKey AbilityOriginalPredictionKey;
-				FGameplayAbilityTargetDataHandleOL ReplicatedTargetDataHandle;
-				FGameplayTag ApplicationTag;
-				FPredictionKey CurrentPredictionKey;
-			} UAbilitySystemComponent_ServerSetReplicatedTargetData_Params{ AbilityHandle, AbilityOriginalPredictionKey, ReplicatedTargetDataHandle, ApplicationTag, CurrentPredictionKey };
-
-			if (ASC)
-			{
-				static auto fn = ASC->Function(("ServerSetReplicatedTargetData"));
-
-				if (fn)
-					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ServerSetReplicatedTargetData_Params);
-				else
-					std::cout << ("Could not find ServerEndAbility!\n");
-			}
-			else
-				std::cout << ("Invalid component!\n");
-		}
-
-		void ServerSetReplicatedTargetData(UObject* ASC, const FGameplayAbilitySpecHandle& AbilityHandle, const FPredictionKey& AbilityOriginalPredictionKey, const FGameplayAbilityTargetDataHandleSE& ReplicatedTargetDataHandle, const FGameplayTag& ApplicationTag, const FPredictionKey& CurrentPredictionKey)
-		{
-			struct
-			{
-				FGameplayAbilitySpecHandle AbilityHandle;
-				FPredictionKey AbilityOriginalPredictionKey;
-				FGameplayAbilityTargetDataHandleSE ReplicatedTargetDataHandle;
-				FGameplayTag ApplicationTag;
-				FPredictionKey CurrentPredictionKey;
-			} UAbilitySystemComponent_ServerSetReplicatedTargetData_Params{ AbilityHandle, AbilityOriginalPredictionKey, ReplicatedTargetDataHandle, ApplicationTag, CurrentPredictionKey };
-
-			if (ASC)
-			{
-				static auto fn = ASC->Function(("ServerSetReplicatedTargetData"));
-
-				if (fn)
-					ASC->ProcessEvent(fn, &UAbilitySystemComponent_ServerSetReplicatedTargetData_Params);
-				else
-					std::cout << ("Could not find ServerEndAbility!\n");
-			}
-			else
-				std::cout << ("Invalid component!\n");
-		}
-	}
-
-	auto GetStructuralSupportSystem()
-	{
-		auto GameState = Helper::GetGameState();
-
-		return *GameState->Member<UObject*>("StructuralSupportSystem");
 	}
 
 	FBuildingSupportCellIndex GetCellIndexFromLocation(const FVector& Location)
@@ -1616,7 +1735,7 @@ namespace Helper
 			FVector                                     WorldLoc;                                                 // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
 			FBuildingSupportCellIndex                   OutGridIndices;                                           // (Parm, OutParm)
 			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
-		} UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params{ Location };
+		} UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params{Location};
 
 		static auto K2_GetGridIndicesFromWorldLoc = StructuralSupportSystem->Function("K2_GetGridIndicesFromWorldLoc");
 
@@ -1631,7 +1750,7 @@ namespace Helper
 		if (KickPlayer && Controller && Reason.Data.GetData())
 		{
 			FText text = Conversion::StringToText(Reason);
-			static auto World = Helper::GetWorld();
+			auto World = Helper::GetWorld();
 			auto GameMode = *World->Member<UObject*>(("AuthorityGameMode"));
 			auto GameSession = *World->Member<UObject*>(("GameSession"));
 
@@ -1645,6 +1764,14 @@ namespace Helper
 			// std::cout << std::format(("Something is invalid cannot kick player\n\nKickPlayer: {}\nController: {}\nIf none of these are null then it's data!\n\n"), __int64(KickPlayer), Controller); // , Reason.Data.GetData());
 		}
 	}
+
+	/* static bool IsLowGravity()
+	{
+		auto Playlist = GetPlaylist();
+		bool LowGravity = Playlist ? Playlist->GetFullName().contains("FortPlaylistAthena /Game/Athena/Playlists/Low/Playlist_Low_Squads.Playlist_Low_") : false;
+
+		return LowGravity;
+	} */
 
 	namespace Banning
 	{

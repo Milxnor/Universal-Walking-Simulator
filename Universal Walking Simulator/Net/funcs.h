@@ -5,7 +5,8 @@
 #include <functional>
 #include <unordered_set>
 
-
+uint64_t ActorChannelCloseAddr = 0;
+uint64_t IsNetRelevantForAddr = 0;
 uint64_t GetNetModeAddr = 0;
 uint64_t LP_SpawnPlayActorAddr = 0;
 uint64_t TickFlushAddr = 0;
@@ -18,6 +19,7 @@ uint64_t ReceiveUniqueIdReplAddr = 0;
 uint64_t WelcomePlayerAddr = 0;
 uint64_t InitListenAddr = 0;
 uint64_t InitHostAddr = 0;
+uint64_t funnyaddry = 0;
 uint64_t PauseBeaconRequestsAddr = 0;
 uint64_t NetDebugAddr = 0;
 uint64_t IdkfAddr = 0;
@@ -47,6 +49,10 @@ uint64_t ReplicationGraph_EnableAddr = 0;
 uint64_t RequestExitWSAddr = 0;
 uint64_t StaticLoadObjectAddr = 0;
 
+static bool (*IsNetRelevantFor)(UObject*, UObject*, UObject*, FVector*);
+
+static void (*UActorChannel_Close)(UObject*);
+
 static void (*RequestExitWithStatus)(bool Force, uint8_t ReturnCode);
 
 static char(__fastcall* ValidationFailure)(__int64* a1, __int64 a2);
@@ -60,13 +66,13 @@ static UObject* (*CreateChannelByName)(UObject* Connection, FName* ChName, EChan
 static void (*SetChannelActor)(UObject* ActorChannel, UObject* InActor);
 static UObject* (*CreateChannel)(UObject* Connection, EChannelType Type, bool bOpenedLocally, int32_t ChannelIndex);
 
-static void(__fastcall* SendClientAdjustment)(UObject* controller);
-static void(__fastcall* CallPreReplication)(UObject* actor, UObject* driver);
-static char(__fastcall* ReplicateActor)(UObject* ActorChannel);
+static void (__fastcall* SendClientAdjustment)(UObject* controller);
+static void (__fastcall* CallPreReplication)(UObject* actor, UObject* driver);
+static char (__fastcall* ReplicateActor)(UObject* ActorChannel);
 
 static char (*KickPlayer)(UObject* a1, UObject*, FText a3); // session, pc
 
-static void(__fastcall* HandleReloadCost)(UObject* Weapon, int AmountToRemove);
+static void (__fastcall* HandleReloadCost)(UObject* Weapon, int AmountToRemove);
 
 static __int64 (*GetNetMode)(__int64* a1);
 static bool (*LP_SpawnPlayActor)(UObject* Player, const FString& URL, FString& OutError, UObject* World); // LocalPlayer
@@ -94,7 +100,7 @@ inline void (*PauseBeaconRequests)(UObject* Beacon, bool bPause);
 
 static void* (*NetDebug)(UObject* a);
 
-static __int64(__fastcall* ClientTravel)(UObject* Controller, const FString& URL, ETravelType TravelType, bool bSeamless, FGuid MapPackageGuid);
+static __int64 (__fastcall* ClientTravel)(UObject* Controller, const FString& URL, ETravelType TravelType, bool bSeamless, FGuid MapPackageGuid);
 
 static UObject* (*CreateNetDriver)(UObject* Engine, UObject* InWorld, FName NetDriverDefinition);
 
@@ -110,337 +116,406 @@ char(__fastcall* NoReserve)(__int64* a1, __int64 a2, char a3, __int64* a4);
 
 static std::unordered_map<UFunction*, std::function<bool(UObject*, UFunction*, void*)>> FunctionsToHook;
 
+static bool bIsSTW = false;
+
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func)
 {
-	// auto funcObject = FindObjectOld<UFunction>(str, true);
-	auto funcObject = FindObject<UFunction>(str);
+    // auto funcObject = FindObjectOld<UFunction>(str, true);
+    auto funcObject = FindObject<UFunction>(str);
+    // static auto FuncClass = FindObject("Class /Script/CoreUObject.Function");
+    // auto funcObject = LoadObject<UFunction>(FuncClass, nullptr, str);
 
-	if (!funcObject)
-		std::cout << "Unable to find Function: " << str << '\n';
-	else
-		FunctionsToHook.insert({ funcObject, func });
+    if (!funcObject)
+        std::cout << "Unable to find Function: " << str << '\n';
+    else
+        FunctionsToHook.insert({ funcObject, func });
 }
 
 static auto AircraftLocationToUse = FVector{ 3500, -9180, 10500 };
 
 const wchar_t* GetMapName()
 {
-	if (FnVerDouble >= 19.00)
-		return L"Artemis_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
-	else if (Engine_Version >= 424)
-		return L"Apollo_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
-	else if (Engine_Version < 424)
-		return L"Athena_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
-	return L"";
+    if (FnVerDouble >= 19.00)
+        return L"Artemis_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+    else if (Engine_Version >= 424)
+        return L"Apollo_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+    else if (Engine_Version < 424)
+        return bIsSTW ? L"Zone_Outpost_Stonewood" : L"Athena_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C"; // L"DS_BuilderGridPlane?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+    return L"";
 }
 
 
 // START ABILITIES
 
-struct FGameplayAbilitySpecHandle
-{
-	int Handle;
-	static inline std::unordered_set<int> Handles;
+struct FGameplayAbilitySpecHandle 
+{ 
+    int Handle; 
+    static inline std::unordered_set<int> Handles;
 
-	void GenerateNewHandle()
-	{
-		auto newHandle = rand();
+    void GenerateNewHandle()
+    {
+        // Must be in C++ to avoid duplicate statics across execution units
+        /* static int32_t GHandle = 1;
+        Handle = GHandle++; */
 
-		while (Handles.find(newHandle) != Handles.end())
-		{
-			newHandle = rand();
-		}
+        auto newHandle = rand();
 
-		Handle = newHandle;
-		Handles.emplace(Handle);
-	}
+        while (Handles.find(newHandle) != Handles.end())
+        {
+            newHandle = rand();
+        }
+
+        Handle = newHandle;
+        Handles.emplace(Handle);
+    }
 };
 
 struct FPredictionKey
 {
-	int16_t Current;
-	int16_t Base;
-	unsigned char UnknownData00[0x4];
-	UObject* PredictiveConnection;
-	bool bIsStale;
-	bool bIsServerInitiated;
-	unsigned char UnknownData01[0x6];
+    int16_t                                            Current;                                                  // 0x0000(0x0002) (ZeroConstructor, IsPlainOldData)
+    int16_t                                            Base;                                                     // 0x0002(0x0002) (ZeroConstructor, IsPlainOldData)
+    unsigned char                                      UnknownData00[0x4];                                       // 0x0004(0x0004) MISSED OFFSET
+    UObject* PredictiveConnection;                                     // 0x0008(0x0008) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    bool                                               bIsStale;                                                 // 0x0010(0x0001) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    bool                                               bIsServerInitiated;                                       // 0x0011(0x0001) (ZeroConstructor, IsPlainOldData)
+    unsigned char                                      UnknownData01[0x6];                                       // 0x0012(0x0006) MISSED OFFSET
 };
 
 struct FPredictionKeyFTS // 4.26
 {
-	UObject* PredictiveConnection;
-	int16_t Current;
-	int16_t Base;
-	bool bIsStale;
-	bool bIsServerInitiated;
-	unsigned char UnknownData00[0x2];
+    UObject* PredictiveConnection;                                     // 0x0000(0x0008) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    int16_t                                            Current;                                                  // 0x0008(0x0002) (ZeroConstructor, IsPlainOldData)
+    int16_t                                            Base;                                                     // 0x000A(0x0002) (ZeroConstructor, IsPlainOldData)
+    bool                                               bIsStale;                                                 // 0x000C(0x0001) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    bool                                               bIsServerInitiated;                                       // 0x000D(0x0001) (ZeroConstructor, IsPlainOldData)
+    unsigned char                                      UnknownData00[0x2];                                       // 0x0012(0x0006) MISSED OFFSET
+};
+
+struct FPredictionKeyNewer {
+    UObject* PredictiveConnection; // 0x00(0x08)
+    int16_t Current; // 0x08(0x02)
+    int16_t Base; // 0x0a(0x02)
+    bool bIsStale; // 0x0c(0x01)
+    bool bIsServerInitiated; // 0x0d(0x01)
+    char pad_E[0xa]; // 0x0e(0x0a)
 };
 
 struct FGameplayEffectContextHandle
 {
-	unsigned char UnknownData00[0x18];
+    unsigned char                                      UnknownData00[0x18];                                      // 0x0000(0x0018) MISSED OFFSET
 };
 
 struct FGameplayTag
 {
-	FName TagName;
+    FName                                       TagName;                                                  // 0x0000(0x0008) (Edit, ZeroConstructor, EditConst, IsPlainOldData)
 };
+
+bool IsBadReadPtr(void* p)
+{
+    MEMORY_BASIC_INFORMATION mbi = { 0 };
+    if (::VirtualQuery(p, &mbi, sizeof(mbi)))
+    {
+        DWORD mask = (PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY);
+        bool b = !(mbi.Protect & mask);
+        // check the page is not a guard page
+        if (mbi.Protect & (PAGE_GUARD | PAGE_NOACCESS)) b = true;
+
+        return b;
+    }
+    return true;
+}
 
 struct FOnGameplayEffectTagCountChanged
 {
-	// I did math to figure this out...
-	char pad[0x18];
+    // I did math to figure this out...
+    char pad[0x18];
 };
 
 struct FGameplayTagContainer
 {
-	TArray<FGameplayTag> GameplayTags;
-	TArray<FGameplayTag> ParentTags;
+    TArray<FGameplayTag>                        GameplayTags;                                             // 0x0000(0x0010) (BlueprintVisible, ZeroConstructor)
+    TArray<FGameplayTag>                        ParentTags;                                               // 0x0010(0x0010) (ZeroConstructor, Transient)
 
-	std::string ToStringSimple(bool bQuoted) const
-	{
-		std::string RetString;
-		for (int i = 0; i < GameplayTags.Num(); ++i)
-		{
-			if (bQuoted)
-			{
-				RetString += ("\"");
-			}
-			RetString += GameplayTags[i].TagName.ToString();
-			if (bQuoted)
-			{
-				RetString += ("\"");
-			}
+    std::string ToStringSimple(bool bQuoted) const
+    {
+        std::string RetString;
+        for (int i = 0; i < GameplayTags.Num(); ++i)
+        {
+            if (bQuoted)
+            {
+                RetString += ("\"");
+            }
+            RetString += GameplayTags[i].TagName.ToString();
+            if (bQuoted)
+            {
+                RetString += ("\"");
+            }
 
-			if (i < GameplayTags.Num() - 1)
-			{
-				RetString += (", ");
-			}
-		}
-		return RetString;
-	}
+            if (i < GameplayTags.Num() - 1)
+            {
+                RetString += (", ");
+            }
+        }
+        return RetString;
+    }
+
+    void Reset()
+    {
+        GameplayTags.Free();
+        ParentTags.Free();
+    }
 };
 
 struct FGameplayAbilityTargetDataHandleOL
 {
-	unsigned char UnknownData00[0x20];
-};
-
-struct FServerAbilityRPCBatchOL
-{
-	FGameplayAbilitySpecHandle AbilitySpecHandle;
-	unsigned char UnknownData00[0x4];
-	FPredictionKey PredictionKey;
-	FGameplayAbilityTargetDataHandleOL TargetData;
-	bool InputPressed;
-	bool Ended;
-	bool Started;
-	unsigned char UnknownData01[0x5];
+    unsigned char                                      UnknownData00[0x20];                                      // 0x0000(0x0020) MISSED OFFSET
 };
 
 struct FGameplayEventDataOL
 {
-	FGameplayTag EventTag;
-	UObject* Instigator;
-	UObject* Target;
-	UObject* OptionalObject;
-	UObject* OptionalObject2;
-	FGameplayEffectContextHandle ContextHandle;
-	FGameplayTagContainer InstigatorTags;
-	FGameplayTagContainer TargetTags;
-	float EventMagnitude;
-	unsigned char UnknownData00[0x4];
-	FGameplayAbilityTargetDataHandleOL TargetData;
+    FGameplayTag                                EventTag;                                                 // 0x0000(0x0008) (Edit, BlueprintVisible)
+    UObject* Instigator;                                               // 0x0008(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    UObject* Target;                                                   // 0x0010(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    UObject* OptionalObject;                                           // 0x0018(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    UObject* OptionalObject2;                                          // 0x0020(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    FGameplayEffectContextHandle                ContextHandle;                                            // 0x0028(0x0018) (Edit, BlueprintVisible)
+    FGameplayTagContainer                       InstigatorTags;                                           // 0x0040(0x0020) (Edit, BlueprintVisible)
+    FGameplayTagContainer                       TargetTags;                                               // 0x0060(0x0020) (Edit, BlueprintVisible)
+    float                                              EventMagnitude;                                           // 0x0080(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    unsigned char                                      UnknownData00[0x4];                                       // 0x0084(0x0004) MISSED OFFSET
+    FGameplayAbilityTargetDataHandleOL TargetData;                                               // 0x0088(0x0020) (Edit, BlueprintVisible)
 };
 
 struct FGameplayAbilityTargetDataHandleSE
 {
-	unsigned char UnknownData00[0x28];
-};
-
-struct FServerAbilityRPCBatchSE
-{
-	FGameplayAbilitySpecHandle AbilitySpecHandle;
-	unsigned char UnknownData00[0x4];
-	FPredictionKey PredictionKey;
-	FGameplayAbilityTargetDataHandleSE TargetData;
-	bool InputPressed;
-	bool Ended;
-	bool Started;
-	unsigned char UnknownData01[0x5];
+    unsigned char                                      UnknownData00[0x28];                                      // 0x0000(0x0028) MISSED OFFSET
+    // unsigned char                                      UnknownData00[0x20];                                      // 0x0000(0x0020) MISSED OFFSET // 8.20..
 };
 
 struct FServerAbilityRPCBatchNewer
 {
-	FGameplayAbilitySpecHandle AbilitySpecHandle;
-	unsigned char UnknownData00[0x4];
-	char PredictionKey[0x18];
-	FGameplayAbilityTargetDataHandleSE TargetData;
-	bool InputPressed;
-	bool Ended;
-	bool Started;
-	unsigned char UnknownData01[0x5];
+    FGameplayAbilitySpecHandle                  AbilitySpecHandle;                                        // 0x0000(0x0004)
+    unsigned char                                      UnknownData00[0x4];                                       // 0x0004(0x0004) MISSED OFFSET
+    char                              PredictionKey[0x18];                                            // 0x0008(0x0018)
+    FGameplayAbilityTargetDataHandleSE           TargetData;                                               // 0x0020(0x0020)
+    bool                                               InputPressed;                                             // 0x0040(0x0001) (ZeroConstructor, IsPlainOldData)
+    bool                                               Ended;                                                    // 0x0041(0x0001) (ZeroConstructor, IsPlainOldData)
+    bool                                               Started;                                                  // 0x0042(0x0001) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    unsigned char                                      UnknownData01[0x5];                                       // 0x0043(0x0005) MISSED OFFSET
 };
 
 struct FGameplayEventDataSE
 {
-	FGameplayTag EventTag;
-	UObject* Instigator;
-	UObject* Target;
-	UObject* OptionalObject;
-	UObject* OptionalObject2;
-	FGameplayEffectContextHandle ContextHandle;
-	FGameplayTagContainer InstigatorTags;
-	FGameplayTagContainer TargetTags;
-	float  EventMagnitude;
-	unsigned char UnknownData00[0x4];
-	FGameplayAbilityTargetDataHandleSE TargetData;
+    FGameplayTag                                EventTag;                                                 // 0x0000(0x0008) (Edit, BlueprintVisible)
+    UObject* Instigator;                                               // 0x0008(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    UObject* Target;                                                   // 0x0010(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    UObject* OptionalObject;                                           // 0x0018(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    UObject* OptionalObject2;                                          // 0x0020(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    FGameplayEffectContextHandle                ContextHandle;                                            // 0x0028(0x0018) (Edit, BlueprintVisible)
+    FGameplayTagContainer                       InstigatorTags;                                           // 0x0040(0x0020) (Edit, BlueprintVisible)
+    FGameplayTagContainer                       TargetTags;                                               // 0x0060(0x0020) (Edit, BlueprintVisible)
+    float                                              EventMagnitude;                                           // 0x0080(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+    unsigned char                                      UnknownData00[0x4];                                       // 0x0084(0x0004) MISSED OFFSET
+    FGameplayAbilityTargetDataHandleSE TargetData;                                               // 0x0088(0x0020) (Edit, BlueprintVisible)
 };
 
 enum class EGameplayAbilityActivationMode : uint8_t
 {
-	Authority = 0,
-	NonAuthority = 1,
-	Predicting = 2,
-	Confirmed = 3,
-	Rejected = 4,
-	EGameplayAbilityActivationMode_MAX = 5
+    Authority = 0,
+    NonAuthority = 1,
+    Predicting = 2,
+    Confirmed = 3,
+    Rejected = 4,
+    EGameplayAbilityActivationMode_MAX = 5
 };
 
 struct FGameplayAbilityActivationInfo
 {
-	TEnumAsByte<EGameplayAbilityActivationMode> ActivationMode;
-	unsigned char bCanBeEndedByOtherInstance : 1;
-	unsigned char UnknownData00[0x6];
-	FPredictionKey PredictionKeyWhenActivated;
-};
-
-struct FServerAbilityRPCBatchFTS
-{
-	FGameplayAbilitySpecHandle AbilitySpecHandle;
-	unsigned char UnknownData00[0x4];
-	FPredictionKeyFTS PredictionKey;
-	FGameplayAbilityTargetDataHandleSE TargetData;
-	bool InputPressed;
-	bool Ended;
-	bool Started;
-	unsigned char UnknownData01[0x5];
+    TEnumAsByte<EGameplayAbilityActivationMode>        ActivationMode;                                           // 0x0000(0x0001) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+    unsigned char                                      bCanBeEndedByOtherInstance : 1;                           // 0x0001(0x0001)
+    unsigned char                                      UnknownData00[0x6];                                       // 0x0002(0x0006) MISSED OFFSET
+    FPredictionKey                              PredictionKeyWhenActivated;                               // 0x0008(0x0018)
 };
 
 struct FGameplayAbilityActivationInfoFTS
 {
-	TEnumAsByte<EGameplayAbilityActivationMode> ActivationMode;
-	unsigned char bCanBeEndedByOtherInstance : 1;
-	unsigned char UnknownData00[0x6];
-	FPredictionKeyFTS PredictionKeyWhenActivated;
+    TEnumAsByte<EGameplayAbilityActivationMode>        ActivationMode;                                           // 0x0000(0x0001) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+    unsigned char                                      bCanBeEndedByOtherInstance : 1;                           // 0x0001(0x0001)
+    unsigned char                                      UnknownData00[0x6];                                       // 0x0002(0x0006) MISSED OFFSET
+    FPredictionKeyFTS                              PredictionKeyWhenActivated;                               // 0x0008(0x0018)
 };
 
 struct FActiveGameplayEffectHandle
 {
-	int  Handle;
-	bool bPassedFiltersAndWasExecuted;
-	unsigned char UnknownData00[0x3];
+    int                                                Handle;                                                   // 0x0000(0x0004) (ZeroConstructor, IsPlainOldData)
+    bool                                               bPassedFiltersAndWasExecuted;                             // 0x0004(0x0001) (ZeroConstructor, IsPlainOldData)
+    unsigned char                                      UnknownData00[0x3];                                       // 0x0005(0x0003) MISSED OFFSET
 };
 
-template <typename ActivationInfoType>
+template <typename ActivationInfoType, int UnknownDataSize>
 struct FGameplayAbilitySpec : public FFastArraySerializerItem
 {
-	FGameplayAbilitySpecHandle Handle;
-	UObject* Ability;
-	int Level;
-	int InputID;
-	UObject* SourceObject;
-	unsigned char ActiveCount;
-	unsigned char InputPressed : 1;
-	unsigned char RemoveAfterActivation : 1;
-	unsigned char PendingRemove : 1;
-	unsigned char UnknownData00[0x6];
-	ActivationInfoType ActivationInfo;
-	TArray<UObject*> NonReplicatedInstances;
-	TArray<UObject*> ReplicatedInstances;
-	FActiveGameplayEffectHandle  GameplayEffectHandle;
-	unsigned char UnknownData01[0x50];
+    FGameplayAbilitySpecHandle                  Handle;                                                   // 0x000C(0x0004)
+    UObject* Ability; // UGameplayAbility*
+    int                                                Level;                                                    // 0x0018(0x0004) (ZeroConstructor, IsPlainOldData)
+    int                                                InputID;                                                  // 0x001C(0x0004) (ZeroConstructor, IsPlainOldData)
+    UObject* SourceObject;                                             // 0x0020(0x0008) (ZeroConstructor, IsPlainOldData)
+    unsigned char                                      ActiveCount;                                              // 0x0028(0x0001) (ZeroConstructor, IsPlainOldData, RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    unsigned char                                      InputPressed : 1;                                         // 0x0029(0x0001) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    unsigned char                                      RemoveAfterActivation : 1;                                // 0x0029(0x0001) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    unsigned char                                      PendingRemove : 1;                                        // 0x0029(0x0001) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    unsigned char                                      UnknownData00[0x6];                                       // 0x002A(0x0006) MISSED OFFSET
+    ActivationInfoType              ActivationInfo;                                           // 0x0030(0x0020) (RepSkip, RepNotify, Interp, NonTransactional, EditorOnly, NoDestructor, AutoWeak, ContainsInstancedReference, AssetRegistrySearchable, SimpleDisplay, AdvancedDisplay, Protected, BlueprintCallable, BlueprintAuthorityOnly, TextExportTransient, NonPIEDuplicateTransient, ExposeOnSpawn, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic, NativeAccessSpecifierProtected, NativeAccessSpecifierPrivate)
+    TArray<UObject*>                    NonReplicatedInstances; // UGameplayAbility*
+    TArray<UObject*>                    ReplicatedInstances;                      
+    FActiveGameplayEffectHandle                 GameplayEffectHandle; // UGameplayAbility*
+    unsigned char                                      UnknownData01[UnknownDataSize];                                      // 0x0078(0x0050) MISSED OFFSET
+};
+
+/* struct FGameplayAbilitySpecNewer : FFastArraySerializerItem {
+    FGameplayAbilitySpecHandle Handle; // 0x0c(0x04)
+    UObject* Ability; // 0x10(0x08)
+    int32_t Level; // 0x18(0x04)
+    int32_t InputID; // 0x1c(0x04)
+    UObject* SourceObject; // 0x20(0x08)
+    char ActiveCount; // 0x28(0x01)
+    char InputPressed : 1; // 0x29(0x01)
+    char RemoveAfterActivation : 1; // 0x29(0x01)
+    char PendingRemove : 1; // 0x29(0x01)
+    char bActivateOnce : 1; // 0x29(0x01)
+    char pad_29_4 : 4; // 0x29(0x01)
+    char pad_2A[0x6]; // 0x2a(0x06)
+    FGameplayAbilityActivationInfoFTS ActivationInfo; // 0x30(0x20)
+    FGameplayTagContainer DynamicAbilityTags; // 0x50(0x20)
+    TArray<UObject*> NonReplicatedInstances; // 0x70(0x10)
+    TArray<UObject*> ReplicatedInstances; // 0x80(0x10)
+    FActiveGameplayEffectHandle GameplayEffectHandle; // 0x90(0x08)
+    char pad_98[0x50]; // 0x98(0x50)
+}; */
+
+struct FGameplayAbilitySpecAHH : FFastArraySerializerItem {
+    FGameplayAbilitySpecHandle                                     Handle;                                            // 0x0c(0x04)
+    UObject* Ability;                                           // 0x10(0x08)
+    int32_t                                                               Level;                                             // 0x18(0x04)
+    int32_t                                                               InputID;                                           // 0x1c(0x04)
+    struct UObject* SourceObject;                                      // 0x20(0x08)
+    char                                                      ActiveCount;                                       // 0x28(0x01)
+    char                                                                  InputPressed : 1;                                  // 0x29(0x01)
+    char                                                                  RemoveAfterActivation : 1;                         // 0x29(0x01)
+    char                                                                  PendingRemove : 1;                                 // 0x29(0x01)
+    char                                                                  bActivateOnce : 1;                                 // 0x29(0x01)
+    char                                                                  UnknownData_29_4 : 4;                              // 0x29(0x01)
+    char                                                                  UnknownData_2A[0x6];                               // 0x2a(0x06)
+    struct FGameplayAbilityActivationInfoFTS                                 ActivationInfo;                                    // 0x30(0x18)
+    struct FGameplayTagContainer                                          DynamicAbilityTags;                                // 0x48(0x20)
+    struct TArray<struct UGameplayAbility*>                               NonReplicatedInstances;                            // 0x68(0x10)
+    struct TArray<struct UGameplayAbility*>                               ReplicatedInstances;                               // 0x78(0x10)
+    struct FActiveGameplayEffectHandle                                    GameplayEffectHandle;                              // 0x88(0x08)
+    char                                                                  UnknownData_90[0x50];                              // 0x90(0x50)
 };
 
 struct FGameplayAbilitySpecNewer : FFastArraySerializerItem {
-	FGameplayAbilitySpecHandle Handle;
-	UObject* Ability;
-	int32_t Level;
-	int32_t InputID;
-	UObject* SourceObject;
-	char ActiveCount;
-	char InputPressed : 1;
-	char RemoveAfterActivation : 1;
-	char PendingRemove : 1;
-	char bActivateOnce : 1;
-	char UnknownData_29_4 : 4;
-	char UnknownData_2A[0x6];
-	FGameplayAbilityActivationInfoFTS ActivationInfo;
-	FGameplayTagContainer DynamicAbilityTags;
-	TArray<UObject*> NonReplicatedInstances;
-	TArray<UObject*> ReplicatedInstances;
-	FActiveGameplayEffectHandle GameplayEffectHandle;
-	char UnknownData_90[0x50];
-	void* dababy;
+    FGameplayAbilitySpecHandle Handle; // 0x0c(0x04)
+    UObject* Ability; // 0x10(0x08)
+    int32_t Level; // 0x18(0x04)
+    int32_t InputID; // 0x1c(0x04)
+    UObject* SourceObject; // 0x20(0x08)
+    char ActiveCount; // 0x28(0x01)
+    char InputPressed : 1; // 0x29(0x01)
+    char RemoveAfterActivation : 1; // 0x29(0x01)
+    char PendingRemove : 1; // 0x29(0x01)
+    char bActivateOnce : 1; // 0x29(0x01)
+    char UnknownData_29_4 : 4; // 0x29(0x01)
+    char UnknownData_2A[0x6]; // 0x2a(0x06)
+    FGameplayAbilityActivationInfoFTS ActivationInfo; // 0x30(0x18)
+    FGameplayTagContainer DynamicAbilityTags; // 0x48(0x20)
+    TArray<UObject*> NonReplicatedInstances; // 0x68(0x10)
+    TArray<UObject*> ReplicatedInstances; // 0x78(0x10)
+    FActiveGameplayEffectHandle GameplayEffectHandle; // 0x88(0x08)
+    char UnknownData_90[0x50]; // 0x90(0x50)
+    void* dababy;
 };
 
 struct FGameplayAbilitySpecContainerSE : public FFastArraySerializerSE
 {
-	TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Items;
-	UObject* Owner;
+    TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
+    UObject* Owner; // ASC* // 0x0118
 };
 
 struct FGameplayAbilitySpecContainerFTS : public FFastArraySerializerSE
 {
-	TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>> Items;
-	UObject* Owner;
+    TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50>>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
+    UObject* Owner; // ASC* // 0x0118
 };
 
 struct FGameplayAbilitySpecContainerNewer : public FFastArraySerializerSE
 {
-	TArray<FGameplayAbilitySpecNewer> Items;
-	UObject* Owner;
+    TArray<FGameplayAbilitySpecNewer>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
+    UObject* Owner; // ASC* // 0x0118
 };
 
 struct FGameplayAbilitySpecContainerOL : public FFastArraySerializerOL
 {
-	TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Items;
-	UObject* Owner;
+    TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>>                Items;                                                    // 0x00B0(0x0010) (ZeroConstructor)
+    UObject* Owner; // ASC* // 0x0118
 };
 
 enum class EGameplayAbilityInstancingPolicy : uint8_t
 {
-	NonInstanced = 0,
-	InstancedPerActor = 1,
-	InstancedPerExecution = 2,
-	EGameplayAbilityInstancingPolicy_MAX = 3
+    NonInstanced = 0,
+    InstancedPerActor = 1,
+    InstancedPerExecution = 2,
+    EGameplayAbilityInstancingPolicy_MAX = 3
 };
 
 struct FGameplayAbilitySpecHandleAndPredictionKey
 {
-	FGameplayAbilitySpecHandle AbilityHandle;
+    FGameplayAbilitySpecHandle AbilityHandle;
 
-	int32_t PredictionKeyAtCreation;
+    int32_t PredictionKeyAtCreation;
 };
 
-static FGameplayAbilitySpecHandle* (*GiveAbility)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfo> inSpec);
-static FGameplayAbilitySpecHandle* (*GiveAbilityTest)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, __int64 inSpec);
-static FGameplayAbilitySpecHandle* (*GiveAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS> inSpec);
+/* struct FAbilityReplicatedDataCache
+{
+    FGameplayAbilityTargetDataHandle TargetData;
+    FGameplayTag ApplicationTag;
+    bool bTargetConfirmed;
+    bool bTargetCancelled;
+    char TargetSetDelegate[0x18];
+    FSimpleMulticastDelegate TargetCancelledDelegate;
+    FAbilityReplicatedData	GenericEvents[EAbilityGenericReplicatedEvent::MAX];
+    FPredictionKey PredictionKey;
+};
+
+struct FGameplayAbilityReplicatedDataContainer
+{
+public:
+
+    // typedef TPair<FGameplayAbilitySpecHandleAndPredictionKey, TSharedRef<FAbilityReplicatedDataCache>> FKeyDataPair;
+
+    char InUseData[0x10];
+    TArray<TSharedRef<FAbilityReplicatedDataCache>> FreeData;
+};  */
+
+static FGameplayAbilitySpecHandle* (*GiveAbility)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50> inSpec);
+static FGameplayAbilitySpecHandle* (*GiveAbilityOLDDD)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0> inSpec);
+static FGameplayAbilitySpecHandle* (*GiveAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50> inSpec);
+static FGameplayAbilitySpecHandle* (*GiveAbilityAHH)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpecAHH inSpec);
 static FGameplayAbilitySpecHandle* (*GiveAbilityNewer)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpecNewer inSpec);
 
 static bool (*InternalTryActivateAbility)(UObject* comp, FGameplayAbilitySpecHandle Handle, FPredictionKey InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
 static bool (*InternalTryActivateAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle Handle, FPredictionKeyFTS InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
+static bool (*InternalTryActivateAbilityNewer)(UObject* comp, FGameplayAbilitySpecHandle Handle, FPredictionKeyNewer InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
 
-static void (*MarkAbilitySpecDirtyOld)(UObject* comp, FGameplayAbilitySpec<FGameplayAbilityActivationInfo>& Spec);
-static void (*MarkAbilitySpecDirtyFTS)(UObject* comp, FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>& Spec);
+static void (*MarkAbilitySpecDirtyOld)(UObject* comp, FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>& Spec);
+static void (*MarkAbilitySpecDirtyFTS)(UObject* comp, FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50>& Spec);
 
 void MarkAbilitySpecDirty(UObject* ASC, void* Spec)
 {
-	if (Engine_Version < 426)
-		MarkAbilitySpecDirtyOld(ASC, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo>*)Spec);
-	else
-		MarkAbilitySpecDirtyFTS(ASC, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS>*)Spec);
+    if (Engine_Version < 426)
+        MarkAbilitySpecDirtyOld(ASC, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>*)Spec);
+    else
+        MarkAbilitySpecDirtyFTS(ASC, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50>*)Spec);
 }
 
 uint64_t GiveAbilityAddr = 0;
@@ -453,7 +528,7 @@ UObject* (*CreateNetDriver_Local)(UObject* Engine, UObject* InWorld, FName NetDr
 
 template<typename T, typename U> constexpr size_t offsetOf(U T::* member)
 {
-	return (char*)&((T*)nullptr->*member) - (char*)nullptr;
+    return (char*)&((T*)nullptr->*member) - (char*)nullptr;
 }
 
 float (*PlayMontage)(UObject* AbilitySystemComponent, UObject* InAnimatingAbility, FGameplayAbilityActivationInfo ActivationInfo, UObject* NewAnimMontage, float InPlayRate, FName StartSectionName);
@@ -472,8 +547,15 @@ static bool bUseBeacons = true;
 static bool bDoubleBuildFix = false;
 static bool bClearInventoryOnAircraftJump = !bIsPlayground;
 static bool bIsInEvent = false;
+static bool bPrintSpawnActor = false;
+static bool bRestarting = false;
+static bool bIsReadyToRestart = true; // i hate my life
+static bool bIsTrickshotting = false; // this is stupid
+static int AmountOfRestarts = 0;
 
-std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
+std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";
+// "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
+// "FortPlaylistAthena /Game/Athena/Playlists/Low/Playlist_Low_Solo.Playlist_Low_Solo";
 
 static std::pair<std::string, int> StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
 static std::pair<std::string, int> StartingSlot2 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03", 1 };

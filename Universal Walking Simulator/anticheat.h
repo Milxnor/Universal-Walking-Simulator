@@ -1,21 +1,20 @@
 #pragma once
 
-#include <UE/structs.h>
+#include <Gameplay/helper.h>
+#include <Gameplay/inventory.h>
 
 //(TODO)
 
 /*
 
 Function /Script/FortniteGame.FortWeapon.GetReloadTime
-FloatProperty /Script/FortniteGame.FortWeapon.LastSuccessfulReloadTime
-FloatProperty /Script/FortniteGame.FortWeapon.LastReloadTime
+[55798] FloatProperty /Script/FortniteGame.FortWeapon.LastSuccessfulReloadTime
+[55799] FloatProperty /Script/FortniteGame.FortWeapon.LastReloadTime
 
 */
 
 static float GetFireRate(UObject* Weapon)
 {
-	// in 0.00 of a second
-	// like 0.0055
 	float FiringRate = 0;
 	
 	static auto GetFiringRate = Weapon->Function("GetFiringRate");
@@ -26,43 +25,72 @@ static float GetFireRate(UObject* Weapon)
 	return FiringRate;
 }
 
-bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters)
+bool basicLocationCheck(UObject* Actor, UObject* OtherActor, float FarthestPossible)
 {
-	std::cout << "execute\n";
+	static auto GetDistanceTo = Actor->Function("GetDistanceTo");
 
-	if (Ability)
+	struct { UObject* otherActor; float distance; } GetDistanceTo_Params{OtherActor};
+
+	if (GetDistanceTo)
+		Actor->ProcessEvent(GetDistanceTo, &GetDistanceTo_Params);
+
+	std::cout << "distance: " << GetDistanceTo_Params.distance << '\n';
+
+	if (GetDistanceTo_Params.distance > FarthestPossible)
+		return false;
+
+	return true;
+}
+
+bool validBuild(UObject* BuildingActor, UObject* Pawn)
+{
+	auto StructuralSupportSystem = Helper::GetStructuralSupportSystem();
+
+	bool worldLocationValid = false;
+	bool locationValid = false;
+
+	if (StructuralSupportSystem)
 	{
-		UObject* Pawn; // Helper::GetOwner(ability);
-		Ability->ProcessEvent("GetActivatingPawn", &Pawn);
+		static auto IsWorldLocValid = StructuralSupportSystem->Function("IsWorldLocValid");
 
-		if (Pawn)
+		struct { FVector Loc; bool ret; } parms{ Helper::GetActorLocation(BuildingActor) };
+
+		if (IsWorldLocValid)
+			StructuralSupportSystem->ProcessEvent(IsWorldLocValid, &parms);
+
+		worldLocationValid = parms.ret;
+	}
+
+	if (Pawn)
+	{
+		locationValid = basicLocationCheck(Pawn, BuildingActor, 1150);
+	}
+
+	return worldLocationValid && locationValid;
+}
+
+bool validBuildingClass(UObject* BuildingActorClass)
+{
+	static auto BuildingActorClasses = *Helper::GetGameState()->Member<TArray<UObject*>>("BuildingActorClasses");
+
+	static int LastResetNum = 0;
+
+	if (LastResetNum != AmountOfRestarts)
+	{
+		LastResetNum = AmountOfRestarts;
+		BuildingActorClasses = *Helper::GetGameState()->Member<TArray<UObject*>>("BuildingActorClasses");
+	}
+
+	// if (BuildingActorClasses)
+	{
+		for (int i = 0; i < BuildingActorClasses.Num(); i++)
 		{
-			std::cout << "pawn: " << Pawn->GetFullName() << '\n';
-			auto currentWeapon = *Pawn->Member<UObject*>("CurrentWeapon");
+			auto currentClass = BuildingActorClasses.At(i);
 
-			if (currentWeapon)
-			{
-				float TimeToNextFire = 0;
-
-				currentWeapon->ProcessEvent("GetTimeToNextFire", &TimeToNextFire);
-
-				auto LastFireTime = *currentWeapon->Member<float>("LastFireTime");
-
-				if (TimeToNextFire > 0.02)
-				{
-					std::cout << "Player is demospeeding!\n";
-					return true;
-				}
-			}
-			else
-				std::cout << "No CurrentWeapon!\n";
+			if (currentClass && currentClass == BuildingActorClass)
+				return true;
 		}
 	}
 
 	return false;
 }
-
-// /Script/FortniteGame.FortWeapon.OnRep_LastFireTimeVerified 
-
-// bool ValidShot(UObject* Pawn)
-// bool ValidVehicleMove(UObject* Vehicle, whatevermovementclass Move) // We can check the velocity for the vehicle and we can figure out the max velocity for each vehicle and if it goes over then make the user exit the vehicle.

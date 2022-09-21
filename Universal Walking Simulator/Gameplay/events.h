@@ -9,16 +9,9 @@ static UObject* JerkyPlayerInteraction = nullptr;
 
 namespace EventHelper
 {
-	std::string UV_ItemName = "DrumGun";
-	void UnvaultItem(FName ItemName) {
-		UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
-		UObject* Func = BSS->Function("PillarsConcluded");
-		BSS->ProcessEvent(Func, &ItemName);
-	}
-
 	void TeleportPlayersToButterfly()
 	{
-		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
+		static auto scripting = FindObjectOld("BP_IslandScripting_C_", true);
 
 		if (!scripting)
 		{
@@ -168,10 +161,10 @@ namespace EventHelper
 	}
 }
 
-namespace Events {
+namespace Events { // made by GD
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 13.40f || Version == 13.30f || Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 5.30f || Version == 4.5f);
+		return (Version == 13.40f || Version == 13.30f || Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
@@ -179,17 +172,9 @@ namespace Events {
 
 		if (HasEvent()) {
 			std::cout << ("Loading Event!\n");
-			if (Version == 13.30f || Version == 13.40f) {
-				//Water Level Adjustment
-				UObject* WL = FindObject("Apollo_WaterSetup_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Apollo_WaterSetup_2");
-				UObject* Func = WL->Function("SetWaterLevel");
-				UObject* Func2 = WL->Function("OnRep_CurrentWaterLevel");
-				int NewWaterLevel = 0;
-				WL->ProcessEvent(Func, &NewWaterLevel);
-				WL->ProcessEvent(Func2);
-			}
+
 			if (Version == 12.61f) {
-				auto FritterLoader = FindObject(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0"));
+				auto FritterLoader = FindObjectOld(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_"));
 				auto LoadFritterLevel = FindObject(("Function /Fritter/BP_Fritter_Loader.BP_Fritter_Loader_C.LoadFritterLevel"));
 				bool CO = true;
 
@@ -205,17 +190,17 @@ namespace Events {
 				if (JL)
 				{
 					JerkyLoaderActual = JL;
-					UObject* Func = JL->Function("LoadJerkyLevel");
-					bool Condition = true;
-					JL->ProcessEvent(Func, &Condition);
 				}				
 			}
+
 			if (Version == 10.40f) {
 				//The End C1
 				UObject* NN = FindObject(("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2"));
 				UObject* Func = NN->Function(("LoadNightNightLevel"));
 				bool Condition = true;
 				NN->ProcessEvent(Func, &Condition);
+
+				// LoadLevel
 			}
 			if (Version == 9.40f) {
 				//The Final Showdown
@@ -224,6 +209,10 @@ namespace Events {
 				bool Condition = true;
 				CD->ProcessEvent(Func, &Condition);
 			}
+			/*if (Version == 8.51f) {
+				UObject* SS = FindObject("");
+				UObject* Func = SS->Function("FinalSequence");
+			}*/
 			if (Version == 7.20f) {
 				//Ice King
 				UObject* ML = FindObject(("BP_MooneyLoader_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_MooneyLoader_2"));
@@ -238,23 +227,11 @@ namespace Events {
 				UObject* Func = BF->Function(("LoadButterflySublevel"));
 				BF->ProcessEvent(Func);
 
-				static auto scripting = FindObjectOld("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
+				static auto scripting = FindObjectOld("BP_IslandScripting_C_", true);
 				scripting->ProcessEvent("LoadDynamicLevels");
 
 				scripting->ProcessEvent("OnRep_CachedTime");
 				scripting->ProcessEvent("TrySetIslandLocation");
-			}
-			if (Version == 5.30f) {
-				//Cube Spawn
-				UObject* AEC = FindObject(("BP_Athena_Event_Components_C /Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
-
-				UObject* Func = AEC->Function(("OnRep_CrackProgression"));
-				UObject* Func2 = AEC->Function(("OnRep_Corruption"));
-
-				*AEC->Member<float>(("CrackOpacity")) = 0.0f; // Hide the initial crack
-				AEC->ProcessEvent(Func);
-				*AEC->Member<float>(("Corruption")) = 1.0f; // Show the smaller purple crack
-				AEC->ProcessEvent(Func2);
 			}
 		}
 	}
@@ -263,25 +240,45 @@ namespace Events {
 		float Version = std::stof(FN_Version);
 		if (HasEvent()) {
 			std::cout << ("Starting Event!\n");
+
 			if (Version == 13.30f || Version == 13.40f) {
 				UObject* Main_C = FindObject("AthenaQuestActor_SW_Main_C /Temp/Game/Athena/Apollo/Maps/Streaming/Apollo_Terrain_Sub_F1_61e6b1c6.Apollo_Terrain_Sub_F1.PersistentLevel.AthenaQuestActor_SW_Main2");
-				UObject* Function = Main_C->Function("Test");
+				UObject* Function = Main_C->Function("PlayLaunchAnim");
 				Main_C->ProcessEvent(Function);
 			}
 
 			if (Version == 12.61f) {
-				auto FL = FindObject(("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0"));
-				
-				if (FL)
+				static auto scripoting = FindObject("BP_Fritter_Script_C /Fritter/Level/FritterSequenceLevel_LevelInstance_1.FritterSequenceLevel.PersistentLevel.BP_Fritter_Script_2");
+
+				if (scripoting)
 				{
-					auto Function = FL->Function("startevent");
-					FL->ProcessEvent(Function);
+					static auto startevent = scripoting->Function("startevent");
+					
+					if (startevent)
+						scripoting->ProcessEvent(startevent);
+					else
+						std::cout << "no start event!\n";
 				}
 				else
-					std::cout << "Failed to find Fritter!\n";
+				{
+					std::cout << "no scripting!\n";
+
+					auto AP = FindObject(("LevelSequencePlayer /Fritter/Level/FritterSequenceLevel.FritterSequenceLevel.PersistentLevel.Fritter_2.AnimationPlayer"));
+
+					if (AP)
+					{
+						auto Function = FindObject(("Function /Script/MovieScene.MovieSceneSequencePlayer.Play"));
+						AP->ProcessEvent(Function);
+					}
+					else
+						std::cout << "Failed to find Fritter AP!\n";
+				}
 			}
 
 			if (Version == 12.41f) {
+				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
+				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
+			
 				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
 				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
 
@@ -335,10 +332,20 @@ namespace Events {
 			}
 
 			else if (Version == 10.40f) {
-				//The End C1
-				UObject* NN = FindObject("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_2"); // FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));
-				UObject* Func = NN->Function(("startevent"));
-				NN->ProcessEvent(Func);
+				// UObject* NN = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight_3.AnimationPlayer"); // FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));
+				
+				UObject* NNScripting = FindObjectOld("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_");
+
+				if (NNScripting)
+				{
+					static UObject* Func = NNScripting->Function(("startevent"));
+					if (Func)
+						NNScripting->ProcessEvent(Func);
+					else
+						std::cout << ("Unable to find Night Night Play function!\n");
+				}
+				else
+					std::cout << ("No NightNight scripting!\n");
 			}
 			else if (Version == 9.40f) {
 				//Final Showdown
@@ -347,18 +354,25 @@ namespace Events {
 				CD->ProcessEvent(Func);
 			}
 			else if (Version == 8.51f) {
-				//Unvaulting
 				UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
-				UObject* Func = BSS->Function("FinalSequence");
-				BSS->ProcessEvent(Func);
-				//(TODO) Teleport back after unvaulting part is done.
+				UObject* Func1 = BSS->Function("StartCountdown");
+				UObject* Func2 = BSS->Function("FinalSequence");
+				BSS->ProcessEvent(Func1);
+				BSS->ProcessEvent(Func1); // pro coder
+				// BSS->ProcessEvent(Func2);
+
+				BSS->Member<FTimespan>("TimeUntilCountdownEnd")->Ticks = 1000000000; // 1:38
 			}
 			else if (Version == 7.30f) {
 				//Marshmello
-				UObject* FS = FindObject((".PersistentLevel.FestivusSequence_01_2.AnimationPlayer2"));
-				UObject* Func = FS->Function(("Play"));
-				FS->ProcessEvent(Func);
-				//(TODO) Fix audio
+				UObject* FS = FindObjectOld(".Athena_POI_CommunityPark_003_M.PersistentLevel.FestivusSequence_01_2.AnimationPlayer2");
+				if (FS)
+				{
+					UObject* Func = FS->Function(("Play"));
+					FS->ProcessEvent(Func);
+				}
+				else
+					std::cout << "Failed to find FestivusSequence!\n";
 			}
 			else if (Version == 7.20f) {
 				//Ice King
@@ -371,29 +385,24 @@ namespace Events {
 				UObject* BF = FindObject(("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
 				UObject* Func = BF->Function(("ButterflySequence"));
 				BF->ProcessEvent(Func);
-			}
-			else if (Version == 5.30f) {
-				//Cube Spawn
-				UObject* AEC = FindObject(("BP_Athena_Event_Components_C /Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
-				UObject* Func = AEC->Function(("Final"));
-				AEC->ProcessEvent(Func);
+				//(TODO) Fix screen going white when cube explodes
 
-				static auto bCubeSpawned = false;
+				/*
+				
+					void ButterflyScriptingReady();
+					void ButterflyStart();
+					void CubeEvent();
 
-				if (!bCubeSpawned)
-				{
-					UObject* Cube = FindObject(("CUBE_C /Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2"));
-					UObject* Func2 = Cube->Function(("Final"));
-					Cube->ProcessEvent(Func2);
+				*/
 
-					bCubeSpawned = true;
-				}
+				
 			}
 			else if (Version == 4.5f) {
 				//Rocket
 				UObject* LR = FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/Events/Athena_Gameplay_Geode.Athena_Gameplay_Geode.PersistentLevel.LevelSequence_LaunchRocket.AnimationPlayer"));
 				UObject* Func = LR->Function(("Play"));
-				LR->ProcessEvent(Func);
+				if (Func)
+					LR->ProcessEvent(Func);
 			}
 		}
 	}

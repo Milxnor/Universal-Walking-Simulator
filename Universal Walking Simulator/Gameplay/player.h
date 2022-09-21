@@ -6,41 +6,44 @@ namespace Player
 {
 	void RespawnPlayer(UObject* PlayerController)
 	{
-		auto Pawn = *PlayerController->Member<UObject*>("Pawn");
+		auto Pawn = Helper::GetPawnFromController(PlayerController);
+
+		if (!Pawn)
+			return;
+
 		auto PawnLocation = Helper::GetActorLocation(Pawn);
 
-		/* if (Pawn)
-		{
-			Helper::DestroyActor(Pawn);
-		} */
-
-		static auto setHealthFn = Pawn->Function(("SetHealth"));
-		struct { float NewHealthVal; }healthParams{ 100 };
-
-		if (setHealthFn)
-			Pawn->ProcessEvent(setHealthFn, &healthParams);
+		// Helper::DestroyActor(Pawn);
 
 		static auto PickaxeDefinition = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
 		// TODO: StructProperty /Script/FortniteGame.FortPlaylistAthena.RespawnHeight
-		struct { float HeightAboveGround; }TeleportToSkyDiveParams{ 10000 };
+		struct { float HeightAboveGround; }TeleportToSkyDiveParams{ 11000 };
 
 		auto NewPawn = Helper::InitPawn(PlayerController, false, PawnLocation);
 
-		if (NewPawn)
+		if (!NewPawn)
+			return;
+
+		static auto setHealthFn = NewPawn->Function(("SetHealth"));
+		struct { float NewHealthVal; }healthParams{ 100 };
+
+		if (setHealthFn)
+			NewPawn->ProcessEvent(setHealthFn, &healthParams);
+
+		if (Engine_Version >= 421)
 		{
 			static auto TeleportToSkyDiveFn = NewPawn->Function(("TeleportToSkyDive"));
 
 			if (TeleportToSkyDiveFn)
 				NewPawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
 		}
+		else
+		{
+			// PlayerController->ProcessEvent("RespawnPlayerAfterDeath");
+		}
 
-		*NewPawn->Member<bool>("bIsDBNO") = false;
-
-		static auto OnRep_DBNOFn = NewPawn->Function("OnRep_IsDBNO");
-
-		if (OnRep_DBNOFn)
-			NewPawn->ProcessEvent(OnRep_DBNOFn);
+		setBitfield(NewPawn, "bIsDBNO", false);
 
 		// PlayerController->ProcessEvent(("RespawnPlayer"));
 	}

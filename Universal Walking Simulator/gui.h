@@ -22,6 +22,7 @@
 #include <hooks.h>
 #include "Gameplay/inventory.h"
 #include <AI.h>
+#include <Gameplay/harvesting.h>
 #include <set>
 
 // THE BASE CODE IS FROM IMGUI GITHUB
@@ -256,7 +257,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 		if (!ImGui::IsWindowCollapsed())
 		{
-			ImGui::Begin(("Project Reboot"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
+			ImGui::Begin(("Project Reboot"), nullptr, /* ImGuiWindowFlags_NoResize | */ ImGuiWindowFlags_NoTitleBar);
 
 			std::vector<std::pair<UObject*, UObject*>> Players; // Pawn, PlayerState
 
@@ -282,8 +283,8 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								if (Controller)
 								{
-									auto PlayerState = *Controller->Member<UObject*>(("PlayerState"));
-									auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+									auto PlayerState = Helper::GetPlayerStateFromController(Controller);
+									auto Pawn = Helper::GetPawnFromController(Controller);
 
 									if (Pawn)
 									{
@@ -336,7 +337,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (FnVerDouble >= 8.51 || FnVerDouble == 4.1)
+				if (std::floor(FnVerDouble) == 8 || Engine_Version >= 424)
 				{
 					if (ImGui::BeginTabItem(("Thanos")))
 					{
@@ -366,6 +367,8 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
+				// maybe a Replication Stats?
+
 				if (ImGui::BeginTabItem(("Credits")))
 				{
 					Tab = 7;
@@ -386,6 +389,8 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
 					ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
+					// ImGui::Checkbox("Save The World", &bIsSTW);
+					// ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
 
 					// ImGui::Checkbox(("Use Beacons"), &bUseBeacons);
 
@@ -423,15 +428,48 @@ DWORD WINAPI GuiThread(LPVOID)
 						std::cout << "Setup AI!\n";
 					} */
 
-					if (Engine_Version == 422 && ImGui::Button("Summon Floorloot"))
+					if (/* Engine_Version == 420 && */ ImGui::Button("Summon Floorloot"))
 					{
-						CreateThread(0, 0, LootingV2::SummonFloorLoot, 0, 0, 0);
+						LootingV2::SummonFloorLoot(nullptr);
 					}
 
-					/* if (ImGui::Button("idfk3"))
+					/* if (ImGui::Button("Spawn Vehicles"))
 					{
-						*Helper::GetGameState()->Member<float>("SafeZonesStartTime") = 1;
+						CreateThread(0, 0, Looting::Tables::SpawnVehicles, 0, 0, 0);
 					} */
+
+					if (ImGui::Button("Mf"))
+					{
+						Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol
+					}
+
+					if (ImGui::Button("eeEE"))
+					{
+						AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
+					}
+
+					if (ImGui::Button("mona"))
+					{
+						auto PoiManager = *Helper::GetGameState()->Member<UObject*>("PoiManager");
+
+						auto PoiTagContainerTable = PoiManager->Member<TArray<FGameplayTagContainer>>("PoiTagContainerTable");
+						auto GoldenPoiLocationTags = Helper::GetGameState()->Member<FGameplayTagContainer>("GoldenPoiLocationTags");
+
+						if (PoiTagContainerTable && GoldenPoiLocationTags)
+						{
+							std::cout << "Num: " << PoiTagContainerTable->Num() << '\n';
+
+							for (int i = 0; i < PoiTagContainerTable->Num(); i++)
+							{
+								auto& PoiTag = PoiTagContainerTable->At(i);
+
+								std::cout << std::format("[{}] {}\n", i, GoldenPoiLocationTags->ToStringSimple(true));
+							}
+
+							if (PoiTagContainerTable->Num() > 0)
+								*GoldenPoiLocationTags = PoiTagContainerTable->At(PoiTagContainerTable->Num() / 2);
+						}
+					}
 
 					if (serverStatus == EServerStatus::Up)
 					{
@@ -443,18 +481,36 @@ DWORD WINAPI GuiThread(LPVOID)
 							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 						}
 
+						if (ImGui::Button("View Pickup"))
+						{
+							FString StartAircraftCmd;
+							StartAircraftCmd.Set(L"viewclass FortPickup");
+
+							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+						}
+
 						{
 							if (ImGui::Button(("Start Aircraft")))
 							{
-								FString StartAircraftCmd;
-								StartAircraftCmd.Set(L"startaircraft");
+								auto AircraftStartTime = Helper::GetGameState()->Member<float>(("AircraftStartTime"));
 
-								Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+								if (AircraftStartTime)
+								{
+									*AircraftStartTime = 1;
+									*Helper::GetGameState()->Member<float>(("WarmupCountdownEndTime")) = 1;
+								}
+								else
+								{
+									FString StartAircraftCmd;
+									StartAircraftCmd.Set(L"startaircraft");
 
-								auto gameState = Helper::GetGameState();
+									Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+								}
 
 								if (Helper::IsSmallZoneEnabled())
 								{
+									auto gameState = Helper::GetGameState();
+
 									auto Aircraft = gameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
 
 									if (Aircraft)
@@ -474,7 +530,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 											auto RandomFoundation = Helper::GetRandomFoundation();
 
-											if (true) // RandomPOI)
+											if (RandomFoundation)
 											{
 												AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{0, 0, 5000};
 
@@ -498,12 +554,85 @@ DWORD WINAPI GuiThread(LPVOID)
 								}
 
 								std::cout << ("Started aircraft!\n");
+
+								/* static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
+
+								// Helper::DestroyAll(BuildingSMActorClass);
+
+								ExistingBuildings.clear(); */
+							}
+						}
+
+						if (ImGui::Button("Do the funny"))
+						{
+							auto GameState = Helper::GetGameState();
+
+							auto MapInfo = *GameState->Member<UObject*>("MapInfo");
+
+							std::cout << "MapInfo: " << MapInfo << '\n';
+
+							UObject** playlist;
+							Helper::GetPlaylist(&playlist);
+
+							*playlist = FindObject("FortPlaylistAthena /Game/Athena/Playlists/SolidGold/Playlist_SolidGold_Duos.Playlist_SolidGold_Duos");
+
+							GameState->ProcessEvent("OnRep_CurrentPlaylistInfo");
+						}
+
+						if (ImGui::Button("Print FlightInfo Size"))
+						{
+							auto GameState = Helper::GetGameState();
+							auto TeamFlightPaths = GameState->Member<TArray<FAircraftFlightInfo>>("TeamFlightPaths");
+							// auto MapInfo = *GameState->Member<UObject*>("MapInfo");
+							// auto FlightInfos = MapInfo->Member<TArray<__int64>>("FlightInfos");
+							std::cout << "FlightInfos Addr: " << TeamFlightPaths << '\n';
+							std::cout << "FlightInfos Size: " << TeamFlightPaths->Num() << '\n';
+
+							for (int i = 0; i < TeamFlightPaths->Num(); i++)
+							{
+								auto& FlightPath = TeamFlightPaths->At(i);
+
+								std::cout << std::format("[{}]\n\n", i);
+								std::cout << std::format("FlightStartLocation: {}\n", FlightPath.FlightStartLocation.Describe());
+								std::cout << std::format("TimeTillDropEnd: {}\n", FlightPath.TimeTillDropEnd);
+								std::cout << std::format("TimeTillDropStart: {}\n", FlightPath.TimeTillDropStart);
+								std::cout << std::format("TimeTillFlightEnd: {}\n\n", FlightPath.TimeTillFlightEnd);
+							}
+						}
+						
+						// else
+						{
+							if (ImGui::Button(("Change Phase to Aircraft"))) // TODO: Improve phase stuff
+							{
+								auto world = Helper::GetWorld();
+								auto gameState = *world->Member<UObject*>(("GameState"));
+
+								*gameState->Member<EAthenaGamePhase>(("GamePhase")) = EAthenaGamePhase::Aircraft;
+
+								struct {
+									EAthenaGamePhase OldPhase;
+								} params2{ EAthenaGamePhase::None };
+
+								static const auto fnGamephase = gameState->Function(("OnRep_GamePhase"));
+
+								// if (fnGamephase)
+									// gameState->ProcessEvent(fnGamephase);
+
+								std::cout << ("Changed Phase to Aircraft.");
+
+								// TODO: Hook a func for this
+
+								static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
+
+								// Helper::DestroyAll(BuildingSMActorClass);
+
+								ExistingBuildings.clear();
 							}
 						}
 
 						if (ImGui::Button(("Summon Llamas")))
 						{
-							CreateThread(0, 0, Looting::Tables::SpawnLlamas, 0, 0, 0);
+							// CreateThread(0, 0, Looting::Tables::SpawnLlamas, 0, 0, 0);
 						}
 
 						if (ImGui::Button("Fill Vending Machines"))
@@ -572,6 +701,11 @@ DWORD WINAPI GuiThread(LPVOID)
 						Helper::DestroyActor(FindObjectOld("B_BaseGlider_C /Game/Athena/Maps/Athena_Terrain.Athena_Terrain.PersistentLevel.B_BaseGlider_C_"));
 					} */
 
+					if (false && ImGui::Button("ee"))
+					{
+						InitializeHarvestingHooks();
+					}
+
 					if (false && ImGui::Button("idfk"))
 					{
 						auto scripting = FindObjectOld("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
@@ -609,23 +743,15 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					*/
 
-					/* if (ImGui::Button("Restart"))
+					if (/* bStarted && */ ImGui::Button("Restart"))
 					{
-						bStarted = false;
-						bListening = false;
-						DisableNetHooks();
-						
-						if (BeaconHost)
-							Helper::DestroyActor(BeaconHost);
-
-						LoadInMatch();
-
-						ExistingBuildings.empty();
-					} */
+						Restart();
+					}
 
 					if (ImGui::Button(("Dump Objects (Win64/Objects.log)")))
 					{
-						Helper::DumpObjects();
+						std::cout << "Creating DumpObjects Thread \n";
+						Helper::DumpObjects(nullptr);
 					}
 					/*if (ImGui::Button(("SetupTurrets"))) {
 						Henchmans::SpawnHenchmans();
@@ -673,7 +799,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							continue;
 
 						// if (ImGui::Button(Helper::GetfPlayerName(PlayerState).ToString().c_str()))
-						if (ImGui::Button(wstring_to_utf8(std::wstring(Helper::GetfPlayerName((*Player.first->Member<UObject*>("Controller"))).Data.GetData())).c_str()))
+						if (ImGui::Button(wstring_to_utf8(std::wstring(Helper::GetfPlayerName(PlayerState).Data.GetData())).c_str()))
 						{
 							PlayerTab = i;
 						}
@@ -684,57 +810,134 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (!bStarted)
 						ImGui::InputText(("Playlist"), &PlaylistToUse);
 		
-					ImGui::Checkbox(("Playground"), &bIsPlayground);
+					if (ImGui::Checkbox(("Playground"), &bIsPlayground))
+					{
+
+					}
 
 					// if (!bStarted) // couldnt we wqait till aircraft start
 
-					if (!bIsPlayground)
+					if (!bIsPlayground && Engine_Version < 423)
 						ImGui::Checkbox(("Lategame"), &bIsLateGame);
 
 					break;
 				}
 
 				case 4:
-					if (bStarted == true) {
-						if (FnVerDouble >= 8.51 && ImGui::Button(("Init Ashton"))) {
-							Ashton::InitAshton();
-						}
-						if (FnVerDouble >= 8.51 && ImGui::Button(("Spawn Stone"))) {
-							Ashton::SpawnRandomStone();
-						}
+					if(ImGui::Button(("Spawn Mind Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
 
-						if (FnVerDouble == 4.1 && ImGui::Button(("Init Carmine"))) {
-							Carmine::InitCarmine();
-						}
-						if (FnVerDouble == 4.1 && ImGui::Button(("Spawn Gauntlet"))) {
-							Carmine::SpawnGauntlet();
-						}
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_Y.AshtonRockItemDef_Y"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
 					}
-					else {
-						ImGui::Text("Press The Button under this text to setup Thanos for your Version!");
-						if (FnVerDouble == 4.1 && ImGui::Button(("Init Carmine"))) {
-							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Carmine/Playlist_Carmine.Playlist_Carmine";
-						}
-						if (FnVerDouble >= 8.51 && ImGui::Button(("Init Ashton"))) {
-							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Ashton/Playlist_Ashton_Lg.Playlist_Ashton_Lg";
-						}
+					if (ImGui::Button(("Spawn Reality Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						RandLocation = { 1250, 1818, 3284 };
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_R.AshtonRockItemDef_R"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_R.AshtonRockItemDef_R"), RandLocation, {});
 					}
-					
+					if (ImGui::Button(("Spawn Power Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_P.AshtonRockItemDef_P"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_P.AshtonRockItemDef_P"), RandLocation, {});
+					}
+					if (ImGui::Button(("Spawn Soul Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_O.AshtonRockItemDef_O"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_O.AshtonRockItemDef_O"), RandLocation, {});
+					}
+					if (ImGui::Button(("Spawn Time Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_G.AshtonRockItemDef_G"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_G.AshtonRockItemDef_G"), RandLocation, {});
+					}
+					if (ImGui::Button(("Spawn Space Stone"))) {
+						FVector RandLocation;
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						// CHAPTER 1
+
+						std::uniform_int_distribution<> Xdistr(-40000, 128000);
+						std::uniform_int_distribution<> Ydistr(-90000, 70000);
+						std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter
+
+						RandLocation.X = Xdistr(gen);
+						RandLocation.Y = Ydistr(gen);
+						RandLocation.Z = Zdistr(gen);
+
+						Helper::SummonPickup(nullptr, FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_B.AshtonRockItemDef_B"), RandLocation, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
+						//Easy::SpawnActor(FindObject("/Game/Athena/Items/LTM/AshtonRockItemDef_B.AshtonRockItemDef_B"), RandLocation, {});
+					}
 					break;
 
 				case 5:
 					if (ImGui::Button(("Start Event")))
 						Events::StartEvent();
-
-					if (FnVerDouble == 8.51) {
-						ImGui::InputText("Item to Unvault (DrumGun, Bouncer, Sword, Grappler, Tac)", &EventHelper::UV_ItemName);
-						
-						if (ImGui::Button("Unvault Item")) {
-							FString InStr;
-							InStr.Set(std::wstring(EventHelper::UV_ItemName.begin(), EventHelper::UV_ItemName.end()).c_str());
-							EventHelper::UnvaultItem(Helper::Conversion::StringToName(InStr));
-						}
-					}
 
 					if (FnVerDouble == 12.41 && ImGui::Button("Fly players up"))
 						EventHelper::BoostUpTravis();
@@ -793,6 +996,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							static std::string VehicleClass;
 							static std::string WID;
 							static int Count = 1;
+							static int LoadedAmmo = 1;
 
 							auto PlayerName = Helper::GetfPlayerName(CurrentPlayer.second);
 							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (("Player: ") + PlayerName.ToString()).c_str());
@@ -831,22 +1035,65 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							ImGui::InputText(("WID"), &WID);
 							ImGui::InputInt(("Count"), &Count);
+							ImGui::InputInt(("Loaded Ammo"), &LoadedAmmo);
+
+							if (ImGui::Button("Spawn Card"))
+							{
+								FindObjectOld(".GA_Athena_SCMachine_Passive_C_")->ProcessEvent("Spawn");
+								// Helper::SpawnChip(Controller, FVector{ 1250, 1818, 3284 });
+							}
 
 							if (ImGui::Button(ICON_FA_HAND_HOLDING_USD " Give Weapon"))
 							{
 								auto wID = FindObject(WID);
 
 								if (wID)
-									Inventory::GiveItem(Controller, wID, EFortQuickBars::Primary, 1, Count);
+								{
+									auto instance = Inventory::GiveItem(Controller, wID, EFortQuickBars::Primary, 1, Count);
+									*FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(instance)) = LoadedAmmo;
+								}
 								else
 									std::cout << ("Invalid WID! Please make sure it's a valid object.\n");
 							}
 
-							if (Engine_Version >= 424 && ImGui::Button("Spawn Crashpad at Player"))
+							if (ImGui::Button("aa"))
+							{
+								static auto riftPortalClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Consumables/RiftItem/BGA_RiftPortal_Item_Athena.BGA_RiftPortal_Item_Athena_C");
+
+								auto newRift = Easy::SpawnActor(riftPortalClass, Helper::GetActorLocation(Pawn));
+
+								if (newRift)
+								{
+									FVector riftTeleportLocation = Helper::GetActorLocation(newRift);
+									riftTeleportLocation.Z += 10000;
+
+									*newRift->Member<FVector>("TeleportLocation") = riftTeleportLocation;
+									*newRift->Member<FScalableFloat>("TeleportHeight") = FScalableFloat(100000);
+								}
+							}
+							
+							if (ImGui::Button("bb"))
 							{
 								static auto crashPadClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/Passives/AppleSun/BGA_AppleSun_Apple_Athena.BGA_AppleSun_Apple_Athena_C");
 
 								auto newCrashPad = Easy::SpawnActor(crashPadClass, Helper::GetActorLocation(Pawn));
+							}
+
+							if (ImGui::Button("Do Funny"))
+							{
+								static auto GrapplerPrjClass = FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_Crossbows/Blueprints/B_Prj_Hook_Athena.B_Prj_Hook_Athena_C");
+
+								auto NewPrj = Easy::SpawnActor(GrapplerPrjClass, Helper::GetActorLocation(Pawn));
+
+								static auto RopeClass = FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_Crossbows/Blueprints/B_HookGunRope.B_HookGunRope_C");
+
+								auto RopeActor = Easy::SpawnActor(RopeClass, Helper::GetActorLocation(Pawn));
+
+								// *NewPrj->Member<UObject*>("Rope") = RopeActor;
+								// *RopeActor->Member<UObject*>("Projectile_Actor") = NewPrj;
+								// *RopeActor->Member<UObject*>("PlayerPawn") = Pawn;
+								// *NewPrj->Member<UObject*>("Weapon_Actor") = *Pawn->Member<UObject*>("CurrentWeapon"); // this makes it destroy
+								// *NewPrj->Member<UObject*>("PlayerPawn") = Pawn;
 							}
 
 							ImGui::NewLine();
@@ -864,7 +1111,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							auto PawnLocation = Helper::GetActorLocation(Pawn);
 							TextCentered(std::format(("X: {} Y: {} Z: {}"), (int)PawnLocation.X, (int)PawnLocation.Y, (int)PawnLocation.Z)); // We cast to an int because it changes too fast. 
 
-							auto CurrentWeapon = *Pawn->Member<UObject*>(("CurrentWeapon"));
+							auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
 
 							if (CurrentWeapon)
 							{

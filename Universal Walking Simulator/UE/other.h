@@ -8,6 +8,16 @@
 #include <math.h>
 #include <random>
 
+static FORCEINLINE bool IsNaN(float A)
+{
+	return ((*(uint32_t*)&A) & 0x7FFFFFFF) > 0x7F800000;
+}
+
+static FORCEINLINE bool IsFinite(float A)
+{
+	return ((*(uint32_t*)&A) & 0x7F800000) != 0x7F800000;
+}
+
 struct FVector
 {
 	float X;
@@ -45,6 +55,18 @@ struct FVector
 	void operator-=(const FVector& A)
 	{
 		*this = *this - A;
+	}
+
+	std::string Describe()
+	{
+		return std::format("{} {} {}", std::to_string(X), std::to_string(Y), std::to_string(Z));
+	}
+
+	FORCEINLINE bool ContainsNaN() const
+	{
+		return (!IsFinite(X) ||
+			!IsFinite(Y) ||
+			!IsFinite(Z));
 	}
 };
 
@@ -143,6 +165,12 @@ static FORCEINLINE void SinCos(float* ScalarSin, float* ScalarCos, float  Value)
 	*ScalarCos = sign * p;
 }
 
+template <class  T>
+static auto DegreesToRadians(T const& DegVal) -> decltype(DegVal* (M_PI / 180.f))
+{
+	return DegVal * (M_PI / 180.f);
+}
+
 struct FQuat;
 
 float UE_Fmod(float X, float Y)
@@ -164,6 +192,24 @@ float UE_Fmod(float X, float Y)
 	// Convert back to float. This is safe because the result will by definition not exceed the X input.
 	return float(Result);
 }
+
+enum class EAthenaGamePhaseStep : uint8_t
+{
+	None = 0,
+	Setup = 1,
+	Warmup = 2,
+	GetReady = 3,
+	BusLocked = 4,
+	BusFlying = 5,
+	StormForming = 6,
+	StormHolding = 7,
+	StormShrinking = 8,
+	Countdown = 9,
+	FinalCountdown = 10,
+	EndGame = 11,
+	Count = 12,
+	EAthenaGamePhaseStep_MAX = 13,
+};
 
 struct FRotator
 {
@@ -207,6 +253,17 @@ struct FRotator
 	}
 };
 
+struct FAircraftFlightInfo
+{
+public:
+	FVector                FlightStartLocation;                               // 0x0(0xC)(Edit, BlueprintVisible, BlueprintReadOnly, NoDestructor, NativeAccessSpecifierPublic)
+	FRotator                              FlightStartRotation;                               // 0xC(0xC)(Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
+	float                                        FlightSpeed;                                       // 0x18(0x4)(Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                        TimeTillFlightEnd;                                 // 0x1C(0x4)(Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                        TimeTillDropStart;                                 // 0x20(0x4)(Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                        TimeTillDropEnd;                                   // 0x24(0x4)(Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+
 struct FText
 {
 	char UnknownData[0x18];
@@ -233,6 +290,16 @@ enum class EFortSafeZoneState : uint8_t
 	Holding = 2,
 	Shrinking = 3,
 	EFortSafeZoneState_MAX = 4,
+};
+
+enum ERichCurveExtrapolation
+{
+	RCCE_Cycle,
+	RCCE_CycleWithOffset,
+	RCCE_Oscillate,
+	RCCE_Linear,
+	RCCE_Constant,
+	RCCE_None,
 };
 
 enum EName
@@ -600,6 +667,11 @@ struct FTransform // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12
 	char pad_1C[0x4]; // Padding never changes
 	FVector Scale3D;
 	char pad_2C[0x4];
+
+	/* bool ContainsNaN() const
+	{
+		return (Translation.ContainsNaN() || Rotation.ContainsNaN() || Scale3D.ContainsNaN());
+	} */
 };
 
 enum ESpawnActorCollisionHandlingMethod
@@ -1046,6 +1118,8 @@ void CheckPattern(const std::string& Name, uint64_t Pattern, T** Delegate)
 	}
 }
 
+using EFortTeam = uint8_t;
+
 enum class EAthenaGamePhase : uint8_t
 {
 	None = 0,
@@ -1168,6 +1242,22 @@ enum class EFriendlyFireType : uint8_t
 	EFriendlyFireType_MAX = 2
 };
 
+enum class EFortStructuralGridQueryResults : uint8_t
+{
+	CanAdd = 0,
+	ExistingActor = 1,
+	Obstructed = 2,
+	NoStructuralSupport = 3,
+	InvalidActor = 4,
+	ReachedLimit = 5,
+	NoEditPermission = 6,
+	PatternNotPermittedByLayoutRequirement = 7,
+	ResourceTypeNotPermittedByLayoutRequirement = 8,
+	BuildingAtRequirementsDisabled = 9,
+	BuildingOtherThanRequirementsDisabled = 10,
+	EFortStructuralGridQueryResults_MAX = 11
+};
+
 enum class EFortPickupSpawnSource : uint8_t
 {
 	Unset = 0,
@@ -1254,4 +1344,9 @@ enum class EStructuralWallPosition : uint8_t
 	Front = 2,
 	Back = 3,
 	EStructuralWallPosition_MAX = 4
+};
+
+struct FTimespan
+{
+	__int64 Ticks;
 };

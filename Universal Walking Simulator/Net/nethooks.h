@@ -10,8 +10,48 @@
 
 #include <discord.h>
 #include <Net/replication.h>
+#include <Gameplay/harvesting.h>
+#include <team.h>
 
 static bool bTraveled = false;
+
+
+bool commitExecuteWeapon(UObject* Ability, UFunction*, void* Parameters)
+{
+	// std::cout << "execute\n";
+
+	if (Ability)
+	{
+		UObject* Pawn; // Helper::GetOwner(ability);
+		Ability->ProcessEvent("GetActivatingPawn", &Pawn);
+
+		if (Pawn)
+		{
+			// std::cout << "pawn: " << Pawn->GetFullName() << '\n';
+			auto currentWeapon = Helper::GetCurrentWeapon(Pawn);
+
+			if (currentWeapon)
+			{
+				auto Controller = *Pawn->Member<UObject*>("Controller");
+				auto entry = Inventory::GetEntryFromWeapon(Controller, currentWeapon);
+				(*FFortItemEntry::GetLoadedAmmo(entry)) = *currentWeapon->Member<int>("AmmoCount"); // -= 1;
+
+				std::cout << "loaded ammo: " << (*FFortItemEntry::GetLoadedAmmo(entry)) << '\n';
+				std::cout << "weapon ammo: " << *currentWeapon->Member<int>("AmmoCount") << '\n';
+				std::cout << "bozo!\n";
+
+				setBitfield(currentWeapon, "bUpdateLocalAmmoCount", true);
+
+				Inventory::Update(Controller, -1, true, (FFastArraySerializerItem*)entry);
+				Inventory::GetWorldInventory(Controller)->ProcessEvent("ForceNetUpdate");
+			}
+			else
+				std::cout << "No CurrentWeapon!\n";
+		}
+	}
+
+	return false;
+}
 
 inline bool ServerAcknowledgePossessionHook(UObject* Object, UFunction* Function, void* Parameters) // This fixes movement on S5+, Cat led me to the right direction, then I figured out it's something with ClientRestart and did some common sense and found this.
 {
@@ -19,12 +59,14 @@ inline bool ServerAcknowledgePossessionHook(UObject* Object, UFunction* Function
 	{
 		UObject* P;
 	};
+
 	auto Params = (SAP_Params*)Parameters;
 	if (Params)
 	{
 		auto Pawn = Params->P; // (UObject*)Parameters;
 
-		*Object->Member<UObject*>(("AcknowledgedPawn")) = Pawn;
+		static auto AcknowledgedPawnOffset = GetOffset(Object, "AcknowledgedPawn");
+		*(UObject**)(__int64(Object) + AcknowledgedPawnOffset) = Pawn;
 		std::cout << "Set Pawn!\n";
 	}
 
@@ -47,11 +89,17 @@ void TickFlushDetour(UObject* thisNetDriver, float DeltaSeconds)
 
 		if (NetDriver)
 		{
-			static auto& ClientConnections = *NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+			static auto ClientConnectionsOffset = GetOffset(NetDriver, "ClientConnections");
+			// auto& ClientConnections = *NetDriver->CachedMember<TArray<UObject*>>(("ClientConnections"));
 
-			if (ClientConnections.Num() > 0)
+			auto ClientConnections = (TArray<UObject*>*)(__int64(NetDriver) + ClientConnectionsOffset);
+
+			if (ClientConnections && ClientConnections->Num() > 0)
 			{
-				ServerReplicateActors(NetDriver);
+				if (FnVerDouble <= 3.3)
+					ReplicateActors(NetDriver, World);
+				else
+					ServerReplicateActors(NetDriver);
 			}
 		}
 		else
@@ -101,29 +149,44 @@ auto getPair(T map, int index)
 
 UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole RemoteRole, FURL& URL, void* UniqueId, FString& Error, uint8_t NetPlayerIndex)
 {
-	static bool bHasdonething = false;
-	
-	if (!bHasdonething)
+	static int LastResetNum = 824524899135;
+
+	if (LastResetNum != AmountOfRestarts)
 	{
-		bHasdonething = true;
+		LastResetNum = AmountOfRestarts;
 
 		if (Engine_Version >= 423)
-			Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol
+		{
+			// Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol
+		}
 	}
-	
+
+	static bool bbbb = false;
+
+	if (!bbbb)
+	{
+		bbbb = true;
+
+		InitializeHarvestingHooks();
+
+		AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
+	}
+
 	std::cout << ("SpawnPlayActor called!\n");
-	auto PlayerController = SpawnPlayActor(Helper::GetWorld(), NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex); // crashes 0x356 here sometimes when rejoining
+	auto PlayerController = SpawnPlayActor(World, NewPlayer, RemoteRole, URL, UniqueId, Error, NetPlayerIndex);
 	static auto FortPlayerControllerAthenaClass = FindObject(("Class /Script/FortniteGame.FortPlayerControllerAthena"));
+
+	// std::cout << "PC Name: " << PlayerController->GetFullName() << '\n';
 
 	if (!PlayerController || !PlayerController->IsA(FortPlayerControllerAthenaClass))
 		return nullptr;
 
-	auto PlayerState = *PlayerController->Member<UObject*>(("PlayerState"));
+	auto PlayerState = Helper::GetPlayerStateFromController(PlayerController);
 
 	if (!PlayerState) // this happened somehow
 		return PlayerController;
 
-	auto OPlayerName = Helper::GetPlayerName(PlayerController);
+	auto OPlayerName = Helper::GetPlayerName(PlayerState);
 	std::string PlayerName = OPlayerName;
 	std::transform(OPlayerName.begin(), OPlayerName.end(), OPlayerName.begin(), ::tolower);
 
@@ -141,12 +204,14 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		Helper::KickController(PlayerController, Reason);
 	}
 
-	*NewPlayer->Member<UObject*>(("PlayerController")) = PlayerController;
+	static auto Connection_PlayerController = GetOffset(NewPlayer, "PlayerController");
+	*(UObject**)(__int64(NewPlayer) + Connection_PlayerController) = PlayerController;
 
 	if (FnVerDouble < 7.4)
 	{
-		static const auto QuickBarsClass = FindObject("Class /Script/FortniteGame.FortQuickBars", true);
-		auto QuickBars = PlayerController->Member<UObject*>("QuickBars");
+		static const auto QuickBarsClass = FindObjectOld("Class /Script/FortniteGame.FortQuickBars", true);
+		static auto QuickBarsOffset = GetOffset(PlayerController, "QuickBars");
+		auto QuickBars = (UObject**)(__int64(PlayerController) + QuickBarsOffset);
 
 		if (QuickBars)
 		{
@@ -155,212 +220,103 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		}
 	}
 
-	*PlayerController->Member<char>(("bReadyToStartMatch")) = true;
+	/* *PlayerController->Member<char>(("bReadyToStartMatch")) = true;
 	*PlayerController->Member<char>(("bClientPawnIsLoaded")) = true;
 	*PlayerController->Member<char>(("bHasInitiallySpawned")) = true;
 
 	*PlayerController->Member<bool>(("bHasServerFinishedLoading")) = true;
 	*PlayerController->Member<bool>(("bHasClientFinishedLoading")) = true;
 
-	*PlayerState->Member<char>(("bHasStartedPlaying")) = true;
-	*PlayerState->Member<char>(("bHasFinishedLoading")) = true;
-	*PlayerState->Member<char>(("bIsReadyToContinue")) = true;
+	setBitfield(PlayerState, "bReadyToStartMatch", true);
+	setBitfield(PlayerState, "bClientPawnIsLoaded", true);
+	setBitfield(PlayerState, "bHasInitiallySpawned", true);
+
+	setBitfield(PlayerState, "bHasServerFinishedLoading", true);
+	setBitfield(PlayerState, "bHasClientFinishedLoading", true);
+
+	setBitfield(PlayerState, "bHasStartedPlaying", true);
+	setBitfield(PlayerState, "bHasFinishedLoading", true);
+	setBitfield(PlayerState, "bIsReadyToContinue", true); */
+
+	static auto bHasServerFinishedLoadingOffset = GetOffset(PlayerController, "bHasServerFinishedLoading");
+	static auto bHasServerFinishedLoadingFM = GetFieldMask(GetProperty(PlayerController, "bHasServerFinishedLoading"));
+	static auto bHasServerFinishedLoadingBI = GetBitIndex(GetProperty(PlayerController, "bHasServerFinishedLoading"), bHasServerFinishedLoadingFM);
+
+	sett((uint8_t*)(__int64(PlayerController) + bHasServerFinishedLoadingOffset), bHasServerFinishedLoadingBI, bHasServerFinishedLoadingFM, true);
+
+	static auto bHasStartedPlayingOffset = GetOffset(PlayerController, "bHasStartedPlaying");
+	static auto bHasStartedPlayingFM = GetFieldMask(GetProperty(PlayerController, "bHasStartedPlaying"));
+	static auto bHasStartedPlayingBI = GetBitIndex(GetProperty(PlayerController, "bHasStartedPlaying"), bHasStartedPlayingFM);
+
+	sett((uint8_t*)(__int64(PlayerController) + bHasStartedPlayingOffset), bHasStartedPlayingBI, bHasStartedPlayingFM, true);
 
 	auto Pawn = Helper::InitPawn(PlayerController, true, Helper::GetPlayerStart(), true);
 
+	// FindObjectOld(".FortReplicationGraphNode_AlwaysRelevantForSquad_")->Member<TArray<UObject*>>("RebootCards")->Add(Helper::SpawnChip(PlayerController, Helper::GetActorLocation(Pawn)));
+	// FindObjectOld(".FortReplicationGraphNode_AlwaysRelevantForSquad_")->Member<TArray<UObject*>>("PlayerStates")->Add(PlayerState);
+
 	if (!Pawn)
-		return PlayerController;
+		return nullptr; // PlayerController;
 
-	if (GiveAbility || GiveAbilityFTS || GiveAbilityNewer)
-	{
-		auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
+	// Teams::AssignTeam(PlayerController);
 
-		if (AbilitySystemComponent)
-		{
-			std::cout << ("Granting abilities!\n");
+	if (FnVerDouble < 13.00)
+		GiveAllBRAbilities(Pawn);
 
-			if (FnVerDouble < 8) // idk CDO offset
-			{
-				static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
-
-				if (AbilitySet)
-				{
-					auto Abilities = AbilitySet->Member<TArray<UObject*>>(("GameplayAbilities"));
-
-					if (Abilities)
-					{
-						for (int i = 0; i < Abilities->Num(); i++)
-						{
-							auto Ability = Abilities->At(i);
-
-							if (!Ability)
-								continue;
-
-							Abilities::GrantGameplayAbility(Pawn, Ability);
-							std::cout << "Granting ability " << Ability->GetFullName() << '\n';
-						}
-					}
-				}
-
-				static auto RangedAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C"));
-
-				if (RangedAbility)
-					Abilities::GrantGameplayAbility(Pawn, RangedAbility);
-			}
-			else
-			{
-				{
-					static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_AthenaPlayer.GAS_AthenaPlayer"));
-
-					if (AbilitySet)
-					{
-						auto Abilities = AbilitySet->Member<TArray<UObject*>>(("GameplayAbilities"));
-
-						if (Abilities)
-						{
-							for (int i = 0; i < Abilities->Num(); i++)
-							{
-								auto Ability = Abilities->At(i);
-
-								if (!Ability)
-									continue;
-
-								Abilities::GrantGameplayAbility(Pawn, Ability);
-								std::cout << "Granting ability " << Ability->GetFullName() << '\n';
-							}
-						}
-					}
-				}
-
-			}
-
-			if (Engine_Version < 424) // i dont think needed
-			{
-				static auto EmoteAbility = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
-
-				if (EmoteAbility)
-				{
-					Abilities::GrantGameplayAbility(Pawn, EmoteAbility);
-				}
-			}
-
-			std::cout << ("Granted Abilities!\n");
-		}
-		else
-			std::cout << ("Unable to find AbilitySystemComponent!\n");
-	}
-	else
-		std::cout << ("Unable to grant abilities due to no GiveAbility!\n");
-
-	// if (FnVerDouble >= 4.0) // if (std::floor(FnVerDouble) != 9 && std::floor(FnVerDouble) != 10 && Engine_Version >= 420) // if (FnVerDouble < 15) // if (Engine_Version < 424) // if (FnVerDouble < 9) // (std::floor(FnVerDouble) != 9)
-	// if (FnVerDouble < 16.00)
-
-	// itementrysize 0xb0 on 2.4.2
-
-	if (Engine_Version >= 420)
+	// if (Engine_Version >= 420) // && FnVerDouble < 19.00)
 	{
 		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
-		static auto First = FindObject(StartingSlot1.first);
-		static auto Second = FindObject(StartingSlot2.first);
-		static auto Third = FindObject(StartingSlot3.first);
-		static auto Fourth = FindObject(StartingSlot4.first);
-		static auto Fifth = FindObject(StartingSlot5.first);
+		static int LastResetNum = 0;
+
+		static UObject* First = FindObject(StartingSlot1.first);
+		static UObject* Second = FindObject(StartingSlot2.first);
+		static UObject* Third = FindObject(StartingSlot3.first);
+		static UObject* Fourth = FindObject(StartingSlot4.first);
+		static UObject* Fifth = FindObject(StartingSlot5.first);
+
+		if (LastResetNum != AmountOfRestarts)
+		{
+			LastResetNum = AmountOfRestarts;
+
+			First = FindObject(StartingSlot1.first);
+			Second = FindObject(StartingSlot2.first);
+			Third = FindObject(StartingSlot3.first);
+			Fourth = FindObject(StartingSlot4.first);
+			Fifth = FindObject(StartingSlot5.first);
+		}
 
 		Inventory::CreateAndAddItem(PlayerController, PickaxeDef, EFortQuickBars::Primary, 0, 1);
-		if (FnVerDouble < 5.0) {
-			// Gives the needed items like edit tool and builds
-			Inventory::GiveStartingItems(PlayerController);
-		}
+
 		if (!Helper::HasAircraftStarted() || !bClearInventoryOnAircraftJump)
 		{
-			Inventory::CreateAndAddItem(PlayerController, First, EFortQuickBars::Primary, 1, StartingSlot1.second);
-			Inventory::CreateAndAddItem(PlayerController, Second, EFortQuickBars::Primary, 2, StartingSlot2.second);
-			Inventory::CreateAndAddItem(PlayerController, Third, EFortQuickBars::Primary, 3, StartingSlot3.second);
-			Inventory::CreateAndAddItem(PlayerController, Fourth, EFortQuickBars::Primary, 4, StartingSlot4.second);
-			Inventory::CreateAndAddItem(PlayerController, Fifth, EFortQuickBars::Primary, 5, StartingSlot5.second);
+			Inventory::CreateAndAddItem(PlayerController, First, EFortQuickBars::Primary, 1, StartingSlot1.second, true);
+			Inventory::CreateAndAddItem(PlayerController, Second, EFortQuickBars::Primary, 2, StartingSlot2.second, true);
+			Inventory::CreateAndAddItem(PlayerController, Third, EFortQuickBars::Primary, 3, StartingSlot3.second, true);
+			Inventory::CreateAndAddItem(PlayerController, Fourth, EFortQuickBars::Primary, 4, StartingSlot4.second, true);
+			Inventory::CreateAndAddItem(PlayerController, Fifth, EFortQuickBars::Primary, 5, StartingSlot5.second, true);
 
 			Inventory::GiveAllAmmo(PlayerController);
 			Inventory::GiveMats(PlayerController);
 		}
-		if (FnVerDouble >= 5.0) {
-			// Gives the needed items like edit tool and builds
-			Inventory::GiveStartingItems(PlayerController);
-		}
+
+		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
 	}
 
-	if (false && FnVerDouble >= 7.40)
+	// todo: not do this for invicibility
+
+	if (Engine_Version <= 421)
 	{
-		struct FUniqueNetIdRepl
-		{
-			unsigned char UnknownData00[0x1];
-			unsigned char UnknownData01[0x17];
-			TArray<unsigned char> ReplicationBytes;
-		};
+		auto CheatManager = PlayerController->Member<UObject*>("CheatManager");
 
-		static auto GameState = Helper::GetGameState();
-		auto GameMemberInfoArray = GameState->Member<__int64>("GameMemberInfoArray");
+		static auto CheatManagerClass = FindObject("Class /Script/Engine.CheatManager");
+		*CheatManager = Easy::SpawnObject(CheatManagerClass, PlayerController);
 
-		static int TeamIDX = 4;
+		static auto God = (*CheatManager)->Function("God");
 
-		auto teamIndexThing = PlayerState->Member<uint8_t>("TeamIndex");
-
-		auto oldTeamIDX = *teamIndexThing;
-
-		*teamIndexThing = TeamIDX;
-		*PlayerState->Member<uint8_t>("SquadId") = TeamIDX;
-
-		static auto SquadIdInfoOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.GameMemberInfo", "SquadId");
-		static auto TeamIndexOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.GameMemberInfo", "TeamIndex");
-		static auto MemberUniqueIdOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.GameMemberInfo", "MemberUniqueId");
-
-		static auto GameMemberInfoStruct = FindObject("ScriptStruct /Script/FortniteGame.GameMemberInfo");
-		static auto SizeOfGameMemberInfo = GetSizeOfStruct(GameMemberInfoStruct);
-		auto NewInfo = (__int64*)malloc(SizeOfGameMemberInfo);
-
-		static auto UniqueIdSize = GetSizeOfStruct(FindObject("ScriptStruct /Script/Engine.UniqueNetIdRepl"));
-
-		std::cout << "acutal size: " << UniqueIdSize << '\n';
-		std::cout << "ours: " << sizeof(FUniqueNetIdRepl) << '\n';
-
-		RtlSecureZeroMemory(NewInfo, SizeOfGameMemberInfo);
-
-		*(uint8_t*)(__int64(NewInfo) + SquadIdInfoOffset) = TeamIDX;
-		*(uint8_t*)(__int64(NewInfo) + TeamIndexOffset) = TeamIDX;
-		*(FUniqueNetIdRepl*)(__int64(NewInfo) + MemberUniqueIdOffset) = *PlayerState->Member<FUniqueNetIdRepl>("UniqueId");
-
-		static auto MembersOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.GameMemberInfoArray", "Members");
-
-		auto Members = (TArray<__int64>*)(__int64(GameMemberInfoArray) + MembersOffset);
-
-		MarkArrayDirty(GameMemberInfoArray);
-		Members->Add(*NewInfo, SizeOfGameMemberInfo);
-		MarkArrayDirty(GameMemberInfoArray);
-
-		auto PlayerTeam = PlayerState->Member<UObject*>("PlayerTeam");
-
-		(*PlayerTeam)->Member<TArray<UObject*>>("TeamMembers")->Add(PlayerController);
-
-		static auto OnRep_SquadId = PlayerState->Function("OnRep_SquadId");
-		static auto OnRep_PlayerTeam = PlayerState->Function("OnRep_PlayerTeam");
-		static auto OnRep_TeamIndex = PlayerState->Function("OnRep_TeamIndex");
-
-		PlayerState->ProcessEvent(OnRep_SquadId);
-		PlayerState->ProcessEvent(OnRep_PlayerTeam);
-		PlayerState->ProcessEvent(OnRep_TeamIndex, &oldTeamIDX);
+		if (God)
+			(*CheatManager)->ProcessEvent(God);
 	}
-	else
-	{
-		static int Team = 4;
-		Team++;
-
-		std::cout << "After Team: " << Team << '\n';
-
-		*PlayerState->Member<uint8_t>("TeamIndex") = Team;
-		*PlayerState->Member<uint8_t>("SquadId") = Team;
-	}
-
-	Inventory::Update(PlayerController);
 
 	std::cout << ("Spawned Player!\n");
 
@@ -378,26 +334,6 @@ void* NetDebugDetour(UObject* idk)
 	return nullptr;
 }
 
-char __fastcall malformedDetour(__int64 a1, __int64 a2)
-{
-	/* 9.41:
-
-	v20 = *(_QWORD *)(a1 + 48);
-	*(double *)(a1 + 0x430) = v19;
-	if ( v20 )
-	  (*(void (__fastcall **)(__int64))(*(_QWORD *)v20 + 0xC90i64))(v20);// crashes
-
-	*/
-
-	auto old = *(__int64*)(a1 + 48);
-	std::cout << "Old: " << old << '\n';
-	*(__int64*)(a1 + 48) = 0;
-	std::cout << "Old2: " << old << '\n';
-	auto ret = malformed(a1, a2);
-	*(__int64*)(a1 + 48) = old;
-	return ret;
-}
-
 FString* GetRequestURL(UObject* Connection)
 {
 	if (FnVerDouble >= 7 && Engine_Version < 424)
@@ -412,62 +348,21 @@ FString* GetRequestURL(UObject* Connection)
 
 void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8_t MessageType, __int64* Bunch)
 {
+	auto correctWorld = World;
 	std::cout << ("Receieved control message: ") << std::to_string((int)MessageType) << '\n';
 
 	switch (MessageType)
 	{
 	case 0:
 	{
-		//S5-6 Fix
-		if (Engine_Version == 421) // not the best way to fix it...
-		{
-			{
-				/* uint8_t */ char IsLittleEndian = 0;
-				unsigned int RemoteNetworkVersion = 0;
-				auto v38 = (__int64*)Bunch[1];
-				FString EncryptionToken; // This should be a short* but ye
-
-				if ((unsigned __int64)(*v38 + 1) > v38[1])
-					(*(void(__fastcall**)(__int64*, char*, __int64))(*Bunch + 72))(Bunch, &IsLittleEndian, 1);
-				else
-					IsLittleEndian = *(char*)(*v38)++;
-				auto v39 = Bunch[1];
-				if ((unsigned __int64)(*(__int64*)v39 + 4) > *(__int64*)(v39 + 8))
-				{
-					(*(void(__fastcall**)(__int64*, unsigned int*, __int64))(*Bunch + 72))(Bunch, &RemoteNetworkVersion, 4);
-					if ((*((char*)Bunch + 41) & 0x10) != 0)
-						Idkf(__int64(Bunch), __int64(&RemoteNetworkVersion), 4);
-				}
-				else
-				{
-					RemoteNetworkVersion = **(int32_t**)v39;
-					*(__int64*)v39 += 4;
-				}
-
-				ReceiveFString(Bunch, EncryptionToken);
-				// if (*((char*)Bunch + 40) < 0)
-					// do stuff
-
-				std::cout << ("EncryptionToken: ") << __int64(EncryptionToken.Data.GetData()) << '\n';
-
-				if (EncryptionToken.Data.GetData())
-					std::cout << ("EncryptionToken Str: ") << EncryptionToken.ToString() << '\n';
-
-				std::cout << ("Sending challenge!\n");
-				SendChallenge(World, Connection);
-				std::cout << ("Sent challenge!\n");
-				// World_NotifyControlMessage(World, Connection, MessageType, (void*)Bunch);
-				// std::cout << "IDK: " << *((char*)Bunch + 40) << '\n';
-				return;
-			}
-		}
 		break;
 	}
 	case 4: // NMT_Netspeed // Do we even have to rei,plment this?
 		// if (Engine_Version >= 423)
 		  //  *Connection->Member<int>(("CurrentNetSpeed")) = 60000; // sometimes 60000
 		// else
-		*Connection->Member<int>(("CurrentNetSpeed")) = 30000; // sometimes 60000
+		static auto CurrentNetSpeedOffset = GetOffset(Connection, "CurrentNetSpeed");
+		*(int*)(__int64(Connection) + CurrentNetSpeedOffset) = 30000; // sometimes 60000
 		return;
 	case 5: // NMT_Login
 	{
@@ -479,86 +374,56 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 
 			static double CurrentFortniteVersion = FnVerDouble;
 
-			if (CurrentFortniteVersion >= 7 && Engine_Version < 424)
-				ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 400)); // clientresponse
-			else if (CurrentFortniteVersion < 7)
-				ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 51));
-			else if (Engine_Version >= 424)
-				ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 416));
+			static auto PlayerIDOffset = GetOffset(Connection, "PlayerID");
 
-			auto RequestURL = GetRequestURL(Connection);
+			if (FnVerDouble < 19.00)
+			{
+				if (CurrentFortniteVersion >= 7 && Engine_Version < 424)
+					ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 400)); // clientresponse
+				else if (CurrentFortniteVersion < 7)
+					ReceiveFString(Bunch, *(FString*)((__int64*)Connection + 51));
+				else if (Engine_Version >= 424)
+					ReceiveFString(Bunch, *(FString*)(__int64(Connection) + 416));
 
-			if (!RequestURL)
-				return;
+				auto RequestURL = GetRequestURL(Connection);
 
-			ReceiveFString(Bunch, *RequestURL);
+				if (!RequestURL)
+					return;
 
-			ReceiveUniqueIdRepl(Bunch, Connection->Member<__int64>(("PlayerID")));
-			ReceiveFString(Bunch, OnlinePlatformName);
-			if (OnlinePlatformName.Data.GetData())
-				std::cout << ("OnlinePlatformName => ") << OnlinePlatformName.ToString() << '\n';
+				ReceiveFString(Bunch, *RequestURL);
+
+				ReceiveUniqueIdRepl(Bunch, (__int64*)(__int64(Connection) + PlayerIDOffset));
+				ReceiveFString(Bunch, OnlinePlatformName);
+
+				if (OnlinePlatformName.Data.GetData())
+					std::cout << ("OnlinePlatformName => ") << OnlinePlatformName.ToString() << '\n';
+			}
+			else
+			{
+				auto addr = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 49 8B F9 49 8B D8 48 8B F1 E8 ? ? ? ? 48 8B D3 48 8B CE E8 ? ? ? ? 48 8B D7 48 8B CE E8 ? ? ? ? 48 8B 54 24 ? 48 8B CE E8 ? ? ? ?");
+				
+				bool (__fastcall* receiveloginthingy)(__int64* Bunch, FString clientResponse, FString reqeustURL, FUniqueNetIdRepl uniqueId, FString OnlinePlatformName);
+
+				receiveloginthingy = decltype(receiveloginthingy)(addr);
+
+				// *(char*)(Bunch + 40) = -1;
+
+				std::cout << "res: " << 
+					receiveloginthingy(Bunch, *(FString*)(__int64(Connection) + 416), *GetRequestURL(Connection), *(FUniqueNetIdRepl*)(__int64(Connection) + PlayerIDOffset), OnlinePlatformName)
+					<< '\n';
+			}
 
 			Bunch[7] -= (16 * 1024 * 1024);
 
-			WelcomePlayer(Helper::GetWorld(), Connection);
+			WelcomePlayer(correctWorld, Connection);
 
 			return;
 		}
 		break;
 	}
-	case 6:
-		return;
-	case 9: // NMT_Join
-	{
-		if (Engine_Version == 421 || Engine_Version < 420)
-		{
-			auto ConnectionPC = Connection->Member<UObject*>(("PlayerController"));
-			if (!*ConnectionPC)
-			{
-				FURL InURL;
-				InURL.Map.Set(L"/Game/Maps/Frontend");
-				InURL.Valid = 1;
-				InURL.Protocol.Set(L"unreal");
-				InURL.Port = 7777;
-
-				// ^ This was all taken from 3.5
-
-				FString ErrorMsg;
-				SpawnPlayActorDetour(World, Connection, ENetRole::ROLE_AutonomousProxy, InURL, Connection->Member<void>(("PlayerID")), ErrorMsg, 0);
-
-				if (!*ConnectionPC)
-				{
-					std::cout << ("Failed to spawn PlayerController! Error Msg: ") << ErrorMsg.ToString() << "\n";
-					return;
-				}
-				else
-				{
-					std::cout << ("Join succeeded!\n");
-					FString LevelName;
-					const bool bSeamless = true;
-
-					static auto ClientTravelFn = (*ConnectionPC)->Function(("ClientTravel"));
-					struct {
-						FString URL;
-						ETravelType TravelType;
-						bool bSeamless;
-						FGuid MapPackageGuid;
-					} paramsTravel{ LevelName, ETravelType::TRAVEL_Relative, bSeamless, FGuid() };
-
-					(*ConnectionPC)->ProcessEvent(("ClientTravel"), &paramsTravel);
-
-					std::cout << ("Traveled client.\n");
-
-					*(int32_t*)(__int64(&*Connection->Member<int>(("LastReceiveTime"))) + (sizeof(double) * 4) + (sizeof(int32_t) * 2)) = 0;
-				}
-				return;
-			}
-		}
-		break;
-	}
 	}
 
-	return World_NotifyControlMessage(Helper::GetWorld(), Connection, MessageType, Bunch);
+	return World_NotifyControlMessage(correctWorld, Connection, MessageType, Bunch);
 }
 
 char Beacon_NotifyControlMessageDetour(UObject* Beacon, UObject* Connection, uint8_t MessageType, __int64* Bunch)
@@ -581,20 +446,19 @@ bool TryCollectGarbageHook()
 	return 0;
 }
 
-int __fastcall ReceivedPacketDetour(__int64* a1, LARGE_INTEGER a2, char a3)
-{
-}
-
 void InitializeNetHooks()
 {
 	MH_CreateHook((PVOID)SpawnPlayActorAddr, SpawnPlayActorDetour, (void**)&SpawnPlayActor);
 	MH_EnableHook((PVOID)SpawnPlayActorAddr);
 
-	MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
-	MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);
+	if (FnVerDouble < 19.00 && Engine_Version != 421 && Engine_Version != 419) // we dont really need this im just too lazy to get setworld sig
+	{
+		MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
+		MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);
 
-	MH_CreateHook((PVOID)World_NotifyControlMessageAddr, World_NotifyControlMessageDetour, (void**)&World_NotifyControlMessage);
-	MH_EnableHook((PVOID)World_NotifyControlMessageAddr);
+		MH_CreateHook((PVOID)World_NotifyControlMessageAddr, World_NotifyControlMessageDetour, (void**)&World_NotifyControlMessage);
+		MH_EnableHook((PVOID)World_NotifyControlMessageAddr);
+	}
 
 	if (Engine_Version < 424 && GetNetModeAddr) // i dont even think we have to hook this
 	{
@@ -613,15 +477,9 @@ void InitializeNetHooks()
 
 	if (KickPlayer)
 	{
-		std::cout << "Hooked kickplayer!\n";
+		// std::cout << "Hooked kickplayer!\n";
 		MH_CreateHook((PVOID)KickPlayerAddr, KickPlayerDetour, (void**)&KickPlayer);
 		MH_EnableHook((PVOID)KickPlayerAddr);
-	}
-
-	if (LP_SpawnPlayActorAddr)
-	{
-		MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
-		MH_EnableHook((PVOID)LP_SpawnPlayActorAddr);
 	}
 
 	if (NoReserveAddr)

@@ -11,6 +11,8 @@ Clean up Project and add comments to the code.<br>
 
 # CURRENT ISSUES
 
+Battle Bus Crashes on S8+<br>
+
 Code is everywhere.<br>
 Console Colors are a 30/70.<br>
 
@@ -22,8 +24,7 @@ If your code edits some existing code, lets say inventory, explain what it does.
 
 ## NOTICE
 <br>
-This Project was made for fun and was Open Sourced for Educational Purposes. If you are an Epic Employee and want this project taken down contact me on Discord: Milxnor#3531<br>
-
+This Project was made for fun and was Open Sourced for Educational Purposes. If you are an Epic Employee and want this project taken down contact me on Discord: Milxnor#3531
 # CREDITS
 
 If you take anything from here, please credit the appropiate person and link the repository.<br>

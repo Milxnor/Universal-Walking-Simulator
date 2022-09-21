@@ -61,9 +61,6 @@
     <ClInclude Include="UE\other.h">
       <Filter>Header Files\UE</Filter>
     </ClInclude>
-    <ClInclude Include="Net\nethooks.h">
-      <Filter>Header Files\Net</Filter>
-    </ClInclude>
     <ClInclude Include="hooks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -118,22 +115,22 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Net\funcs.h">
-      <Filter>Header Files\Net</Filter>
-    </ClInclude>
     <ClInclude Include="finder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UE\DataTables.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
-    <ClInclude Include="offsets.h">
-      <Filter>Header Files\Other</Filter>
-    </ClInclude>
     <ClInclude Include="AI.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
-    <ClInclude Include="Gameplay\carmine.h">
+    <ClInclude Include="Net\nethooks.h">
+      <Filter>Header Files\Net</Filter>
+    </ClInclude>
+    <ClInclude Include="team.h">
+      <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\funcs.h">
       <Filter>Header Files\Gameplay</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,9 +1,10 @@
 #pragma once
-#include <Gameplay/carmine.h>
 
 #include <UE/structs.h>
 #include <Gameplay/helper.h>
 #include <Gameplay/abilities.h>
+
+#include <UE/DataTables.h>
 
 /*
 
@@ -16,7 +17,7 @@ constexpr bool newSwapping = false; // there is this bug where its not actuallyt
 
 static int GetEntrySize()
 {
-	static auto FortItemEntryClass = FindObject(("ScriptStruct /Script/FortniteGame.FortItemEntry"), true);
+	static auto FortItemEntryClass = FindObjectOld(("ScriptStruct /Script/FortniteGame.FortItemEntry"), true);
 
 	return GetSizeOfStruct(FortItemEntryClass);
 }
@@ -24,8 +25,63 @@ static int GetEntrySize()
 template <typename EntryType = __int64>
 inline EntryType* GetItemEntryFromInstance(UObject* Instance)
 {
+	if (!Instance)
+		return nullptr;
+
 	static auto ItemEntryOffset = GetOffset(Instance, "ItemEntry");
 	return (EntryType*)(__int64(Instance) + ItemEntryOffset);
+}
+
+namespace Items {
+	void HandleCarmine(UObject* Controller) {
+		if (!Controller)
+			return;
+
+		UObject* Pawn = Helper::GetPawnFromController(Controller);
+		Helper::ChoosePart(Pawn, EFortCustomPartType::Body, FindObject("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/Dev_TestAsset_Body_M_XL.Dev_TestAsset_Body_M_XL"));
+		Helper::ChoosePart(Pawn, EFortCustomPartType::Head, FindObject("CustomCharacterPart /Game/Athena/Heroes/Meshes/Heads/Dev_TestAsset_Head_M_XL.Dev_TestAsset_Head_M_XL"));
+		*Pawn->Member<UObject*>("AnimBPOverride") = FindObject("AnimBlueprintGeneratedClass /Game/Characters/Player/Male/Male_Avg_Base/Gauntlet_Player_AnimBlueprint.Gauntlet_Player_AnimBlueprint_C");
+		
+		UObject* AS = FindObject("FortAbilitySet /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AS_CarminePack.AS_CarminePack");
+		auto GrantedAbilities = AS->Member<TArray<UObject*>>("GameplayAbilities");
+
+		for (int i = 0; i < GrantedAbilities->Num(); i++) {
+			GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
+		}
+
+		UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
+
+		//if (Montage && PlayMontage && Engine_Version < 426)
+		//{
+		//	auto AbilitySystemComponent = *Pawn->Member<UObject*>(("AbilitySystemComponent"));
+		//	static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+
+		//	TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo>> Specs;
+
+		//	if (Engine_Version <= 422)
+		//		Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
+		//	else
+		//		Specs = (*AbilitySystemComponent->Member<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))).Items;
+
+		//	UObject* DefaultObject = EmoteClass->CreateDefaultObject();
+
+		//	for (int i = 0; i < Specs.Num(); i++)
+		//	{
+		//		auto& CurrentSpec = Specs[i];
+
+		//		if (CurrentSpec.Ability == DefaultObject)
+		//		{
+		//			auto ActivationInfo = CurrentSpec.Ability->Member<FGameplayAbilityActivationInfo>(("CurrentActivationInfo"));
+
+		//			// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
+		//			auto Dura = PlayMontage(AbilitySystemComponent, CurrentSpec.Ability, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(0));
+		//			// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
+
+		//			std::cout << ("Played for: ") << Dura << '\n';
+		//		}
+		//	}
+		//}
+	}
 }
 
 namespace FFortItemEntry
@@ -60,13 +116,16 @@ namespace FFortItemEntry
 		return Guid;
 	}
 
-	UObject* GetItemDefinition(__int64* Entry)
+	UObject* GetItemDefinition(__int64* Entry, UObject*** ahh = nullptr)
 	{
 		if (!Entry)
 			return nullptr;
 
 		static auto ItemDefinitionOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
 		auto Definition = (UObject**)(__int64(&*Entry) + ItemDefinitionOffset);
+
+		if (ahh)
+			*ahh = Definition;
 
 		return *Definition;
 	}
@@ -86,7 +145,7 @@ namespace QuickBars
 				EFortQuickBars QuickBarType;
 				int SlotIndex;
 				UObject* Ret;
-			} GetItemInQuickbarSlot_params{ Bars, Slot };
+			} GetItemInQuickbarSlot_params{Bars, Slot};
 
 			if (GetItemInQuickbarSlotfn)
 				Controller->ProcessEvent(GetItemInQuickbarSlotfn, &GetItemInQuickbarSlot_params);
@@ -97,9 +156,65 @@ namespace QuickBars
 		return nullptr;
 	}
 
-	bool IsHoldingPickaxe()
+	bool IsHoldingPickaxe(UObject* Controller)
 	{
+		if (!Controller)
+			return false;
 
+		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+
+		auto Pawn = Helper::GetPawnFromController(Controller);
+
+		if (Pawn)
+		{
+			auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
+
+			if (CurrentWeapon)
+			{
+				auto CurrentWeaponDef = Helper::GetWeaponData(CurrentWeapon);
+
+				if (CurrentWeaponDef == PickaxeDef)
+					return true;
+			}
+		}
+
+		return false;
+	}
+
+	// returns -1 if there are no slots
+	int FindNextAvailableSlot(UObject* Controller, EFortQuickBars Bars)
+	{
+		auto getSlot = [](TArray<__int64>* Slots, int i) -> __int64* {
+			static auto SizeOfQuickBarSlot = GetSizeOfStruct(FindObject("ScriptStruct /Script/FortniteGame.QuickBarSlot"));
+
+			return (__int64*)(__int64(Slots) + (static_cast<__int64>(SizeOfQuickBarSlot) * i));
+		};
+
+		auto QuickBars = *Controller->Member<UObject*>("QuickBars");
+		auto QuickBar = Bars == EFortQuickBars::Primary ? QuickBars->Member<__int64>("PrimaryQuickBar") 
+			: QuickBars->Member<__int64>("SecondaryQuickBar");
+
+		static auto SlotsOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.QuickBar", "Slots");
+
+		auto QuickBarSlots = (TArray<__int64>*)(__int64(QuickBar) + SlotsOffset);
+
+		for (int i = Bars == EFortQuickBars::Primary ? 1 : 0; i < QuickBarSlots->Num(); i++)
+		{
+			auto Slot = getSlot(QuickBarSlots, i);
+
+			static auto ItemsOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.QuickBarSlot", "Items");
+			auto Items = (TArray<FGuid>*)(__int64(Slot) + ItemsOffset);
+
+			if (Items && !Items->GetData()) // slot is empty
+			{
+				if (i >= 6 && Bars == EFortQuickBars::Primary)
+					return -1;
+
+				return i;
+			}
+		}
+
+		return -1;
 	}
 
 	EFortQuickBars WhatQuickBars(UObject* Definition) // returns the quickbar the item should go in
@@ -123,7 +238,11 @@ namespace Inventory
 {
 	UObject* GetWorldInventory(UObject* Controller)
 	{
-		return *Controller->Member<UObject*>(("WorldInventory")); // WorldInventory;
+		static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
+		auto WorldInventory = *(UObject**)(__int64(Controller) + WorldInventoryOffset);
+
+		// return *Controller->Member<UObject*>(("WorldInventory"));
+		return WorldInventory;
 	}
 
 	__int64* GetInventory(UObject* Controller)
@@ -132,7 +251,9 @@ namespace Inventory
 
 		if (WorldInventory)
 		{
-			auto Inventorya = WorldInventory->Member<__int64>(("Inventory"));
+			static auto InventoryOffset = GetOffset(WorldInventory, "Inventory");
+			auto Inventorya = (__int64*)(__int64(WorldInventory) + InventoryOffset);
+			// auto Inventorya = WorldInventory->Member<__int64>(("Inventory"));
 
 			return Inventorya;
 		}
@@ -146,6 +267,10 @@ namespace Inventory
 
 		auto Inventory = GetInventory(Controller);
 
+		// std::cout << ("ItemInstances Offset: ") << ItemInstancesOffset << '\n';
+
+		// ItemInstancesOffset = 0x110;
+
 		if (Inventory)
 			return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
 		else
@@ -155,15 +280,16 @@ namespace Inventory
 	inline UObject* EquipWeapon(UObject* Pawn, UObject* FortWeapon, const FGuid& Guid, int Ammo = 0)
 	{
 		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-		auto CurrentWeapon = *Pawn->Member<UObject*>(("CurrentWeapon"));
-		if (FortWeapon && Pawn)
+		auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
+
+		if (FortWeapon && CurrentWeapon && Pawn)
 		{
 			static auto OnRep_ReplicatedWeaponData = FortWeapon->Function("OnRep_ReplicatedWeaponData");
 
 			if (OnRep_ReplicatedWeaponData)
 				FortWeapon->ProcessEvent(OnRep_ReplicatedWeaponData);
 
-			// the function below starts taking a param
+			// the functgion below starts taking a param
 			// Weapon->ProcessEvent(("OnRep_AmmoCount"));
 
 			struct { UObject* P; } givenParams{ Pawn };
@@ -196,8 +322,8 @@ namespace Inventory
 		if (Pawn && Definition)
 		{
 			auto FullName = Definition->GetFullName();
-			bool IsAGID = (FullName.contains(("AthenaGadgetItemDefinition ")) || FullName.contains(("FortGadgetItemDefinition "))) ? true : false; // TODO: Use IsA
-
+			bool IsAGID = (FullName.contains(("AthenaGadgetItemDefinition ")) || FullName.contains(("FortGadgetItemDefinition "))); // TODO: Use IsA
+			
 			if (!IsAGID)
 			{
 				UObject* Weapon = nullptr;
@@ -234,8 +360,14 @@ namespace Inventory
 				if (Weapon)
 				{
 					Helper::SetOwner(Weapon, Pawn);
+					//*Weapon->Member<UObject*>(("WeaponData")) = Definition;
+					//EquipWeapon(Pawn, Weapon, Guid, Ammo);
 
-					std::cout << "Ammo: " << Ammo << '\n';
+					// std::cout << "Ammo: " << Ammo << '\n';
+
+					// *Weapon->Member<int>(("AmmoCount")) = Ammo; // GetEntryhFromGuid(Gretequi r08wig09wr
+
+					// bUpdateLocalAmmoCount
 
 					static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
 
@@ -249,21 +381,74 @@ namespace Inventory
 			}
 			else
 			{
+				// std::cout << ("Equipping AGID!\n");
 				static auto GetItemDefinition = Definition->Function(("GetWeaponItemDefinition"));
 
 				UObject* Def = nullptr;
 
-				if (!GetItemDefinition) {
-					GetItemDefinition = Definition->Function(("GetDecoItemDefinition"));
+				if (GetItemDefinition) {
+					Definition->ProcessEvent(GetItemDefinition, &Def);
 				}
-				Definition->ProcessEvent(GetItemDefinition, &Def);
+				else {
+					GetItemDefinition = Definition->Function(("GetDecoItemDefinition"));
+					Definition->ProcessEvent(GetItemDefinition, &Def);
+				}
 
 				if (Def)
 				{
+					// std::cout << "Def Name: " << Def->GetFullName() << '\n';
 					Inventory::EquipWeaponDefinition(Pawn, Def, Guid);
 				}
 				else
 					std::cout << ("Failed to get AGID's Definition!\n");
+
+				if (FullName.contains(("AthenaGadgetItemDefinition "))) // Ability class seems to always be invalid
+				{
+					std::cout << ("Trying to get gameplay ability of class.\n");
+					static auto GetGameplayAbility = Definition->Function(("GetGameplayAbility"));
+					std::cout << ("Found GetGameplayAbility function.\n");
+					//UObject* GameplayAbility = nullptr;
+					//FindObject<TSoftClassPtr>("SoftClassProperty /Script/FortniteGame.FortGadgetItemDefinition.GameplayAbility");
+
+					//UClass* GameplayAbility = Helper::Conversion::SoftClassToClass(Definition->Member<TSoftClassPtr>("GameplayAbility"));
+					std::cout << ("Trying to convert to class.\n");
+					static auto KSLClass = FindObject(("KismetSystemLibrary /Script/Engine.Default__KismetSystemLibrary"));
+
+					static auto fn = KSLClass->Function(("Conv_SoftClassReferenceToClass"));
+
+					/*auto Class = FindObject<TSoftClassPtr>("SoftClassProperty /Script/FortniteGame.FortGadgetItemDefinition.GameplayAbility");
+					auto gameplayclass = Helper::Conversion::SoftClassToClass(Class);*/
+					/*std::cout << ("Found Class");
+					struct {
+						//TSoftClassPtr* SoftClass;
+						UClass* ReturnValue;
+					} params{nullptr};
+
+					if (fn)
+					{
+						std::cout << ("Trying to process Conversion");
+						KSLClass->ProcessEvent(fn, &Class);
+						std::cout << ("Processed Conversion");
+					}
+						
+					//UClass* GameplayAbility = params.ReturnValue;
+					std::cout << ("Got return value.\n");*/
+					/*if (GetGameplayAbility)
+					{
+						Definition->ProcessEvent(GetGameplayAbility, &GameplayAbility);
+						std::cout << ("Processing GetGameplayAbility");
+					}
+					else
+						std::cout << ("Get Gameplay Ability Failed!\n");*/
+					/*if (gameplayclass)
+					{
+						//std::cout << ("Granting ability: ") << GameplayAbility->GetFullName() << '\n';
+						std::cout << ("Granting ability: ");
+						GrantGameplayAbility(Pawn, gameplayclass);
+					}
+					else
+						std::cout << ("Failed to get GameplayAbilityClass!\n");*/
+				} 
 			}
 		}
 
@@ -272,10 +457,13 @@ namespace Inventory
 
 	FGuid GetItemGuid(UObject* ItemInstance)
 	{
+		if (!ItemInstance)
+			return FGuid();
+
 		static UObject* GetItemGuidFn = FindObject(("Function /Script/FortniteGame.FortItem.GetItemGuid"));
 		FGuid Guid;
 
-		if (ItemInstance && GetItemGuidFn)
+		if (GetItemGuidFn)
 			ItemInstance->ProcessEvent(GetItemGuidFn, &Guid);
 
 		return Guid;
@@ -296,7 +484,7 @@ namespace Inventory
 		struct {
 			EFortQuickBars bars;
 			int Ret;
-		}parms{ bars };
+		}parms{bars};
 		static auto fn = Controller->Function(("GetNumQuickbarSlots"));
 
 		if (Controller && fn)
@@ -356,6 +544,26 @@ namespace Inventory
 						CurrentWeaponInList->ProcessEvent(GetMagazineAmmoCount, &currentWeaponAmmo);
 
 					break;
+					/* static auto OnRep_ReplicatedWeaponData = CurrentWeaponInList->Function("OnRep_ReplicatedWeaponData");
+
+					if (OnRep_ReplicatedWeaponData)
+						CurrentWeaponInList->ProcessEvent(OnRep_ReplicatedWeaponData);
+
+					// OnRep_ReplicatedAppliedAlterations?
+
+					static auto ClientGivenTo = CurrentWeaponInList->Function("ClientGivenTo");
+
+					if (ClientGivenTo)
+						CurrentWeaponInList->ProcessEvent(ClientGivenTo, &Pawn);
+
+					static auto ClientInternalEquipWeapon = Pawn->Function("ClientInternalEquipWeapon");
+
+					struct { UObject* Weapon; } ClientInternalEquipWeapon_Params{ CurrentWeaponInList };
+
+					if (ClientInternalEquipWeapon)
+						Pawn->ProcessEvent(ClientInternalEquipWeapon, &ClientInternalEquipWeapon_Params);
+
+					return nullptr; */
 				}
 			}
 		}
@@ -377,9 +585,10 @@ namespace Inventory
 				CurrentItemInstance->ProcessEvent(GetTrackerGuid, &TrackerGuid);
 		}
 
-		auto currentWeapon = *Pawn->Member<UObject*>("CurrentWeapon");
+		auto currentWeapon = Helper::GetCurrentWeapon(Pawn);
 		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
+		// if (!QuickBars::IsHoldingPickaxe()) 
 		if (currentWeapon && *currentWeapon->Member<UObject*>("WeaponData") != PickaxeDef)
 		{
 			auto currentInstance = GetItemInstanceFromGuid(Controller, *currentWeapon->Member<FGuid>("ItemEntryGuid"));
@@ -390,16 +599,19 @@ namespace Inventory
 
 				if (currentItemEntry)
 				{
-					int currentAmmoCount;; // = *currentWeapon->Member<int>("AmmoCount");
+					int currentAmmoCount = 0; // = *currentWeapon->Member<int>("AmmoCount");
 					static auto GetMagazineAmmoCount = currentWeapon->Function("GetMagazineAmmoCount");
 
 					if (GetMagazineAmmoCount)
 						currentWeapon->ProcessEvent(GetMagazineAmmoCount, &currentAmmoCount);
 
-					std::cout << "AmmoCount: " << currentAmmoCount << '\n';
+					// std::cout << "AmmoCount: " << currentAmmoCount << '\n';
 
 					auto LoadedAmmo = FFortItemEntry::GetLoadedAmmo(currentItemEntry);
-					std::cout << "LoadedAmmo: " << *LoadedAmmo << '\n';
+					// std::cout << "LoadedAmmo: " << *LoadedAmmo << '\n';
+
+					if (LoadedAmmo)
+						*LoadedAmmo = currentAmmoCount;
 				}
 				else
 					std::cout << "No ItemEntry!\n";
@@ -414,6 +626,12 @@ namespace Inventory
 
 		EquipWeaponDefinition(Pawn, Def, Guid, currentWeaponAmmo/* *FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(CurrentItemInstance)) */, TrackerGuid);
 
+		std::string FullName = Def->GetFullName();
+
+		if (FullName.contains("CarminePack") || FullName.contains("AshtonPack.")) {
+			Items::HandleCarmine(Controller);
+		}
+
 		return nullptr;
 	}
 
@@ -423,14 +641,21 @@ namespace Inventory
 		static __int64 ReplicatedEntriesOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ReplicatedEntries"));
 
 		auto Inventory = GetInventory(Controller);
+		// ReplicatedEntriesOffset = 0xB0;
+
+		// std::cout << ("ReplicatedEntries Offset: ") << ReplicatedEntriesOffset << '\n';
 
 		return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
+
+		// return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 	}
 
 	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false, FFastArraySerializerItem* ModifiedItem = nullptr)
 	{
 		auto WorldInventory = GetWorldInventory(Controller);
 		auto Inventory = GetInventory(Controller);
+
+		// *WorldInventory->Member<bool>("bRequiresLocalUpdate") = true;
 
 		static auto WorldHandleInvUpdate = WorldInventory->Function(("HandleInventoryLocalUpdate"));
 
@@ -456,7 +681,10 @@ namespace Inventory
 
 				static auto OnRep_SecondaryQuickBar = QuickBars->Function(("OnRep_SecondaryQuickBar"));
 				QuickBars->ProcessEvent(OnRep_SecondaryQuickBar);
-			}
+
+				static auto OnRep_QuickBar = Controller->Function(("OnRep_QuickBar"));
+				Controller->ProcessEvent(OnRep_QuickBar, nullptr);
+			} 
 		}
 		else
 		{
@@ -469,13 +697,11 @@ namespace Inventory
 			if (FnVerDouble < 8)
 			{
 				static auto UpdateQuickBars = Controller->Function(("UpdateQuickBars"));
+
 				if (UpdateQuickBars)
 					Controller->ProcessEvent(UpdateQuickBars);
 			}
 		}
-
-		// static auto OnRep_QuickBar = Controller->Function(("OnRep_QuickBar"));
-		// Controller->ProcessEvent(OnRep_QuickBar, nullptr);
 
 		if ((bRemovedItem || Idx != -1) && Inventory)
 			MarkArrayDirty(Inventory);
@@ -490,29 +716,31 @@ namespace Inventory
 		if (!Definition || !Controller)
 			return nullptr;
 
-		struct {
-			int count;
-			int level;
-			UObject* instance;
-		} Params{ Count, 1 };
+		static auto FortWorldItemClass = FindObjectOld("Class /Script/FortniteGame.FortWorldItem", true);
 
-		static auto CTIIFn = Definition->Function(("CreateTemporaryItemInstanceBP"));
-
-		if (CTIIFn)
-			Definition->ProcessEvent(CTIIFn, &Params);
-
-		UObject* itemInstance = Params.instance;
+		static auto TransientPackage = FindObject("Package /Engine/Transient");
+		auto itemInstance = Easy::SpawnObject(FortWorldItemClass, TransientPackage); // we love ch3!
 
 		if (itemInstance)
 		{
+			// std::cout << "ItemInstance: " << itemInstance->GetFullName() << '\n';
+
 			static UObject* SOCFTIFn = itemInstance->Function(("SetOwningControllerForTemporaryItem"));
 
 			itemInstance->ProcessEvent(SOCFTIFn, &Controller);
 
-			static auto CountOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("Count"));
+			auto bIsTemp = itemInstance->Member<bool>("bIsTemporaryItem");
 
-			auto GunCount = (int*)(__int64(&*GetItemEntryFromInstance(itemInstance)) + CountOffset);
-			*GunCount = Count;
+			if (bIsTemp)
+				*bIsTemp = true;
+
+			auto Entry = GetItemEntryFromInstance(itemInstance);
+
+			UObject** entryDefinition = nullptr;
+			FFortItemEntry::GetItemDefinition(Entry, &entryDefinition);
+
+			*entryDefinition = Definition;
+			*FFortItemEntry::GetCount(Entry) = Count;
 
 			*itemInstance->Member<UObject*>(("OwnerInventory")) = *Controller->Member<UObject*>(("WorldInventory"));
 
@@ -528,17 +756,20 @@ namespace Inventory
 		if (!Controller || !FortItem)
 			return -1;
 
-		auto ItemEntry = GetItemEntryFromInstance<EntryStruct>(FortItem);
+		auto ItemEntry = GetItemEntryFromInstance<EntryStruct>(FortItem); // FortItem->Member<EntryStruct>(("ItemEntry"));
+		
+		// std::cout << ("ItemEntryStruct Size: ") << GetEntrySize() << '\n';
+
 		if (ItemEntry)
-			return GetReplicatedEntries<EntryStruct>(Controller)->Add(*ItemEntry);
+			return GetReplicatedEntries<EntryStruct>(Controller)->Add(*ItemEntry); // GetEntrySize());
 
 		return -1;
 	}
 
 	template <typename EntryStruct, typename Type>
-	bool ChangeItemInReplicatedEntriesWithEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal, int Count = -1)
+	bool ChangeItemInReplicatedEntriesWithEntries(UObject* Controller, UObject* Instance, const std::string& Name, Type NewVal, int Count = -1)
 	{
-		if (!Controller || !Definition)
+		if (!Controller || !Instance)
 			return false;
 
 		auto ReplicatedEntries = GetReplicatedEntries<EntryStruct>(Controller);
@@ -548,7 +779,7 @@ namespace Inventory
 		{
 			auto& ItemEntry = ReplicatedEntries->At(x);
 
-			if (FFortItemEntry::GetItemDefinition((__int64*)&ItemEntry) == Definition && (Count == -1 ? true : *FFortItemEntry::GetCount((__int64*)&ItemEntry) == Count))
+			if (*FFortItemEntry::GetGuid((__int64*)&ItemEntry) == Inventory::GetItemGuid(Instance))
 			{
 				auto Offset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), Name); // todo: idk like make this faster
 				*(Type*)(__int64(&ItemEntry) + Offset) = NewVal;
@@ -565,48 +796,50 @@ namespace Inventory
 	}
 
 	template <typename Type>
-	bool ChangeItemInReplicatedEntries(UObject* Controller, UObject* Definition, const std::string& Name, Type NewVal, int Count = -1)
+	bool ChangeItemInReplicatedEntries(UObject* Controller, UObject* Instance, const std::string& Name, Type NewVal)
 	{
 		static const auto FlooredVer = std::floor(FnVerDouble);
 
-		if (FlooredVer == 3)
+		if (FlooredVer == 2)
 		{
-			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
-			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+			struct ItemEntrySize { unsigned char Unk00[0xB8]; };
+			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Instance, Name, NewVal);
 		}
-		else if (FlooredVer > 3 && FnVerDouble < 7.40)
+		else if (FlooredVer == 3)
+		{
+			// struct ItemEntrySize { unsigned char Unk00[0xC0]; };
+			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
+			return ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Instance, Name, NewVal);
+		}
+		else if (FlooredVer > 3 && FnVerDouble < 7.30)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
-			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Instance, Name, NewVal);
 		}
-		else if (FnVerDouble >= 7.40 && Engine_Version <= 424)
+		else if (FnVerDouble >= 7.30 && Engine_Version <= 424)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
-			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Instance, Name, NewVal);
 		}
 		else if (Engine_Version == 425)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
-			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Instance, Name, NewVal);
 		}
-		else if (Engine_Version >= 426 && FlooredVer < 14.60)
+		else if (Engine_Version >= 426 && FlooredVer < 15) // idk if right
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x160]; };
-			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
-		}
-		else if (FnVerDouble == 14.60) {
-			struct ItemEntrySize { unsigned char Unk00[0x180]; };
-			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Instance, Name, NewVal);
 		}
 		else if (FlooredVer >= 15 && FlooredVer < 18)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x190]; };
-			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Instance, Name, NewVal);
 		}
 		else if (FlooredVer >= 18)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x1A0]; };
-			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Definition, Name, NewVal, Count);
+			ChangeItemInReplicatedEntriesWithEntries<ItemEntrySize, int>(Controller, Instance, Name, NewVal);
 		}
 
 		return false;
@@ -628,6 +861,7 @@ namespace Inventory
 			{
 				ReplicatedEntries->RemoveAt(x);
 				bSuccessful = true;
+				// break;
 			}
 		}
 
@@ -645,11 +879,18 @@ namespace Inventory
 
 		static const auto FlooredVer = std::floor(FnVerDouble);
 
+		// auto Inventory = GetInventory(Controller);
+
 		auto ItemEntry = GetItemEntryFromInstance(FortItem);
 		*FFortItemEntry::GetCount(ItemEntry) = Count;
 
-		if (Engine_Version < 424)
-			GetItemInstances(Controller)->Add(FortItem);
+		auto ItemInstances = GetItemInstances(Controller);
+
+		if (!ItemInstances)
+			return nullptr; // believe it or not, this happens sometimes
+
+		if (Engine_Version < 424) // chapter two momentum
+			ItemInstances->Add(FortItem);
 
 		if (7.4 > FnVerDouble)
 		{
@@ -678,47 +919,15 @@ namespace Inventory
 
 		int Idx = -1;
 
-		if (FlooredVer == 3)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
-			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-		}
-		else if (std::stof(FN_Version) < 7.40f)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
-			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-		}
-		else if (FnVerDouble >= 7.40 && Engine_Version <= 424)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0x120]; };
-			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-		}
-		else if (Engine_Version == 425)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0x150]; };
-			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-		}
-		else if (Engine_Version >= 426 && FlooredVer < 14.60)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0x160]; };
-			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-		}
-		else if (FnVerDouble == 14.60) {
-			struct ItemEntrySize { unsigned char Unk00[0x180]; };
-			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-		}
-		else if (FlooredVer >= 15 && FlooredVer < 18)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0x190]; };
-			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-		}
-		else if (FlooredVer >= 18)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0x1A0]; };
-			Idx = AddToReplicatedEntries<ItemEntrySize>(Controller, FortItem);
-		}
-		else
-			std::cout << ("Could not get ItemEntrySize Struct! Please make a new one for this version using: ") << GetEntrySize() << '\n';
+		auto fortnite = GetItemEntryFromInstance<__int64>(FortItem); // FortItem->Member<EntryStruct>(("ItemEntry"));
+
+		// std::cout << ("ItemEntryStruct Size: ") << GetEntrySize() << '\n';
+
+		static __int64 ReplicatedEntriesOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ReplicatedEntries"));
+
+		auto Inventory = GetInventory(Controller);
+
+		Idx = ((TArray<__int64>*)(__int64(Inventory) + ReplicatedEntriesOffset))->Add(*fortnite, GetEntrySize());
 
 		if (Idx != -1)
 			Inventory::Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
@@ -726,7 +935,7 @@ namespace Inventory
 		return FortItem;
 	}
 
-	static UObject* CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1)
+	static UObject* CreateAndAddItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1, bool bFillAmmo = false)
 	{
 		if (Controller && Definition)
 		{
@@ -738,12 +947,37 @@ namespace Inventory
 
 				auto entry = GetItemEntryFromInstance(instance);
 
-				static auto LoadedAmmoOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("LoadedAmmo"));
+				if (bFillAmmo && entry)
+				{
+					auto LoadedAmmo = FFortItemEntry::GetLoadedAmmo(entry);
+
+					if (LoadedAmmo)
+						*LoadedAmmo = GetMaxBullets(Definition);
+				}
 			}
 			else
 				std::cout << ("Failed to create ItemInstance!\n");
 
 			return Instance;
+		}
+
+		return nullptr;
+	}
+
+	UObject* FindItemInInventory(UObject* Controller, const FGuid& Guid) 
+	{
+		auto ItemInstances = GetItemInstances(Controller);
+		auto Pawn = Helper::GetPawnFromController(Controller);
+
+		for (int i = 0; i < ItemInstances->Num(); i++)
+		{
+			auto CurrentItemInstance = ItemInstances->At(i);
+
+			if (!CurrentItemInstance)
+				continue;
+
+			if (GetItemGuid(CurrentItemInstance) == Guid)
+				return CurrentItemInstance;
 		}
 
 		return nullptr;
@@ -769,43 +1003,28 @@ namespace Inventory
 		return nullptr;
 	}
 
-	UObject* RemoveItem(UObject* Controller, const FGuid& Guid)
+	void RemoveItem(UObject* Controller, const FGuid& Guid)
 	{
-		auto ItemInstances = GetItemInstances(Controller);
-		UObject* ItemDefinition = nullptr;
-		for (int j = 0; j < ItemInstances->Num(); j++)
-		{
-			auto ItemInstance = ItemInstances->At(j);
-
-			if (!ItemInstance)
-				continue;
-
-			auto CurrentGuid = GetItemGuid(ItemInstance);
-
-			if (CurrentGuid == Guid)
-			{
-				ItemInstances->RemoveAt(j);
-				if (!ItemDefinition)
-					ItemDefinition = GetItemDefinition(ItemInstance);
-				// break;
-			}
-		}
-
 		static const auto FlooredVer = std::floor(FnVerDouble);
 
 		bool bFortnite = false;
 
-		if (FlooredVer == 3)
+		if (FlooredVer == 2)
+		{
+			struct ItemEntrySize { unsigned char Unk00[0xB8]; };
+			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
+		}
+		else if (FlooredVer == 3)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xC8]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (FlooredVer > 3 && FnVerDouble < 7.40)
+		else if (FlooredVer > 3 && FnVerDouble < 7.30)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0xD0]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (FnVerDouble >= 7.40 && Engine_Version <= 424)
+		else if (FnVerDouble >= 7.30 && Engine_Version <= 424)
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x120]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
@@ -815,12 +1034,7 @@ namespace Inventory
 			struct ItemEntrySize { unsigned char Unk00[0x150]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
-		else if (Engine_Version >= 426 && FlooredVer < 14.60)
-		{
-			struct ItemEntrySize { unsigned char Unk00[0x180]; };
-			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
-		}
-		else if (FnVerDouble == 14.60)
+		else if (Engine_Version >= 426 && FlooredVer < 15) // idk if right
 		{
 			struct ItemEntrySize { unsigned char Unk00[0x160]; };
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
@@ -836,10 +1050,89 @@ namespace Inventory
 			bFortnite = RemoveGuidFromReplicatedEntries<ItemEntrySize>(Controller, Guid);
 		}
 
+		/*
+		
+		for (int x = 0; x < ReplicatedEntries->Num(); x++)
+		{
+			static auto GuidOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemGuid"));
+			auto ItemEntry = (__int64*)(__int64(ReplicatedEntries) + (x * EntrySize));
+
+			if (*(FGuid*)(__int64(ItemEntry) + GuidOffset) == Guid)
+			{
+				ReplicatedEntries->RemoveAt(x, EntrySize);
+				bFortnite = true;
+			}
+		}
+
+		*/
+
 		if (bFortnite)
 			Update(Controller, -1, true);
+	}
 
-		return ItemDefinition;
+	bool IncreaseItemCount(UObject* Controller, UObject* Instance, int Count) // stack
+	{
+		// For now, assume it's a consumable or ammo, and it can go higher than what we currently have.
+
+		if (Controller && Instance)
+		{
+			auto ItemEntry = GetItemEntryFromInstance(Instance);
+			auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
+
+			// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
+			auto NewCount = *CurrentCount + Count;
+			auto OldCount = *CurrentCount;
+			*CurrentCount = NewCount;
+
+			ChangeItemInReplicatedEntries<int>(Controller, Instance, ("Count"), NewCount);
+
+			Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	bool DecreaseItemCount(UObject* Controller, UObject* Instance, int Count, __int64** OutItemEntry = nullptr, UObject* Definition = nullptr)
+	{
+		if (Controller && Instance)
+		{
+			auto ItemInstances = GetItemInstances(Controller);
+
+			for (int j = 0; j < ItemInstances->Num(); j++)
+			{
+				auto ItemInstance = ItemInstances->At(j);
+
+				if (!ItemInstance)
+					continue;
+
+				if (Definition ? GetItemDefinition(ItemInstance) == Definition : ItemInstance == Instance)
+				{
+					auto ItemEntry = GetItemEntryFromInstance(ItemInstance);
+					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
+
+					// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
+					auto NewCount = *CurrentCount - Count;
+
+					if (NewCount < 0)
+						NewCount = 0;
+
+					*CurrentCount = NewCount;
+
+					ChangeItemInReplicatedEntries<int>(Controller, Instance, ("Count"), NewCount);
+
+					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
+
+					if (OutItemEntry)
+						*OutItemEntry = ItemEntry;
+
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	UObject* GetDefinitionFromGuid(UObject* Controller, const FGuid& Guid)
@@ -865,99 +1158,6 @@ namespace Inventory
 		return nullptr;
 	}
 
-	bool IncreaseItemCountInstance(UObject* Controller, UObject* Instance, int Count) // stack
-	{
-		// For now, assume it's a consumable or ammo, and it can go higher than what we currently have.
-
-		if (Controller && Instance)
-		{
-			auto ItemEntry = GetItemEntryFromInstance(Instance);
-			auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
-
-			// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
-			auto NewCount = *CurrentCount + Count;
-			auto OldCount = *CurrentCount;
-			*CurrentCount = NewCount;
-
-			ChangeItemInReplicatedEntries<int>(Controller, GetItemDefinition(Instance), ("Count"), NewCount, OldCount);
-
-			Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
-
-			return true;
-		}
-
-		return false;
-	}
-
-	bool IncreaseItemCount(UObject* Controller, UObject* Definition, int Count) // stack
-	{
-		// For now, assume it's a consumable or ammo, and it can go higher than what we currently have.
-
-		if (Controller && Definition)
-		{
-			auto ItemInstances = GetItemInstances(Controller);
-			for (int j = 0; j < ItemInstances->Num(); j++)
-			{
-				auto ItemInstance = ItemInstances->At(j);
-
-				if (!ItemInstance)
-					continue;
-
-				auto CurrentDefinition = GetItemDefinition(ItemInstance);
-
-				if (CurrentDefinition == Definition)
-				{
-					IncreaseItemCountInstance(Controller, ItemInstance, Count);
-				}
-			}
-		}
-
-		return false;
-	}
-
-	// TODO: Change defintion to instance
-	bool DecreaseItemCount(UObject* Controller, UObject* Definition, int Count, __int64** OutItemEntry = nullptr)
-	{
-		if (Controller && Definition)
-		{
-			auto ItemInstances = GetItemInstances(Controller);
-
-			for (int j = 0; j < ItemInstances->Num(); j++)
-			{
-				auto ItemInstance = ItemInstances->At(j);
-
-				if (!ItemInstance)
-					continue;
-
-				auto CurrentDefinition = GetItemDefinition(ItemInstance);
-				if (CurrentDefinition == Definition)
-				{
-					auto ItemEntry = GetItemEntryFromInstance(ItemInstance);
-					auto CurrentCount = FFortItemEntry::GetCount(ItemEntry);
-
-					// std::cout << std::format("Item going to stack on count: {} Picking up item count: {}", *CurrentCount, Count) << '\n';
-					auto NewCount = *CurrentCount - Count;
-
-					if (NewCount < 0)
-						NewCount = 0;
-
-					*CurrentCount = NewCount;
-
-					ChangeItemInReplicatedEntries<int>(Controller, Definition, ("Count"), NewCount);
-
-					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
-
-					if (OutItemEntry)
-						*OutItemEntry = ItemEntry;
-
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
 	// RETURNS DEFINITION
 	UObject* TakeItem(UObject* Controller, const FGuid& Guid, int Count = 1, bool bDestroyIfEmpty = false) // Use this, this removes from a definition
 	{
@@ -966,7 +1166,7 @@ namespace Inventory
 
 		__int64* Entry = nullptr;
 
-		if (DecreaseItemCount(Controller, GetDefinitionFromGuid(Controller, Guid), Count, &Entry) && Entry) // it successfully decreased
+		if (DecreaseItemCount(Controller, FindItemInInventory(Controller, Guid), Count, &Entry) && Entry) // it successfully decreased
 		{
 			if (*FFortItemEntry::GetCount(Entry) == 0 && bDestroyIfEmpty)
 				RemoveItem(Controller, Guid);
@@ -974,21 +1174,24 @@ namespace Inventory
 		else
 			RemoveItem(Controller, Guid);
 
-		auto Pawn = Helper::GetPawnFromController(Controller);
-
-		if (Pawn && newSwapping)
+		if (newSwapping)
 		{
-			auto CurrentWeaponList = Pawn->Member<TArray<UObject*>>("CurrentWeaponList");
+			auto Pawn = Helper::GetPawnFromController(Controller);
 
-			if (CurrentWeaponList)
+			if (Pawn)
 			{
-				for (int i = 0; i < CurrentWeaponList->Num(); i++)
-				{
-					auto CurrentWeaponInList = CurrentWeaponList->At(i);
+				auto CurrentWeaponList = Pawn->Member<TArray<UObject*>>("CurrentWeaponList");
 
-					if (CurrentWeaponInList && (*CurrentWeaponInList->Member<FGuid>("ItemEntryGuid") == Guid))
+				if (CurrentWeaponList)
+				{
+					for (int i = 0; i < CurrentWeaponList->Num(); i++)
 					{
-						CurrentWeaponList->RemoveAt(i);
+						auto CurrentWeaponInList = CurrentWeaponList->At(i);
+
+						if (CurrentWeaponInList && (*CurrentWeaponInList->Member<FGuid>("ItemEntryGuid") == Guid))
+						{
+							CurrentWeaponList->RemoveAt(i);
+						}
 					}
 				}
 			}
@@ -997,59 +1200,75 @@ namespace Inventory
 		return FFortItemEntry::GetItemDefinition(Entry);
 	}
 
-	static UObject* GiveItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1, bool bDontCreateNewStack = false, bool* skunk = false) // Use this, it stacks if it finds an item, if not, then it adds
+	UObject* canStack(UObject* Controller, UObject* Definition)
+	{
+		UObject* ItemInstance = nullptr;
+
+		auto ItemInstances = GetItemInstances(Controller);
+		auto Pawn = Helper::GetPawnFromController(Controller);
+
+		std::vector<UObject*> InstancesOfItem;
+
+		for (int i = 0; i < ItemInstances->Num(); i++)
+		{
+			auto CurrentItemInstance = ItemInstances->At(i);
+
+			if (CurrentItemInstance && GetItemDefinition(CurrentItemInstance) == Definition)
+			{
+				InstancesOfItem.push_back(CurrentItemInstance);
+			}
+		}
+
+		if (InstancesOfItem.size() > 0)
+		{
+			auto MaxStackCount = *Definition->Member<int>(("MaxStackSize"));
+
+			// We need this skunked thing because if they have 2 full stacks and half a stack then we want to find the lowest stack and stack to there.
+			for (auto InstanceOfItem : InstancesOfItem)
+			{
+				if (InstanceOfItem)
+				{
+					auto ItemEntry = GetItemEntryFromInstance(InstanceOfItem);
+
+					if (ItemEntry)
+					{
+						auto currentCount = FFortItemEntry::GetCount(ItemEntry);
+
+						if (currentCount && *currentCount < MaxStackCount)
+						{
+							ItemInstance = InstanceOfItem;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		return ItemInstance;
+	}
+
+	// dont use bDidStack unless you know what ur doing
+	// TODO: Make bdontcreatenewstack as bAllowMultipleStacks
+	static UObject* GiveItem(UObject* Controller, UObject* Definition, EFortQuickBars Bars, int Slot, int Count = 1, bool bDontCreateNewStack = false, bool* skunk = false, UObject* ItemToStack = nullptr) // Use this, it stacks if it finds an item, if not, then it adds
 	{
 		if (Controller && Definition)
 		{
+			if (Slot == -1)
+				Slot = FnVerDouble >= 7.40 ? 0 : QuickBars::FindNextAvailableSlot(Controller, Bars);
+
 			static auto FortResourceItemDefinition = FindObject(("Class /Script/FortniteGame.FortResourceItemDefinition"));
 
 			if (Definition->IsA(FortResourceItemDefinition))
 				bDontCreateNewStack = true;
 
-			auto ItemInstances = GetItemInstances(Controller);
 			auto Pawn = Helper::GetPawnFromController(Controller);
 
-			UObject* ItemInstance = nullptr;
+			UObject* ItemInstance = ItemToStack ? ItemToStack : canStack(Controller, Definition);
 			int OverStack = 0;
 
-			if (ItemInstances)
 			{
-				std::vector<UObject*> InstancesOfItem;
-
-				for (int i = 0; i < ItemInstances->Num(); i++)
 				{
-					auto CurrentItemInstance = ItemInstances->At(i);
-
-					if (CurrentItemInstance && GetItemDefinition(CurrentItemInstance) == Definition)
-					{
-						InstancesOfItem.push_back(CurrentItemInstance);
-					}
-				}
-
-				if (InstancesOfItem.size() > 0)
-				{
-					auto MaxStackCount = *Definition->Member<int>(("MaxStackSize"));
-
-					// We need this skunked thing because if they have 2 full stacks and half a stack then we want to find the lowest stack and stack to there.
-					for (auto InstanceOfItem : InstancesOfItem)
-					{
-						if (InstanceOfItem)
-						{
-							auto ItemEntry = GetItemEntryFromInstance(InstanceOfItem);
-
-							if (ItemEntry)
-							{
-								auto currentCount = FFortItemEntry::GetCount(ItemEntry);
-
-								if (currentCount && *currentCount < MaxStackCount)
-								{
-									ItemInstance = InstanceOfItem;
-									break;
-								}
-							}
-						}
-					}
-
+					
 					if (ItemInstance)
 					{
 						auto ItemEntry = GetItemEntryFromInstance(ItemInstance);
@@ -1060,17 +1279,18 @@ namespace Inventory
 
 							if (currentCount)
 							{
-								OverStack = *currentCount + Count - MaxStackCount;
+								//			      3	      +   2   -      6       =   -1
+								OverStack = *currentCount + Count - *Definition->Member<int>(("MaxStackSize"));
 
 								// checks if it is going to overstack, if it is then we subtract the incoming count by the overstack, but its not then we just use the incoming count.
 								int AmountToStack = OverStack > 0 ? Count - OverStack : Count;
 
-								std::cout << ("MaxStackCount: ") << MaxStackCount << '\n';
+								// std::cout << ("MaxStackCount: ") << MaxStackCount << '\n';
 								std::cout << ("OverStack: ") << OverStack << '\n';
 								std::cout << ("AmountToStack: ") << AmountToStack << '\n';
 								std::cout << ("currentCount: ") << *currentCount << '\n';
 
-								IncreaseItemCountInstance(Controller, ItemInstance, AmountToStack);
+								IncreaseItemCount(Controller, ItemInstance, AmountToStack);
 
 								if (skunk)
 									*skunk = false;
@@ -1086,14 +1306,11 @@ namespace Inventory
 				}
 			}
 
-			// If someway, the count is bigger than the MaxStackSize, and there is nothing to stack on, then it will not create 2 items.
-			std::string FullName = Definition->GetFullName();
-			if (FullName.contains("CarminePack") || FullName.contains("AshtonRockItemDef")) {
-				Carmine::HandleCarmine(Controller);
-				UObject* item = CreateAndAddItem(Controller, FindObject("/Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack"), Bars, Slot, OverStack);
+			// std::cout << ("count: ") << Count << '\n';
+			// std::cout << ("OverStack: ") << OverStack << '\n';
 
-				Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(item));
-			}
+			// If someway, the count is bigger than the MaxStackSize, and there is nothing to stack on, then it will not create 2 items.
+
 			if (!ItemInstance || (OverStack > 0 && !bDontCreateNewStack))
 			{
 				if (OverStack > 0)
@@ -1113,7 +1330,9 @@ namespace Inventory
 
 	void GiveAllAmmo(UObject* Controller)
 	{
-		if (Engine_Version < 420) // wrong I think
+		// omfg
+
+		/* if (Engine_Version < 420) // wrong I think // i think im stupid idk wtf this is for
 		{
 			static UObject* AthenaAmmoDataRockets = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
 			static UObject* AthenaAmmoDataShells = FindObject(("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
@@ -1127,7 +1346,7 @@ namespace Inventory
 			CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 999);
 			CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 999);
 		}
-		else
+		else */
 		{
 			static UObject* AthenaAmmoDataRockets = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
 			static UObject* AthenaAmmoDataShells = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
@@ -1179,10 +1398,19 @@ namespace Inventory
 		CreateAndAddItem(Controller, EditTool, EFortQuickBars::Primary, 0, 1);
 		GiveBuildings(Controller);
 	}
+
+	__int64* GetEntryFromWeapon(UObject* Controller, UObject* Weapon)
+	{
+		auto instance = Inventory::GetItemInstanceFromGuid(Controller, *Weapon->Member<FGuid>("ItemEntryGuid")); // ahhhhhhhhhhhhhh
+		return GetItemEntryFromInstance(instance);
+	}
 }
 
 inline bool ServerExecuteInventoryItemHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
+	// if (FnVerDouble < 16.00)
+	// if (curtretwnapon != fguaid) ret
+
 	Inventory::EquipInventoryItem(Controller, *(FGuid*)Parameters);
 
 	return false;
@@ -1196,13 +1424,28 @@ inline bool ServerExecuteInventoryWeaponHook(UObject* Controller, UFunction* Fun
 	{
 		auto Pawn = Helper::GetPawnFromController(Controller);
 		auto Guid = *(*Weapon)->Member<FGuid>(("ItemEntryGuid"));
-		auto Def = *(*Weapon)->Member<UObject*>(("WeaponData"));
+		auto Def = Helper::GetWeaponData(*Weapon);
 
 		int Ammo = 0; // TODO: implmeent
+
+		// Inventory::EquipInventoryItem(Controller, Guid); // "hacky" // this doesjnt work maybe
+
 		if (Def)
+		{
 			Inventory::EquipWeaponDefinition(Pawn, Def, Guid, Ammo); // scuffed
-		else
-			std::cout << ("No Def!\n");
+
+			/* static auto ClientGivenTo = (*Weapon)->Function("ClientGivenTo");
+
+			if (ClientGivenTo)
+				(*Weapon)->ProcessEvent(ClientGivenTo, &Pawn);
+
+			static auto ClientInternalEquipWeapon = Pawn->Function("ClientInternalEquipWeapon");
+
+			struct { UObject* Weapon; } ClientInternalEquipWeapon_Params{ (*Weapon) };
+
+			if (ClientInternalEquipWeapon)
+				Pawn->ProcessEvent(ClientInternalEquipWeapon, &ClientInternalEquipWeapon_Params); */
+		}
 	}
 	else
 		std::cout << ("No weapon?\n");
@@ -1217,19 +1460,35 @@ inline bool ServerAttemptInventoryDropHook(UObject* Controller, UFunction* Funct
 		struct AFortPlayerController_ServerAttemptInventoryDrop_Params
 		{
 			FGuid                                       ItemGuid;                                                 // (Parm, ZeroConstructor, IsPlainOldData)
-			int                                                Count;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
+			int                                         Count;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
 		};
 
 		auto Params = (AFortPlayerController_ServerAttemptInventoryDrop_Params*)Parameters;
 
+		auto instance = Inventory::GetItemInstanceFromGuid(Controller, Params->ItemGuid); // ahhhhhhhhhhhhhh
+
+		if (!instance)
+		{
+			std::cout << "Player is attempting to drop an item that they do not have!\n";
+			return false;
+		}
+
+		if (Params->Count > *Inventory::GetCount(instance))
+		{
+			std::cout << "Player is attempting to drop an amount of items that they do not have!\n";
+			return false;
+		}
+
+		auto ammo = *FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(instance));
+		// std::cout << "ammo: " << ammo << '\n';
 		auto Definition = Inventory::TakeItem(Controller, Params->ItemGuid, Params->Count, true);
 		auto Pawn = Helper::GetPawnFromController(Controller);
 
 		if (Pawn)
 		{
 			auto loc = Helper::GetActorLocation(Pawn);
-
-			auto Pickup = Helper::SummonPickup(Pawn, Definition, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count);
+			std::cout << "ammo: " << ammo << '\n';
+;			auto Pickup = Helper::SummonPickup(Pawn, Definition, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Params->Count, true, false, ammo);
 		}
 	}
 
@@ -1242,93 +1501,119 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 	{
 		struct AFortPlayerPawn_ServerHandlePickup_Params
 		{
-			UObject* Pickup;
-			float InFlyTime;
-			FVector InStartDirection;
-			bool bPlayPickupSound;
+			UObject* Pickup;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+			float                                              InFlyTime;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+			FVector                                     InStartDirection;                                         // (ConstParm, Parm, ZeroConstructor, IsPlainOldData)
+			bool                                               bPlayPickupSound;                                         // (Parm, ZeroConstructor, IsPlainOldData)
 		};
 
 		auto Params = (AFortPlayerPawn_ServerHandlePickup_Params*)Parameters;
 
-		if (Params->Pickup && Pawn)
+		if (Params->Pickup && Pawn && basicLocationCheck(Pawn, Params->Pickup, 500.f))
 		{
+			FVector InStartDirection;
+			float InFlyTime = 1.f;
+
+			if (FnVerDouble >= 16)
+			{
+				auto PickupInfo = (__int64*)(__int64(Params) + 8);
+
+				static auto InStartDirectionOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPickupRequestInfo", "Direction");
+				static auto FlyTimeOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortPickupRequestInfo", "FlyTime");
+
+				auto inStartDirection = (FVector*)(__int64(PickupInfo) + InStartDirectionOffset);
+				auto flyTime = (float*)(__int64(PickupInfo) + FlyTimeOffset);
+
+				if (inStartDirection)
+					InStartDirection = *inStartDirection;
+
+				if (flyTime)
+					InFlyTime = *flyTime;
+			}
+			else
+			{
+				InStartDirection = Params->InStartDirection;
+				InFlyTime = Params->InFlyTime;
+			}
+
 			bool* bPickedUp = Params->Pickup->Member<bool>(("bPickedUp"));
-			auto Controller = *Pawn->Member<UObject*>(("Controller"));
+			auto Controller = *Pawn->CachedMember<UObject*>(("Controller"));
 
 			if (bPickedUp && !*bPickedUp && Controller)
 			{
-				auto PrimaryPickupItemEntry = Params->Pickup->Member<__int64>(("PrimaryPickupItemEntry"));
+				auto PrimaryPickupItemEntry = Params->Pickup->CachedMember<__int64>(("PrimaryPickupItemEntry"));
 				static auto ItemDefinitionOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
 				static auto CountOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("Count"));
+
+				// auto SwappinDef = *(*Controller)->Member<UObject*>(("SwappingItemDefinition")); // This is the same tihng as the pickup
 
 				auto Definition = (UObject**)(__int64(&*PrimaryPickupItemEntry) + ItemDefinitionOffset);
 				auto Count = (int*)(__int64(&*PrimaryPickupItemEntry) + CountOffset);
 
 				auto ItemInstances = Inventory::GetItemInstances(Controller);
 
-				bool shouldGoInSecondaryBar = QuickBars::WhatQuickBars(*Definition) == EFortQuickBars::Secondary;
+				// kms (TODO: Check GetNumQuickBarSlots)
+				
+				auto quickBarsToGoIn = QuickBars::WhatQuickBars(*Definition);
+				bool shouldGoInSecondaryBar = quickBarsToGoIn == EFortQuickBars::Secondary;
 
 				bool bShouldSwap = false;
+				int slotToGoInto = -1;
 
 				// TODO: For >7.40 check all quickbar slots until we find a empty one.
 
 				if (!shouldGoInSecondaryBar)
 				{
-					int PrimaryQuickBarSlotsFilled = 0;
-
-					for (int i = 0; i < ItemInstances->Num(); i++)
+					if (FnVerDouble >= 7.40)
 					{
-						auto ItemInstance = ItemInstances->At(i);
+						int PrimaryQuickBarSlotsFilled = 0;
 
-						if (!ItemInstance)
-							break;
+						for (int i = 0; i < ItemInstances->Num(); i++)
+						{
+							auto ItemInstance = ItemInstances->At(i);
 
-						auto Definition = Inventory::GetItemDefinition(ItemInstance);
+							if (!ItemInstance)
+								break;
 
-						if (QuickBars::WhatQuickBars(Definition) == EFortQuickBars::Primary)
-							PrimaryQuickBarSlotsFilled++;
+							auto Definition = Inventory::GetItemDefinition(ItemInstance);
+
+							if (QuickBars::WhatQuickBars(Definition) == EFortQuickBars::Primary)
+								PrimaryQuickBarSlotsFilled++;
+						}
+
+						bShouldSwap = (PrimaryQuickBarSlotsFilled -= 6) >= 5; // so for some reason the primary quickbar are 11 with a full primary quickbar
 					}
-
-					bShouldSwap = (PrimaryQuickBarSlotsFilled -= 6) >= 5; // so for some reason the primary quickbar are 11 with a full primary quickbar
+					else
+					{
+						slotToGoInto = QuickBars::FindNextAvailableSlot(Controller, quickBarsToGoIn);
+						bShouldSwap = slotToGoInto == -1;
+					}
 				}
 
-				// std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
+				auto ItemToStackInto = Inventory::canStack(Controller, *Definition);
+				bShouldSwap = bShouldSwap && !ItemToStackInto;
+
+				auto incomingPickups = Pawn->Member<TArray<UObject*>>("IncomingPickups");
+
+				if (bShouldSwap && (QuickBars::IsHoldingPickaxe(Controller)
+					/* || incomingPickups->Num() >= 1) */)) // we should also check if the pickup is stackable, then it doesnt coutn but thats too complicated and slow so
+					return false;
+
+				incomingPickups->Add(Params->Pickup);
+
+				// *Controller->Member<UObject*>("SwappingItemDefinition") = bShouldSwap ? currentitem : nullptr;
 
 				bool bSucceededSwap = true;
 
-				auto CurrentWeapon = (*Pawn->Member<UObject*>(("CurrentWeapon")));
-				auto HeldWeaponDef = *CurrentWeapon->Member<UObject*>(("WeaponData"));
-
-				bool bDidStack = false;
-
-				UObject* newInstance = nullptr;
-
-				if (Definition && *Definition && Count)
-				{
-					newInstance = Inventory::GiveItem(Controller, *Definition, EFortQuickBars::Primary, 1, *Count, &bDidStack); // TODO: Figure out what quickbars are supposed to be used.
-					Helper::EnablePickupAnimation(Pawn, Params->Pickup, /* Params->InFlyTime */ 0.75f, Params->InStartDirection);
-				}
-
-				if (bShouldSwap && !bDidStack)
-				{
-					static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-
-					if (HeldWeaponDef != PickaxeDef) // ahh
-					{
-						Inventory::RemoveItem(Controller, *CurrentWeapon->Member<FGuid>(("ItemEntryGuid")));
-						auto loc = Helper::GetActorLocation(Pawn);
-
-						auto DroppedPickup = Helper::SummonPickup(Pawn, HeldWeaponDef, loc, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, 1);
-					}
-					else
-						bSucceededSwap = false;
-				}
+				Helper::EnablePickupAnimation(Pawn, Params->Pickup, InFlyTime, InStartDirection);
 
 				if (bSucceededSwap)
 				{
+					// auto AthenaPickupManager = *AthenaHUD->Member<UObject*>("AthenaPickupManager");
+
 					*bPickedUp = true;
 
-					static auto bPickedUpFn = Params->Pickup->Function(("OnRep_bPickedUp"));
+					static auto bPickedUpFn = Params->Pickup->Function(("OnRep_bPickedUp")); 
 
 					if (bPickedUpFn)
 						Params->Pickup->ProcessEvent(bPickedUpFn);
@@ -1340,15 +1625,68 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 	return false;
 }
 
+inline bool ServerCombineInventoryItemsHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	struct ServerCombineInventoryItems_Params { FGuid TargetItemGuid; FGuid SourceItemGuid; };
+
+	auto Params = (ServerCombineInventoryItems_Params*)Parameters;
+
+	if (Params && Controller)
+	{
+		auto TargetInstance = Inventory::GetItemInstanceFromGuid(Controller, Params->TargetItemGuid); // the item we are combining into
+		auto SourceInstance = Inventory::GetItemInstanceFromGuid(Controller, Params->SourceItemGuid); // the item we are going to be taking from
+
+		if (!TargetInstance || !SourceInstance)
+			return false;
+
+		auto TargetDefinition = Inventory::GetItemDefinition(TargetInstance);
+		auto SourceDefinition = Inventory::GetItemDefinition(SourceInstance);
+
+		if (TargetDefinition != SourceDefinition)
+			return false;
+
+		auto TargetCount = Inventory::GetCount(TargetInstance);
+		auto SourceCount = Inventory::GetCount(SourceInstance);
+
+		if (!TargetCount || !SourceCount)
+			return false;
+
+		auto MaxStackCount = *TargetDefinition->Member<int>(("MaxStackSize"));
+
+		// dont ask how i made these bools up idfk
+
+		auto AmountToTake = MaxStackCount - *TargetCount;
+
+		auto bool1 = *TargetCount + AmountToTake <= MaxStackCount;
+		auto bool2 = *SourceCount <= *TargetCount;
+		auto bool3 = *SourceCount > AmountToTake;
+
+		bool bDestroySource = bool1 && bool2;
+
+		if (bool3 || !bDestroySource)
+		{
+			Inventory::DecreaseItemCount(Controller, SourceInstance, AmountToTake);
+			Inventory::IncreaseItemCount(Controller, TargetInstance, AmountToTake);
+		}
+		else
+		{
+			Inventory::RemoveItem(Controller, Inventory::GetItemGuid(SourceInstance));
+			Inventory::IncreaseItemCount(Controller, TargetInstance, *SourceCount);
+		}
+	}
+
+	return false;
+}
+
 inline bool ServerHandlePickupWithSwapHook(UObject* Pawn, UFunction* Function, void* Parameters)
 {
 	struct AFortPlayerPawn_ServerHandlePickupWithSwap_Params
 	{
-		UObject* Pickup;
-		FGuid Swap;
-		float InFlyTime;
-		FVector InStartDirection;
-		bool bPlayPickupSound;
+		UObject* Pickup;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+		FGuid                                       Swap;                                                     // (Parm, ZeroConstructor, IsPlainOldData)
+		float                                              InFlyTime;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+		FVector                                     InStartDirection;                                         // (ConstParm, Parm, ZeroConstructor, IsPlainOldData)
+		bool                                               bPlayPickupSound;                                         // (Parm, ZeroConstructor, IsPlainOldData)
 	};
 	auto Params = (AFortPlayerPawn_ServerHandlePickupWithSwap_Params*)Parameters;
 
@@ -1358,7 +1696,7 @@ inline bool ServerHandlePickupWithSwapHook(UObject* Pawn, UFunction* Function, v
 
 		if (bPickedUp && !*bPickedUp)
 		{
-			auto Controller = Pawn->Member<UObject*>(("Controller"));
+			auto Controller = Pawn->CachedMember<UObject*>(("Controller"));
 
 			auto PrimaryPickupItemEntry = Params->Pickup->Member<__int64>(("PrimaryPickupItemEntry"));
 			static auto ItemDefinitionOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
@@ -1369,19 +1707,19 @@ inline bool ServerHandlePickupWithSwapHook(UObject* Pawn, UFunction* Function, v
 
 			struct
 			{
-				FGuid ItemGuid;
-				int Count;
-			} dropParams{ Params->Swap, 1 };
+				FGuid                                       ItemGuid;                                                 // (Parm, ZeroConstructor, IsPlainOldData)
+				int                                                Count;                                                    // (Parm, ZeroConstructor, IsPlainOldData)
+			} dropParams{ Params->Swap, 1 }; // (*Pawn->Member<UObject*>(("CurrentWeapon"))};
 
 			ServerAttemptInventoryDropHook(*Controller, nullptr, &dropParams);
 
 			struct
 			{
-				UObject* Pickup;
-				float InFlyTime;
-				FVector InStartDirection;
-				bool bPlayPickupSound;
-			} pickupParams{ Params->Pickup, Params->InFlyTime, Params->InStartDirection, Params->bPlayPickupSound };
+				UObject* Pickup;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+				float                                              InFlyTime;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+				FVector                                     InStartDirection;                                         // (ConstParm, Parm, ZeroConstructor, IsPlainOldData)
+				bool                                               bPlayPickupSound;                                         // (Parm, ZeroConstructor, IsPlainOldData)
+			} pickupParams{Params->Pickup, Params->InFlyTime, Params->InStartDirection, Params->bPlayPickupSound};
 
 			ServerHandlePickupHook(Pawn, nullptr, &pickupParams);
 		}
@@ -1390,23 +1728,63 @@ inline bool ServerHandlePickupWithSwapHook(UObject* Pawn, UFunction* Function, v
 	return false;
 }
 
-void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // nova go brr
+bool rettrue(void* a1)
 {
-	if (!Weapon || bIsPlayground)
+	return true;
+}
+
+void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
+{
+	std::cout << "wtf!\n";
+
+	if (!Weapon)
 		return;
+
+	/* static auto addr = FindPattern("48 89 5C 24 ? 57 48 83 EC 20 48 8B F9 E8 ? ? ? ? 48 8B D8 48 85 C0 74 32 E8 ? ? ? ? 48 8B 4B 10 48 83 C0 30 48 63 50 08 3B 51 38 7F 1C 48 8B 49 30 48 39 04 D1");
+
+	__int64 (*fortnite)(UObject* wep);
+
+	fortnite = decltype(fortnite)(addr);
+
+	auto idk = (__int64*)fortnite(Weapon);
+
+	auto Controller = (UObject*)(__int64(idk) - 0x688);
+
+	auto pawnbnseghwea = idk;
+
+	// std::cout << "OG: " << std::to_string(*(char*)(pawnbnseghwea - 0x570)) << '\n';
+	// *(char*)(pawnbnseghwea - 0x570) = 2;
+
+	std::cout << "+ 88: " << __int64((*(uintptr_t*)(idk + 88)) - (uintptr_t)GetModuleHandleW(0)) << '\n';
+	std::cout << "+ 160: " << __int64((*(uintptr_t*)(idk + 160)) - (uintptr_t)GetModuleHandleW(0)) << '\n'; */
 
 	static auto GetOwner = Weapon->Function(("GetOwner"));
 	UObject* Pawn;
 	Weapon->ProcessEvent(GetOwner, &Pawn);
 
 	if (!Pawn)
+	{
+		std::cout << "Unable to get weapon for pawn, this should not happen.\n";
 		return;
+	}
 
-	auto PlayerController = *Pawn->Member<UObject*>(("Controller"));
+	std::cout << "wtfa!\n";
+
+	auto PlayerController = *Pawn->CachedMember<UObject*>(("Controller"));
 
 	if (PlayerController)
 	{
-		auto WeaponData = *Weapon->Member<UObject*>(("WeaponData"));
+		auto WeaponGuidPtr = Weapon->CachedMember<FGuid>("ItemEntryGuid");
+
+		if (!WeaponGuidPtr) // i hate u vehicles
+			return;
+
+		auto WeaponGuid = *WeaponGuidPtr;
+
+		auto WeaponItemEntry = GetItemEntryFromInstance(Inventory::FindItemInInventory(PlayerController, WeaponGuid));
+
+		auto WeaponData = Helper::GetWeaponData(Weapon);
+
 		static auto GetAmmoWorldItemDefinition_BP = WeaponData->Function(("GetAmmoWorldItemDefinition_BP"));
 		UObject* AmmoDef = nullptr;
 
@@ -1416,37 +1794,264 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove) // n
 		if (!AmmoDef || WeaponData->GetName().contains("TID"))
 			AmmoDef = WeaponData;
 
-		__int64* ItemEntry = nullptr;
+		__int64* AmmoEntry = nullptr;
 
-		Inventory::DecreaseItemCount(PlayerController, AmmoDef, AmountToRemove, &ItemEntry);
+		auto instance = Inventory::FindItemInInventory(PlayerController, AmmoDef);
+		AmmoEntry = GetItemEntryFromInstance(instance);
 
-		if (ItemEntry)
+		if (AmmoEntry)
 		{
-			if (*FFortItemEntry::GetCount(ItemEntry) <= 0) // Destroy the item if it has no count
+			// *FFortItemEntry::GetCount(ItemEntry) -= AmountToRemove;
+			// *FFortItemEntry::GetLoadedAmmo(ItemEntry) += AmountToRemove;
+			// *Weapon->Member<int>("AmmoCount") += AmountToRemove;
+
+			HandleReloadCost(Weapon, AmountToRemove);
+
+			auto WeaponLoadedAmmo = FFortItemEntry::GetLoadedAmmo(WeaponItemEntry);
+			auto WeaponAmmoCount = Weapon->Member<int>("AmmoCount");
+
+			std::cout << "wep ammo: " << *WeaponAmmoCount << '\n';
+			std::cout << "WEaponLoadedAMmo: " << *WeaponLoadedAmmo << '\n';
+
+			*WeaponLoadedAmmo = *WeaponAmmoCount;
+			setBitfield(Weapon, "bUpdateLocalAmmoCount", true);
+
+			Inventory::Update(PlayerController, -1, true, (FFastArraySerializerItem*)WeaponItemEntry);
+
+			Inventory::GetWorldInventory(PlayerController)->ProcessEvent("ForceNetUpdate");
+
+			if (bIsPlayground)
+				return;
+
+			Inventory::DecreaseItemCount(PlayerController, instance, AmountToRemove, &AmmoEntry);
+
+			if (AmmoEntry)
 			{
-				Inventory::RemoveItem(PlayerController, *FFortItemEntry::GetGuid(ItemEntry));
+				auto ammocounnt = FFortItemEntry::GetCount(AmmoEntry);
+
+				if (ammocounnt && *ammocounnt <= 0) // Destroy the item if it has no count
+				{
+					Inventory::RemoveItem(PlayerController, *FFortItemEntry::GetGuid(AmmoEntry));
+				}
+			}
+		}
+	}
+	else
+	{
+		std::cout << "Unable to get controller from pawn, this should not happen.\n";
+	}
+}
+
+// auto picks up ammo when dropped idk why
+inline bool OnCapsuleBeginOverlapHook(UObject* Pawn, UFunction* Function, void* Parameters) // this is for like consumables
+{
+	if (Pawn)
+	{
+		struct PartOfTheArgs { UObject* OverlappedComp; UObject* OtherActor; };
+
+		auto Params = (PartOfTheArgs*)Parameters;
+
+		auto Pickup = Params->OtherActor;
+
+		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena"));
+
+		if (Pickup && Pickup->IsA(PickupClass)) // can it be anything other?
+		{
+			struct
+			{
+				UObject* Pickup;                                                   // (Parm, ZeroConstructor, IsPlainOldData)
+				float                                              InFlyTime;                                                // (Parm, ZeroConstructor, IsPlainOldData)
+				FVector                                     InStartDirection;                                         // (ConstParm, Parm, ZeroConstructor, IsPlainOldData)
+				bool                                               bPlayPickupSound;                                         // (Parm, ZeroConstructor, IsPlainOldData)
+			} AFortPlayerPawn_ServerHandlePickup_Params{Pickup, 0.75f, FVector(), true};
+
+			ServerHandlePickupHook(Pawn, nullptr,&AFortPlayerPawn_ServerHandlePickup_Params);
+		}
+	}
+
+	return false;
+}
+
+inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, void* Parameters)
+{
+	static auto ReceiveEndPlayFunc = FindObject("Function /Script/Engine.Actor.ReceiveEndPlay");
+	static auto OnAboutToEnterBackpackFunc = FindObject("Function /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Parent.B_Pickups_Parent_C.OnAboutToEnterBackpack");
+	static auto PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena"));
+
+	UObject* Pawn = nullptr;
+	UObject* Pickup = nullptr;
+
+	if (func == ReceiveEndPlayFunc && PickupEffect->IsA(PickupClass))
+	{
+		Pickup = PickupEffect; 
+
+		auto PickupLocationData = Pickup->Member<FFortPickupLocationData>("PickupLocationData");
+
+		Pawn = PickupLocationData->ItemOwner;
+	}
+
+	else if (func == OnAboutToEnterBackpackFunc)
+	{
+		Pawn = *(UObject**)(Parameters);
+		Pickup = Helper::GetOwner(PickupEffect);
+	}
+
+	if (Pawn && Pickup)
+	{
+		auto Controller = *Pawn->CachedMember<UObject*>("Controller");
+
+		auto PrimaryPickupItemEntry = Pickup->CachedMember<__int64>(("PrimaryPickupItemEntry"));
+		static auto ItemDefinitionOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
+		static auto CountOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("Count"));
+
+		auto Definition = (UObject**)(__int64(&*PrimaryPickupItemEntry) + ItemDefinitionOffset);
+		auto Count = (int*)(__int64(&*PrimaryPickupItemEntry) + CountOffset);
+
+		auto ItemInstances = Inventory::GetItemInstances(Controller);
+
+		auto quickBarsToGoIn = QuickBars::WhatQuickBars(*Definition);
+		bool shouldGoInSecondaryBar = quickBarsToGoIn == EFortQuickBars::Secondary;
+
+		bool bShouldSwap = false;
+		int slotToGoInto = -1;
+
+		// TODO: For >7.40 check all quickbar slots until we find a empty one.
+
+		if (!shouldGoInSecondaryBar)
+		{
+			if (FnVerDouble >= 7.40)
+			{
+				int PrimaryQuickBarSlotsFilled = 0;
+
+				for (int i = 0; i < ItemInstances->Num(); i++)
+				{
+					auto ItemInstance = ItemInstances->At(i);
+
+					if (!ItemInstance)
+						break;
+
+					auto Definition = Inventory::GetItemDefinition(ItemInstance);
+
+					if (QuickBars::WhatQuickBars(Definition) == EFortQuickBars::Primary)
+						PrimaryQuickBarSlotsFilled++;
+				}
+
+				bShouldSwap = (PrimaryQuickBarSlotsFilled -= 6) >= 5; // so for some reason the primary quickbar are 11 with a full primary quickbar
+			}
+			else
+			{
+				slotToGoInto = QuickBars::FindNextAvailableSlot(Controller, quickBarsToGoIn);
+				bShouldSwap = slotToGoInto == -1;
 			}
 		}
 
-		return HandleReloadCost(Weapon, AmountToRemove);
+		bool bSucceededSwap = true;
+
+		auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
+		auto HeldWeaponDef = Helper::GetWeaponData(CurrentWeapon);
+
+		bool bDidStack = false;
+
+		UObject* newInstance = nullptr;
+
+		auto ItemToStackInto = Inventory::canStack(Controller, *Definition);
+		bShouldSwap = bShouldSwap && !ItemToStackInto;
+
+		auto incomingPickups = Pawn->Member<TArray<UObject*>>("IncomingPickups");
+
+		if (bShouldSwap && QuickBars::IsHoldingPickaxe(Controller))
+			return false;
+
+		if (Definition && *Definition && Count)
+		{
+			auto quickBarsItemShouldGoIn = QuickBars::WhatQuickBars(*Definition);
+
+			newInstance = Inventory::GiveItem(Controller, *Definition, quickBarsItemShouldGoIn, slotToGoInto, *Count, &bDidStack, nullptr, ItemToStackInto);
+
+			// Inventory::GetWorldInventory(Controller)->Member<TArray<UObject*>>("PendingInstances")->Add(newInstance);
+
+			if (newInstance)
+			{
+				// the below crashes sometimes
+
+				auto newItemLoadedAmmo = FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(newInstance));
+
+				if (newItemLoadedAmmo)
+				{
+					auto pickupLoadedAmmo = FFortItemEntry::GetLoadedAmmo(PrimaryPickupItemEntry);
+
+					if (pickupLoadedAmmo)
+						*newItemLoadedAmmo = *pickupLoadedAmmo;
+				}
+			}
+
+		}
+		else
+		{
+			std::cout << "Detected invalid ptr!\n";
+			std::cout << "Def: " << Definition << '\n';
+			if (Definition)
+				std::cout << "Def Deref: " << *Definition << '\n';
+			std::cout << "Count: " << Count << '\n';
+		}
+
+		if (bShouldSwap && !bDidStack)
+		{
+			auto Entry = Inventory::GetEntryFromWeapon(Controller, CurrentWeapon);
+
+			auto HeldWeaponAmmo = FFortItemEntry::GetLoadedAmmo(Entry); // *CurrentWeapon->Member<int>("AmmoCount");
+			auto OldCount = FFortItemEntry::GetCount(Entry);
+
+			if (OldCount && HeldWeaponAmmo)
+			{
+				Inventory::RemoveItem(Controller, *CurrentWeapon->CachedMember<FGuid>(("ItemEntryGuid")));
+
+				auto DroppedPickup = Helper::SummonPickup(Pawn, HeldWeaponDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Player,
+					EFortPickupSpawnSource::Unset, *OldCount, true, false, *HeldWeaponAmmo);
+
+				if (bShouldSwap && Definition)
+				{
+					Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(newInstance));
+					// Inventory::EquipWeaponDefinition(Pawn, *Definition, Inventory::GetItemGuid(newInstance));
+				}
+			}
+		}
 	}
 
-	return;
+	return false;
 }
 
 void InitializeInventoryHooks()
 {
+	// AddHook("Function /Script/FortniteGame.FortPlayerPawn.OnCapsuleBeginOverlap", OnCapsuleBeginOverlapHook);
 	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
+	AddHook("Function /Script/FortniteGame.FortPlayerController.ServerCombineInventoryItems", ServerCombineInventoryItemsHook);
 
 	if (Engine_Version >= 423 && FnVerDouble < 16.00)
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
 
-	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
-	AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"), ServerHandlePickupHook);
+	if (FnVerDouble >= 7)
+		AddHook("Function /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Parent.B_Pickups_Parent_C.OnAboutToEnterBackpack", OnAboutToEnterBackpackHook);
+	else
+		AddHook("Function /Script/Engine.Actor.ReceiveEndPlay", OnAboutToEnterBackpackHook); //  Function /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups.B_Pickups_C.ReceiveDestroyed
+
+	if (Engine_Version >= 420)
+		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);
+	else
+		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerSpawnInventoryDrop"), ServerAttemptInventoryDropHook);
 
 	if (FnVerDouble >= 7.40)
 	{
 		AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupWithSwap"), ServerHandlePickupWithSwapHook);
+	}
+
+	if (FnVerDouble >= 13) // idk
+	{
+		AddHook("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickupInfo", ServerHandlePickupHook);
+	}
+	else
+	{
+		AddHook(("Function /Script/FortniteGame.FortPlayerPawn.ServerHandlePickup"), ServerHandlePickupHook);
 	}
 
 	if (HandleReloadCost)
@@ -1472,9 +2077,14 @@ void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 		{
 			auto CurrentItemInstance = ItemInstances->At(i);
 
-			if (!CurrentItemInstance || CurrentItemInstance->IsA(BuildingItemData_Wall) || CurrentItemInstance->IsA(BuildingItemData_Floor) || CurrentItemInstance->IsA(BuildingItemData_Stair_W) ||
-				CurrentItemInstance->IsA(BuildingItemData_RoofS) || (bTakePickaxe ? false : Inventory::GetItemDefinition(CurrentItemInstance) == PickaxeDef))
+			// bCanBeDropped
+
+			if (!CurrentItemInstance || !readBitfield(CurrentItemInstance, "bCanBeDropped"))
 				continue;
+
+			/* if (!CurrentItemInstance || CurrentItemInstance->IsA(BuildingItemData_Wall) || CurrentItemInstance->IsA(BuildingItemData_Floor) || CurrentItemInstance->IsA(BuildingItemData_Stair_W) ||
+				CurrentItemInstance->IsA(BuildingItemData_RoofS) || (bTakePickaxe ? false : Inventory::GetItemDefinition(CurrentItemInstance) == PickaxeDef))
+				continue; */
 
 			Inventory::TakeItem(Controller, Inventory::GetItemGuid(CurrentItemInstance), *FFortItemEntry::GetCount(GetItemEntryFromInstance(CurrentItemInstance)), true);
 		}

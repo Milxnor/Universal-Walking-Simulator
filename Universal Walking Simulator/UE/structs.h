@@ -8,6 +8,7 @@
 #include <format>
 #include <iostream>
 #include <chrono>
+#include <unordered_map>
 #include <thread>
 
 #include "other.h"
@@ -112,7 +113,8 @@ public:
 
 		if (Data)
 		{
-			Data[ArrayNum] = New;
+			memcpy_s((ElementType*)(__int64(Data) + (ArrayNum * Size)), Size, (void*)&New, Size);
+			// Data[ArrayNum] = New;
 			++ArrayNum;
 			++ArrayMax;
 			return ArrayNum; // - 1;
@@ -171,17 +173,21 @@ public:
 		RemoveAtSwapImpl(Index, 1, true);
 	}
 
-	inline bool RemoveAt(const int Index) // NOT MINE
+	inline bool RemoveAt(const int Index) // , int Size = sizeof(ElementType)) // NOT MINE
 	{
 		if (Index < ArrayNum)
 		{
 			if (Index != ArrayNum - 1)
+			{
+				// memcpy_s((ElementType*)(__int64(Data) + (Index * Size)), Size, (ElementType*)(__int64(Data) + ((ArrayNum - 1) * Size)), Size);
 				Data[Index] = Data[ArrayNum - 1];
+			}
 
 			--ArrayNum;
 
 			return true;
 		}
+
 		return false;
 	};
 
@@ -492,8 +498,11 @@ struct UObject // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12ae4
 	}
 
 	// protected:
+	template <typename MemberType = UObject*>
+	INL MemberType* Member(const std::string& MemberName); // DONT USE FOR SCRIPTSTRUCTS
+
 	template <typename MemberType>
-	INL MemberType* Member(const std::string& MemberName, int BitFieldVal = 0); // DONT USE FOR SCRIPTSTRUCTS
+	INL MemberType* CachedMember(const std::string& MemberName);
 
 	// ONLY USE IF YOU KNOW WHAT UR DOING
 	template <typename MemberType>
@@ -510,6 +519,8 @@ struct UFunction : UObject
 	std::vector<int> GetAllParamOffsets();
 
 	unsigned short GetParmsSize();
+
+	void* GetFunc();
 };
 
 
@@ -614,13 +625,20 @@ static UObject* (*StaticLoadObjectO)(
 	);
 
 // Class and name are required
-static UObject* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name)
+template <typename T = UObject>
+static T* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name)
 {
 	if (!StaticLoadObjectO)
 		return nullptr;
 
 	auto Name = std::wstring(name.begin(), name.end()).c_str();
-	return StaticLoadObjectO(Class, Outer, Name, nullptr, 0, nullptr, false, nullptr);
+	return (T*)StaticLoadObjectO(Class, Outer, Name, nullptr, 0, nullptr, false, nullptr);
+}
+
+template <typename ReturnType = UObject>
+static ReturnType* LoadObject(UObject* Class, UObject* Outer, const std::string& name)
+{
+	return StaticLoadObject<ReturnType>(Class, Outer, name.substr(name.find(" ") + 1));
 }
 
 template <typename ReturnType = UObject>
@@ -986,7 +1004,7 @@ int LoopMembersAndFindOffset(UObject* Object, const std::string& MemberName, int
 			return Prop->Offset_Internal;
 	}
 	else {
-		return 0;
+		return -1;
 	}
 }
 
@@ -1041,7 +1059,7 @@ static int GetOffset(UObject* Object, const std::string& MemberName)
 		// std::cout << std::format(("Either invalid object or MemberName. MemberName {} Object {}"), MemberName, __int64(Object));
 	}
 
-	return 0;
+	return -1;
 }
 
 template <typename ClassType>
@@ -1102,7 +1120,6 @@ struct FActorSpawnParameters
 	EObjectFlags ObjectFlags;
 };
 
-
 static UObject* (*SpawnActorOTrans)(UObject* World, UObject* Class, FTransform* Transform, const FActorSpawnParameters& SpawnParameters);
 static UObject* (*SpawnActorO)(UObject* World, UObject* Class, FVector* Position, FRotator* Rotation, const FActorSpawnParameters& SpawnParameters);
 
@@ -1110,12 +1127,13 @@ uint64_t ToStringAddr = 0;
 uint64_t ProcessEventAddr = 0;
 uint64_t ObjectsAddr = 0;
 uint64_t FreeMemoryAddr = 0;
+uint64_t SpawnActorAddr = 0;
 
 static int ServerReplicateActorsOffset = 0x53; // UE4.20
 
 bool Setup(/* void* ProcessEventHookAddr */)
 {
-	auto SpawnActorAddr = FindPattern(("40 53 56 57 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B B4 24 ? ? ? ? 0F 28 CB"));
+	SpawnActorAddr = FindPattern(("40 53 56 57 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B B4 24 ? ? ? ? 0F 28 CB"));
 
 	if (!SpawnActorAddr)
 		SpawnActorAddr = FindPattern(("40 53 48 83 EC 70 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 0F 28 1D ? ? ? ? 0F 57 D2 48 8B 9C 24 ? ? ? ? 0F 28 CB 0F 54 1D ? ? ? ? 0F 57"));
@@ -1267,6 +1285,9 @@ bool Setup(/* void* ProcessEventHookAddr */)
 		ServerReplicateActorsOffset = 0x66;
 	else if (FnVerDouble >= 20.00)
 		ServerReplicateActorsOffset = 0x67;
+
+	if (FnVerDouble >= 11.00 && FnVerDouble <= 11.01)
+		ServerReplicateActorsOffset = 0x57;
 
 	if (FnVerDouble >= 5)
 	{
@@ -1525,13 +1546,24 @@ INL MemberType* UObject::FastMember(const std::string& MemberName)
 
 uint8_t GetFieldMask(void* Property)
 {
-	uint8_t FieldMask = *(uint8_t*)(__int64(Property) + (sizeof(FProperty) + 3));
-	return FieldMask;
+	if (!Property)
+		return -1;
+
+	// 3 = sizeof(FieldSize) + sizeof(ByteOffset) + sizeof(ByteMask)
+
+	if (Engine_Version <= 420)
+		return *(uint8_t*)(__int64(Property) + (sizeof(UProperty_UE) + 3));
+	else if (Engine_Version >= 421 && Engine_Version <= 424)
+		return *(uint8_t*)(__int64(Property) + (sizeof(UProperty_FTO) + 3));
+	else if (Engine_Version >= 425)
+		return *(uint8_t*)(__int64(Property) + (sizeof(FProperty) + 3));
+
+	return -1;
 }
 
-uint8_t GetBitIndex(void* Property)
+uint8_t GetBitIndex(void* Property, uint8_t FieldMask_ = -1)
 {
-	auto FieldMask = GetFieldMask(Property);
+	auto FieldMask = FieldMask_ == -1 ? GetFieldMask(Property) : FieldMask_;
 
 	if (FieldMask == 0xFF)
 		return FieldMask;
@@ -1552,10 +1584,140 @@ uint8_t GetBitIndex(void* Property)
 		return 7;
 	if (FieldMask == 128)
 		return 8;
+
+	return 0;
+}
+
+bool readd(uint8_t* Actual, int BitIndex)
+{
+	if (BitIndex != 0xFF) // if it is 0xFF then its just a normal bool
+	{
+		return !(bool)(*Actual & BitIndex);
+	}
+
+	return *(bool*)Actual;
+}
+
+bool readBitfield(UObject* Object, const std::string& MemberName)
+{
+	auto Prop = GetProperty(Object, MemberName);
+
+	auto offset = GetOffsetFromProp(Prop);
+
+	if (offset == -1)
+		return false;
+
+	auto Actual = (__int64*)(__int64(Object) + offset);
+
+	const auto FieldMask = GetFieldMask(Prop);
+	const auto BitIndex = GetBitIndex(Prop, FieldMask);
+
+	return readd((uint8_t*)Actual, BitIndex);
+}
+
+bool sett(uint8_t* Actual, int BitIndex, int FieldMask, bool val)
+{
+	if (BitIndex != 0xFF) // if it is 0xFF then its just a normal bool
+	{
+		uint8_t* Byte = (uint8_t*)Actual;
+
+		// if (BitfieldVal <= 1)
+		{
+			if (((bool(1) << BitIndex) & *(bool*)(Actual)) != val)
+			{
+				*Byte = (*Byte & ~FieldMask) | (val ? FieldMask : 0);
+			}
+		}
+		// else
+		{
+			// *Byte = ((bool(1) << BitIndex) & *(bool*)(Actual));
+		}
+	}
+	else
+	{
+		*(bool*)Actual = val;
+	}
+
+	return false;
+}
+
+bool setBitfield(UObject* Object, const std::string& MemberName, bool val, bool bWithCache = false)
+{
+	auto Val = val ? 1 : 0;
+
+	// credits fischsalat for most of thisd
+
+	// auto Actual = bWithCache ? Object->CachedMember<uint8_t>(MemberName) : Object->Member<uint8_t>(MemberName);
+
+	int offset = -1;
+	void* Prop = nullptr;
+
+	int FieldMask = -1;
+	int BitIndex = -1;
+
+	bool refindBitIndex = !bWithCache;
+	bool refindMember = !bWithCache;
+
+	static std::unordered_map<std::string, std::pair<int32_t, int32_t>> SavedBits; // Name (formatted in {Class}{Member}) and BitIndex and FieldMask
+	static std::unordered_map<std::string, int32_t> SavedOffsets;
+
+	auto CachedName = Object->ClassPrivate->GetName() + MemberName;
+
+	if (bWithCache)
+	{
+		auto Bit = SavedBits.find(CachedName);
+
+		if (Bit != SavedBits.end())
+		{
+			BitIndex = Bit->second.first;
+			FieldMask = Bit->second.second;
+		}
+		else
+			refindBitIndex = true;
+
+		auto Offset = SavedOffsets.find(CachedName);
+
+		if (Offset != SavedOffsets.end())
+			offset = Offset->second;
+		else
+			refindMember = true;
+	}
+	
+	if (refindBitIndex)
+	{
+		FieldMask = GetFieldMask(Prop);
+		BitIndex = GetBitIndex(Prop, FieldMask);
+	}
+
+	if (refindMember)
+	{
+		Prop = GetProperty(Object, MemberName);
+		offset = GetOffsetFromProp(Prop);
+	}
+
+	if (offset == -1 || BitIndex == -1 || FieldMask == -1 || !Prop)
+		return false;
+
+	if (bWithCache)
+	{
+		if (refindBitIndex)
+			SavedBits.emplace(CachedName, std::make_pair(BitIndex, FieldMask));
+		if (refindMember)
+			SavedOffsets.emplace(CachedName, offset);
+	}
+
+	auto Actual = (__int64*)(__int64(Object) + offset);
+
+	// std::cout << "FieldMask: " << std::to_string(FieldMask) << '\n';
+	// std::cout << "Index: " << std::to_string(BitIndex) << '\n';
+
+	sett((uint8_t*)Actual, BitIndex, FieldMask, val);
+
+	return val;
 }
 
 template <typename MemberType>
-INL MemberType* UObject::Member(const std::string& MemberName, int BitfieldVal)
+INL MemberType* UObject::Member(const std::string& MemberName)
 {
 	// MemberName.erase(0, MemberName.find_last_of(".", MemberName.length() - 1) + 1); // This would be getting the short name of the member if you did like ObjectProperty /Script/stuff
 
@@ -1568,34 +1730,36 @@ INL MemberType* UObject::Member(const std::string& MemberName, int BitfieldVal)
 
 	auto Actual = (MemberType*)(__int64(this) + offset);
 
-	// if (!bIsStruct)
+	return Actual;
+}
 
-	// CREDITS FISCHSALAT FOR BITFIELD
+template <typename MemberType>
+INL MemberType* UObject::CachedMember(const std::string& MemberName)
+{
+	// MemberName.erase(0, MemberName.find_last_of(".", MemberName.length() - 1) + 1); // This would be getting the short name of the member if you did like ObjectProperty /Script/stuff
 
-	/* if (std::is_same<MemberType, bool>())
+	static std::unordered_map<std::string, int32_t> SavedOffsets; // Name (formatted in {Class}{Member}) and Offset
+
+	auto CachedName = ClassPrivate->GetName() + MemberName;
+	auto Offset = SavedOffsets.find(CachedName);
+
+	if (Offset != SavedOffsets.end())
 	{
-		const auto FieldMask = GetFieldMask(Prop);
-		const auto BitIndex = GetBitIndex(Prop);
-		if (BitIndex != 0xFF) // if it is 0xFF then its just a normal bool
-		{
-			uint8_t* Byte = (uint8_t*)Actual;
+		int off = Offset->second;
+		
+		return (MemberType*)(__int64(this) + off);
+	}
 
-			if (BitfieldVal <= 1)
-			{
-				if (((bool(1) << BitIndex) & *(bool*)(Actual)) != (bool)BitfieldVal)
-				{
-					*Byte = (*Byte & ~FieldMask) | (BitfieldVal == 1 ? FieldMask : 0);
-					return (MemberType*)&BitfieldVal;
-				}
-			}
-			else
-			{
-				*Byte = ((bool(1) << BitIndex) & *(bool*)(Actual));
-			}
+	auto Prop = GetProperty(this, MemberName);
 
-			return (MemberType*)&BitfieldVal;
-		}
-	} */
+	auto offset = GetOffsetFromProp(Prop);
+
+	if (offset == -1)
+		return nullptr;
+
+	auto Actual = (MemberType*)(__int64(this) + offset);
+
+	SavedOffsets.emplace(CachedName, offset);
 
 	return Actual;
 }
@@ -1810,6 +1974,21 @@ struct FFastArraySerializerItem
 #define INDEX_NONE -1
 #define IDK -1
 
+struct UScriptStruct : UObject
+{
+	template <typename MemberType>
+	INL MemberType* MemberStruct(const std::string& MemberName, int extraOffset = 0)
+	{
+		std::cout << "ClassPrivate: " << this->ClassPrivate << '\n';
+
+		std::cout << "Name: " << this->GetName() << '\n';
+
+		// auto off = FindOffsetStruct(this->GetFullName(), MemberName);
+		// return (MemberType*)(__int64(this) + off);
+		return nullptr;
+	}
+};
+
 struct FFastArraySerializerSE // 264
 {
 	// TMap<int32_t, int32_t> ItemMap;
@@ -1826,6 +2005,25 @@ struct FFastArraySerializerSE // 264
 	EFastArraySerializerDeltaFlags DeltaFlags; // 256
 	// structural padding here i guess 4
 	int idkwhatthisis;
+
+	// template<typename Type, typename SerializerType>
+	struct TFastArraySerializeHelper
+	{
+		using SerializerType = FFastArraySerializerSE;
+		using Type = __int64;
+
+		/** Array element type struct. */
+		UScriptStruct* Struct;
+
+		/** Set of array elements we're serializing. */
+		TArray<Type>& Items;
+
+		/** The actual FFastArraySerializer struct we're serializing. */
+		SerializerType& ArraySerializer;
+
+		/** Cached DeltaSerialize params. */
+		// FNetDeltaSerializeInfo& Parms;
+	};
 
 	void SetDeltaSerializationEnabled(const bool bEnabled)
 	{
@@ -2190,19 +2388,25 @@ struct FAbilityReplicatedData
 
 int GetEnumValue(UObject* Enum, const std::string& EnumMemberName)
 {
+	if (!Enum)
+		return -1;
+
 	auto Names = (TArray<TPair<FName, __int64>>*)(__int64(Enum) + sizeof(UField) + sizeof(FString));
 
-	for (int i = 0; i < Names->Num(); i++)
+	if (Names)
 	{
-		auto& Pair = Names->At(i);
-		auto& Name = Pair.Key();
-		auto Value = Pair.Value();
+		for (int i = 0; i < Names->Num(); i++)
+		{
+			auto& Pair = Names->At(i);
+			auto& Name = Pair.Key();
+			auto Value = Pair.Value();
 
-		if (Name.ToString().contains(EnumMemberName))
-			return Value;
+			if (Name.ComparisonIndex && Name.ToString().contains(EnumMemberName))
+				return Value;
+		}
 	}
 
-	return 0;
+	return -1;
 }
 
 template <typename T>
@@ -2211,21 +2415,6 @@ T* UFunction::GetParam(const std::string& ParameterName, void* Params)
 	auto off = FindOffsetStruct(this->GetFullName(), ParameterName);
 	return (T*)(__int64(Params) + off);
 }
-
-struct UScriptStruct : UObject
-{
-	template <typename MemberType>
-	INL MemberType* MemberStruct(const std::string& MemberName, int extraOffset = 0)
-	{
-		std::cout << "ClassPrivate: " << this->ClassPrivate << '\n';
-
-		std::cout << "Name: " << this->GetName() << '\n';
-
-		// auto off = FindOffsetStruct(this->GetFullName(), MemberName);
-		// return (MemberType*)(__int64(this) + off);
-		return nullptr;
-	}
-};
 
 std::vector<int> UFunction::GetAllParamOffsets()
 {
@@ -2324,6 +2513,21 @@ unsigned short UFunction::GetParmsSize()
 	return *(short*)(__int64(this) + (sizeofUStruct + additionalUFunctionOff));
 }
 
+template <typename Type, typename ArrayType>
+Type* TArrayAt(TArray<ArrayType>* Array, int i, int Size = sizeof(Type), int ExtraOffset = 0)
+{
+	return (Type*)(__int64((__int64*)((__int64(Array->GetData()) + (static_cast<long long>(Size) * i)))) + ExtraOffset);
+}
+
+struct FScalableFloat
+{
+public:
+	float                                        Value;                                             // 0x0(0x4)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	int idk;                    // Fixing Size After Last Property  [ Dumper-7 ]
+	char Curve[0x10]; // struct FCurveTableRowHandle                  Curve;                                             // 0x8(0x10)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	void* idk2;                              // Fixing Size Of Struct [ Dumper-7 ]
+};
+
 struct FNetworkObjectInfo
 {
 	UObject* Actor; // AActor*
@@ -2347,10 +2551,11 @@ struct FNetworkObjectInfo
 	TSet<TWeakObjectPtr<UObject>> RecentlyDormantConnections; // UNetConnection
 };
 
+template<typename SharedPtrType>
 class FNetworkObjectList
 {
 public:
-	using FNetworkObjectSet = TSet<TSharedPtr<FNetworkObjectInfo>>;
+	using FNetworkObjectSet = TSet<TSharedPtrOld<FNetworkObjectInfo>>;
 
 	FNetworkObjectSet AllNetworkObjects;
 	FNetworkObjectSet ActiveNetworkObjects;
@@ -2390,4 +2595,80 @@ struct FBuildingNeighboringActorInfo
 	TArray<FNeighboringWallInfo>                NeighboringWallInfos;                                     // 0x0000(0x0010) (Edit, BlueprintVisible, ZeroConstructor)
 	TArray<FNeighboringFloorInfo>               NeighboringFloorInfos;                                    // 0x0010(0x0010) (Edit, BlueprintVisible, ZeroConstructor)
 	TArray<FNeighboringCenterCellInfo>          NeighboringCenterCellInfos;                               // 0x0020(0x0010) (Edit, BlueprintVisible, ZeroConstructor)
+};
+
+struct FKeyHandle
+{
+	uint32_t Index;
+};
+
+struct FKeyHandleMap
+{
+	TMap<FKeyHandle, int32_t> KeyHandlesToIndices;
+	TArray<FKeyHandle> KeyHandles;
+};
+
+struct FIndexedCurve
+{
+	mutable FKeyHandleMap KeyHandlesToIndices;
+};
+
+struct FRealCurve
+	: public FIndexedCurve
+{
+	float DefaultValue;
+
+	TEnumAsByte<ERichCurveExtrapolation> PreInfinityExtrap;
+
+	TEnumAsByte<ERichCurveExtrapolation> PostInfinityExtrap;
+};
+
+
+void* UFunction::GetFunc()
+{
+	struct fortnite : UStruct_FTT
+	{
+		uint32_t FunctionFlags;
+		uint16_t RepOffset;
+
+		// Variables in memory only.
+		uint8_t NumParms;
+		uint16_t ParmsSize;
+		uint16_t ReturnValueOffset;
+		/** Id of this RPC function call (must be FUNC_Net & (FUNC_NetService|FUNC_NetResponse)) */
+		uint16_t RPCId;
+		/** Id of the corresponding response call (must be FUNC_Net & FUNC_NetService) */
+		uint16_t RPCResponseId;
+
+		/** pointer to first local struct property in this UFunction that contains defaults */
+		UProperty_UE* FirstPropertyToInit;
+
+		void* Func;
+	};
+
+	return ((fortnite*)this)->Func;
+}
+
+struct FUniqueNetIdRepl
+{
+	unsigned char UnknownData00[0x1];
+	unsigned char UnknownData01[0x17];
+	TArray<unsigned char> ReplicationBytes;
+};
+
+struct FFortPickupLocationData
+{
+public:
+	UObject* PickupTarget; // class AFortPawn* PickupTarget;                                      // 0x0(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	UObject* CombineTarget; // class AFortPickup* CombineTarget;                                     // 0x8(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	UObject* ItemOwner; // class AFortPawn* ItemOwner;                                         // 0x10(0x8)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	FVector                 LootInitialPosition;                               // 0x18(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	FVector                LootFinalPosition;                                 // 0x24(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                        FlyTime;                                           // 0x30(0x4)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	FVector            StartDirection;                                    // 0x34(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	FVector                 FinalTossRestLocation;                             // 0x40(0xC)(NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	uint8_t TossState; // enum class EFortPickupTossState              TossState;                                         // 0x4C(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	bool                                         bPlayPickupSound;                                  // 0x4D(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	uint8_t                                        Pad_3687[0x2];                                     // Fixing Size After Last Property  [ Dumper-7 ]
+	FGuid                                 PickupGuid;                                        // 0x50(0x10)(ZeroConstructor, IsPlainOldData, RepSkip, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
 };

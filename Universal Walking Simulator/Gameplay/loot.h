@@ -10,7 +10,8 @@ enum class ItemType
 	None,
 	Weapon,
 	Consumable,
-	Ammo
+	Ammo,
+	Resource
 };
 
 std::string ItemTypeToString(ItemType type)
@@ -24,6 +25,8 @@ std::string ItemTypeToString(ItemType type)
 		return "Consumable";
 	case Ammo:
 		return "Ammo";
+	case Resource:
+		return "Resource";
 	default:
 		return "NULL ItemType";
 	}
@@ -95,6 +98,7 @@ namespace LootingV2
 	int LootItems = 0;
 	int SupplyDropItems = 1;
 	int LlamaItems = 2;
+	int FactionLootItems = 3;
 
 	void AddItemAndWeight(int Index, const DefinitionInRow& Item, float Weight)
 	{
@@ -107,6 +111,13 @@ namespace LootingV2
 
 	static DWORD WINAPI InitializeWeapons(LPVOID)
 	{
+		/* if (bRestarting)
+		{
+			Items.empty();
+			Weights.empty();
+			bInitialized = false;
+		} */
+
 		if (LootingV2::bInitialized)
 		{
 			std::cout << "[WARNING] Loot is already initialized!\n";
@@ -141,7 +152,7 @@ namespace LootingV2
 			return 1;
 		}
 
-		auto LootPackagesRowMap = DataTables::GetRowMap(LootPackages);
+		auto LootPackagesRowMap = GetRowMap(LootPackages);
 
 		auto fortnite = LootPackagesRowMap.Pairs.Elements.Data;
 
@@ -165,8 +176,12 @@ namespace LootingV2
 
 				if (RowName.starts_with("WorldList.AthenaLoot"))
 					Index = LootItems;
-				else if (RowName.starts_with("WorldPKG.AthenaSupplyDrop."))
+				else if (RowName.starts_with("WorldPKG.AthenaSupplyDrop")) // wrong
 					Index = SupplyDropItems;
+				else if (RowName.starts_with("WorldList.FactionLoot"))
+					Index = FactionLootItems;
+				// else if (RowName.starts_with("WorldList.AthenaLlama"))
+					// Index = LlamaItems;
 
 				if (Index == -1)
 					continue;
@@ -179,9 +194,11 @@ namespace LootingV2
 				auto Count = (int*)(__int64(LootPackageDataOfRow) + countOff);
 				auto Weight = (float*)(__int64(LootPackageDataOfRow) + weightOff);
 
+				// std::cout << std::format("Count: {} ItemDef: {}\n", *Count, ItemDef->ObjectID.AssetPathName.ToString());
+
 				DefinitionInRow currentItem;
 
-				if (ItemDef)
+				if (ItemDef && ItemDef->ObjectID.AssetPathName.ComparisonIndex)
 				{
 					auto DefinitionString = ItemDef->ObjectID.AssetPathName.ToString();
 					currentItem.Definition = FindObject(DefinitionString);
@@ -202,45 +219,23 @@ namespace LootingV2
 						currentItem.Type = ItemType::Consumable;
 					else if (DefinitionString.contains("Ammo"))
 						currentItem.Type = ItemType::Ammo;
+					else if (DefinitionString.contains("ResourcePickups"))
+						currentItem.Type = ItemType::Resource;
 
 					if (Weight)
 						AddItemAndWeight(Index, currentItem, *Weight);
 				}
-				/*
-
-					"LootPackageID": "WorldList.AthenaLoot.Weapon.HighAssaultAuto",
-					"Weight": 0.4,
-					"NamedWeightMult": "None",
-					"PotentialNamedWeights": [],
-					"Count": 1,
-					"LootPackageCategory": 0,
-					"GameplayTags": [],
-					"RequiredTag": "None",
-					"LootPackageCall": "",
-					"ItemDefinition": {
-					  "AssetPathName": "/Game/Athena/Items/Weapons/WID_Assault_SemiAuto_Athena_UC_Ore_T03.WID_Assault_SemiAuto_Athena_UC_Ore_T03",
-					  "SubPathString": ""
-					},
-					"PersistentLevel": "",
-					"MinWorldLevel": -1,
-					"MaxWorldLevel": -1,
-					"bAllowBonusDrops": true,
-					"Annotation": ";List:WorldList.AthenaLoot.Weapon.HighAssaultAuto.C0;Item:WID.Assault.SemiAuto.Athena.UC.Ore.T03"
-
-				*/
 			}
 		}
 
 		std::cout << "Initialized Looting V2!\n";
-
-		// std::cout << "[0] Size: " << Items[0].size() << '\n';
 
 		return 0;
 	}
 
 	static const DefinitionInRow GetRandomItem(ItemType Type, int LootType = LootItems)
 	{
-		if (LootType <= Items.size() ? Items[LootType].empty() : true)
+		if (LootType <= Items.size() && Items.size() >= 1 ? Items[LootType].empty() : true)
 		{
 			std::cout << std::format("[WARNING] Tried getting a {} with loot type {} but the table is null!\n", ItemTypeToString(Type), std::to_string(LootType));
 			return DefinitionInRow();
@@ -256,7 +251,7 @@ namespace LootingV2
 		{
 			auto& Item = TableToUse[rand() % (TableToUse.size())];
 
-			if (RandomBoolWithWeight(Item.Weight) && Item.Type == Type && Item.Definition)
+			if (Item.Type == Type && RandomBoolWithWeight(Item.Weight) && Item.Definition)
 				return Item;
 
 			current++;
@@ -269,11 +264,11 @@ namespace LootingV2
 	{
 		static auto BuildingContainerClass = FindObject("Class /Script/FortniteGame.BuildingContainer");
 
-		auto world = Helper::GetWorld();
-
 		if (BuildingContainerClass)
 		{
+			// std::cout << "aa!\n";
 			auto BuildingContainers = Helper::GetAllActorsOfClass(BuildingContainerClass);
+			// std::cout << "bb!\n";
 
 			std::cout << "Spawning: " << BuildingContainers.Num() << '\n';
 
@@ -283,41 +278,24 @@ namespace LootingV2
 
 				if (BuildingContainer && BuildingContainer->GetFullName().contains("Tiered_Athena_FloorLoot_"))
 				{
-					// https://ibb.co/Ny7yHjF
-
-					if (Engine_Version == 422 || Engine_Version == 423) // works for 7.3 by android
-					{
-						struct test {
-							uint8_t bDoDelayedUpdateCullDistanceVolumes : 1;
-							uint8_t bIsRunningConstructionScript : 1;
-							uint8_t bShouldSimulatePhysics : 1;
-							uint8_t bDropDetail : 1;
-							uint8_t bAggressiveLOD : 1;
-							uint8_t bIsDefaultLevel : 1;
-							uint8_t bRequestedBlockOnAsyncLoading : 1;
-							uint8_t bActorsInitialized : 1;
-						};
-
-						// fixes the crash on floor loot
-
-						((test*)world + 0x10C)->bIsRunningConstructionScript = false;
-					}
-
 					bool ShouldSpawn = true; // RandomBoolWithWeight(0.7f);
 
 					if (ShouldSpawn)
 					{
+						auto CorrectLocation = Helper::GetActorLocation(BuildingContainer);
+						CorrectLocation.Z += 50;
+
 						if (RandomBoolWithWeight(0.35))
 						{
-							Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Consumable).Definition, Helper::GetCorrectLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
-								EFortPickupSpawnSource::Unset);
+							auto Consumable = GetRandomItem(ItemType::Consumable);
+							Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+								EFortPickupSpawnSource::Unset, Consumable.DropCount);
 						}
 						else
 						{
 							auto Weapon = GetRandomItem(ItemType::Weapon);
 
-							auto WeaponPickup = Helper::SummonPickup(nullptr, Weapon.Definition, Helper::GetCorrectLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
-								EFortPickupSpawnSource::Unset);
+							auto WeaponPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset);
 
 							static auto GetAmmoWorldItemDefinition_BP = Weapon.Definition->Function(("GetAmmoWorldItemDefinition_BP"));
 
@@ -327,13 +305,13 @@ namespace LootingV2
 								Weapon.Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
 								auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
 
-								Helper::SummonPickup(nullptr, AmmoDef, Helper::GetCorrectLocation(BuildingContainer), EFortPickupSourceTypeFlag::FloorLoot,
+								Helper::SummonPickup(nullptr, AmmoDef, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
 									EFortPickupSpawnSource::Unset, *AmmoDef->Member<int>("DropCount"));
 							}
 						}
-					}
 
-					Sleep(10);
+						Sleep(17);
+					}
 				}
 			}
 
@@ -354,11 +332,13 @@ namespace LootingV2
 			return Location + RightVector * 70.0f + FVector{0, 0, 50};
 		};
 
+		static auto LlamaClass = FindObject("BlueprintGeneratedClass /Game/Athena/SupplyDrops/Llama/AthenaSupplyDrop_Llama.AthenaSupplyDrop_Llama_C");
+
 		if (BuildingContainer)
 		{
 			auto BuildingContainerName = BuildingContainer->GetName();
 
-			if (BuildingContainerName.contains(("Tiered_Chest"))) //  LCD_ToolBox
+			if (BuildingContainerName.contains(("Tiered_Chest")) || BuildingContainerName.contains("LCD_Chest")) //  LCD_ToolBox
 			{
 				auto DefInRow = GetRandomItem(ItemType::Weapon);
 				{
@@ -388,12 +368,27 @@ namespace LootingV2
 							{
 								Helper::SummonPickup(nullptr, ConsumableInRow.Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow.DropCount); // *Consumable->Member<int>(("DropCount")));
 							}
+
+							static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+							static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+							static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+							auto random = rand() % 3;
+
+							int amountOfMaterialToDrop = GetRandomItem(ItemType::Resource, LootItems).DropCount;
+
+							if (random == 1)
+								Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
+							else if (random == 2)
+								Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
+							else
+								Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
 						}
 					}
 				}
 			}
 
-			else if (BuildingContainerName.contains(("Ammo")))
+			else if (BuildingContainerName.contains(("Ammo")) || BuildingContainerName.contains("Tiered_Short"))
 			{
 				auto AmmoInRow = GetRandomItem(ItemType::Ammo);
 				auto AmmoDef = AmmoInRow.Definition;
@@ -407,7 +402,7 @@ namespace LootingV2
 				}
 			}
 
-			else if (BuildingContainerName.contains(("AthenaSupplyDrop_Llama_C")))
+			else if (BuildingContainer->IsA(LlamaClass))
 			{
 				static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
 				static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
@@ -418,10 +413,12 @@ namespace LootingV2
 				{
 					static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
 
-					Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
-					Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
-					Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
-					Helper::SummonPickup(nullptr, Minis, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 6);
+					auto CountToDrop = 200; // GetRandomItem(ItemType::Resource, LlamaItems).DropCount;
+
+					Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, CountToDrop);
+					Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, CountToDrop);
+					Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, CountToDrop);
+					Helper::SummonPickup(nullptr, Minis, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, CountToDrop);
 
 					// OnRep_Looted
 					// SpawnLoot
@@ -430,9 +427,11 @@ namespace LootingV2
 
 			else if (BuildingContainerName.contains("AthenaSupplyDrop_C"))
 			{				
+				auto CorrectLocation = Helper::GetCorrectLocation(BuildingContainer);
+
 				for (int i = 0; i < 5; i++)
 				{
-					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon, SupplyDropItems).Definition, Helper::GetCorrectLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 1);
+					Helper::SummonPickup(nullptr, GetRandomItem(ItemType::Weapon, SupplyDropItems).Definition, CorrectLocation, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 1);
 				}
 			}
 
@@ -467,8 +466,6 @@ namespace LootingV2
 
 	static DWORD WINAPI FillVendingMachines(LPVOID)
 	{
-		// Some vending machines are empty. We have to get all of the vending machines and then set the slot manually?
-
 		static auto BuildingItemCollectorClass = FindObject(("Class /Script/FortniteGame.BuildingItemCollectorActor"));
 
 		if (BuildingItemCollectorClass)
@@ -502,9 +499,15 @@ namespace LootingV2
 
 						// So this is equal to Array[1] + OutputItemOffset, but since the array is __int64, it doesn't calcuate it properly so we have to implement it ourselves
 
-						*(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
-						*(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 1)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
-						*(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 2)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						auto Size = GetSizeOfStruct(CollectorUnitInfoClass);
+
+						*TArrayAt<UObject*, __int64>(ItemCollections, 1, Size, OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						*TArrayAt<UObject*, __int64>(ItemCollections, 2, Size, OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						*TArrayAt<UObject*, __int64>(ItemCollections, 3, Size, OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+
+						// *(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 0)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						// *(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 1)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
+						// *(UObject**)(__int64((__int64*)((__int64(ItemCollections->GetData()) + (GetSizeOfStruct(CollectorUnitInfoClass) * 2)))) + OutputItemOffset) = LootingV2::GetRandomItem(ItemType::Weapon).Definition;
 					}
 					else
 						std::cout << ("ItemCollections Invalid: ") << ItemCollections << '\n';
@@ -523,506 +526,4 @@ namespace LootingV2
 		return 0;
 	}
 
-}
-
-namespace Looting
-{
-	namespace Tables
-	{
-		std::vector<std::vector<UObject*>> WeaponTable;
-		std::vector<UObject*> ConsumableTable;
-		std::vector<UObject*> AmmoTable;
-		static bool bInitialized = false;
-
-		static int GetWeaponTableIdx()
-		{
-			// int Random = UKismetMathLibrary::RandomIntegerInRange(0, 100);
-			std::random_device rd;
-			std::mt19937 gen(rd());
-			std::uniform_int_distribution<> distr(0, 100);
-
-			auto Random = distr(gen);
-
-			if (Random <= 50)
-				return 0;
-
-			if (Random <= 75)
-				return 1;
-
-			if (Random <= 90)
-				return 2;
-
-			if (Random <= 97)
-				return 3;
-
-			if (Random <= 100)
-				return 4;
-
-			return 0;
-		}
-
-		static UObject* GetWeaponDef()
-		{
-			auto& Table = WeaponTable[GetWeaponTableIdx()];
-
-			while (true)
-			{
-				auto Weapon = Table[rand() % (Table.size())];
-
-				if (Weapon)
-					return Weapon;
-			}
-		}
-
-		static UObject* GetAmmoDef()
-		{
-			while (true)
-			{
-				auto Ammo = AmmoTable[rand() % (AmmoTable.size())];
-
-				if (Ammo)
-					return Ammo;
-			}
-		}
-
-		static UObject* GetConsumableDef()
-		{
-			while (true)
-			{
-				auto Consumable = ConsumableTable[rand() % (ConsumableTable.size())];
-
-				if (Consumable)
-					return Consumable;
-			}
-		}
-
-		static DWORD WINAPI SpawnVehicles(LPVOID)
-		{
-			if (!StaticLoadObjectO)
-				return 1;
-
-			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_QuadSpawner.Athena_QuadSpawner_C
-			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_OctopusSpawner.Athena_OctopusSpawner_C
-			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_BiplaneSpawner.Athena_BiplaneSpawner_C
-			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_JackalSpawner.Athena_JackalSpawner_C
-			// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_CartSpawner.Athena_CartSpawner_C
-			// World /Game/Athena/Maps/Athena_DroneSpawners.Athena_DroneSpawners
-
-			static auto FortVehicleSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_QuadSpawner.Athena_QuadSpawner_C"); // FindObject("Class /Script/FortniteGame.FortAthenaVehicleSpawner");
-
-			auto Spawners = Helper::GetAllActorsOfClass(FortVehicleSpawnerClass);
-
-			std::cout << "Spawning: " << Spawners.Num() << " vehicles\n";
-
-			for (int i = 0; i < Spawners.Num(); i++)
-			{
-				auto Spawner = Spawners[i];
-
-				if (Spawner)
-				{
-					auto VehicleClassSoft = Spawner->Member<TSoftClassPtr>("VehicleClass");
-
-					if (VehicleClassSoft && VehicleClassSoft->ObjectID.AssetPathName.ComparisonIndex > 0)
-					{
-						auto VehicleName = VehicleClassSoft->ObjectID.AssetPathName.ToString();
-						auto SpawnerLoc = Helper::GetActorLocation(Spawner);
-						static auto BPC = FindObject("Class /Script/Engine.BlueprintGeneratedClass");
-						auto VehicleClass = StaticLoadObject(BPC, nullptr, VehicleName);
-
-						if (VehicleClass)
-						{
-							Easy::SpawnActor(VehicleClass, SpawnerLoc, Helper::GetActorRotation(Spawner));
-						}
-						else
-							std::cout << "No vehicle class!\n";
-					}
-					else
-						std::cout << "No soft vehicle class!\n";
-				}
-			}
-
-			Spawners.Free();
-
-			std::cout << "Spawned vehicles!\n";
-
-			return 0;
-		}
-
-		static DWORD WINAPI Init(LPVOID)
-		{
-			if (bInitialized)
-				return 0;
-
-			bInitialized = true;
-
-			for (int i = 0; i < 5; i++) // 0 = gray, 1 = green, 2 = blue, 3 = purple, 4 = gold
-			{
-				WeaponTable.push_back(std::vector<UObject*>());
-			}
-
-			// WeaponTable.reserve(5);
-
-			WeaponTable[0].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_C_Ore_T02.WID_Assault_Auto_Athena_C_Ore_T02")));
-			WeaponTable[0].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_SemiAuto_Athena_C_Ore_T02.WID_Assault_SemiAuto_Athena_C_Ore_T02")));
-			WeaponTable[0].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_SemiAuto_Athena_UC_Ore_T03.WID_Shotgun_SemiAuto_Athena_UC_Ore_T03")));
-			WeaponTable[0].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavyPDW_Athena_C_Ore_T03.WID_Pistol_AutoHeavyPDW_Athena_C_Ore_T03")));
-			WeaponTable[0].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavySuppressed_Athena_C_Ore_T02.WID_Pistol_AutoHeavySuppressed_Athena_C_Ore_T02")));
-			WeaponTable[0].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_SemiAuto_Athena_C_Ore_T02.WID_Pistol_SemiAuto_Athena_C_Ore_T02")));
-			WeaponTable[0].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_SixShooter_Athena_C_Ore_T02.WID_Pistol_SixShooter_Athena_C_Ore_T02")));
-			WeaponTable[0].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavy_Athena_C_Ore_T02.WID_Pistol_AutoHeavy_Athena_C_Ore_T02")));
-			WeaponTable[0].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Flintlock_Athena_C.WID_Pistol_Flintlock_Athena_C")));
-
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_UC_Ore_T03.WID_Assault_Auto_Athena_UC_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_SemiAuto_Athena_UC_Ore_T03.WID_Assault_SemiAuto_Athena_UC_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_C_Ore_T03.WID_Shotgun_Standard_Athena_C_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_SemiAuto_Athena_R_Ore_T03.WID_Shotgun_SemiAuto_Athena_R_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_Auto_Suppressed_Scope_Athena_UC.WID_Sniper_Auto_Suppressed_Scope_Athena_UC")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_Standard_Scope_Athena_VR_Ore_T03.WID_Sniper_Standard_Scope_Athena_VR_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavyPDW_Athena_UC_Ore_T03.WID_Pistol_AutoHeavyPDW_Athena_UC_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavySuppressed_Athena_UC_Ore_T03.WID_Pistol_AutoHeavySuppressed_Athena_UC_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Scavenger_Athena_UC_Ore_T03.WID_Pistol_Scavenger_Athena_UC_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_AutoDrum_Athena_UC_Ore_T03.WID_Assault_AutoDrum_Athena_UC_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_SemiAuto_Athena_UC_Ore_T03.WID_Pistol_SemiAuto_Athena_UC_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_DualPistol_Suppresseed_Athena_UC_T01.WID_DualPistol_Suppresseed_Athena_UC_T01")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_SixShooter_Athena_UC_Ore_T03.WID_Pistol_SixShooter_Athena_UC_Ore_T03")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Flintlock_Athena_UC.WID_Pistol_Flintlock_Athena_UC")));
-			WeaponTable[1].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Revolver_SingleAction_Athena_UC.WID_Pistol_Revolver_SingleAction_Athena_UC")));
-
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Auto_Athena_R_Ore_T03.WID_Assault_Auto_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_SemiAuto_Athena_R_Ore_T03.WID_Assault_SemiAuto_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Heavy_Athena_R_Ore_T03.WID_Assault_Heavy_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_PistolCaliber_AR_Athena_R_Ore_T03.WID_Assault_PistolCaliber_AR_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_SemiAuto_Athena_VR_Ore_T03.WID_Shotgun_SemiAuto_Athena_VR_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_BoltAction_Scope_Athena_R_Ore_T03.WID_Sniper_BoltAction_Scope_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_Auto_Suppressed_Scope_Athena_R.WID_Sniper_Auto_Suppressed_Scope_Athena_R")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_Standard_Scope_Athena_SR_Ore_T03.WID_Sniper_Standard_Scope_Athena_SR_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavyPDW_Athena_R_Ore_T03.WID_Pistol_AutoHeavyPDW_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavySuppressed_Athena_R_Ore_T03.WID_Pistol_AutoHeavySuppressed_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Scavenger_Athena_R_Ore_T03.WID_Pistol_Scavenger_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_BurstFireSMG_Athena_R_Ore_T03.WID_Pistol_BurstFireSMG_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_AutoDrum_Athena_R_Ore_T03.WID_Assault_AutoDrum_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_SemiAuto_Athena_R_Ore_T03.WID_Pistol_SemiAuto_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_DualPistol_SemiAuto_Athena_VR_Ore_T03.WID_DualPistol_SemiAuto_Athena_VR_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_SixShooter_Athena_R_Ore_T03.WID_Pistol_SixShooter_Athena_R_Ore_T03")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Revolver_SingleAction_Athena_R.WID_Pistol_Revolver_SingleAction_Athena_R")));
-			WeaponTable[2].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Launcher_Grenade_Athena_R_Ore_T03.WID_Launcher_Grenade_Athena_R_Ore_T03")));
-
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_VR_Ore_T03.WID_Assault_AutoHigh_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_SemiAuto_Athena_VR_Ore_T03.WID_Assault_SemiAuto_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Suppressed_Athena_VR_Ore_T03.WID_Assault_Suppressed_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Surgical_Thermal_Athena_VR_Ore_T03.WID_Assault_Surgical_Thermal_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Heavy_Athena_VR_Ore_T03.WID_Assault_Heavy_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_PistolCaliber_AR_Athena_VR_Ore_T03.WID_Assault_PistolCaliber_AR_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_VR_Ore_T03.WID_Shotgun_Standard_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_HighSemiAuto_Athena_VR_Ore_T03.WID_Shotgun_HighSemiAuto_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_SlugFire_Athena_VR.WID_Shotgun_SlugFire_Athena_VR")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_Combat_Athena_VR_Ore_T03.WID_Shotgun_Combat_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_BreakBarrel_Athena_VR_Ore_T03.WID_Shotgun_BreakBarrel_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_BoltAction_Scope_Athena_VR_Ore_T03.WID_Sniper_BoltAction_Scope_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_Suppressed_Scope_Athena_VR_Ore_T03.WID_Sniper_Suppressed_Scope_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_Auto_Suppressed_Scope_Athena_VR.WID_Sniper_Auto_Suppressed_Scope_Athena_VR")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavyPDW_Athena_VR_Ore_T03.WID_Pistol_AutoHeavyPDW_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Scavenger_Athena_VR_Ore_T03.WID_Pistol_Scavenger_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavyPDW_Athena_VR_Ore_T03.WID_Pistol_AutoHeavyPDW_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Standard_Athena_VR.WID_Pistol_Standard_Athena_VR")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_SemiAuto_Athena_SR_Ore_T03.WID_Pistol_SemiAuto_Athena_SR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_DualPistol_SemiAuto_Athena_SR_Ore_T03.WID_DualPistol_SemiAuto_Athena_SR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_DualPistol_Suppresseed_Athena_VR_T01.WID_DualPistol_Suppresseed_Athena_VR_T01")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Scoped_Athena_VR_Ore_T03.WID_Pistol_Scoped_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_HandCannon_Athena_VR_Ore_T03.WID_Pistol_HandCannon_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Revolver_SingleAction_Athena_VR.WID_Pistol_Revolver_SingleAction_Athena_VR")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Launcher_Rocket_Athena_VR_Ore_T03.WID_Launcher_Rocket_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Launcher_Grenade_Athena_VR_Ore_T03.WID_Launcher_Grenade_Athena_VR_Ore_T03")));
-			WeaponTable[3].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Launcher_Military_Athena_VR_Ore_T03.WID_Launcher_Military_Athena_VR_Ore_T03")));
-
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_SemiAuto_Athena_SR_Ore_T03.WID_Assault_SemiAuto_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Suppressed_Athena_SR_Ore_T03.WID_Assault_Suppressed_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Surgical_Thermal_Athena_SR_Ore_T03.WID_Assault_Surgical_Thermal_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_Heavy_Athena_SR_Ore_T03.WID_Assault_Heavy_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_PistolCaliber_AR_Athena_SR_Ore_T03.WID_Assault_PistolCaliber_AR_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_SR_Ore_T03.WID_Shotgun_Standard_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_HighSemiAuto_Athena_SR_Ore_T03.WID_Shotgun_HighSemiAuto_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_SlugFire_Athena_SR.WID_Shotgun_SlugFire_Athena_SR")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Shotgun_BreakBarrel_Athena_SR_Ore_T03.WID_Shotgun_BreakBarrel_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_BoltAction_Scope_Athena_SR_Ore_T03.WID_Sniper_BoltAction_Scope_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_Heavy_Athena_SR_Ore_T03.WID_Sniper_Heavy_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_Suppressed_Scope_Athena_SR_Ore_T03.WID_Sniper_Suppressed_Scope_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Sniper_Auto_Suppressed_Scope_Athena_SR.WID_Sniper_Auto_Suppressed_Scope_Athena_SR")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_AutoHeavyPDW_Athena_SR_Ore_T03.WID_Pistol_AutoHeavyPDW_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Assault_LMG_Athena_SR_Ore_T03.WID_Assault_LMG_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_Standard_Athena_SR.WID_Pistol_Standard_Athena_SR")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Pistol_HandCannon_Athena_SR_Ore_T03.WID_Pistol_HandCannon_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Launcher_Rocket_Athena_SR_Ore_T03.WID_Launcher_Rocket_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Launcher_Grenade_Athena_SR_Ore_T03.WID_Launcher_Grenade_Athena_SR_Ore_T03")));
-			WeaponTable[4].push_back(FindObject(("/Game/Athena/Items/Weapons/WID_Launcher_Military_Athena_SR_Ore_T03.WID_Launcher_Military_Athena_SR_Ore_T03")));
-
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/Bandage/Athena_Bandage.Athena_Bandage")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/Medkit/Athena_Medkit.Athena_Medkit")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/Shields/Athena_Shields.Athena_Shields")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/SuperMedKit/Athena_SuperMedkit.Athena_SuperMedkit")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/Grenade/Athena_Grenade.Athena_Grenade")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/KnockGrenade/Athena_KnockGrenade.Athena_KnockGrenade")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/ShockwaveGrenade/Athena_ShockGrenade.Athena_ShockGrenade")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/StickyGrenade/Athena_StickyGrenade.Athena_StickyGrenade")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/ThrownConsumables/Athena_IceGrenade.Athena_IceGrenade")));
-			ConsumableTable.push_back(FindObject(("/Game/Athena/Items/Consumables/Bush/Athena_Bush.Athena_Bush")));
-
-			if (Engine_Version < 422)
-			{
-				AmmoTable.push_back(FindObject(("/Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets")));
-				AmmoTable.push_back(FindObject(("/Game/Athena/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells")));
-				AmmoTable.push_back(FindObject(("/Game/Athena/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium")));
-				AmmoTable.push_back(FindObject(("/Game/Athena/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight")));
-				AmmoTable.push_back(FindObject(("/Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy")));
-			}
-			else
-			{
-				static UObject* AthenaAmmoDataRockets = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
-				static UObject* AthenaAmmoDataShells = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
-				static UObject* AthenaAmmoDataBulletsMedium = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
-				static UObject* AthenaAmmoDataBulletsLight = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
-				static UObject* AthenaAmmoDataBulletsHeavy = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
-			
-				AmmoTable.push_back(AthenaAmmoDataRockets);
-				AmmoTable.push_back(AthenaAmmoDataShells);
-				AmmoTable.push_back(AthenaAmmoDataBulletsMedium);
-				AmmoTable.push_back(AthenaAmmoDataBulletsLight);
-				AmmoTable.push_back(AthenaAmmoDataBulletsHeavy);
-			}
-
-			return 0;
-		}
-
-		inline UObject* GetRandomDefinition(bool* bIsConsum = nullptr) // NOT ammo
-		{
-			auto Random = rand() % 10;
-			auto bIsConsumable = Random == 1 || Random == 2 || Random == 3 || Random == 0;
-
-			if (bIsConsum)
-				*bIsConsum = bIsConsumable;
-
-			return bIsConsumable ? Tables::GetConsumableDef() : Tables::GetWeaponDef();
-		}
-
-		static DWORD WINAPI SpawnLlamas(LPVOID) // this function doesn't guarantee 3 llamas
-		{
-			static auto LlamaClass = FindObject(("BlueprintGeneratedClass /Game/Athena/SupplyDrops/Llama/AthenaSupplyDrop_Llama.AthenaSupplyDrop_Llama_C"));
-
-			if (LlamaClass)
-			{
-				for (int i = 0; i < 3; i++)
-				{
-					FVector RandLocation;
-
-					std::random_device rd; // obtain a random number from hardware
-					std::mt19937 gen(rd()); // seed the generator
-
-					// CHAPTER 1
-
-					std::uniform_int_distribution<> Xdistr(-40000, 128000);
-					std::uniform_int_distribution<> Ydistr(-90000, 70000);
-					std::uniform_int_distribution<> Zdistr(-40000, 30000); // doesnt matter because llamas has physics that just teleports them down until it hits collision
-
-					RandLocation.X = Xdistr(gen);
-					RandLocation.Y = Ydistr(gen);
-					RandLocation.Z = Zdistr(gen);
-
-					std::cout << std::format("Spawning Llama at X: {} Y: {} Z: {}\n", RandLocation.X, RandLocation.Y, RandLocation.Z);
-
-					FRotator RandRotation;
-					// RandRotation.Yaw = RandomBetween(0, 360);
-
-					auto LlamaActor = Easy::SpawnActor(LlamaClass, RandLocation, RandRotation);
-
-					// Multicast_ApplyGravityForFall
-				}
-			}
-
-			return 0;
-		}
-
-		static DWORD WINAPI SpawnFloorLoot(LPVOID)
-		{
-			Init(nullptr);
-
-
-
-			/* static auto FloorLootClass = FindObject(("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"));
-
-			if (FloorLootClass)
-			{
-				auto FloorLootActors = Helper::GetAllActorsOfClass(FloorLootClass); // BuildingContainerClass);
-
-				std::cout << ("Spawning ") << FloorLootActors.Num() << (" floor loot!\n");
-
-				for (int i = 0; i < FloorLootActors.Num(); i++)
-				{
-					auto Actor = FloorLootActors[i];
-
-					if (Actor)
-					{
-						bool bIsConsumable = false;
-						auto Def = GetRandomDefinition(&bIsConsumable);
-
-						if (Def)
-							Helper::SummonPickup(nullptr, Def, Helper::GetActorLocation(Actor), EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, *Def->Member<int>(("DropCount")));
-					}
-				}
-
-				std::cout << ("Spawned ") << FloorLootActors.Num() << (" floor loot!\n");
-
-				FloorLootActors.Free();
-			}
-			else
-				std::cout << ("[WARNING] Unable to spawn floor loot actors!\n");
-
-			static auto WarmupFloorLootClass = FindObject(("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C"));
-			
-			if (WarmupFloorLootClass)
-			{
-				auto WarmupFloorLootActors = Helper::GetAllActorsOfClass(WarmupFloorLootClass); // BuildingContainerClass);
-
-				std::cout << ("Spawning ") << WarmupFloorLootActors.Num() << (" warmup floor loot!\n");
-
-				for (int i = 0; i < WarmupFloorLootActors.Num(); i++)
-				{
-					auto WarmupFloorLootActor = WarmupFloorLootActors[i];
-
-					if (WarmupFloorLootActor)
-					{
-						bool bIsConsumable = false;
-						auto Def = GetRandomDefinition(&bIsConsumable);
-
-						if (Def)
-						{
-							Helper::SummonPickup(nullptr, Def, Helper::GetActorLocation(WarmupFloorLootActor), EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, *Def->Member<int>(("DropCount")));
-
-							if (!bIsConsumable)
-							{
-								// spawn ammo
-							}
-						}
-					}
-				}
-
-				std::cout << ("Spawned ") << WarmupFloorLootActors.Num() << (" floor loot!\n");
-
-				WarmupFloorLootActors.Free();
-			}
-			else
-				std::cout << ("[WARNING] Unable to spawn warump floor loot actors!\n"); */
-
-			return 0;
-		}
-
-		static void HandleSearch(UObject* BuildingContainer)
-		{
-			if (BuildingContainer)
-			{
-				auto BuildingContainerName = BuildingContainer->GetName();
-
-				if (BuildingContainerName.contains(("Tiered_Chest"))) //  LCD_ToolBox
-				{
-					auto WeaponDef = Tables::GetWeaponDef();
-					if (WeaponDef)
-					{
-						static auto GetAmmoWorldItemDefinition_BP = WeaponDef->Function(("GetAmmoWorldItemDefinition_BP"));
-						if (GetAmmoWorldItemDefinition_BP)
-						{
-							struct { UObject* AmmoDefinition; }GetAmmoWorldItemDefinition_BP_Params{};
-							WeaponDef->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
-							auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
-
-							// if (AmmoDef)
-							{
-								auto Location = Helper::GetCorrectLocation(BuildingContainer);
-
-								if (WeaponDef)
-									Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, 1);
-
-								if (AmmoDef)
-								{
-									auto DropCount = *AmmoDef->Member<int>(("DropCount"));
-									Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DropCount);
-								}
-
-								if (auto Consumable = Tables::GetConsumableDef())
-								{
-									Helper::SummonPickup(nullptr, Consumable, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, 1); // *Consumable->Member<int>(("DropCount")));
-								}
-							}
-						}
-					}
-				}
-
-				else if (BuildingContainerName.contains(("Ammo")))
-				{
-					auto AmmoDef = GetAmmoDef();
-
-					if (AmmoDef)
-					{
-						auto Location = Helper::GetCorrectLocation(BuildingContainer);
-
-						// DROPCOUNT IS VERY WRONG
-						auto DropCount = *AmmoDef->Member<int>(("DropCount"));
-						Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount);
-					}
-				}
-
-				else if (BuildingContainerName.contains(("AthenaSupplyDrop_Llama_C")))
-				{
-					static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
-					static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
-					static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
-
-					auto Location = Helper::GetCorrectLocation(BuildingContainer);
-
-					{
-						static auto Minis = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall"));
-
-						Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
-						Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
-						Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 200);
-						Helper::SummonPickup(nullptr, Minis, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::SupplyDrop, 6);
-					}
-				}
-
-				if (Engine_Version >= 424) // chapter 2 specific stuff
-				{
-					if (BuildingContainerName.contains("Barrel") && BuildingContainerName.contains("Rod"))
-					{
-						static auto FishingRodWID = FindObject(("FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/FloppingRabbit/WID_Athena_FloppingRabbit.WID_Athena_FloppingRabbit"));
-
-						if (FishingRodWID)
-						{
-							// todo: make amount random
-
-							Helper::SummonPickup(nullptr, FishingRodWID, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset, 1);
-							Helper::SummonPickup(nullptr, FishingRodWID, Helper::GetActorLocation(BuildingContainer), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset, 1);
-							Helper::DestroyActor(BuildingContainer);
-						}
-					}
-
-					else if (BuildingContainerName.contains("FactionChest")) // IO Chests
-					{
-
-					}
-
-					else if (BuildingContainerName.contains("IceMachine")) // fish thijngy
-					{
-
-					}
-				}
-				 
-				else if (!BuildingContainerName.contains(("Door")) && !BuildingContainerName.contains(("Wall")))
-				{
-					std::cout << ("Container: ") << BuildingContainerName << "!\n";
-				}
-			}
-		}
-	}
 }

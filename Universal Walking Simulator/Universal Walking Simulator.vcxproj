@@ -45,11 +45,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>Project Reboot</TargetName>
+    <TargetName>Project Rebootbbsaqaw</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>Project Reboot</TargetName>
+    <TargetName>Project Rebootbbsaqaw</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -116,8 +116,8 @@
   <ItemGroup>
     <ClInclude Include="anticheat.h" />
     <ClInclude Include="AI.h" />
-    <ClInclude Include="Gameplay\carmine.h" />
-    <ClInclude Include="offsets.h" />
+    <ClInclude Include="Net\nethooks.h" />
+    <ClInclude Include="team.h" />
     <ClInclude Include="UE\DataTables.h" />
     <ClInclude Include="discord.h" />
     <ClInclude Include="finder.h" />
@@ -133,7 +133,6 @@
     <ClInclude Include="patterns.h" />
     <ClInclude Include="Net\funcs.h" />
     <ClInclude Include="hooks.h" />
-    <ClInclude Include="Net\nethooks.h" />
     <ClInclude Include="Net\server.h" />
     <ClInclude Include="Gameplay\player.h" />
     <ClInclude Include="Net\replication.h" />
