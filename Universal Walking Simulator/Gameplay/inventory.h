@@ -2077,14 +2077,14 @@ void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 		{
 			auto CurrentItemInstance = ItemInstances->At(i);
 
-			// bCanBeDropped
+			auto CurrentItemDefinition = Inventory::GetItemDefinition(CurrentItemInstance);
 
-			if (!CurrentItemInstance || !readBitfield(CurrentItemInstance, "bCanBeDropped"))
+			// if (!CurrentItemInstance || !CurrentItemDefinition || readBitfield(CurrentItemDefinition, "bCanBeDropped")) // dont ask
+				// continue;
+
+			if (!CurrentItemInstance || !CurrentItemDefinition || CurrentItemDefinition == BuildingItemData_Wall || CurrentItemDefinition == BuildingItemData_Floor
+				|| CurrentItemDefinition == (BuildingItemData_Stair_W) || CurrentItemDefinition == (BuildingItemData_RoofS) || (bTakePickaxe ? false : CurrentItemDefinition == PickaxeDef))
 				continue;
-
-			/* if (!CurrentItemInstance || CurrentItemInstance->IsA(BuildingItemData_Wall) || CurrentItemInstance->IsA(BuildingItemData_Floor) || CurrentItemInstance->IsA(BuildingItemData_Stair_W) ||
-				CurrentItemInstance->IsA(BuildingItemData_RoofS) || (bTakePickaxe ? false : Inventory::GetItemDefinition(CurrentItemInstance) == PickaxeDef))
-				continue; */
 
 			Inventory::TakeItem(Controller, Inventory::GetItemGuid(CurrentItemInstance), *FFortItemEntry::GetCount(GetItemEntryFromInstance(CurrentItemInstance)), true);
 		}

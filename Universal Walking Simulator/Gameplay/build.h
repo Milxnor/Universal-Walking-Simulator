@@ -158,7 +158,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 								*TeamIndex = PlayersTeamIndex;
 							}
 
-							Helper::SetMirrored(BuildingActor, bMirrored);
+							// Helper::SetMirrored(BuildingActor, bMirrored);
 							Helper::InitializeBuildingActor(Controller, BuildingActor, true);
 
 							bSuccessful = true;
@@ -233,7 +233,7 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 	return false;
 }
 
-inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
+/* inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
 	struct Parms {
 		UObject* BuildingActorToEdit;                                      // (Parm, ZeroConstructor, IsPlainOldData)
@@ -261,7 +261,7 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 			
 			// bool bDestroyed = readBitfield(BuildingActor, "bDestroyed");
 
-			if (/* bDestroyed || */ RotationIterations > 3)
+			if (RotationIterations > 3)
 				return false;
 
 			Helper::ReplaceBuildingActor(Controller, BuildingActor, NewBuildingClass, RotationIterations, bMirrored);
@@ -269,7 +269,73 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 	}
 
 	return false;
+} */
+
+inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	struct Parms {
+		UObject* BuildingActorToEdit;
+		UObject* NewBuildingClass;
+		int RotationIterations;
+		bool bMirrored;
+	};
+
+	auto Params = (Parms*)Parameters;
+
+	if (Params && Controller)
+	{
+		auto BuildingActor = Params->BuildingActorToEdit;
+		auto NewBuildingClass = Params->NewBuildingClass;
+
+		static auto bMirroredOffset = FindOffsetStruct("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "bMirrored");
+		auto bMirrored = *(bool*)(__int64(Parameters) + bMirroredOffset);
+
+		static auto RotationIterationsOffset = FindOffsetStruct("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "RotationIterations");
+		auto RotationIterations = *(int*)(__int64(Parameters) + RotationIterationsOffset);
+
+		if (BuildingActor && NewBuildingClass)
+		{
+			if (RotationIterations > 3)
+				return false;
+
+			auto Location = Helper::GetActorLocation(BuildingActor);
+			auto Rotation = Helper::GetActorRotation(BuildingActor);
+
+			static bool bFound = false;
+
+			static auto BuildingSMActorReplaceBuildingActorAddr = FindPattern("4C 8B DC 55 57 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 48 8B 85 ? ? ? ? 33 FF 40 38 3D ? ? ? ?");
+
+			if (!bFound)
+			{
+				bFound = true;
+
+				if (Engine_Version >= 426 && !BuildingSMActorReplaceBuildingActorAddr)
+					BuildingSMActorReplaceBuildingActorAddr = FindPattern("48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 ? 44 0F 29 48 ? 44 0F 29 90 ? ? ? ? 44 0F 29 B8 ? ? ? ? 48 8B 05");
+
+				if (!BuildingSMActorReplaceBuildingActorAddr || Engine_Version <= 421)
+					BuildingSMActorReplaceBuildingActorAddr = FindPattern("48 8B C4 44 89 48 20 55 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 48 89 70 E8 33 FF 40 38 3D ? ? ? ? 48 8B F1 4C 89 60 E0 44 8B E2");
+
+
+				if (!BuildingSMActorReplaceBuildingActorAddr)
+					BuildingSMActorReplaceBuildingActorAddr = FindPattern("48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 ? 44 0F 29 48 ? 44 0F 29 90 ? ? ? ? 44 0F 29 B8 ? ? ? ? 48 8B 05");
+
+				if (!BuildingSMActorReplaceBuildingActorAddr) // c3
+					BuildingSMActorReplaceBuildingActorAddr = FindPattern("48 8B C4 48 89 58 18 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 0F 29 70 B8 0F 29 78 A8 44 0F 29 40 ? 44 0F 29 48 ? 44 0F 29 90 ? ? ? ? 48 8B 05 ? ? ? ?");
+			}
+
+			static UObject* (__fastcall* BuildingSMActorReplaceBuildingActor)(UObject* BuildingSMActor, unsigned int a2, UObject * a3, unsigned int a4, int a5, unsigned __int8 bMirrored, UObject* Controller)
+				= decltype(BuildingSMActorReplaceBuildingActor)(BuildingSMActorReplaceBuildingActorAddr);
+
+			if (BuildingSMActorReplaceBuildingActor)
+				BuildingSMActorReplaceBuildingActor(BuildingActor, 1, NewBuildingClass, 0, RotationIterations, bMirrored, Controller);
+			else
+				std::cout << "No BuildingSMActorReplaceBuildingActor!\n";
+		}
+	}
+
+	return false;
 }
+
 
 inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
 {

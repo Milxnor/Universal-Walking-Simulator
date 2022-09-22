@@ -43,7 +43,7 @@ int HexToDec(std::string hexValue)
 
 bool IsBestSignature(const std::string& Pattern, uintptr_t Address)
 {
-
+	return false;
 }
 
 std::string GetBytes(uintptr_t Address, int count = 10) { // generates a sig

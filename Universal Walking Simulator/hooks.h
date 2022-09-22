@@ -478,7 +478,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 				if (Aircraft)
 				{
 					if (bClearInventoryOnAircraftJump)
-						ClearInventory(PlayerController);
+						ClearInventory(PlayerController); // TODO: Clear on ServerSetInAircraft
 
 					auto ExitLocation = Helper::GetActorLocation(Aircraft);
 
