@@ -89,9 +89,12 @@ inline void initStuff()
 				std::cout << "FriendlyFireType is not valid!\n";
 			}
 
+			auto GamePhase = gameState->Member<EAthenaGamePhase>(("GamePhase"));
+
 			// if (Engine_Version >= 420)
+			if (GamePhase)
 			{
-				*gameState->Member<EAthenaGamePhase>(("GamePhase")) = EAthenaGamePhase::Warmup;
+				*GamePhase = EAthenaGamePhase::Warmup;
 
 				struct {
 					EAthenaGamePhase OldPhase;
@@ -102,6 +105,8 @@ inline void initStuff()
 				if (fnGamephase)
 					gameState->ProcessEvent(fnGamephase, &params2);
 			}
+			else
+				std::cout << "No Gamephase?? Probably wont drop ls??!\n";
 
 			if (AuthGameMode)
 			{

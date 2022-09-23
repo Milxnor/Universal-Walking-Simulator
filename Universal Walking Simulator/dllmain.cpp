@@ -162,6 +162,12 @@ __int64 idkDetour(UObject* BuildingActor)
     return idkO(BuildingActor);
 }
 
+__int64 __fastcall duplicateplayerdetour(__int64* a1, __int64 a2) 
+{
+    std::cout << "duplicate!\n";
+    return 0;
+}
+
 void (__fastcall* sub_7FF700EF5E20O)(__int64 a1, int a2);
 
 void __fastcall sub_7FF700EF5E20Detour(__int64 a1, int a2)
@@ -181,53 +187,6 @@ char __fastcall stu8pduficnDetour(__int64 a1, __int64 a2, __int64 a3, bool* a4)
     std::cout << "ur skiddeD!\n";
 
     return true;
-}
-
-char (__fastcall* WorldOverlapCheckO)(UObject* a1, int* a2, __int64 a3, float* a4, __int64 a5, float* a6, __int64 a7, char a8, char* a9);
-
-char __fastcall WorldOverlapCheckDetour(UObject* a1, int* a2, __int64 a3, float* a4, __int64 a5, float* a6, __int64 a7, char a8, char* a9)
-{
-    /*
-    
-    a1 = StructuralSupportSystem
-    a2 = 0 (not the ptr)
-    a7 = not a uobject (maybe a int* to the internalindex?)
-   
-    */
-
-    std::cout << "a1: " << a1 << '\n';
-    std::cout << "a1 name: " << a1->GetFullName() << '\n';
-
-    std::cout << "a2: " << a2 << '\n';
-
-    if (a2)
-        std::cout << "a2 deref: " << *a2 << '\n';
-
-    std::cout << "a3: " << a3 << '\n';
-    std::cout << "a4: " << a4 << '\n';
-
-    if (a4)
-        std::cout << "a4 deref: " << *a4 << '\n';
-
-    std::cout << "a5: " << a5 << '\n';
-    std::cout << "a6: " << a6 << '\n';
-
-    if (a4)
-        std::cout << "a6 deref: " << *a6 << '\n';
-
-    std::cout << "a7: " << a7 << '\n';
-
-    std::cout << "a8: " << (bool)a8 << '\n';
-    std::cout << "a9: " << a9 << '\n';
-
-    if (a9)
-        std::cout << "a9 deref: " << *a9 << '\n';
-
-    auto bugha = WorldOverlapCheckO(a1, a2, a3, a4, a5, a6, a7, a8, a9);
-
-    std::cout << "res: " << (int)bugha << '\n';
-
-    return bugha;
 }
 
 DWORD WINAPI Main(LPVOID)
@@ -333,6 +292,14 @@ DWORD WINAPI Main(LPVOID)
 
         MH_CreateHook((PVOID)heloaddr, crash2Detour, nullptr);
         MH_EnableHook((PVOID)heloaddr);
+    }
+
+    if (FnVerDouble == 6.21)
+    {
+        static auto dupciateplayetraddy = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 70 48 8B 01 48 8B DA 48 8B F9 FF 90 ? ? ? ? 48 8B 53 08 48 8B C8 E8");
+
+        MH_CreateHook((PVOID)dupciateplayetraddy, duplicateplayerdetour, nullptr); // stupid
+        MH_EnableHook((PVOID)dupciateplayetraddy);
     }
 
     if (FnVerDouble == 7.30)

@@ -96,9 +96,19 @@ void TickFlushDetour(UObject* thisNetDriver, float DeltaSeconds)
 			if (ClientConnections && ClientConnections->Num() > 0)
 			{
 				if (FnVerDouble <= 3.3)
+				{
 					ReplicateActors(NetDriver, World);
+				}
 				else
-					ServerReplicateActors(NetDriver);
+				{
+					static auto ReplicationDriverOffset = GetOffset(NetDriver, "ReplicationDriver");
+					auto ReplicationDriver = (UObject**)(__int64(NetDriver) + ReplicationDriverOffset);
+
+					if (ReplicationDriver && *ReplicationDriver)
+					{
+						RepGraph_ServerReplicateActors(*ReplicationDriver);
+					}
+				}
 			}
 		}
 		else
@@ -354,6 +364,12 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 	{
 	case 0:
 	{
+		if (Helper::HasAircraftStarted() && !bIsPlayground)
+		{
+			std::cout << "Denying join because aircraft has started!\n";
+			return;
+		}
+
 		break;
 	}
 	case 4: // NMT_Netspeed // Do we even have to rei,plment this?

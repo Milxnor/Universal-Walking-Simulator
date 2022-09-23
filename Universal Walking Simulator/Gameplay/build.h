@@ -120,13 +120,14 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				if (!MatInstance || *FFortItemEntry::GetCount(GetItemEntryFromInstance(MatInstance)) < 10)
 					return false;
 
-				static __int64 (*CantBuild)(UObject*, UObject*, FVector, FRotator, char, void*, void*) = nullptr;
+				/* __int64 (*CanBuild)(UObject*, UObject*, FVector, FRotator, char, void*, char*) = nullptr;
 
-				// CantBuild = decltype(CantBuild)(FindPattern("48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0"));
+				CanBuild = decltype(CanBuild)(FindPattern("48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0"));
 
-				int a = 0;
+				__int64 v32[2];
+				char dababy;
 
-				// if (CantBuild && !CantBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, &a, &a))
+				if (!CanBuild || (CanBuild && !CanBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy))) */
 				{
 					UObject* BuildingActor = Easy::SpawnActor(BuildingClass, BuildingLocation, BuildingRotation);
 
@@ -181,6 +182,9 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 						}
 					}
 				}
+
+				// if (v32[0])
+					// FMemory::Free(v32);
 			}
 		}
 	}
@@ -295,7 +299,7 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 
 		if (BuildingActor && NewBuildingClass)
 		{
-			if (RotationIterations > 3)
+			if (false && RotationIterations > 3)
 				return false;
 
 			auto Location = Helper::GetActorLocation(BuildingActor);

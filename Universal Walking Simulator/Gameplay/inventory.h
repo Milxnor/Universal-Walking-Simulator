@@ -1564,7 +1564,7 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 				if (!shouldGoInSecondaryBar)
 				{
-					if (FnVerDouble >= 7.40)
+					if (true) // (FnVerDouble >= 7.40)
 					{
 						int PrimaryQuickBarSlotsFilled = 0;
 
@@ -1919,7 +1919,7 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 
 		if (!shouldGoInSecondaryBar)
 		{
-			if (FnVerDouble >= 7.40)
+			if (true) // if (FnVerDouble >= 7.40)
 			{
 				int PrimaryQuickBarSlotsFilled = 0;
 
