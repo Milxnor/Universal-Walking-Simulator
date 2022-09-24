@@ -1000,6 +1000,8 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							auto PlayerName = Helper::GetfPlayerName(CurrentPlayer.second);
 							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (("Player: ") + PlayerName.ToString()).c_str());
+							// ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (("Team: ") + *Teams::GetTeamIndex(CurrentPlayer.second)).c_str());
+
 							// TODO: Add Inventory, let them drop, delete, add, modify, etc.
 							if (ImGui::Button(("Game Statistics")))
 							{

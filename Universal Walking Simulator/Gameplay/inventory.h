@@ -1810,28 +1810,31 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 			auto WeaponLoadedAmmo = FFortItemEntry::GetLoadedAmmo(WeaponItemEntry);
 			auto WeaponAmmoCount = Weapon->Member<int>("AmmoCount");
 
-			std::cout << "wep ammo: " << *WeaponAmmoCount << '\n';
-			std::cout << "WEaponLoadedAMmo: " << *WeaponLoadedAmmo << '\n';
-
-			*WeaponLoadedAmmo = *WeaponAmmoCount;
-			setBitfield(Weapon, "bUpdateLocalAmmoCount", true);
-
-			Inventory::Update(PlayerController, -1, true, (FFastArraySerializerItem*)WeaponItemEntry);
-
-			Inventory::GetWorldInventory(PlayerController)->ProcessEvent("ForceNetUpdate");
-
-			if (bIsPlayground)
-				return;
-
-			Inventory::DecreaseItemCount(PlayerController, instance, AmountToRemove, &AmmoEntry);
-
-			if (AmmoEntry)
+			if (WeaponLoadedAmmo && WeaponAmmoCount)
 			{
-				auto ammocounnt = FFortItemEntry::GetCount(AmmoEntry);
+				std::cout << "wep ammo: " << *WeaponAmmoCount << '\n';
+				std::cout << "WEaponLoadedAMmo: " << *WeaponLoadedAmmo << '\n';
 
-				if (ammocounnt && *ammocounnt <= 0) // Destroy the item if it has no count
+				*WeaponLoadedAmmo = *WeaponAmmoCount;
+				setBitfield(Weapon, "bUpdateLocalAmmoCount", true);
+
+				Inventory::Update(PlayerController, -1, true, (FFastArraySerializerItem*)WeaponItemEntry);
+
+				Inventory::GetWorldInventory(PlayerController)->ProcessEvent("ForceNetUpdate");
+
+				if (bIsPlayground)
+					return;
+
+				Inventory::DecreaseItemCount(PlayerController, instance, AmountToRemove, &AmmoEntry);
+
+				if (AmmoEntry)
 				{
-					Inventory::RemoveItem(PlayerController, *FFortItemEntry::GetGuid(AmmoEntry));
+					auto ammocounnt = FFortItemEntry::GetCount(AmmoEntry);
+
+					if (ammocounnt && *ammocounnt <= 0) // Destroy the item if it has no count
+					{
+						Inventory::RemoveItem(PlayerController, *FFortItemEntry::GetGuid(AmmoEntry));
+					}
 				}
 			}
 		}

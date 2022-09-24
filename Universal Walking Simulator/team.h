@@ -14,12 +14,6 @@ namespace Teams
 		FUniqueNetIdRepl                            MemberUniqueId;                                           // 0x0010(0x0028) (HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	};
 
-	struct FGameMemberInfoArraySE : public FFastArraySerializerSE
-	{
-	public:
-		TArray<FGameMemberInfo>               Members;                                           // 0x108(0x10)(ZeroConstructor, NativeAccessSpecifierPrivate)
-		UObject* OwningGameState;                                   // 0x118(0x8)(ZeroConstructor, Transient, IsPlainOldData, RepSkip, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-	};
 
 	struct FPrivateTeamDataItem : public FFastArraySerializerItem
 	{
@@ -76,7 +70,8 @@ namespace Teams
 
 		std::cout << "AllTeams Num: " << AllTeams->Num() << '\n';
 
-		AFortTeamInfo* CurrentTeam = (*PlayerState->Member<UObject*>("PlayerTeam")); // AllTeams->At(NextTeamIndex); // *PlayerState->Member<UObject*>("PlayerTeam");
+		auto PlayerTeam = PlayerState->Member<UObject*>("PlayerTeam");
+		AFortTeamInfo* CurrentTeam = AllTeams->At(NextTeamIndex); // *PlayerTeam;
 
 		std::cout << "CurrentTeam: " << CurrentTeam << '\n';
 		std::cout << "NextTeamIndex: " << NextTeamIndex << '\n';
@@ -91,13 +86,18 @@ namespace Teams
 
 		auto CurrentTeamMembers = CurrentTeam->CachedMember<TArray<AController*>>("TeamMembers");
 
-		if (CurrentTeamMembers->Num() + 1 == MaxPlayersPerTeam)
+		std::cout << "CurrentTeamMembers->Num(): " << CurrentTeamMembers->Num() << '\n';
+		std::cout << "MaxPlayersPerTeam: " << MaxPlayersPerTeam << '\n';
+
+		if (CurrentTeamMembers->Num() == MaxPlayersPerTeam)
 		{
 			CurrentTeam = AllTeams->At(++NextTeamIndex);
 			CurrentTeamMembers = CurrentTeam->CachedMember<TArray<AController*>>("TeamMembers");
 		}
 
 		// now we have the correct teaminfo and members
+
+		*PlayerTeam = CurrentTeam;
 
 		auto TeamIndex = NextTeamIndex;
 		auto SquadId = NextTeamIndex - (Engine_Version >= 424 ? 2 : 1); // nice one fortnite // -0 -1 -2 ??
@@ -116,7 +116,7 @@ namespace Teams
 			std::cout << "PReviosut eam: " << *PlayerState->Member<UObject*>("PlayerTeam") << '\n';
 			CurrentTeamMembers->Add(Controller);
 
-			*PlayerState->Member<AFortTeamInfo*>("PlayerTeam") = CurrentTeam;
+			*PlayerTeam = CurrentTeam;
 			*PlayerState->Member<AFortTeamPrivateInfo*>("PlayerTeamPrivate") = *CurrentTeam->Member<AFortTeamPrivateInfo*>("PrivateInfo");
 
 			PlayerState->ProcessEvent("OnRep_PlayerTeam");
@@ -126,14 +126,14 @@ namespace Teams
 		PlayerState->ProcessEvent("OnRep_SquadId");
 		PlayerState->ProcessEvent("OnRep_TeamIndex", &OldTeamIdx);
 
-		(*PlayerState->Member<UObject*>("PlayerTeam"))->CachedMember<TArray<AController*>>("TeamMembers")->Add(Controller);
+		(*PlayerTeam)->CachedMember<TArray<AController*>>("TeamMembers")->Add(Controller);
 
 		/* std::cout << "Current Team PrivateInfo: " << (*CurrentTeam->Member<UObject*>("PrivateInfo"))->GetFullName() << '\n';
 
 		std::cout << "PlayerTeam: " << *PlayerState->Member<UObject*>("PlayerTeam") << '\n';
 		std::cout << "Team Members size: " << CurrentTeamMembers->Num() << '\n'; */
 
-		if (Engine_Version >= 423)
+		if (Engine_Version >= 422)
 		{
 			FGameMemberInfo MemberInfo = FGameMemberInfo{ -1, -1, -1 };
 			MemberInfo.TeamIndex = *PlayerStateTeamIDX; // TeamIndex;
@@ -141,13 +141,18 @@ namespace Teams
 			MemberInfo.MemberUniqueId = *PlayerState->CachedMember<FUniqueNetIdRepl>("UniqueId");
 			// MemberInfo.funny = 100 + *PlayerStateTeamIDX + *PlayerStateSquadId;
 
-			auto GameMemberInfoArray = GameState->Member<FGameMemberInfoArraySE>("GameMemberInfoArray");
+			auto GameMemberInfoArray = GameState->Member<void>("GameMemberInfoArray");
 
 			if (GameMemberInfoArray)
 			{
-				GameMemberInfoArray->OwningGameState = GameState;
-				GameMemberInfoArray->Members.Add(MemberInfo);
-				MarkArrayDirty(GameMemberInfoArray);
+				static auto MembersOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.GameMemberInfoArray", "Members");
+				auto Members = (TArray<FGameMemberInfo>*)(__int64(GameMemberInfoArray) + MembersOffset);
+
+				if (GameMemberInfoArray && Members)
+				{
+					Members->Add(MemberInfo);
+					MarkArrayDirty(GameMemberInfoArray);
+				}
 			}
 		}
 	}

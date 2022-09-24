@@ -274,6 +274,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	// if (Engine_Version >= 420) // && FnVerDouble < 19.00)
 	{
+		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
+
 		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
 		static int LastResetNum = 0;
@@ -308,8 +310,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			Inventory::GiveAllAmmo(PlayerController);
 			Inventory::GiveMats(PlayerController);
 		}
-
-		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
 	}
 
 	// todo: not do this for invicibility
@@ -431,6 +431,16 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 			Bunch[7] -= (16 * 1024 * 1024);
 
 			WelcomePlayer(correctWorld, Connection);
+
+			if (false) // TODO: Test
+			{
+				static auto sizeOfHistogram = 16 + 4 + 8 + 4 + 4;
+
+				static auto PlayerOnlinePlatformNameOffset = GetOffset(Connection, "ChannelsToTick") + 16 + sizeOfHistogram;
+				auto PlayerOnlinePlatformName = (FName*)(__int64(Connection) + PlayerOnlinePlatformNameOffset);
+
+				*PlayerOnlinePlatformName = Helper::StringToName(OnlinePlatformName);
+			}
 
 			return;
 		}
