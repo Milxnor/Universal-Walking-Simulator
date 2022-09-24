@@ -14,7 +14,7 @@ void AllowConnections(UObject* NetDriver)
 
     if (BeaconHost)
     {
-        if (Engine_Version == 421) // idfk
+        /* if (Engine_Version == 421) // idfk
         {
             auto ahh = (int*)(BeaconHost + 0x340);
 
@@ -23,8 +23,8 @@ void AllowConnections(UObject* NetDriver)
             else
                 std::cout << "fix yo game!\n";
         }
-        else
-            PauseBeaconRequests(BeaconHost, false);
+        else */
+        PauseBeaconRequests(BeaconHost, false);
     }
     else
         std::cout << "No BeaconHost!\n";

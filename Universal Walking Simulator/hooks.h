@@ -502,7 +502,10 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 							std::cout << ("Unable to find setShieldFn!\n");
 					}
 
-					Aircraft->ProcessEvent("PlayEffectsForPlayerJumped");
+					static auto PlayEffectsForPlayerJumped = Aircraft->Function("PlayEffectsForPlayerJumped");
+
+					if (PlayEffectsForPlayerJumped)
+						Aircraft->ProcessEvent(PlayEffectsForPlayerJumped);
 
 					/* if (Engine_Version <= 421)
 					{
@@ -915,21 +918,24 @@ inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Functio
 			Helper::SetLocalRole(Pawn, ENetRole::ROLE_Authority);
 			Helper::SetLocalRole(Vehicle, ENetRole::ROLE_Authority);
 
-			UObject* VehicleWeaponDef = nullptr; // Vehicle->Member<UObject*>("CachedWeaponDef");
-
-			// Function /Script/FortniteGame.FortPlayerControllerZone.ServerRequestSeatChange
-
-			if (VehicleWeaponDef)
+			if (bAreVehicleWeaponsEnabled)
 			{
-				VehicleWeaponDef = Helper::GetWeaponData(Helper::GetCurrentWeapon(Pawn)); // scuffed? noooo
+				UObject* VehicleWeaponDef = nullptr; // Vehicle->Member<UObject*>("CachedWeaponDef");
+
+				// Function /Script/FortniteGame.FortPlayerControllerZone.ServerRequestSeatChange
 
 				if (VehicleWeaponDef)
 				{
-					auto VehicleWeaponInstance = Inventory::FindItemInInventory(Controller, VehicleWeaponDef);
+					VehicleWeaponDef = Helper::GetWeaponData(Helper::GetCurrentWeapon(Pawn)); // scuffed? noooo
 
-					if (VehicleWeaponInstance)
+					if (VehicleWeaponDef)
 					{
-						Inventory::RemoveItem(Controller, Inventory::GetItemGuid(VehicleWeaponInstance));
+						auto VehicleWeaponInstance = Inventory::FindItemInInventory(Controller, VehicleWeaponDef);
+
+						if (VehicleWeaponInstance)
+						{
+							Inventory::RemoveItem(Controller, Inventory::GetItemGuid(VehicleWeaponInstance));
+						}
 					}
 				}
 			}
@@ -1157,7 +1163,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 	if (Params && Controller)
 	{
-		auto Pawn = *Controller->Member<UObject*>(("Pawn"));
+		auto Pawn = Helper::GetPawnFromController(Controller);
 		auto ReceivingActor = Params->ReceivingActor;
 
 		if (ReceivingActor && basicLocationCheck(Pawn, ReceivingActor, 450.f))
@@ -1170,10 +1176,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 			if (ReceivingActor->IsA(BuildingContainerClass))
 			{
-				/* if (readBitfield(ReceivingActor, "bAlreadySearched"))
-					return false;
-
-				setBitfield(ReceivingActor, "bAlreadySearched", true, true); */
+				static auto BuildingContainerClass = FindObject(("Class /Script/FortniteGame.BuildingContainer"));
 
 				auto Prop = GetProperty(ReceivingActor, "bAlreadySearched");
 
@@ -1196,6 +1199,15 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				{
 					*Byte = (*Byte & ~FieldMask) | (FieldMask);
 				}
+
+				/* static auto bAlreadySearchedOffset = GetOffset(ReceivingActor, "bAlreadySearched");
+				static auto bAlreadySearchedFM = GetFieldMask(GetProperty(ReceivingActor, "bAlreadySearched"));
+				static auto bAlreadySearchedBI = GetBitIndex(GetProperty(ReceivingActor, "bAlreadySearched"), bAlreadySearchedFM);
+
+				if (readd((uint8_t*)(__int64(ReceivingActor) + bAlreadySearchedOffset), bAlreadySearchedBI))
+					return true;
+
+				sett((uint8_t*)(__int64(ReceivingActor) + bAlreadySearchedOffset), bAlreadySearchedBI, bAlreadySearchedFM, true); */
 
 				static auto AlreadySearchedFn = ReceivingActor->Function(("OnRep_bAlreadySearched"));
 
@@ -1298,29 +1310,32 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				// static auto StartupAbilitySet = *ReceivingActor->Member<UObject*>("StartupAbilitySet");
 				// auto Abilities = GiveAbilitySet(Pawn, StartupAbilitySet);
 
-				UObject* VehicleWeaponDefinition = nullptr;
-
-				if (ReceivingActorName.contains("Ferret")) // plane
-					VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Ferret_Weapon.Ferret_Weapon");
-				
-				else if (ReceivingActorName.contains("Octopus")) // baller
-					VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/WID_Octopus_Weapon.WID_Octopus_Weapon");
-
-				else if (ReceivingActorName.contains("Cannon")) // cannon
-					VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/ShipCannon_Weapon_InCannon.ShipCannon_Weapon_InCannon");
-
-				else if (ReceivingActorName.contains("Ostrich")) // mech
-					VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/WID_OstrichShotgunTest2.WID_OstrichShotgunTest2");
-
-				std::cout << "goofy ahh\n";
-
-				if (VehicleWeaponDefinition)
+				if (bAreVehicleWeaponsEnabled)
 				{
-					auto instnace = Inventory::GiveItem(Controller, VehicleWeaponDefinition, EFortQuickBars::Primary, 1, 1);
-					*FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(instnace)) = INT32_MAX; // pro code
-					Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(instnace));
-					std::cout << "vehicle weapon!\n";
-				}		
+					UObject* VehicleWeaponDefinition = nullptr;
+
+					if (ReceivingActorName.contains("Ferret")) // plane
+						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Ferret_Weapon.Ferret_Weapon");
+
+					else if (ReceivingActorName.contains("Octopus")) // baller
+						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/WID_Octopus_Weapon.WID_Octopus_Weapon");
+
+					else if (ReceivingActorName.contains("Cannon")) // cannon
+						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/ShipCannon_Weapon_InCannon.ShipCannon_Weapon_InCannon");
+
+					else if (ReceivingActorName.contains("Ostrich")) // mech
+						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/WID_OstrichShotgunTest2.WID_OstrichShotgunTest2");
+
+					std::cout << "goofy ahh\n";
+
+					if (VehicleWeaponDefinition)
+					{
+						auto instnace = Inventory::GiveItem(Controller, VehicleWeaponDefinition, EFortQuickBars::Primary, 1, 1);
+						*FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(instnace)) = INT32_MAX; // pro code
+						Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(instnace));
+						std::cout << "vehicle weapon!\n";
+					}
+				}	
 			}
 
 			if (Engine_Version >= 424 && ReceivingActorName.contains("Wumba")) // Workbench/Upgrade Bench
@@ -1688,11 +1703,34 @@ inline bool OnDeathServerHook(UObject* BuildingActor, UFunction* Function, void*
 			}
 		}
 
-		static auto BuildingContainerClass = FindObject(("Class /Script/FortniteGame.BuildingContainer"));
-
-		if (BuildingActor->IsA(BuildingContainerClass) && !readBitfield(BuildingActor, "bAlreadySearched")) // bDoNotDropLootOnDestructionAActor
+		if (Engine_Version >= 424)
 		{
-			LootingV2::HandleSearch(BuildingActor);
+			static auto BuildingContainerClass = FindObject(("Class /Script/FortniteGame.BuildingContainer"));
+
+			// static auto bDoNotDropLootOnDestructionOffset = GetOffset(BuildingActor, "bDoNotDropLootOnDestruction");
+			// static auto bDoNotDropLootOnDestructionBI = GetBitIndex(GetProperty(BuildingActor, "bDoNotDropLootOnDestruction"));
+
+			auto Prop = GetProperty(BuildingActor, "bAlreadySearched");
+
+			auto offset = GetOffsetFromProp(Prop);
+
+			if (offset == -1)
+				return false;
+
+			auto Actual = (__int64*)(__int64(BuildingActor) + offset);
+
+			static auto FieldMask = GetFieldMask(Prop);
+			static auto BitIndex = GetBitIndex(Prop, FieldMask);
+
+			if (!(bool)(*(uint8_t*)Actual & BitIndex))
+				return false;
+
+			if (BuildingActor->IsA(BuildingContainerClass)
+				// && !readd((uint8_t*)(__int64(BuildingActor) + bDoNotDropLootOnDestructionOffset), bDoNotDropLootOnDestructionBI)
+				)
+			{
+				LootingV2::HandleSearch(BuildingActor);
+			}
 		}
 	}
 

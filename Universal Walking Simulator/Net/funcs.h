@@ -544,13 +544,14 @@ static std::vector<UObject*> ExistingBuildings;
 
 static bool bUseBeacons = true;
 
-static bool bDoubleBuildFix = false;
+static constexpr bool bDoubleBuildFix = false;
 static bool bClearInventoryOnAircraftJump = !bIsPlayground;
 static bool bIsInEvent = false;
 static bool bPrintSpawnActor = false;
 static bool bRestarting = false;
 static bool bIsReadyToRestart = true; // i hate my life
 static bool bIsTrickshotting = false; // this is stupid
+static constexpr bool bAreVehicleWeaponsEnabled = false;
 static int AmountOfRestarts = 0;
 
 std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";

@@ -1588,7 +1588,7 @@ uint8_t GetBitIndex(void* Property, uint8_t FieldMask_ = -1)
 	return 0;
 }
 
-bool readd(uint8_t* Actual, int BitIndex)
+bool readd(uint8_t* Actual, int BitIndex) // broken
 {
 	if (BitIndex != 0xFF) // if it is 0xFF then its just a normal bool
 	{
