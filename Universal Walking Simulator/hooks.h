@@ -617,7 +617,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		auto Params = (parms*)Parameters;
 
 		auto DeadPawn = Helper::GetPawnFromController(DeadPC);
-		auto DeadPlayerState = *DeadPC->Member<UObject*>(("PlayerState"));
+		auto DeadPlayerState = Helper::GetPlayerStateFromController(DeadPC);
 		auto GameState = Helper::GetGameState();
 
 		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
@@ -629,7 +629,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		UObject* KillerController = nullptr;
 
 		if (KillerPawn)
-			KillerController = *KillerPawn->CachedMember<UObject*>(("Controller"));
+			KillerController = Helper::GetControllerFromPawn(KillerPawn);
 			
 		static auto DeathLocationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathLocation"));	
 		auto DeathInfoOffset = GetOffset(DeadPlayerState, "DeathInfo");
@@ -647,7 +647,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		{
 			auto DeathCause = EDeathCause::SniperNoScope;
 
-			auto PlayersLeft = GameState->Member<int>(("PlayersLeft"));
+			static auto PlayersLeftOffset = GetOffset(GameState, "PlayersLeft");
+			auto PlayersLeft = (int*)(__int64(GameState) + PlayersLeftOffset);
 
 			(*PlayersLeft)--;
 
@@ -692,7 +693,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				if (WinningPlayerState)
 				{
 					*WinningPlayerState = KillerPlayerState;
-					*GameState->Member<int>("WinningTeam") = *KillerPlayerState->Member<int>("TeamIndex");
+					*GameState->Member<int>("WinningTeam") = *Teams::GetTeamIndex(KillerPlayerState);
 
 					struct FFortWinnerPlayerData { int PlayerId; };
 
@@ -728,14 +729,18 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 						auto Definition = Inventory::TakeItem(DeadPC, Params->ItemGuid, Params->Count, true);
 						auto Pawn = Helper::GetPawnFromController(DeadPC);
 
-						// bDropOnDBNO
+						static auto bDropOnDeathOffset = GetOffset(Definition, "bDropOnDeath");
+						static auto bDropOnDeathBI = GetBitIndex(GetProperty(Definition, "bDropOnDeath"));
 
-						if (Pawn && Definition)
+						// if (readd((uint8_t*)(__int64(Actor) + bDropOnDeathOffset), bDropOnDeathBI)) // TODO: Test
 						{
-							auto loc = Helper::GetActorLocation(Pawn);
+							if (Pawn && Definition)
+							{
+								auto loc = Helper::GetActorLocation(Pawn);
 
-							auto Pickup = Helper::SummonPickup(Pawn, Definition, DeathLocation, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::PlayerElimination, 
-								Params->Count);
+								auto Pickup = Helper::SummonPickup(Pawn, Definition, DeathLocation, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::PlayerElimination,
+									Params->Count);
+							}
 						}
 					}
 				}
@@ -833,7 +838,9 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			if (ClientReportKill)
 				KillerPlayerState->ProcessEvent(ClientReportKill, &ClientReportKill_Params);
 
-			(*KillerPlayerState->Member<int>(("KillScore")))++;
+			static auto KillScoreOffset = GetOffset(KillerPlayerState, "KillScore");
+
+			(*(int*)(__int64(KillerPlayerState) + KillScoreOffset))++;
 
 			if (Engine_Version >= 423) // idgaf wrong
 				(*KillerPlayerState->Member<int>(("TeamKillScore")))++;

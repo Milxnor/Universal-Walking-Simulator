@@ -407,10 +407,11 @@ namespace Helper
 
 	void ShowBuilding(UObject* Foundation, bool bShow = true)
 	{
-		if (!Foundation || bRestarting)
+		if (!Foundation)
 			return;
 
-		auto DynamicFoundationType = Foundation->Member<uint8_t>(("DynamicFoundationType"));
+		static auto DynamicFoundationTypeOffset = GetOffset(Foundation, "DynamicFoundationType");
+		auto DynamicFoundationType = (uint8_t*)(__int64(Foundation) + DynamicFoundationTypeOffset);
 		
 		if (DynamicFoundationType && *DynamicFoundationType)
 			*DynamicFoundationType = bShow ? 0 : 3;
@@ -421,8 +422,14 @@ namespace Helper
 			uint8_t                                        bServerStreamedInLevel : 1;
 		};
 
-		Foundation->Member<BITMF>("bServerStreamedInLevel")->bServerStreamedInLevel = bShow; // fixes hlods
-		Foundation->ProcessEvent("OnRep_ServerStreamedInLevel");
+		static auto bServerStreamedInLevelOffset = GetOffset(Foundation, "bServerStreamedInLevel");
+
+		((BITMF*)(__int64(Foundation) + bServerStreamedInLevelOffset))->bServerStreamedInLevel = bShow; // fixes hlods
+
+		static auto OnRep_ServerStreamedInLevel = Foundation->Function("OnRep_ServerStreamedInLevel");
+
+		if (OnRep_ServerStreamedInLevel)
+			Foundation->ProcessEvent(OnRep_ServerStreamedInLevel);
 
 		if (FnVerDouble >= 10.0) {
 			auto DynamicFoundationRepData = Foundation->Member<__int64>("DynamicFoundationRepData");
@@ -484,21 +491,21 @@ namespace Helper
 		int Season = (int)Version;
 		//Volcano
 		if (Season == 8) {
-			static auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
+			auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
 			ShowBuilding(Volcano);
 		}
 		//Pleasant
 		if (Season == 7) {
-			static auto idfk = FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")); // polar peak?
+			auto idfk = FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")); // polar peak?
 			ShowBuilding(idfk);
 
-			static auto tiltedtower = FindObject("BuildingFoundation5x5 /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.ShopsNew");
+			auto tiltedtower = FindObject("BuildingFoundation5x5 /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.ShopsNew");
 			ShowBuilding(tiltedtower);
 		}
 
 		if (Season >= 7 && Engine_Version < 424)
 		{
-			static auto TheBlock = FindObject("BuildingFoundationSlab_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_2"); // SLAB_3 is blank
+			auto TheBlock = FindObject("BuildingFoundationSlab_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_2"); // SLAB_3 is blank
 			ShowBuilding(TheBlock);
 
 			/* FString dababy;
@@ -522,7 +529,7 @@ namespace Helper
 
 		//Marshamello
 		if (Version == 7.30f) {
-			static auto PleasantPark = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"));
+			auto PleasantPark = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"));
 			ShowBuilding(PleasantPark);
 		}
 
@@ -539,9 +546,9 @@ namespace Helper
 		if (Season == 6) {
 			if (FnVerDouble != 6.10)
 			{
-				static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
-				static auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
-				static auto Lake2 = FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
+				auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
+				auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
+				auto Lake2 = FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
 
 				ShowBuilding(FloatingIsland);
 
@@ -552,8 +559,8 @@ namespace Helper
 			}
 			else
 			{
-				static auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13"));
-				static auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest12"));
+				auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13"));
+				auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest12"));
 
 				ShowBuilding(FloatingIsland);
 				ShowBuilding(Lake);
@@ -856,6 +863,16 @@ namespace Helper
 		static auto PawnOffset = GetOffset(PC, "Pawn");
 
 		return *(UObject**)(__int64(PC) + PawnOffset);
+	}
+
+	UObject* GetControllerFromPawn(UObject* Pawn)
+	{
+		if (Pawn)
+			return nullptr;
+
+		static auto PawnOffset = GetOffset(Pawn, "Controller");
+
+		return *(UObject**)(__int64(Pawn) + PawnOffset);
 	}
 
 	UObject* GetPlayerStateFromController(UObject* PC)
@@ -1621,7 +1638,8 @@ namespace Helper
 		}
 		else
 		{
-			auto PlaylistData = gameState->Member<UObject*>(("CurrentPlaylistData"));
+			static auto CurrentPlaylistDataOffset = GetOffset(gameState, "CurrentPlaylistData");
+			auto PlaylistData = (UObject**)(__int64(gameState) + CurrentPlaylistDataOffset);
 
 			if (outAddr)
 				*outAddr = PlaylistData;

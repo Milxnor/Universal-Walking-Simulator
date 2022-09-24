@@ -50,8 +50,9 @@ namespace Teams
 
 	void AssignTeam(UObject* Controller)
 	{
-		auto GameState = Helper::GetGameState();
-		auto GameMode = *Helper::GetWorld()->Member<UObject*>(("AuthorityGameMode"));
+		auto World = Helper::GetWorld();
+		auto GameState = Helper::GetGameState(World);
+		auto GameMode = *World->Member<UObject*>(("AuthorityGameMode"));
 		auto Playlist = Helper::GetPlaylist();
 
 		// we really shouldn't cache any of these as they aren't used anywhere else.
@@ -83,11 +84,10 @@ namespace Teams
 		if (!CurrentTeam)
 			return;
 
-		std::cout << "Current Team: " << CurrentTeam->GetFullName() << '\n';
+		/* std::cout << "Current Team: " << CurrentTeam->GetFullName() << '\n';
 		std::cout << "Current Team PrivateInfo: " << (*CurrentTeam->Member<UObject*>("PrivateInfo"))->GetFullName() << '\n';
 		std::cout << "Team: " << (int)*CurrentTeam->Member<uint8_t>("Team") << '\n';
-
-		std::cout << "CUrrentTeams TEAM: " << (int)*(*PlayerState->Member<UObject*>("PlayerTeam"))->Member<uint8_t>("Team") << '\n';
+		std::cout << "CUrrentTeams TEAM: " << (int)*(*PlayerState->Member<UObject*>("PlayerTeam"))->Member<uint8_t>("Team") << '\n'; */
 
 		auto CurrentTeamMembers = CurrentTeam->CachedMember<TArray<AController*>>("TeamMembers");
 
@@ -104,7 +104,7 @@ namespace Teams
 
 		std::cout << std::format("New player going on {} as {} team member.\n", TeamIndex, SquadId);
 
-		auto PlayerStateTeamIDX = PlayerState->CachedMember<uint8_t>("TeamIndex");
+		auto PlayerStateTeamIDX = Teams::GetTeamIndex(PlayerState);
 		auto OldTeamIdx = *PlayerStateTeamIDX;
 		auto PlayerStateSquadId = PlayerState->Member<uint8_t>("SquadId");
 
@@ -128,10 +128,10 @@ namespace Teams
 
 		(*PlayerState->Member<UObject*>("PlayerTeam"))->CachedMember<TArray<AController*>>("TeamMembers")->Add(Controller);
 
-		std::cout << "Current Team PrivateInfo: " << (*CurrentTeam->Member<UObject*>("PrivateInfo"))->GetFullName() << '\n';
+		/* std::cout << "Current Team PrivateInfo: " << (*CurrentTeam->Member<UObject*>("PrivateInfo"))->GetFullName() << '\n';
 
 		std::cout << "PlayerTeam: " << *PlayerState->Member<UObject*>("PlayerTeam") << '\n';
-		std::cout << "Team Members size: " << CurrentTeamMembers->Num() << '\n';
+		std::cout << "Team Members size: " << CurrentTeamMembers->Num() << '\n'; */
 
 		if (Engine_Version >= 423)
 		{
