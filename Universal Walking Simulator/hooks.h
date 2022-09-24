@@ -2382,25 +2382,28 @@ void InitializeHooks()
 		MH_EnableHook((PVOID)FixCrashAddr);
 	}
 
-	auto sig = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
-
-	if (!sig)
-		sig = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11");
-
-	bool bNewFlashingFix = false;
-
-	if (sig) //Engine_Version == 423)
+	if (FnVerDouble < 19.00)
 	{
-		// fixes flashing
+		auto sig = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
 
-		// MH_CreateHook((PVOID)GetPlayerViewpointAddr, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
-		// MH_EnableHook((PVOID)GetPlayerViewpointAddr);
+		if (!sig)
+			sig = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11");
 
-		MH_CreateHook((PVOID)sig, ehehheDetour, (void**)&ehehheO);
-		MH_EnableHook((PVOID)sig);
+		bool bNewFlashingFix = false;
+
+		if (sig) //Engine_Version == 423)
+		{
+			// fixes flashing
+
+			// MH_CreateHook((PVOID)GetPlayerViewpointAddr, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
+			// MH_EnableHook((PVOID)GetPlayerViewpointAddr);
+
+			MH_CreateHook((PVOID)sig, ehehheDetour, (void**)&ehehheO);
+			MH_EnableHook((PVOID)sig);
+		}
+		else
+			std::cout << ("[WARNING] Could not fix flashing!\n");
 	}
-	else
-		std::cout << ("[WARNING] Could not fix flashing!\n");
 
 	if (LP_SpawnPlayActorAddr && false) // bad time but eh
 	{
