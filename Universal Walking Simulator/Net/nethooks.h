@@ -267,7 +267,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	if (!Pawn)
 		return nullptr; // PlayerController;
 
-	Teams::AssignTeam(PlayerController);
+	if (Engine_Version > 419)
+		Teams::AssignTeam(PlayerController);
 
 	if (FnVerDouble < 13.00)
 		GiveAllBRAbilities(Pawn);

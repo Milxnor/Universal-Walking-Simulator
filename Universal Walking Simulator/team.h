@@ -35,6 +35,9 @@ namespace Teams
 
 	int GetMaxPlayersPerTeam()
 	{
+		if (Engine_Version <= 419)
+			return 1;
+
 		auto Playlist = Helper::GetPlaylist();
 
 		static auto MaxTeamSizeOffset = GetOffset(Playlist, "MaxTeamSize");
@@ -53,7 +56,10 @@ namespace Teams
 
 		auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-		int MaxPlayersPerTeam = *Playlist->Member<int>("MaxTeamSize");
+		static auto MaxPlayersPerTeamOffset = GetOffset(Playlist, "MaxPlayersPerTeam");
+
+		int MaxPlayersPerTeam = *(int*)(__int64(Playlist) + MaxPlayersPerTeamOffset);
+
 		int MaxTeams = GetMaxPlayersPerTeam();
 		// bool bAllowJoinInProgress = *Playlist->CachedMember<bool>("bAllowJoinInProgress");
 

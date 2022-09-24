@@ -240,7 +240,7 @@ void ReplicateActors(UObject* NetDriver, UObject* World = nullptr)
 
     auto ClientConnections = (TArray<UObject*>*)(__int64(NetDriver) + ClientConnectionsOffset);
 
-    std::cout << "Consider list size: " << ConsiderList.size() << '\n';
+    // std::cout << "Consider list size: " << ConsiderList.size() << '\n';
     
     for (int i = 0; i < ClientConnections->Num(); i++)
     {

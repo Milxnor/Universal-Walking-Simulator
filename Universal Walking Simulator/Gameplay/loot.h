@@ -278,6 +278,7 @@ namespace LootingV2
 
 				if (BuildingContainer && BuildingContainer->GetFullName().contains("Tiered_Athena_FloorLoot_"))
 				{
+					constexpr bool bTossPickup = true;
 					bool ShouldSpawn = true; // RandomBoolWithWeight(0.7f);
 
 					if (ShouldSpawn)
@@ -289,13 +290,13 @@ namespace LootingV2
 						{
 							auto Consumable = GetRandomItem(ItemType::Consumable);
 							Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
-								EFortPickupSpawnSource::Unset, Consumable.DropCount);
+								EFortPickupSpawnSource::Unset, Consumable.DropCount, bTossPickup);
 						}
 						else
 						{
 							auto Weapon = GetRandomItem(ItemType::Weapon);
 
-							auto WeaponPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset);
+							auto WeaponPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, bTossPickup);
 
 							static auto GetAmmoWorldItemDefinition_BP = Weapon.Definition->Function(("GetAmmoWorldItemDefinition_BP"));
 
@@ -306,7 +307,7 @@ namespace LootingV2
 								auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
 
 								Helper::SummonPickup(nullptr, AmmoDef, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
-									EFortPickupSpawnSource::Unset, *AmmoDef->Member<int>("DropCount"));
+									EFortPickupSpawnSource::Unset, *AmmoDef->Member<int>("DropCount"), bTossPickup);
 							}
 						}
 
