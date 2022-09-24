@@ -66,7 +66,7 @@ namespace Teams
 
 		std::cout << "AllTeams Num: " << AllTeams->Num() << '\n';
 
-		AFortTeamInfo* CurrentTeam = AllTeams->At(NextTeamIndex); // *PlayerState->Member<UObject*>("PlayerTeam");
+		AFortTeamInfo* CurrentTeam = (*PlayerState->Member<UObject*>("PlayerTeam")); // AllTeams->At(NextTeamIndex); // *PlayerState->Member<UObject*>("PlayerTeam");
 
 		std::cout << "CurrentTeam: " << CurrentTeam << '\n';
 		std::cout << "NextTeamIndex: " << NextTeamIndex << '\n';
@@ -82,7 +82,7 @@ namespace Teams
 
 		auto CurrentTeamMembers = CurrentTeam->CachedMember<TArray<AController*>>("TeamMembers");
 
-		if (false && CurrentTeamMembers->Num() == MaxPlayersPerTeam)
+		if (CurrentTeamMembers->Num() + 1 == MaxPlayersPerTeam)
 		{
 			CurrentTeam = AllTeams->At(++NextTeamIndex);
 			CurrentTeamMembers = CurrentTeam->CachedMember<TArray<AController*>>("TeamMembers");
@@ -141,7 +141,5 @@ namespace Teams
 				MarkArrayDirty(GameMemberInfoArray);
 			}
 		}
-
-		// NextTeamIndex++;
 	}
 }
