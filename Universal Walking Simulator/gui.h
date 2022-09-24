@@ -996,7 +996,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							static std::string VehicleClass;
 							static std::string WID;
 							static int Count = 1;
-							static int LoadedAmmo = 1;
+							static int LoadedAmmo = 0;
 
 							auto PlayerName = Helper::GetfPlayerName(CurrentPlayer.second);
 							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (("Player: ") + PlayerName.ToString()).c_str());

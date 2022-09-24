@@ -23,7 +23,7 @@ namespace Teams
 		uint8_t                                        Pad_2787[0x8];                                     // Fixing Size Of Struct [ Dumper-7 ]
 	};
 
-	static constexpr int StartingTeamIndex = 3;
+	static constexpr int StartingTeamIndex = 4;
 	static int NextTeamIndex = StartingTeamIndex; // TODO: Use GameMode->NumTeams
 
 	uint8_t* GetTeamIndex(UObject* PlayerState)

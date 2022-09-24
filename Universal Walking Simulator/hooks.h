@@ -652,6 +652,10 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			(*PlayersLeft)--;
 
+			std::cout << "Teams::GetMaxPlayersPerTeam(): " << Teams::GetMaxPlayersPerTeam() << '\n';
+			std::cout << "PlayersLeft: " << *PlayersLeft << '\n';
+			std::cout << "KillerController: " << KillerController << '\n';
+
 			if (*PlayersLeft <= Teams::GetMaxPlayersPerTeam() && KillerController)
 			{
 				static auto DamageCauserOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("DamageCauser"));
@@ -681,7 +685,9 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 					EDeathCause                                        DeathCause;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 				} AFortPlayerControllerAthena_ClientNotifyWon_Params{ KillerPawn, FinishingWeaponDefinition, DeathCause};
 
-				static auto ClientNotifyWon = KillerController->Function("ClientNotifyWon");
+				std::cout << "aetgm!\n";
+
+				static auto ClientNotifyWon = KillerController->Function(/* "ClientNotifyWon" */"ClientNotifyTeamWon");
 
 				if (ClientNotifyWon)
 					KillerController->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
@@ -733,6 +739,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 						static auto bDropOnDeathBI = GetBitIndex(GetProperty(Definition, "bDropOnDeath"));
 
 						// if (readd((uint8_t*)(__int64(Actor) + bDropOnDeathOffset), bDropOnDeathBI)) // TODO: Test
+						if (IsDroppable(Definition))
 						{
 							if (Pawn && Definition)
 							{

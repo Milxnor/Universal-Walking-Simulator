@@ -867,12 +867,12 @@ namespace Helper
 
 	UObject* GetControllerFromPawn(UObject* Pawn)
 	{
-		if (Pawn)
+		if (!Pawn)
 			return nullptr;
 
-		static auto PawnOffset = GetOffset(Pawn, "Controller");
+		static auto ControllerOffset = GetOffset(Pawn, "Controller");
 
-		return *(UObject**)(__int64(Pawn) + PawnOffset);
+		return *(UObject**)(__int64(Pawn) + ControllerOffset);
 	}
 
 	UObject* GetPlayerStateFromController(UObject* PC)
