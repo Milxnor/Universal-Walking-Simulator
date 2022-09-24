@@ -158,7 +158,7 @@ namespace LootingV2
 
 		std::cout << "Amount of rows: " << fortnite.Num() << '\n';
 
-		for (int i = 0; i < fortnite.Num(); i++)
+		for (int i = 0; i < fortnite.Num() - 1; i++)
 		{
 			auto& Man = fortnite.At(i);
 			auto& Pair = Man.ElementData.Value;
