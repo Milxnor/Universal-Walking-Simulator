@@ -39,6 +39,15 @@ namespace Teams
 		return (uint8_t*)(__int64(PlayerState) + TeamIndexOffset);
 	}
 
+	int GetMaxPlayersPerTeam()
+	{
+		auto Playlist = Helper::GetPlaylist();
+
+		static auto MaxTeamSizeOffset = GetOffset(Playlist, "MaxTeamSize");
+
+		return *(int*)(__int64(Playlist) + MaxTeamSizeOffset);
+	}
+
 	void AssignTeam(UObject* Controller)
 	{
 		auto GameState = Helper::GetGameState();
@@ -50,7 +59,7 @@ namespace Teams
 		auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
 		int MaxPlayersPerTeam = *Playlist->Member<int>("MaxTeamSize");
-		int MaxTeams = *Playlist->Member<int>("MaxTeamCount");
+		int MaxTeams = GetMaxPlayersPerTeam();
 		// bool bAllowJoinInProgress = *Playlist->CachedMember<bool>("bAllowJoinInProgress");
 
 		auto AllTeams = GameState->Member<TArray<AFortTeamInfo*>>("Teams");

@@ -1608,7 +1608,8 @@ namespace Helper
 			static auto BasePlaylistOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.PlaylistPropertyArray"), ("BasePlaylist"));
 			if (BasePlaylistOffset)
 			{
-				auto PlaylistInfo = gameState->Member<void>(("CurrentPlaylistInfo"));
+				static auto CurrentPlaylistInfoOffset = GetOffset(gameState, "CurrentPlaylistInfo");
+				auto PlaylistInfo = (void*)(__int64(gameState) + CurrentPlaylistInfoOffset); // gameState->Member<void>(("CurrentPlaylistInfo"));
 
 				auto BasePlaylist = (UObject**)(__int64(PlaylistInfo) + BasePlaylistOffset);// *gameState->Member<UObject>(("CurrentPlaylistInfo"))->Member<UObject*>(("BasePlaylist"), true);
 

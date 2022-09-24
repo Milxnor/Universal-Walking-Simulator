@@ -651,7 +651,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			(*PlayersLeft)--;
 
-			if (*PlayersLeft == 1 && KillerController)
+			if (*PlayersLeft <= Teams::GetMaxPlayersPerTeam() && KillerController)
 			{
 				static auto DamageCauserOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("DamageCauser"));
 
