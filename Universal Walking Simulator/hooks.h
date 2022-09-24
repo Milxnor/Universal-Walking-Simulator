@@ -2405,7 +2405,7 @@ void InitializeHooks()
 			std::cout << ("[WARNING] Could not fix flashing!\n");
 	}
 
-	if (LP_SpawnPlayActorAddr) // bad time but eh
+	if (LP_SpawnPlayActorAddr && false) // bad time but eh
 	{
 		MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
 		MH_EnableHook((PVOID)LP_SpawnPlayActorAddr);
