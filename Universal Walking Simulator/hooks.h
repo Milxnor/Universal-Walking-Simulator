@@ -70,15 +70,7 @@ inline void initStuff()
 				return; */
 
 			if (WillSkipAircraft)
-				*WillSkipAircraft = false;
-
-			auto AircraftStartTime = gameState->Member<float>(("AircraftStartTime"));
-
-			if (AircraftStartTime)
-			{
-				*AircraftStartTime = 99999.0f;
-				*gameState->Member<float>(("WarmupCountdownEndTime")) = 99999.0f;
-			}
+				*WillSkipAircraft = true;
 
 			auto bSkipTeamReplication = gameState->Member<bool>("bSkipTeamReplication");
 
@@ -101,7 +93,7 @@ inline void initStuff()
 			// if (Engine_Version >= 420)
 			if (GamePhase)
 			{
-				*GamePhase = EAthenaGamePhase::Warmup;
+				*GamePhase = EAthenaGamePhase::None;
 
 				struct {
 					EAthenaGamePhase OldPhase;
@@ -212,6 +204,14 @@ inline void initStuff()
 
 				if (OnRep_PlayersLeft)
 					gameState->ProcessEvent(OnRep_PlayersLeft);
+			}
+
+			auto AircraftStartTime = gameState->Member<float>(("AircraftStartTime"));
+
+			if (AircraftStartTime)
+			{
+				*AircraftStartTime = 99999.0f;
+				*gameState->Member<float>(("WarmupCountdownEndTime")) = 99999.0f;
 			}
 		}
 
@@ -961,6 +961,18 @@ inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Functio
 	}
 
 	return false;
+}
+
+__int64 IsNoMCPDetour()
+{
+	return 1;
+}
+
+__int64(__fastcall* getnetmodeO)(UObject* World);
+
+__int64 __fastcall getnetmodedetour(UObject* World)
+{
+	return 1; // ded
 }
 
 inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, void* Parameters)
@@ -2141,6 +2153,16 @@ bool ServerPlaySquadQuickChatMessageHook(UObject* Controller, UFunction* func, v
 	return false;
 }
 
+bool NetMulticast_InvokeGameplayCueExecuted_WithParamsHook(UObject* Pawn, UFunction*, void* Parameters)
+{
+	struct someparms { FGameplayTagContainer tags; };
+	auto Params = (someparms*)Parameters;
+	std::cout << "fafhquyur8321!\n";
+	// std::cout << "Called with " << Params->tags.ToStringSimple(true) << '\n';
+
+	return true;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
@@ -2149,6 +2171,7 @@ void FinishInitializeUHooks()
 	if (Engine_Version >= 424)
 		AddHook("Function /Script/FortniteGame.FortProjectileMovementInterface.IsProjectileBeingKilled", IsProjectileBeingKilledHook);
 
+	AddHook("Function /Script/FortniteGame.FortPawn.NetMulticast_InvokeGameplayCueExecuted_WithParams", NetMulticast_InvokeGameplayCueExecuted_WithParamsHook);
 	// AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerPlaySquadQuickChatMessage", ServerPlaySquadQuickChatMessageHook);
 	AddHook("Function /Script/Engine.GameModeBase.MustSpectate", MustSpectateHook);
 	AddHook("Function /Script/Engine.GameModeBase.PlayerCanRestart", PlayerCanRestartHook);

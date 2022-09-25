@@ -464,10 +464,32 @@ DWORD WINAPI GuiThread(LPVOID)
 						{
 							if (ImGui::Button(("Start Aircraft")))
 							{
+								auto GamePhase = Helper::GetGameState()->Member<EAthenaGamePhase>(("GamePhase"));
+
+								// if (Engine_Version >= 420)
+								if (GamePhase)
+								{
+									*GamePhase = EAthenaGamePhase::Warmup;
+
+									struct {
+										EAthenaGamePhase OldPhase;
+									} params2{ EAthenaGamePhase::None };
+
+									static const auto fnGamephase = Helper::GetGameState()->Function(("OnRep_GamePhase"));
+
+									if (fnGamephase)
+										Helper::GetGameState()->ProcessEvent(fnGamephase, &params2);
+								}
+
 								auto AircraftStartTime = Helper::GetGameState()->Member<float>(("AircraftStartTime"));
 
 								if (AircraftStartTime)
 								{
+									auto WillSkipAircraft = Helper::GetGameState()->Member<bool>(("bGameModeWillSkipAircraft"));
+
+									if (WillSkipAircraft)
+										*WillSkipAircraft = true;
+
 									*AircraftStartTime = 1;
 									*Helper::GetGameState()->Member<float>(("WarmupCountdownEndTime")) = 1;
 								}

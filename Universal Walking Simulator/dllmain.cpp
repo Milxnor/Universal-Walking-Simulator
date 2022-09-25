@@ -340,6 +340,23 @@ DWORD WINAPI Main(LPVOID)
         MH_EnableHook((PVOID)craswhiffkaddr);
     }
 
+    auto nocmcapf = FindPattern("E8 ? ? ? ? 84 C0 75 CE", true, 1);
+
+    if (nocmcapf)
+    {
+        MH_CreateHook((PVOID)nocmcapf, IsNoMCPDetour, nullptr);
+        MH_EnableHook((PVOID)nocmcapf);
+
+        funnyaddry = FindPattern("40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?");
+
+        std::cout << "funnyaddry: " << funnyaddry << '\n';
+
+        MH_CreateHook((PVOID)funnyaddry, getnetmodedetour, (void**)&getnetmodeO);
+        MH_EnableHook((PVOID)funnyaddry);
+    }
+    else
+        std::cout << "[WARNING] Will not be able to apply magical fix!\n";
+
     return 0;
 }
 

@@ -1363,7 +1363,7 @@ namespace Inventory
 			CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 999);
 			CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 999);
 			CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 999);
-			CreateAndAddItem(Controller, GrapplerAmmo, EFortQuickBars::Secondary, 0, 999);
+			// CreateAndAddItem(Controller, GrapplerAmmo, EFortQuickBars::Secondary, 0, 999);
 		}
 	}
 

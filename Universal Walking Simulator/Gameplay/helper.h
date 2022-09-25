@@ -1194,14 +1194,14 @@ namespace Helper
 
 		auto GamePhase = *GetGamePhase();
 
-		if (WarmupClass && Engine_Version != 419 && ActorsNum != 0 && (GamePhase == EAthenaGamePhase::Setup || GamePhase == EAthenaGamePhase::Warmup))
+		if (WarmupClass && Engine_Version != 419 && ActorsNum != 0 && (GamePhase <= EAthenaGamePhase::Warmup))
 		{
-			auto ActorToUseNum = RandomIntInRange(1, ActorsNum);
+			auto ActorToUseNum = RandomIntInRange(2, ActorsNum);
 			auto ActorToUse = (OutActors)[ActorToUseNum];
 
 			while (!ActorToUse)
 			{
-				ActorToUseNum = RandomIntInRange(1, ActorsNum);
+				ActorToUseNum = RandomIntInRange(2, ActorsNum);
 				ActorToUse = (OutActors)[ActorToUseNum];
 			}
 
@@ -1210,7 +1210,7 @@ namespace Helper
 
 			static auto ActorClass = FindObject("Class /Script/Engine.Actor");
 
-			if (ActorToUse->IsA(ActorClass)) // idfk why thisd happens
+			if (ActorToUse->IsA(ActorClass))
 				SpawnTransform.Translation = GetActorLocation(ActorToUse);
 
 			// PC->WarmupPlayerStart = static_cast<AFortPlayerStartWarmup*>(ActorToUse);

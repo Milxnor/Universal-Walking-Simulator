@@ -94,7 +94,7 @@ namespace Teams
 		std::cout << "CurrentTeamMembers->Num(): " << CurrentTeamMembers->Num() << '\n';
 		std::cout << "MaxPlayersPerTeam: " << MaxPlayersPerTeam << '\n';
 
-		if (CurrentTeamMembers->Num() == MaxPlayersPerTeam)
+		if (CurrentTeamMembers->Num() >= MaxPlayersPerTeam)
 		{
 			CurrentTeam = AllTeams->At(++NextTeamIndex);
 			CurrentTeamMembers = CurrentTeam->CachedMember<TArray<AController*>>("TeamMembers");

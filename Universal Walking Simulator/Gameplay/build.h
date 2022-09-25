@@ -52,7 +52,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				BuildingRotation = Params->CreateBuildingData.BuildRot;
 				bMirrored = Params->CreateBuildingData.bMirrored;
 
-				/* static auto RemoteBuildingMaterialOffset = GetOffset(*RemoteClientInfo, "RemoteBuildingMaterial");
+				static auto RemoteBuildingMaterialOffset = GetOffset(*RemoteClientInfo, "RemoteBuildingMaterial");
 				auto RemoteBuildingMaterial = (TEnumAsByte<EFortResourceType>*)(__int64(*RemoteClientInfo) + RemoteBuildingMaterialOffset);
 
 				switch (RemoteBuildingMaterial ? RemoteBuildingMaterial->Get() : EFortResourceType::None)
@@ -61,12 +61,12 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 					MatDefinition = WoodItemData;
 					break;
 				case EFortResourceType::Stone:
-					MatDefinition = WoodItemData;
+					MatDefinition = StoneItemData;
 					break;
 				case EFortResourceType::Metal:
-					MatDefinition = WoodItemData;
+					MatDefinition = MetalItemData;
 					break;
-				} */
+				}
 			}
 		}
 		else
@@ -99,27 +99,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 			if (bUseAnticheat && !validBuildingClass(BuildingClass))
 				return false;
 
-			if (!MatDefinition)
 			{
-				auto BuildingClassName = BuildingClass->GetFullName();
-
-				// TODO: figure out a better way
-
-				if (BuildingClassName.contains(("W1")))
-					MatDefinition = WoodItemData;
-				else if (BuildingClassName.contains(("S1")))
-					MatDefinition = StoneItemData;
-				else if (BuildingClassName.contains(("M1")))
-					MatDefinition = MetalItemData;
-			}
-
-			if (MatDefinition)
-			{
-				MatInstance = Inventory::FindItemInInventory(Controller, MatDefinition);
-
-				if (!MatInstance || *FFortItemEntry::GetCount(GetItemEntryFromInstance(MatInstance)) < 10)
-					return false;
-
 				/* __int64 (*CanBuild)(UObject*, UObject*, FVector, FRotator, char, void*, char*) = nullptr;
 
 				CanBuild = decltype(CanBuild)(FindPattern("48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0"));
@@ -133,12 +113,32 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 					if (BuildingActor)
 					{
+						if (!MatDefinition)
+						{
+							static auto ResourceTypeOffset = GetOffset(BuildingActor, "ResourceType");
+							auto ResourceType = (TEnumAsByte<EFortResourceType>*)(__int64(BuildingActor) + ResourceTypeOffset);
+
+							switch (ResourceType ? ResourceType->Get() : EFortResourceType::None)
+							{
+							case EFortResourceType::Wood:
+								MatDefinition = WoodItemData;
+								break;
+							case EFortResourceType::Stone:
+								MatDefinition = StoneItemData;
+								break;
+							case EFortResourceType::Metal:
+								MatDefinition = MetalItemData;
+								break;
+							}
+						}
+
+						MatInstance = Inventory::FindItemInInventory(Controller, MatDefinition);
+
 						bool bSuccessful = false;
 
-						if (!bUseAnticheat || validBuild(BuildingActor, Pawn))
+						if (MatInstance && *FFortItemEntry::GetCount(GetItemEntryFromInstance(MatInstance)) >= 10 &&
+							(!bUseAnticheat || validBuild(BuildingActor, Pawn)))
 						{
-							// Helper::IDoNotKnow(BuildingActor);
-
 							auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
 							static auto TeamOffset = GetOffset(BuildingActor, "Team");
