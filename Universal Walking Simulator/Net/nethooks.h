@@ -235,14 +235,18 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		}
 	}
 
-	/* *PlayerController->Member<char>(("bReadyToStartMatch")) = true;
+	*PlayerController->Member<char>(("bReadyToStartMatch")) = true;
 	*PlayerController->Member<char>(("bClientPawnIsLoaded")) = true;
 	*PlayerController->Member<char>(("bHasInitiallySpawned")) = true;
 
 	*PlayerController->Member<bool>(("bHasServerFinishedLoading")) = true;
 	*PlayerController->Member<bool>(("bHasClientFinishedLoading")) = true;
 
-	setBitfield(PlayerState, "bReadyToStartMatch", true);
+	*PlayerState->Member<char>(("bHasStartedPlaying")) = true;
+	*PlayerState->Member<char>(("bHasFinishedLoading")) = true;
+	*PlayerState->Member<char>(("bIsReadyToContinue")) = true;
+
+	/* setBitfield(PlayerState, "bReadyToStartMatch", true);
 	setBitfield(PlayerState, "bClientPawnIsLoaded", true);
 	setBitfield(PlayerState, "bHasInitiallySpawned", true);
 
@@ -253,7 +257,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	setBitfield(PlayerState, "bHasFinishedLoading", true);
 	setBitfield(PlayerState, "bIsReadyToContinue", true); */
 
-	static auto bHasServerFinishedLoadingOffset = GetOffset(PlayerController, "bHasServerFinishedLoading");
+	/* static auto bHasServerFinishedLoadingOffset = GetOffset(PlayerController, "bHasServerFinishedLoading");
 	static auto bHasServerFinishedLoadingFM = GetFieldMask(GetProperty(PlayerController, "bHasServerFinishedLoading"));
 	static auto bHasServerFinishedLoadingBI = GetBitIndex(GetProperty(PlayerController, "bHasServerFinishedLoading"), bHasServerFinishedLoadingFM);
 
@@ -263,7 +267,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	static auto bHasStartedPlayingFM = GetFieldMask(GetProperty(PlayerController, "bHasStartedPlaying"));
 	static auto bHasStartedPlayingBI = GetBitIndex(GetProperty(PlayerController, "bHasStartedPlaying"), bHasStartedPlayingFM);
 
-	sett((uint8_t*)(__int64(PlayerController) + bHasStartedPlayingOffset), bHasStartedPlayingBI, bHasStartedPlayingFM, true);
+	sett((uint8_t*)(__int64(PlayerController) + bHasStartedPlayingOffset), bHasStartedPlayingBI, bHasStartedPlayingFM, true); */
 
 	auto Pawn = Helper::InitPawn(PlayerController, true, Helper::GetPlayerStart(), true);
 
