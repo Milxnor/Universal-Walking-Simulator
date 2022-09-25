@@ -503,13 +503,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 					if (Pawn)
 					{
-						static auto setShieldFn = Pawn->Function(("SetShield"));
-						struct { float NewValue; }shieldParams{ 0 };
-
-						if (setShieldFn)
-							Pawn->ProcessEvent(setShieldFn, &shieldParams);
-						else
-							std::cout << ("Unable to find setShieldFn!\n");
+						Helper::SetShield(Pawn, 0.f);
 					}
 
 					static auto PlayEffectsForPlayerJumped = Aircraft->Function("PlayEffectsForPlayerJumped");
@@ -2417,7 +2411,7 @@ void InitializeHooks()
 		MH_EnableHook((PVOID)FixCrashAddr);
 	}
 
-	if (FnVerDouble < 19.00)
+	if (FnVerDouble < 17.00)
 	{
 		auto sig = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 40 48 89 11 48 8B D9 48 8B 42 30 48 85 C0 75 07 48 8B 82 ? ? ? ? 48");
 
@@ -2430,14 +2424,16 @@ void InitializeHooks()
 		{
 			// fixes flashing
 
-			// MH_CreateHook((PVOID)GetPlayerViewpointAddr, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
-			// MH_EnableHook((PVOID)GetPlayerViewpointAddr);
-
 			MH_CreateHook((PVOID)sig, ehehheDetour, (void**)&ehehheO);
 			MH_EnableHook((PVOID)sig);
 		}
 		else
 			std::cout << ("[WARNING] Could not fix flashing!\n");
+	}
+	else
+	{
+		MH_CreateHook((PVOID)GetPlayerViewpointAddr, GetPlayerViewPointDetour, (void**)&GetPlayerViewPoint);
+		MH_EnableHook((PVOID)GetPlayerViewpointAddr);
 	}
 
 	if (LP_SpawnPlayActorAddr && false) // bad time but eh

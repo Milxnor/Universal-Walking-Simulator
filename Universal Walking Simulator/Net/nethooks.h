@@ -213,6 +213,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		Helper::KickController(PlayerController, Reason);
 	}
 
+	if (FnVerDouble >= 12.61) // fix crash mostly
+	{
+		static auto NetPriorityOffset = GetOffset(PlayerController, "NetPriority");
+		*(float*)(__int64(Inventory::GetWorldInventory(PlayerController)) + NetPriorityOffset) = 3.0f;
+	}
+
 	static auto Connection_PlayerController = GetOffset(NewPlayer, "PlayerController");
 	*(UObject**)(__int64(NewPlayer) + Connection_PlayerController) = PlayerController;
 
@@ -477,7 +483,8 @@ void InitializeNetHooks()
 	MH_CreateHook((PVOID)SpawnPlayActorAddr, SpawnPlayActorDetour, (void**)&SpawnPlayActor);
 	MH_EnableHook((PVOID)SpawnPlayActorAddr);
 
-	if (FnVerDouble < 19.00 && Engine_Version != 421 && Engine_Version != 419 && Engine_Version < 424) // we dont really need this im just too lazy to get setworld sig
+	if (FnVerDouble < 19.00 && Engine_Version != 421 && Engine_Version != 419 && Engine_Version != 425 && Engine_Version != 424
+		&& std::floor(FnVerDouble) != 17) // we dont really need this im just too lazy to get setworld sig
 	{
 		MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
 		MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);

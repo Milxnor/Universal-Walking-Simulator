@@ -31,6 +31,8 @@ namespace Player
 		if (setHealthFn)
 			NewPawn->ProcessEvent(setHealthFn, &healthParams);
 
+		Helper::SetShield(NewPawn, 100);
+
 		if (Engine_Version >= 421)
 		{
 			static auto TeleportToSkyDiveFn = NewPawn->Function(("TeleportToSkyDive"));

@@ -583,9 +583,23 @@ namespace Helper
 
 	}
 
-	void SetShield()
+	void ForceNetUpdate(UObject* Actor)
 	{
+		static auto ForceNetUpdate = Actor->Function("ForceNetUpdate");
 
+		if (ForceNetUpdate)
+			Actor->ProcessEvent(ForceNetUpdate);
+	}
+
+	void SetShield(UObject* Pawn, float Shield)
+	{
+		static auto setShieldFn = Pawn->Function(("SetShield"));
+		struct { float NewValue; }shieldParams{ Shield };
+
+		if (setShieldFn)
+			Pawn->ProcessEvent(setShieldFn, &shieldParams);
+		else
+			std::cout << ("Unable to find setShieldFn!\n");
 	}
 	
 	UObject* GetWorld()
