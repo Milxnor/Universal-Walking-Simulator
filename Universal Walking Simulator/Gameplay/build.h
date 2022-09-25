@@ -99,7 +99,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 			if (bUseAnticheat && !validBuildingClass(BuildingClass))
 				return false;
 
-			if (!MatDefinition) // this should only happen on >s7
+			if (!MatDefinition)
 			{
 				auto BuildingClassName = BuildingClass->GetFullName();
 

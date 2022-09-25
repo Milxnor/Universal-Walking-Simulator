@@ -477,7 +477,7 @@ void InitializeNetHooks()
 	MH_CreateHook((PVOID)SpawnPlayActorAddr, SpawnPlayActorDetour, (void**)&SpawnPlayActor);
 	MH_EnableHook((PVOID)SpawnPlayActorAddr);
 
-	if (FnVerDouble < 19.00 && Engine_Version != 421 && Engine_Version != 419) // we dont really need this im just too lazy to get setworld sig
+	if (FnVerDouble < 19.00 && Engine_Version != 421 && Engine_Version != 419 && Engine_Version < 424) // we dont really need this im just too lazy to get setworld sig
 	{
 		MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
 		MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);
