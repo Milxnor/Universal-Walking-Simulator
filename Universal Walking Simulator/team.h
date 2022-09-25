@@ -105,7 +105,7 @@ namespace Teams
 		*PlayerTeam = CurrentTeam;
 
 		auto TeamIndex = NextTeamIndex;
-		auto SquadId = NextTeamIndex - (Engine_Version >= 424 ? 2 : 1); // nice one fortnite // -0 -1 -2 ??
+		auto SquadId = NextTeamIndex - 0; // (Engine_Version >= 424 ? 2 : 1); // nice one fortnite // -0 -1 -2 ??
 
 		std::cout << std::format("New player going on {} as {} team member.\n", TeamIndex, SquadId);
 

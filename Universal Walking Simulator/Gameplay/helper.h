@@ -58,10 +58,17 @@ int GetMaxBullets(UObject* Definition)
 	return 0;
 }
 
-UObject* GetWorldW(bool bReset = false)
+UObject* GetGameViewport()
 {
 	static auto GameViewportOffset = GetOffset(GetEngine(), "GameViewport");
 	auto GameViewport = *(UObject**)(__int64(GetEngine()) + GameViewportOffset);
+
+	return GameViewport;
+}
+
+UObject* GetWorldW()
+{
+	auto GameViewport = GetGameViewport();
 
 	if (GameViewport)
 	{
@@ -726,7 +733,7 @@ namespace Helper
 
 	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true, bool bMaxAmmo = true, int ammo = 0)
 	{
-		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena"));
+		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena")); // Class FortniteGame.FortGameModePickup
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location, FRotator(), false && FnVerDouble < 19.00);
 
@@ -1389,6 +1396,8 @@ namespace Helper
 
 	static UObject* GetRandomFoundation()
 	{
+		return nullptr;
+
 		srand(time(0));
 
 		if (Helper::IsSmallZoneEnabled())

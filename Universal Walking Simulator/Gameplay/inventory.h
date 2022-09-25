@@ -2073,7 +2073,7 @@ bool IsDroppable(UObject* CurrentItemDefinition, bool bTakePickaxe = true)
 	static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
 	if (CurrentItemDefinition == BuildingItemData_Wall || CurrentItemDefinition == BuildingItemData_Floor
-		|| CurrentItemDefinition == (BuildingItemData_Stair_W) || CurrentItemDefinition == (BuildingItemData_RoofS) || (bTakePickaxe ? false : CurrentItemDefinition == PickaxeDef))
+		|| CurrentItemDefinition == (BuildingItemData_Stair_W) || CurrentItemDefinition == (BuildingItemData_RoofS) || CurrentItemDefinition == PickaxeDef)
 		return false;
 
 	return true;

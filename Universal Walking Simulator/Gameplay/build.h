@@ -192,6 +192,20 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 	return false;
 }
 
+UObject** GetEditingPlayer(UObject* BuildingActor)
+{
+	static auto EditingPlayerOffset = GetOffset(BuildingActor, "EditingPlayer");
+
+	return (UObject**)(__int64(BuildingActor) + EditingPlayerOffset);
+}
+
+UObject** GetEditActor(UObject* EditTool)
+{
+	static auto EditActorOffset = GetOffset(EditTool, "EditActor");
+
+	return (UObject**)(__int64(EditTool) + EditActorOffset);
+}
+
 inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
 	struct Parms { UObject* BuildingActor; };
@@ -214,18 +228,10 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 
 			if (EditTool)
 			{
-				auto PlayerState = *Controller->CachedMember<UObject*>(("PlayerState"));
-				*BuildingToEdit->CachedMember<UObject*>(("EditingPlayer")) = PlayerState;
-				static auto OnRep_EditingPlayer = BuildingToEdit->Function(("OnRep_EditingPlayer"));
+				auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-				if (OnRep_EditingPlayer)
-					BuildingToEdit->ProcessEvent(OnRep_EditingPlayer);
-
-				*EditTool->CachedMember<UObject*>(("EditActor")) = BuildingToEdit;
-				static auto OnRep_EditActor = EditTool->Function(("OnRep_EditActor"));
-
-				if (OnRep_EditActor)
-					EditTool->ProcessEvent(OnRep_EditActor);
+				*GetEditingPlayer(BuildingToEdit) = PlayerState;
+				*GetEditActor(EditTool) = BuildingToEdit;
 			}
 			else
 				std::cout << "Failed to equip edittool??\n";
@@ -299,8 +305,8 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 
 		if (BuildingActor && NewBuildingClass)
 		{
-			if (false && RotationIterations > 3)
-				return false;
+			// if (false && RotationIterations > 3)
+				// return false;
 
 			auto Location = Helper::GetActorLocation(BuildingActor);
 			auto Rotation = Helper::GetActorRotation(BuildingActor);
@@ -369,24 +375,15 @@ inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Fu
 					// auto EditToolInstance = Inventory::FindItemInInventory(Controller, EditToolDefinition);
 					auto EditTool = CurrentWep;// Inventory::EquipWeaponDefinition(*Pawn, EditToolDefinition, Inventory::GetItemGuid(EditToolInstance));
 
-					*EditTool->CachedMember<bool>(("bEditConfirmed")) = true;
-					*EditTool->CachedMember<UObject*>(("EditActor")) = nullptr;
-
-					static auto OnRep_EditActorFn = EditTool->Function(("OnRep_EditActor"));
-
-					if (OnRep_EditActorFn)
-						EditTool->ProcessEvent(OnRep_EditActorFn);
+					// *EditTool->CachedMember<bool>(("bEditConfirmed")) = true;
+					*GetEditActor(EditTool) = nullptr;
 				}
 			}
 		}
 
 		if (Params->BuildingActorToStopEditing)
 		{
-			*Params->BuildingActorToStopEditing->CachedMember<UObject*>(("EditingPlayer")) = nullptr;
-			static auto OnRep_EditingPlayer = Params->BuildingActorToStopEditing->Function(("OnRep_EditingPlayer"));
-
-			if (OnRep_EditingPlayer)
-				Params->BuildingActorToStopEditing->ProcessEvent(OnRep_EditingPlayer);
+			*GetEditingPlayer(Params->BuildingActorToStopEditing) = nullptr;
 		}
 	}
 

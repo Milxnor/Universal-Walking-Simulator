@@ -286,7 +286,7 @@ namespace LootingV2
 						auto CorrectLocation = Helper::GetActorLocation(BuildingContainer);
 						CorrectLocation.Z += 50;
 
-						if (RandomBoolWithWeight(0.35))
+						if (RandomBoolWithWeight(0.35f))
 						{
 							auto Consumable = GetRandomItem(ItemType::Consumable);
 							Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,

@@ -553,8 +553,9 @@ static bool bIsReadyToRestart = true; // i hate my life
 static bool bIsTrickshotting = false; // this is stupid
 static constexpr bool bAreVehicleWeaponsEnabled = false;
 static int AmountOfRestarts = 0;
+static bool bInjectedOnStartup = false;
 
-std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultDuo.Playlist_DefaultDuo";
+std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
 // "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
 // "FortPlaylistAthena /Game/Athena/Playlists/Low/Playlist_Low_Solo.Playlist_Low_Solo";
 

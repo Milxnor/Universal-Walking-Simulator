@@ -142,7 +142,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
         else
             ((FGameplayAbilitySpecNewer*)Spec)->InputPressed = false;
 
-        MarkItemDirty(ASC->CachedMember<void>(("ActivatableAbilities")), (FFastArraySerializerItem*)Spec); // TODO: Start using the proper function again
+        MarkItemDirty(GetActivatableAbilities(ASC), (FFastArraySerializerItem*)Spec); // TODO: Start using the proper function again
     }
 }
 

@@ -85,6 +85,11 @@ public:
 		return Data[Index];
 	}
 
+	bool IsValid() const
+	{
+		return Data;
+	}
+
 	INL int32_t Slack() const
 	{
 		return ArrayMax - ArrayNum;

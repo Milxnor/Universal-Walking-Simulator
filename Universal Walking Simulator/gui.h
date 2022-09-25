@@ -438,37 +438,9 @@ DWORD WINAPI GuiThread(LPVOID)
 						CreateThread(0, 0, Looting::Tables::SpawnVehicles, 0, 0, 0);
 					} */
 
-					if (ImGui::Button("Mf"))
+					if (ImGui::Button("Refresh Stuff"))
 					{
 						Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol
-					}
-
-					if (ImGui::Button("eeEE"))
-					{
-						AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
-					}
-
-					if (ImGui::Button("mona"))
-					{
-						auto PoiManager = *Helper::GetGameState()->Member<UObject*>("PoiManager");
-
-						auto PoiTagContainerTable = PoiManager->Member<TArray<FGameplayTagContainer>>("PoiTagContainerTable");
-						auto GoldenPoiLocationTags = Helper::GetGameState()->Member<FGameplayTagContainer>("GoldenPoiLocationTags");
-
-						if (PoiTagContainerTable && GoldenPoiLocationTags)
-						{
-							std::cout << "Num: " << PoiTagContainerTable->Num() << '\n';
-
-							for (int i = 0; i < PoiTagContainerTable->Num(); i++)
-							{
-								auto& PoiTag = PoiTagContainerTable->At(i);
-
-								std::cout << std::format("[{}] {}\n", i, GoldenPoiLocationTags->ToStringSimple(true));
-							}
-
-							if (PoiTagContainerTable->Num() > 0)
-								*GoldenPoiLocationTags = PoiTagContainerTable->At(PoiTagContainerTable->Num() / 2);
-						}
 					}
 
 					if (serverStatus == EServerStatus::Up)
@@ -511,46 +483,51 @@ DWORD WINAPI GuiThread(LPVOID)
 								{
 									auto gameState = Helper::GetGameState();
 
-									auto Aircraft = gameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
+									auto Aircrafts = gameState->Member<TArray<UObject*>>(("Aircrafts"));
 
-									if (Aircraft)
+									if (Aircrafts && Aircrafts->IsValid())
 									{
-										auto FlightInfo = Aircraft->Member<__int64>("FlightInfo");
+										auto Aircraft = Aircrafts->At(0);
 
-										if (FlightInfo)
+										if (Aircraft)
 										{
-											static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
-											static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
+											auto FlightInfo = Aircraft->Member<__int64>("FlightInfo");
 
-											auto FlightSpeed = (float*)(__int64(FlightInfo) + FlightSpeedOffset);
-											auto FlightStartLocation = (FVector*)(__int64(FlightInfo) + FlightStartLocationOffset);
-
-											if (FlightSpeed)
-												*FlightSpeed = 0;
-
-											auto RandomFoundation = Helper::GetRandomFoundation();
-
-											if (RandomFoundation)
+											if (FlightInfo)
 											{
-												AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{0, 0, 5000};
+												static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
+												static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
 
-												*FlightStartLocation = AircraftLocationToUse;
-												Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
-												std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
+												auto FlightSpeed = (float*)(__int64(FlightInfo) + FlightSpeedOffset);
+												auto FlightStartLocation = (FVector*)(__int64(FlightInfo) + FlightStartLocationOffset);
+
+												if (FlightSpeed)
+													*FlightSpeed = 0;
+
+												auto RandomFoundation = Helper::GetRandomFoundation();
+
+												if (true || RandomFoundation)
+												{
+													// AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{0, 0, 5000};
+
+													*FlightStartLocation = AircraftLocationToUse;
+													Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
+													std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
+												}
+												else
+													std::cout << "No POI!\n";
+
+												// *gameState->Member<bool>("bAircraftIsLocked") = false;
+
+												FString ifrogor;
+												ifrogor.Set(L"startsafezone");
+												Helper::Console::ExecuteConsoleCommand(ifrogor);
+												*gameState->Member<float>("SafeZonesStartTime") = 0.f;
 											}
-											else
-												std::cout << "No POI!\n";
-
-											*gameState->Member<bool>("bAircraftIsLocked") = false;
-
-											FString ifrogor;
-											ifrogor.Set(L"startsafezone");
-											Helper::Console::ExecuteConsoleCommand(ifrogor);
-											*gameState->Member<float>("SafeZonesStartTime") = 0.f;
 										}
+										else
+											std::cout << "No Aircraft!\n";
 									}
-									else
-										std::cout << "No Aircraft!\n";
 								}
 
 								std::cout << ("Started aircraft!\n");
@@ -817,7 +794,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					// if (!bStarted) // couldnt we wqait till aircraft start
 
-					if (!bIsPlayground && Engine_Version < 423)
+					if (!bIsPlayground)
 						ImGui::Checkbox(("Lategame"), &bIsLateGame);
 
 					break;

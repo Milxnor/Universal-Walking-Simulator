@@ -8,6 +8,29 @@ static bool bListening = false;
 
 static UObject* BeaconHost = nullptr;
 
+void setWorld(UObject* netdriver, UObject* world)
+{
+    if (Engine_Version < 426)
+    {
+        if (SetWorld)
+            SetWorld(netdriver, world);
+        else
+            std::cout << "Invalid SetWorld!\n";
+    }
+    else
+    {
+        int VTableIndex = FnVerDouble < 19.00 ? 0x72 : 0x7A;
+
+        if (FnVerDouble >= 20.00)
+            VTableIndex = 0x7B;
+
+        auto SetWorldAAddr = netdriver->VFTable[VTableIndex];
+        SetWorld = decltype(SetWorld)(SetWorldAAddr);
+        // std::cout << "SetWorld Sig: " << GetBytes(__int64(SetWorldAAddr), 50) << '\n';
+        SetWorld(netdriver, world);
+    }
+}
+
 void AllowConnections(UObject* NetDriver)
 {
     const auto World = Helper::GetWorld();
@@ -195,31 +218,11 @@ void Listen(int Port = 7777)
         auto InURL = FURL();
         InURL.Port = Port;
 
+        setWorld(NetDriver, World);
+
         std::cout << "InitListen: " << InitListen(NetDriver, World, InURL, false, Error) << '\n';
 
-        if (Engine_Version < 426)
-        {
-            if (SetWorld)
-                SetWorld(NetDriver, World);
-            else
-                std::cout << "Invalid SetWorld!\n";
-        }
-        else
-        {
-            int VTableIndex = FnVerDouble < 19.00 ? 0x72 : 0x7A;
-
-            if (FnVerDouble >= 20.00)
-                VTableIndex = 0x7B;
-
-            auto SetWorldAAddr = NetDriver->VFTable[VTableIndex];
-            SetWorld = decltype(SetWorld)(SetWorldAAddr);
-            // std::cout << "SetWorld Sig: " << GetBytes(__int64(SetWorldAAddr), 50) << '\n';
-            SetWorld(NetDriver, World);
-
-            /* std::cout << "Calling!\n";
-            (*(void(__fastcall**)(__int64, UObject*))(**(__int64**)(BeaconHost + 560) + 912))(*(__int64*)(NetDriver + 560), World);
-            std::cout << "Called!\n"; */
-        }
+        setWorld(NetDriver, World);
     }
 
     *NetDriver->Member<int>(("MaxClientRate")) = *NetDriver->Member<int>(("MaxInternetClientRate"));

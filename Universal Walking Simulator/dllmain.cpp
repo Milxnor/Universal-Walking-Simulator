@@ -210,6 +210,28 @@ DWORD WINAPI Main(LPVOID)
         return 1;
     }
 
+    /* static auto GameViewportOffset = GetOffset(FindObjectOld("FortEngine_"), "GameViewport");
+    auto GameViewport = *(UObject**)(__int64(FindObjectOld("FortEngine_")) + GameViewportOffset);
+
+    bInjectedOnStartup = !GameViewport;
+
+    if (bInjectedOnStartup)
+    {
+        while (true)
+        {
+            if (GameViewport = *(UObject**)(__int64(FindObjectOld("FortEngine_")) + GameViewportOffset))
+            {
+                std::cout << "Found Viewport!\n";
+                Sleep(6000);
+                break;
+            }
+
+            Sleep(1000);
+        }
+    }
+    else
+        std::cout << "DID NOT INJECT ON STARTUP!\n"; */
+
     if (Engine_Version >= 425)
     {
         RequestExitWSAddr = FindPattern(RequestExitWSSig);

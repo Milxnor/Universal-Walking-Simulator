@@ -35,11 +35,18 @@ inline void initStuff()
 
 		auto Playlist = FindObject(PlaylistToUse);
 
-		if (gameState)
+		static auto FortGameStateZoneClass = FindObject("Class /Script/FortniteGame.FortGameStateZone");
+
+		if (gameState && gameState->IsA(FortGameStateZoneClass))
 		{
 			auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
 
 			*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = 100; // GameState->GetMaxPlaylistPlayers()
+
+			auto dbnoEnabledPtr = AuthGameMode->Member<bool>("bDBNOEnabled");
+
+			if (dbnoEnabledPtr)
+				*dbnoEnabledPtr = false;
 
 			std::cout << "AA: " << *AuthGameMode->Member<bool>("bStartPlayersAsSpectators") << '\n';
 
@@ -163,9 +170,12 @@ inline void initStuff()
 							std::cout << ("Playlist: ") << Playlist << '\n';
 						}
 
-						auto MapInfo = *gameState->Member<UObject*>("MapInfo");
+						auto MapInfoPTR = gameState->Member<UObject*>("MapInfo");
 
-						std::cout << "MapInfo: " << MapInfo << '\n';
+						if (MapInfoPTR)
+						{
+							std::cout << "MapInfo: " << *MapInfoPTR << '\n';
+						}
 
 						gameState->ProcessEvent(OnRepPlaylist);
 					}
