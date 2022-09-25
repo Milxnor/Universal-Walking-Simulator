@@ -839,7 +839,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 					KillerController->ProcessEvent(ClientReceiveKillNotification, &ClientReceiveKillNotification_Params);
 			}
 
-			static auto ClientReportKill = KillerPlayerState->Function(("ClientReportKill"));
+			static auto ClientReportKill = KillerPlayerState->Function(("ClientReportKill")); // ClientReportDBNO
 			struct { UObject* PlayerState; }ClientReportKill_Params{ DeadPlayerState };
 
 			if (ClientReportKill)
@@ -1079,10 +1079,17 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 		{
 			EmoteAsset->ProcessEvent(fn, &GAHRParams);
 			auto Montage = GAHRParams.AnimMontage;
-			if (Montage && Engine_Version < 426 && Engine_Version >= 420)
-			{
-				std::cout << ("Playing Montage: ") << Montage->GetFullName() << '\n';
 
+			std::cout << ("Playing Montage: ") << Montage->GetFullName() << '\n';
+
+			/* static float (*PlayMontageReplicated)(UObject * FortPawn, UObject * Montage, float idk, __int64 idkagain);
+
+			PlayMontageReplicated = decltype(PlayMontageReplicated)(Pawn->VFTable[0xF0]);
+
+			std::cout << "ugh: " << PlayMontageReplicated(Pawn, Montage, 0, 0) << '\n'; */
+
+			if (false && Montage && Engine_Version < 426 && Engine_Version >= 420)
+			{
 				auto AbilitySystemComponent = *Pawn->CachedMember<UObject*>(("AbilitySystemComponent"));
 				static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
@@ -1306,10 +1313,14 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				auto DeadPawn = ReceivingActor;
 				auto DeadController = *DeadPawn->Member<UObject*>("Controller");
 
+				DeadPawn->ProcessEvent("ServerReviveFromDBNO", &InstigatorController);
 				DeadPawn->ProcessEvent("ReviveFromDBNO", &InstigatorController);
 				DeadController->ProcessEvent("ClientOnPawnRevived", &InstigatorController);
 
 				setBitfield(DeadPawn, "bIsDBNO", false);
+				setBitfield(DeadPawn, "bPlayedDying", false);
+
+				*Pawn->Member<uint8_t>("DBNORevivalStacking") = 0;
 
 				Helper::SetHealth(DeadPawn, 30);
 			}
@@ -2120,6 +2131,12 @@ bool IsProjectileBeingKilledHook(UObject* Interface, UFunction* func, void* Para
 	return true;
 }
 
+bool ServerPlaySquadQuickChatMessageHook(UObject* Controller, UFunction* func, void* Parameters)
+{
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
@@ -2128,6 +2145,7 @@ void FinishInitializeUHooks()
 	if (Engine_Version >= 424)
 		AddHook("Function /Script/FortniteGame.FortProjectileMovementInterface.IsProjectileBeingKilled", IsProjectileBeingKilledHook);
 
+	// AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerPlaySquadQuickChatMessage", ServerPlaySquadQuickChatMessageHook);
 	AddHook("Function /Script/Engine.GameModeBase.MustSpectate", MustSpectateHook);
 	AddHook("Function /Script/Engine.GameModeBase.PlayerCanRestart", PlayerCanRestartHook);
 	// AddHook("Function /Script/FortniteGame.FortWeapon.OnPawnMontageBlendingOut", onpawnmotnageblendingoutHook);
@@ -2170,7 +2188,7 @@ void FinishInitializeUHooks()
 	}
 
 	// if (PlayMontage)
-	// AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
+	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 
 	if (Engine_Version < 423)
 	{ // ??? Idk why we need the brackets

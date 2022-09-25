@@ -342,7 +342,13 @@ DWORD WINAPI MainTest(LPVOID)
         return 1;
     }
 
-    std::cout << dye::aqua(("[Base Address] ")) << std::format("0x{:x}\n", (uintptr_t)GetModuleHandleW(0));
+    auto Base = (uintptr_t)GetModuleHandleW(0);
+    std::cout << dye::aqua(("[Base Address] ")) << std::format("0x{:x}\n", Base);
+
+    std::cout << "FortPlayerControllerAthena VTABLE: " << __int64(FindObject("FortPlayerControllerAthena /Script/FortniteGame.Default__FortPlayerControllerAthena")->VFTable) - Base << '\n';
+    std::cout << "FortPlayerPawnAthena VTABLE: " << __int64(FindObject("FortPlayerPawnAthena /Script/FortniteGame.Default__FortPlayerPawnAthena")->VFTable) - Base << '\n';
+    std::cout << "FortPlayerStateAthena VTABLE: " << __int64(FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena")->VFTable) - Base << '\n';
+
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,
