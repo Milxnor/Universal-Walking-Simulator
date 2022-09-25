@@ -487,14 +487,16 @@ void InitializeNetHooks()
 	MH_CreateHook((PVOID)SpawnPlayActorAddr, SpawnPlayActorDetour, (void**)&SpawnPlayActor);
 	MH_EnableHook((PVOID)SpawnPlayActorAddr);
 
-	if (FnVerDouble < 19.00 && Engine_Version != 421 && Engine_Version != 419 && Engine_Version != 425 && Engine_Version != 424
-		&& std::floor(FnVerDouble) != 17) // we dont really need this im just too lazy to get setworld sig
+	if (FnVerDouble < 14.00)
 	{
-		MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
-		MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);
+		if (Engine_Version != 421 && Engine_Version != 419) // we dont really need this im just too lazy to get setworld sig
+		{
+			MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
+			MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);
 
-		MH_CreateHook((PVOID)World_NotifyControlMessageAddr, World_NotifyControlMessageDetour, (void**)&World_NotifyControlMessage);
-		MH_EnableHook((PVOID)World_NotifyControlMessageAddr);
+			MH_CreateHook((PVOID)World_NotifyControlMessageAddr, World_NotifyControlMessageDetour, (void**)&World_NotifyControlMessage);
+			MH_EnableHook((PVOID)World_NotifyControlMessageAddr);
+		}
 	}
 
 	if (Engine_Version < 424 && GetNetModeAddr) // i dont even think we have to hook this
