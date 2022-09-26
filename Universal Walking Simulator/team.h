@@ -78,7 +78,6 @@ namespace Teams
 		auto PlayerTeam = PlayerState->Member<UObject*>("PlayerTeam");
 		AFortTeamInfo* CurrentTeam = AllTeams->At(NextTeamIndex); // *PlayerTeam;
 
-		std::cout << "CurrentTeam: " << CurrentTeam << '\n';
 		std::cout << "NextTeamIndex: " << NextTeamIndex << '\n';
 
 		if (!CurrentTeam)
@@ -94,7 +93,7 @@ namespace Teams
 		std::cout << "CurrentTeamMembers->Num(): " << CurrentTeamMembers->Num() << '\n';
 		std::cout << "MaxPlayersPerTeam: " << MaxPlayersPerTeam << '\n';
 
-		if (CurrentTeamMembers->Num() >= MaxPlayersPerTeam)
+		if (CurrentTeamMembers->Num() >= (MaxPlayersPerTeam + (NextTeamIndex - StartingTeamIndex)))
 		{
 			CurrentTeam = AllTeams->At(++NextTeamIndex);
 			CurrentTeamMembers = CurrentTeam->CachedMember<TArray<AController*>>("TeamMembers");
@@ -102,10 +101,13 @@ namespace Teams
 
 		// now we have the correct teaminfo and members
 
+		std::cout << "CurrentTeam: " << CurrentTeam << '\n';
+		std::cout << "CurrentTeamMembers->Num() New: " << CurrentTeamMembers->Num() << '\n';
+
 		*PlayerTeam = CurrentTeam;
 
 		auto TeamIndex = NextTeamIndex;
-		auto SquadId = NextTeamIndex - 0; // (Engine_Version >= 424 ? 2 : 1); // nice one fortnite // -0 -1 -2 ??
+		auto SquadId = NextTeamIndex - (Engine_Version < 423 ? 1 : 0); // (Engine_Version >= 424 ? 2 : 1); // nice one fortnite // -0 -1 -2 ??
 
 		std::cout << std::format("New player going on {} as {} team member.\n", TeamIndex, SquadId);
 
@@ -116,7 +118,7 @@ namespace Teams
 		*PlayerStateTeamIDX = TeamIndex;
 		*PlayerStateSquadId = SquadId;
 
-		if (false)
+		// if (false)
 		{
 			std::cout << "PReviosut eam: " << *PlayerState->Member<UObject*>("PlayerTeam") << '\n';
 			CurrentTeamMembers->Add(Controller);
@@ -131,7 +133,7 @@ namespace Teams
 		PlayerState->ProcessEvent("OnRep_SquadId");
 		PlayerState->ProcessEvent("OnRep_TeamIndex", &OldTeamIdx);
 
-		(*PlayerTeam)->CachedMember<TArray<AController*>>("TeamMembers")->Add(Controller);
+		// (*PlayerTeam)->CachedMember<TArray<AController*>>("TeamMembers")->Add(Controller);
 
 		/* std::cout << "Current Team PrivateInfo: " << (*CurrentTeam->Member<UObject*>("PrivateInfo"))->GetFullName() << '\n';
 
