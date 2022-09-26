@@ -10,7 +10,7 @@ namespace Henchmans
 
 
 		auto world = Helper::GetWorld();
-		auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
+		auto AuthGameMode = Helper::GetGameMode();
 
 		auto BotManagerClass = FindObject("Class /Script/FortniteGame.FortServerBotManagerAthena");
 		

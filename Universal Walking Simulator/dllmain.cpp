@@ -340,22 +340,40 @@ DWORD WINAPI Main(LPVOID)
         MH_EnableHook((PVOID)craswhiffkaddr);
     }
 
-    auto nocmcapf = FindPattern("E8 ? ? ? ? 84 C0 75 CE", true, 1);
+    NoMcpAddr = FindPattern("E8 ? ? ? ? 84 C0 75 CE", true, 1);
 
-    if (nocmcapf)
+    funnyaddry = FindPattern("40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?");
+
+    std::cout << "funnyaddry: " << funnyaddry << '\n';
+
+    bool bafuaqeu = false;
+
+    if (NoMcpAddr && funnyaddry)
     {
-        MH_CreateHook((PVOID)nocmcapf, IsNoMCPDetour, nullptr);
-        MH_EnableHook((PVOID)nocmcapf);
+        if (Engine_Version < 424)
+        {
+            MH_CreateHook((PVOID)NoMcpAddr, IsNoMCPDetour, nullptr);
+            MH_EnableHook((PVOID)NoMcpAddr);
 
-        funnyaddry = FindPattern("40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?");
+            MH_CreateHook((PVOID)funnyaddry, getnetmodedetour, (void**)&getnetmodeO);
+            MH_EnableHook((PVOID)funnyaddry);
 
-        std::cout << "funnyaddry: " << funnyaddry << '\n';
-
-        MH_CreateHook((PVOID)funnyaddry, getnetmodedetour, (void**)&getnetmodeO);
-        MH_EnableHook((PVOID)funnyaddry);
+            bafuaqeu = true;
+        }
     }
-    else
+    
+    if (!bafuaqeu)
         std::cout << "[WARNING] Will not be able to apply magical fix!\n";
+
+    {
+        MH_CreateHook((PVOID)SpawnActorAddr, SpawnActorDetour, (void**)&SpawnActorO);
+        MH_EnableHook((PVOID)SpawnActorAddr);
+    }
+
+    static auto aibuildfn = FindObject("Function /Script/FortniteGame.FortAIController.CreateBuildingActor");
+    bUseAIBuild = aibuildfn && FnVerDouble < 19.00 && bDoubleBuildFix2;
+
+    std::cout << "bUseAIBuild: " << bUseAIBuild << '\n';
 
     return 0;
 }

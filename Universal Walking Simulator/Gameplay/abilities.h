@@ -420,7 +420,7 @@ void InitializeAbilityHooks()
             MH_EnableHook((PVOID)CanActivateAbilityAddr);
         }
         else
-            std::cout << "CanActivaeteAbility not found!\n";
+            std::cout << "CanActivateAbility not found!\n";
     }
 }
 

@@ -21,6 +21,8 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 		auto Pawn = Helper::GetPawnFromController(Controller);
 
+		static auto aibuildfn = FindObject("Function /Script/FortniteGame.FortAIController.CreateBuildingActor");
+
 		UObject* BuildingClass = nullptr;
 		FVector BuildingLocation;
 		FRotator BuildingRotation;
@@ -52,20 +54,23 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				BuildingRotation = Params->CreateBuildingData.BuildRot;
 				bMirrored = Params->CreateBuildingData.bMirrored;
 
-				static auto RemoteBuildingMaterialOffset = GetOffset(*RemoteClientInfo, "RemoteBuildingMaterial");
-				auto RemoteBuildingMaterial = (TEnumAsByte<EFortResourceType>*)(__int64(*RemoteClientInfo) + RemoteBuildingMaterialOffset);
-
-				switch (RemoteBuildingMaterial ? RemoteBuildingMaterial->Get() : EFortResourceType::None)
+				if (!bUseAIBuild)
 				{
-				case EFortResourceType::Wood:
-					MatDefinition = WoodItemData;
-					break;
-				case EFortResourceType::Stone:
-					MatDefinition = StoneItemData;
-					break;
-				case EFortResourceType::Metal:
-					MatDefinition = MetalItemData;
-					break;
+					static auto RemoteBuildingMaterialOffset = GetOffset(*RemoteClientInfo, "RemoteBuildingMaterial");
+					auto RemoteBuildingMaterial = (TEnumAsByte<EFortResourceType>*)(__int64(*RemoteClientInfo) + RemoteBuildingMaterialOffset);
+
+					switch (RemoteBuildingMaterial ? RemoteBuildingMaterial->Get() : EFortResourceType::None)
+					{
+					case EFortResourceType::Wood:
+						MatDefinition = WoodItemData;
+						break;
+					case EFortResourceType::Stone:
+						MatDefinition = StoneItemData;
+						break;
+					case EFortResourceType::Metal:
+						MatDefinition = MetalItemData;
+						break;
+					}
 				}
 			}
 		}
@@ -108,8 +113,10 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				char dababy;
 
 				if (!CanBuild || (CanBuild && !CanBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy))) */
+
+				if (!bUseAIBuild)
 				{
-					UObject* BuildingActor = Easy::SpawnActor(BuildingClass, BuildingLocation, BuildingRotation);
+					UObject* BuildingActor = Easy::SpawnActor(BuildingClass, BuildingLocation, BuildingRotation, Pawn);
 
 					if (BuildingActor)
 					{
@@ -181,6 +188,18 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 							}
 						}
 					}
+				}
+				else
+				{
+					struct {
+						UObject* BuildingClass;
+						FVector BuildLoc;
+						FRotator BuildRot;
+						bool bMirrored;
+						bool iguesssuccess;
+					} parms{BuildingClass, BuildingLocation, BuildingRotation, bMirrored};
+
+					Controller->ProcessEvent(aibuildfn, &parms);
 				}
 
 				// if (v32[0])
@@ -397,6 +416,7 @@ void InitializeBuildHooks()
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
 
 		// if (Engine_Version < 424)
+		if (std::floor(FnVerDouble) != 15)
 		{
 			AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
 			AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), ServerEditBuildingActorHook);

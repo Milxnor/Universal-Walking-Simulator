@@ -5,6 +5,7 @@
 #include <functional>
 #include <unordered_set>
 
+uint64_t NoMcpAddr = 0;
 uint64_t ActorChannelCloseAddr = 0;
 uint64_t IsNetRelevantForAddr = 0;
 uint64_t GetNetModeAddr = 0;
@@ -544,6 +545,9 @@ static std::vector<UObject*> ExistingBuildings;
 
 static bool bUseBeacons = true;
 
+// change these ig
+
+static constexpr bool bDoubleBuildFix2 = false;
 static constexpr bool bDoubleBuildFix = false;
 static bool bClearInventoryOnAircraftJump = !bIsPlayground;
 static bool bIsInEvent = false;
@@ -552,8 +556,6 @@ static bool bRestarting = false;
 static bool bIsReadyToRestart = true; // i hate my life
 static bool bIsTrickshotting = false; // this is stupid
 static constexpr bool bAreVehicleWeaponsEnabled = false;
-static int AmountOfRestarts = 0;
-static bool bInjectedOnStartup = false;
 
 // std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
 std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";
@@ -565,3 +567,9 @@ static std::pair<std::string, int> StartingSlot2 = { "FortWeaponRangedItemDefini
 static std::pair<std::string, int> StartingSlot3 = { "", 0 };
 static std::pair<std::string, int> StartingSlot4 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall", 3 };
 static std::pair<std::string, int> StartingSlot5 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff", 1 };
+
+// dont change these thanks
+
+static int AmountOfRestarts = 0;
+static bool bInjectedOnStartup = false;
+static bool bUseAIBuild = false;

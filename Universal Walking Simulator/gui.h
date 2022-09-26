@@ -367,7 +367,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				// maybe a Replication Stats?
+				// maybe a Replication Stats for >3.3?
 
 				if (ImGui::BeginTabItem(("Credits")))
 				{
@@ -388,6 +388,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
+					ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
 					ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
 					// ImGui::Checkbox("Save The World", &bIsSTW);
 					// ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);

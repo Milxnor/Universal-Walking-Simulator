@@ -49,7 +49,7 @@ namespace Teams
 	{
 		auto World = Helper::GetWorld();
 		auto GameState = Helper::GetGameState(World);
-		auto GameMode = *World->Member<UObject*>(("AuthorityGameMode"));
+		auto GameMode = Helper::GetGameMode();
 		auto Playlist = Helper::GetPlaylist();
 
 		// we really shouldn't cache any of these as they aren't used anywhere else.

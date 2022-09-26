@@ -39,7 +39,7 @@ inline void initStuff()
 
 		if (gameState && gameState->IsA(FortGameStateZoneClass))
 		{
-			auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
+			auto AuthGameMode = Helper::GetGameMode();
 
 			*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = 100; // GameState->GetMaxPlaylistPlayers()
 
@@ -353,7 +353,7 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 		std::uniform_int_distribution<> distr2(300.f, 5000.f);
 
 		auto world = Helper::GetWorld();
-		auto AuthGameMode = *world->Member<UObject*>(("AuthorityGameMode"));
+		auto AuthGameMode = Helper::GetGameMode();
 		auto SafeZonePhase = *AuthGameMode->Member<int>("SafeZonePhase");
 
 		bool bIsStartZone = SafeZonePhase == 0; // Params->NewState == EFortSafeZoneState::Starting
@@ -574,6 +574,7 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags)
 		PlayerState->ProcessEvent(ToDeathCause, &AFortPlayerStateAthena_ToDeathCause_Params);
 
 	return AFortPlayerStateAthena_ToDeathCause_Params.ReturnValue; */
+
 	return 1;
 }
 
@@ -659,6 +660,9 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			std::cout << "Teams::GetMaxPlayersPerTeam(): " << Teams::GetMaxPlayersPerTeam() << '\n';
 			std::cout << "PlayersLeft: " << *PlayersLeft << '\n';
 			std::cout << "KillerController: " << KillerController << '\n';
+			std::cout << "TeamAlivePlayers: " << *Helper::GetGameMode()->Member<int>("TeamAlivePlayers") << '\n';
+
+			bool bShouldPlayWinEffects = false;
 
 			if (*PlayersLeft <= Teams::GetMaxPlayersPerTeam() && KillerController)
 			{
@@ -2149,7 +2153,6 @@ bool IsProjectileBeingKilledHook(UObject* Interface, UFunction* func, void* Para
 
 bool ServerPlaySquadQuickChatMessageHook(UObject* Controller, UFunction* func, void* Parameters)
 {
-
 	return false;
 }
 
@@ -2163,6 +2166,97 @@ bool NetMulticast_InvokeGameplayCueExecuted_WithParamsHook(UObject* Pawn, UFunct
 	return true;
 }
 
+bool OnBuildingActorInitializedHook(UObject* newBuilding, UFunction*, void* Parameters)
+{
+	std::cout << "Owner: " << Helper::GetOwner(newBuilding)->GetFullName() << '\n';
+
+	if (false)
+	{
+		auto Controller = *(UObject**)Parameters;
+		auto Pawn = Helper::GetPawnFromController(Controller);
+
+		UObject* MatDefinition = nullptr;
+
+		static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
+		static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
+		static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
+
+		if (Controller && Pawn)
+		{
+			{
+				static auto ResourceTypeOffset = GetOffset(newBuilding, "ResourceType");
+				auto ResourceType = (TEnumAsByte<EFortResourceType>*)(__int64(newBuilding) + ResourceTypeOffset);
+
+				switch (ResourceType ? ResourceType->Get() : EFortResourceType::None)
+				{
+				case EFortResourceType::Wood:
+					MatDefinition = WoodItemData;
+					break;
+				case EFortResourceType::Stone:
+					MatDefinition = StoneItemData;
+					break;
+				case EFortResourceType::Metal:
+					MatDefinition = MetalItemData;
+					break;
+				}
+			}
+
+			UObject* MatInstance = Inventory::FindItemInInventory(Controller, MatDefinition);
+
+			bool bSuccessful = false;
+			constexpr bool bUseAnticheat = false;
+
+			if (MatInstance && *FFortItemEntry::GetCount(GetItemEntryFromInstance(MatInstance)) >= 10 &&
+				(!bUseAnticheat || validBuild(newBuilding, Pawn)))
+			{
+				auto PlayerState = Helper::GetPlayerStateFromController(Controller);
+
+				static auto TeamOffset = GetOffset(newBuilding, "Team");
+
+				auto PlayersTeamIndex = *Teams::GetTeamIndex(PlayerState);;
+
+				if (TeamOffset != -1)
+				{
+					auto Team = (TEnumAsByte<EFortTeam>*)(__int64(newBuilding) + TeamOffset);
+					*Team = PlayersTeamIndex; // *PlayerState->Member<TEnumAsByte<EFortTeam>>("Team");
+				}
+
+				static auto Building_TeamIndexOffset = GetOffset(newBuilding, "TeamIndex");
+
+				if (Building_TeamIndexOffset != -1)
+				{
+					auto TeamIndex = (uint8_t*)(__int64(newBuilding) + Building_TeamIndexOffset);
+					*TeamIndex = PlayersTeamIndex;
+				}
+
+				// Helper::SetMirrored(BuildingActor, bMirrored);
+				// Helper::InitializeBuildingActor(Controller, newBuilding, true);
+
+				bSuccessful = true;
+
+				// if (!Helper::IsStructurallySupported(BuildingActor))
+					// bSuccessful = false;
+			}
+
+			if (!bSuccessful)
+			{
+				Helper::SetActorScale3D(newBuilding, {});
+				Helper::SilentDie(newBuilding);
+				return true;
+			}
+			else
+			{
+				if (!bIsPlayground)
+				{
+					Inventory::DecreaseItemCount(Controller, MatInstance, 10);
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
@@ -2170,6 +2264,9 @@ void FinishInitializeUHooks()
 
 	if (Engine_Version >= 424)
 		AddHook("Function /Script/FortniteGame.FortProjectileMovementInterface.IsProjectileBeingKilled", IsProjectileBeingKilledHook);
+
+	// if (bUseAIBuild)
+		// AddHook("Function /Script/FortniteGame.BuildingActor.OnBuildingActorInitialized", OnBuildingActorInitializedHook);
 
 	AddHook("Function /Script/FortniteGame.FortPawn.NetMulticast_InvokeGameplayCueExecuted_WithParams", NetMulticast_InvokeGameplayCueExecuted_WithParamsHook);
 	// AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerPlaySquadQuickChatMessage", ServerPlaySquadQuickChatMessageHook);
@@ -2421,6 +2518,30 @@ __int64 __fastcall ehehheDetour(__int64 NetViewer, UObject* Connection)
 	return NetViewer;
 
 	// return ehehheO(a1, a2);
+}
+
+
+
+static UObject* SpawnActorDetour(UObject* World, UObject* Class, FVector* Position, FRotator* Rotation, const FActorSpawnParameters& SpawnParameters)
+{
+	static auto BuildingSMActorClass = FindObject("Class /Script/FortniteGame.BuildingSMActor");
+
+	auto SuperStructOfClass = GetSuperStructOfClass(Class);
+
+	if (!NoMcpAddr && FnVerDouble >= 6 && FnVerDouble < 9 && Class->GetFullName().contains("Glider"))
+	{
+		return nullptr;
+	}
+
+	if (bPrintSpawnActor)
+	{
+		std::cout << "class fullanem: " << Class->GetFullName() << '\n';
+		// std::cout << "SuperStructOfClass ful name: " << SuperStructOfClass->GetFullName() << '\n';
+	}
+
+	// if (bDoubleBuildFix2 && (SuperStructOfClass == BuildingSMActorClass || GetSuperStructOfClass(SuperStructOfClass) == BuildingSMActorClass))
+
+	return SpawnActorO(World, Class, Position, Rotation, SpawnParameters);
 }
 
 void InitializeHooks()

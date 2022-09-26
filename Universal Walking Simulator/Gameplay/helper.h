@@ -143,7 +143,7 @@ namespace Easy
 		return params.ReturnValue;
 	}
 
-	UObject* SpawnActor(UObject* Class, const FVector& Location = FVector(), const FRotator& Rotation = FRotator(), bool bUseOtherSpawning = false)
+	UObject* SpawnActor(UObject* Class, const FVector& Location = FVector(), const FRotator& Rotation = FRotator(), UObject* Owner = nullptr, bool bUseOtherSpawning = false)
 	{
 		if (!Class)
 			return nullptr;
@@ -166,6 +166,7 @@ namespace Easy
 		spawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 		spawnParams.bAllowDuringConstructionScript = true;
 		spawnParams.bNoFail = true;
+		spawnParams.Owner = Owner;
 
 		if (FnVerDouble < 19.00)
 		{
@@ -749,7 +750,7 @@ namespace Helper
 	{
 		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena")); // Class FortniteGame.FortGameModePickup
 
-		auto Pickup = Easy::SpawnActor(PickupClass, Location, FRotator(), false && FnVerDouble < 19.00);
+		auto Pickup = Easy::SpawnActor(PickupClass, Location, FRotator());  //, false && FnVerDouble < 19.00);
 
 		if (Pickup && Definition)
 		{
@@ -813,7 +814,8 @@ namespace Helper
 
 				if (PickupSource == EFortPickupSourceTypeFlag::Container)
 				{
-					*Pickup->Member<bool>(("bTossedFromContainer")) = true;
+					static auto bTossedFromContainerOffset = GetOffset(Pickup, "bTossedFromContainer");
+					*(bool*)(__int64(Pickup) + bTossedFromContainerOffset) = true;
 
 					static auto OnRep_TossedFromContainer = Pickup->Function(("OnRep_TossedFromContainer"));
 
@@ -831,7 +833,8 @@ namespace Helper
 				static auto ProjectileMovementComponentClass = FindObject("Class /Script/Engine.ProjectileMovementComponent");
 				// UFortProjectileMovementComponent
 
-				auto MovementComponent = Pickup->Member<UObject*>("MovementComponent");
+				static auto MovementComponentOffset = GetOffset(Pickup, "MovementComponent");
+				auto MovementComponent = (UObject**)(__int64(Pickup) + MovementComponentOffset);
 				*MovementComponent = Easy::SpawnObject(ProjectileMovementComponentClass, Pickup);
 			}
 		}
@@ -1028,6 +1031,15 @@ namespace Helper
 			Actor->ProcessEvent(fn, &params);
 
 		return params.Res;
+	}
+
+	UObject* GetGameMode()
+	{
+		auto world = GetWorldW();
+
+		static auto AuthorityGameModeOffset = GetOffset(world, "AuthorityGameMode");
+
+		return *(UObject**)(__int64(world) + AuthorityGameModeOffset);
 	}
 
 	UObject* GetGameState(UObject* World = nullptr)

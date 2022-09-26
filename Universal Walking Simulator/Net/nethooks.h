@@ -280,7 +280,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	if (Engine_Version > 419)
 		Teams::AssignTeam(PlayerController);
 
-	if (FnVerDouble < 13.00)
+	if (FnVerDouble < 13.00 || std::floor(FnVerDouble) == 15)
 		GiveAllBRAbilities(Pawn);
 
 	// if (Engine_Version >= 420) // && FnVerDouble < 19.00)
@@ -325,7 +325,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	// todo: not do this for invicibility
 
-	if (Engine_Version <= 421)
+	if (Engine_Version <= 421 || NoMcpAddr)
 	{
 		auto CheatManager = PlayerController->Member<UObject*>("CheatManager");
 

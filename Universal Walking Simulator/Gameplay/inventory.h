@@ -1537,7 +1537,7 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 			}
 
 			bool* bPickedUp = Params->Pickup->Member<bool>(("bPickedUp"));
-			auto Controller = *Pawn->CachedMember<UObject*>(("Controller"));
+			auto Controller = Helper::GetControllerFromPawn(Pawn);
 
 			if (bPickedUp && !*bPickedUp && Controller)
 			{
@@ -1599,7 +1599,7 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 					/* || incomingPickups->Num() >= 1) */)) // we should also check if the pickup is stackable, then it doesnt coutn but thats too complicated and slow so
 					return false;
 
-				incomingPickups->Add(Params->Pickup);
+				// incomingPickups->Add(Params->Pickup);
 
 				// *Controller->Member<UObject*>("SwappingItemDefinition") = bShouldSwap ? currentitem : nullptr;
 
@@ -1884,7 +1884,7 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 	UObject* Pawn = nullptr;
 	UObject* Pickup = nullptr;
 
-	if (func == ReceiveEndPlayFunc && PickupEffect->IsA(PickupClass))
+	if (func == ReceiveEndPlayFunc && PickupEffect->IsA(PickupClass) && !bRestarting)
 	{
 		Pickup = PickupEffect; 
 
@@ -1901,7 +1901,7 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 
 	if (Pawn && Pickup)
 	{
-		auto Controller = *Pawn->CachedMember<UObject*>("Controller");
+		auto Controller = Helper::GetControllerFromPawn(Pawn);
 
 		auto PrimaryPickupItemEntry = Pickup->CachedMember<__int64>(("PrimaryPickupItemEntry"));
 		static auto ItemDefinitionOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
@@ -1918,14 +1918,16 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 		bool bShouldSwap = false;
 		int slotToGoInto = -1;
 
+		std::cout << "ehaa!\n";
+
 		// TODO: For >7.40 check all quickbar slots until we find a empty one.
+
+		int PrimaryQuickBarSlotsFilled = 0;
 
 		if (!shouldGoInSecondaryBar)
 		{
 			if (true) // if (FnVerDouble >= 7.40)
 			{
-				int PrimaryQuickBarSlotsFilled = 0;
-
 				for (int i = 0; i < ItemInstances->Num(); i++)
 				{
 					auto ItemInstance = ItemInstances->At(i);
@@ -1962,8 +1964,15 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 
 		auto incomingPickups = Pawn->Member<TArray<UObject*>>("IncomingPickups");
 
+		std::cout << "PrimaryQuickBarSlotsFilled: " << PrimaryQuickBarSlotsFilled << '\n';
+		std::cout << "bShouldSwap: " << bShouldSwap << '\n';
+		std::cout << "ItemToStackInto: " << ItemToStackInto << '\n';
+		std::cout << "ehbb!\n";
+
 		if (bShouldSwap && QuickBars::IsHoldingPickaxe(Controller))
 			return false;
+
+		std::cout << "eccc!\n";
 
 		if (Definition && *Definition && Count)
 		{
@@ -2033,9 +2042,9 @@ void InitializeInventoryHooks()
 	if (Engine_Version >= 423 && FnVerDouble < 16.00)
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryWeapon"), ServerExecuteInventoryWeaponHook);
 
-	if (FnVerDouble >= 7)
-		AddHook("Function /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Parent.B_Pickups_Parent_C.OnAboutToEnterBackpack", OnAboutToEnterBackpackHook);
-	else
+	// if (FnVerDouble >= 7)
+		// AddHook("Function /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Parent.B_Pickups_Parent_C.OnAboutToEnterBackpack", OnAboutToEnterBackpackHook);
+	// else
 		AddHook("Function /Script/Engine.Actor.ReceiveEndPlay", OnAboutToEnterBackpackHook); //  Function /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups.B_Pickups_C.ReceiveDestroyed
 
 	if (Engine_Version >= 420)
