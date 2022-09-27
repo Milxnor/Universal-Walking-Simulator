@@ -410,11 +410,32 @@ inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Fu
 	return false;
 }
 
+inline bool ServerRepairBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
+{
+	auto BuildingActorToRepair = *(UObject**)Parameters;
+
+	if (Controller && BuildingActorToRepair)
+	{
+		static auto RepairBuilding = Controller->Function("RepairBuilding");
+
+		// BuildingRepairCostMultiplierHandles
+
+		int ResourcesSpent = 0;
+
+		struct { UObject* Controller; int ResourcesSpent; } parms{Controller, ResourcesSpent };
+
+		BuildingActorToRepair->ProcessEvent(RepairBuilding, &parms);
+	}
+
+	return false;
+}
+
 void InitializeBuildHooks()
 {
 	// if (Engine_Version < 426)
 	{
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
+		AddHook("Function /Script/FortniteGame.FortPlayerController.ServerRepairBuildingActor", ServerRepairBuildingActorHook);
 
 		// if (Engine_Version < 424)
 		if (std::floor(FnVerDouble) != 15)

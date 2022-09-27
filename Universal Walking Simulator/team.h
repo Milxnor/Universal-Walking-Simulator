@@ -147,7 +147,9 @@ namespace Teams
 		PlayerState->ProcessEvent(OnRep_SquadId);
 
 		static auto OnRep_TeamIndex = PlayerState->Function("OnRep_TeamIndex");
-		PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIdx);
+
+		if (OnRep_TeamIndex)
+			PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIdx);
 
 		// (*PlayerTeam)->CachedMember<TArray<AController*>>("TeamMembers")->Add(Controller);
 
