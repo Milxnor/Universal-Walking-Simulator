@@ -374,7 +374,7 @@ DWORD WINAPI Main(LPVOID)
     bUseAIBuild = aibuildfn && FnVerDouble < 19.00 && bDoubleBuildFix2;
 
     std::cout << "bUseAIBuild: " << bUseAIBuild << '\n';
-    std::cout << "SIZE: " << sizeof(FTS::Abilities::FGameplayAbilitySpecAA) << '\n';
+    // std::cout << "SIZE: " << sizeof(FTS::Abilities::FGameplayAbilitySpecAA) << '\n';
 
     return 0;
 }
