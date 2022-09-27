@@ -1233,6 +1233,93 @@ namespace Helper
 		return SpawnTransform.Translation;
 	}
 
+	void LoopAlivePlayers(std::function<void(UObject* Controller)> fn)
+	{
+		auto GameMode = Helper::GetGameMode();
+		static auto AlivePlayersOffset = GetOffset(GameMode, "AlivePlayers");
+
+		auto AlivePlayers = (TArray<UObject*>*)(__int64(GameMode) + AlivePlayersOffset);
+
+		if (AlivePlayers)
+		{
+			for (int i = 0; i < AlivePlayers->Num(); i++)
+			{
+				auto AlivePlayer = AlivePlayers->At(i);
+
+				if (!AlivePlayer)
+					return;
+
+				fn(AlivePlayer);
+			}
+		}
+	}
+
+	bool IsControllerAlive(UObject* Controller) // NOT RECOMMENDED
+	{
+		// bMarkedAlive
+
+		bool bIsControllerAlive = false;
+
+		auto CompareController = [&bIsControllerAlive, &Controller](UObject* OtherController) {
+			if (Controller == OtherController)
+			{
+				bIsControllerAlive = true;
+			}
+		};
+
+		LoopAlivePlayers(CompareController);
+
+		return bIsControllerAlive;
+	}
+
+	void LoopConnections(std::function<void(UObject* Controller)> fn)
+	{
+		auto World = Helper::GetWorld();
+
+		if (World)
+		{
+			static auto NetDriverOffset = GetOffset(World, "NetDriver");
+			auto NetDriver = *(UObject**)(__int64(World) + NetDriverOffset);
+			if (NetDriver)
+			{
+				static auto ClientConnectionsOffset = GetOffset(NetDriver, "ClientConnections");
+				auto ClientConnections = (TArray<UObject*>*)(__int64(NetDriver) + ClientConnectionsOffset);
+
+				if (ClientConnections)
+				{
+					for (int i = 0; i < ClientConnections->Num(); i++)
+					{
+						auto Connection = ClientConnections->At(i);
+
+						if (!Connection)
+							continue;
+
+						static auto Connection_PlayerControllerOffset = GetOffset(Connection, "PlayerController");
+						auto aaController = *(UObject**)(__int64(Connection) + Connection_PlayerControllerOffset);
+
+						if (aaController)
+						{
+							// auto aaPlayerState = Helper::GetPlayerStateFromController(aaController);
+							auto aaPawn = Helper::GetPawnFromController(aaController);
+
+							if (aaPawn)
+							{
+								static auto IsActorBeingDestroyed = aaPawn->Function(("IsActorBeingDestroyed"));
+
+								bool bIsActorBeingDestroyed = true;
+
+								if (IsActorBeingDestroyed)
+									aaPawn->ProcessEvent(IsActorBeingDestroyed, &bIsActorBeingDestroyed);
+
+								fn(aaController);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	void LaunchPlayer(UObject* Pawn, FVector LaunchVelocity, bool bXYOverride, bool bZOverride, bool bIgnoreFallDamage, bool bPlayFeedbackEvent)
 	{
 		struct {

@@ -623,6 +623,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 		auto DeadPawn = Helper::GetPawnFromController(DeadPC);
 		auto DeadPlayerState = Helper::GetPlayerStateFromController(DeadPC);
+		auto DeadController = Helper::GetControllerFromPawn(DeadPawn);
 		auto GameState = Helper::GetGameState();
 
 		static auto KillerPawnOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("KillerPawn"));
@@ -660,18 +661,27 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			std::cout << "Teams::GetMaxPlayersPerTeam(): " << Teams::GetMaxPlayersPerTeam() << '\n';
 			std::cout << "PlayersLeft: " << *PlayersLeft << '\n';
 			std::cout << "KillerController: " << KillerController << '\n';
-			std::cout << "TeamAlivePlayers: " << *Helper::GetGameMode()->Member<int>("TeamAlivePlayers") << '\n';
+			//std::cout << "TeamAlivePlayers: " << *Helper::GetGameMode()->Member<int>("TeamAlivePlayers") << '\n';
 
-			bool bShouldPlayWinEffects = false;
+			std::unordered_set<int> AliveTeamIndexes;
 
-			if (*PlayersLeft <= Teams::GetMaxPlayersPerTeam() && KillerController)
+			auto laivefoap = [&](UObject* Controller) {
+				if (Controller != DeadController)
+					AliveTeamIndexes.emplace(*Teams::GetTeamIndex(Helper::GetPlayerStateFromController(Controller)));
+			};
+
+			Helper::LoopAlivePlayers(laivefoap);
+
+			bool bShouldPlayWinEffects = AliveTeamIndexes.size() <= 1; // *PlayersLeft <= Teams::GetMaxPlayersPerTeam();
+
+			if (bShouldPlayWinEffects)
 			{
 				static auto DamageCauserOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("DamageCauser"));
 
 				auto DamageCauser = *(UObject**)(__int64(&Params->DeathReport) + DamageCauserOffset);
 
-				if (DamageCauser)
-					std::cout << "DamageCauser Name: " << DamageCauser->GetFullName() << '\n';
+				// if (DamageCauser)
+					// std::cout << "DamageCauser Name: " << DamageCauser->GetFullName() << '\n';
 
 				UObject* FinishingWeaponDefinition = nullptr;
 
@@ -686,35 +696,42 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 						FinishingWeaponDefinition = Helper::GetWeaponData(DamageCauser); // *(*KillerPawn->Member<UObject*>("CurrentWeapon"))->Member<UObject*>("WeaponData");
 				}
 
+				static auto ClientNotifyWon = FindObject("Function /Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
+
 				struct
 				{
 					UObject* FinisherPawn;          // APawn                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					UObject* FinishingWeapon; // UFortWeaponItemDefinition                                          // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					EDeathCause                                        DeathCause;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				} AFortPlayerControllerAthena_ClientNotifyWon_Params{ KillerPawn, FinishingWeaponDefinition, DeathCause};
+				} AFortPlayerControllerAthena_ClientNotifyWon_Params{ KillerPawn, FinishingWeaponDefinition, DeathCause };
 
-				std::cout << "aetgm!\n";
+				auto lmbda = [&](UObject* Controller) {
+					if (Controller != DeadController)
+						Controller->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
+				};
 
-				static auto ClientNotifyWon = KillerController->Function(/* "ClientNotifyWon" */"ClientNotifyTeamWon");
+				Helper::LoopAlivePlayers(lmbda);
 
-				if (ClientNotifyWon)
-					KillerController->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
-
-				// CreateThread(0, 0, AutoRestartThread, 0, 0, 0);
-
-				auto WinningPlayerState = GameState->Member<UObject*>("WinningPlayerState");
-
-				if (WinningPlayerState)
+				if (KillerController)
 				{
-					*WinningPlayerState = KillerPlayerState;
-					*GameState->Member<int>("WinningTeam") = *Teams::GetTeamIndex(KillerPlayerState);
+					// KillerController->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
 
-					struct FFortWinnerPlayerData { int PlayerId; };
+					// CreateThread(0, 0, AutoRestartThread, 0, 0, 0);
 
-					GameState->Member<TArray<FFortWinnerPlayerData>>("WinningPlayerList")->Add(FFortWinnerPlayerData{ *KillerPlayerState->Member<int>("WorldPlayerId") });
+					auto WinningPlayerState = GameState->Member<UObject*>("WinningPlayerState");
 
-					GameState->ProcessEvent("OnRep_WinningPlayerState");
-					GameState->ProcessEvent("OnRep_WinningTeam");
+					if (WinningPlayerState)
+					{
+						*WinningPlayerState = KillerPlayerState;
+						*GameState->Member<int>("WinningTeam") = *Teams::GetTeamIndex(KillerPlayerState);
+
+						struct FFortWinnerPlayerData { int PlayerId; };
+
+						GameState->Member<TArray<FFortWinnerPlayerData>>("WinningPlayerList")->Add(FFortWinnerPlayerData{ *KillerPlayerState->Member<int>("WorldPlayerId") });
+
+						GameState->ProcessEvent("OnRep_WinningPlayerState");
+						GameState->ProcessEvent("OnRep_WinningTeam");
+					}
 				}
 			}
 
@@ -2528,7 +2545,7 @@ static UObject* SpawnActorDetour(UObject* World, UObject* Class, FVector* Positi
 
 	auto SuperStructOfClass = GetSuperStructOfClass(Class);
 
-	if (!NoMcpAddr && FnVerDouble >= 6 && FnVerDouble < 9 && Class->GetFullName().contains("Glider"))
+	if (!NoMcpAddr && FnVerDouble >= 6 && FnVerDouble < 10 && Class->GetFullName().contains("Glider"))
 	{
 		return nullptr;
 	}
