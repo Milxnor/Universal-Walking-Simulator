@@ -393,8 +393,9 @@ inline bool ServerEndEditingBuildingActorHook(UObject* Controller, UFunction* Fu
 				{
 					// auto EditToolInstance = Inventory::FindItemInInventory(Controller, EditToolDefinition);
 					auto EditTool = CurrentWep;// Inventory::EquipWeaponDefinition(*Pawn, EditToolDefinition, Inventory::GetItemGuid(EditToolInstance));
-
-					// *EditTool->CachedMember<bool>(("bEditConfirmed")) = true;
+					
+					// static auto bEditConfirmedOffset = GetOffset(EditTool, "bEditConfirmed");
+					// *(bool*)(__int64(EditTool) + bEditConfirmedOffset) = true;
 					*GetEditActor(EditTool) = nullptr;
 				}
 			}

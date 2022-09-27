@@ -235,16 +235,31 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		}
 	}
 
-	*PlayerController->Member<char>(("bReadyToStartMatch")) = true;
-	*PlayerController->Member<char>(("bClientPawnIsLoaded")) = true;
-	*PlayerController->Member<char>(("bHasInitiallySpawned")) = true;
+	// half of these are useless
 
-	*PlayerController->Member<bool>(("bHasServerFinishedLoading")) = true;
-	*PlayerController->Member<bool>(("bHasClientFinishedLoading")) = true;
+	static auto bReadyToStartMatchOffset = GetOffset(PlayerController, "bReadyToStartMatch");
+	*(char*)(__int64(PlayerController) + bReadyToStartMatchOffset) = true;
 
-	*PlayerState->Member<char>(("bHasStartedPlaying")) = true;
-	*PlayerState->Member<char>(("bHasFinishedLoading")) = true;
-	*PlayerState->Member<char>(("bIsReadyToContinue")) = true;
+	static auto bClientPawnIsLoadedOffset = GetOffset(PlayerController, "bClientPawnIsLoaded");
+	*(char*)(__int64(PlayerController) + bClientPawnIsLoadedOffset) = true;
+
+	static auto bHasInitiallySpawnedOffset = GetOffset(PlayerController, "bHasInitiallySpawned");
+	*(char*)(__int64(PlayerController) + bHasInitiallySpawnedOffset) = true;
+
+	static auto bHasServerFinishedLoadingOffset = GetOffset(PlayerController, "bHasServerFinishedLoading");
+	*(char*)(__int64(PlayerController) + bHasServerFinishedLoadingOffset) = true;
+
+	static auto bHasClientFinishedLoadingOffset = GetOffset(PlayerController, "bHasClientFinishedLoading");
+	*(char*)(__int64(PlayerController) + bHasClientFinishedLoadingOffset) = true;
+
+	static auto bHasStartedPlayingOffset = GetOffset(PlayerState, "bHasStartedPlaying");
+	*(char*)(__int64(PlayerState) + bHasStartedPlayingOffset) = true;
+
+	static auto bHasFinishedLoadingOffset = GetOffset(PlayerState, "bHasFinishedLoading");
+	*(char*)(__int64(PlayerState) + bHasFinishedLoadingOffset) = true;
+
+	static auto bIsReadyToContinueOffset = GetOffset(PlayerState, "bIsReadyToContinue");
+	*(char*)(__int64(PlayerState) + bIsReadyToContinueOffset) = true;
 
 	/* setBitfield(PlayerState, "bReadyToStartMatch", true);
 	setBitfield(PlayerState, "bClientPawnIsLoaded", true);
@@ -280,7 +295,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	if (Engine_Version > 419)
 		Teams::AssignTeam(PlayerController);
 
-	if (FnVerDouble < 13.00 || std::floor(FnVerDouble) == 15)
+	// if (FnVerDouble < 13.00 || std::floor(FnVerDouble) == 15)
 		GiveAllBRAbilities(Pawn);
 
 	// if (Engine_Version >= 420) // && FnVerDouble < 19.00)
@@ -327,7 +342,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	if (Engine_Version <= 421 || NoMcpAddr)
 	{
-		auto CheatManager = PlayerController->Member<UObject*>("CheatManager");
+		static auto CheatManagerOffset = GetOffset(PlayerController, "CheatManager");
+		auto CheatManager = (UObject**)(__int64(PlayerController) + CheatManagerOffset);
 
 		static auto CheatManagerClass = FindObject("Class /Script/Engine.CheatManager");
 		*CheatManager = Easy::SpawnObject(CheatManagerClass, PlayerController);

@@ -236,6 +236,13 @@ static UObject* GetPickaxeDef(UObject* Controller)
 
 namespace Inventory
 {
+	FGuid GetWeaponGuid(UObject* Weapon)
+	{
+		static auto ItemEntryGuidOffset = GetOffset(Weapon, "ItemEntryGuid");
+
+		return *(FGuid*)(__int64(Weapon) + ItemEntryGuidOffset);
+	}
+
 	UObject* GetWorldInventory(UObject* Controller)
 	{
 		static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
@@ -589,9 +596,9 @@ namespace Inventory
 		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
 
 		// if (!QuickBars::IsHoldingPickaxe()) 
-		if (currentWeapon && *currentWeapon->Member<UObject*>("WeaponData") != PickaxeDef)
+		if (currentWeapon && Helper::GetWeaponData(currentWeapon) != PickaxeDef)
 		{
-			auto currentInstance = GetItemInstanceFromGuid(Controller, *currentWeapon->Member<FGuid>("ItemEntryGuid"));
+			auto currentInstance = GetItemInstanceFromGuid(Controller, Inventory::GetWeaponGuid(currentWeapon));
 
 			if (currentInstance)
 			{
@@ -1401,7 +1408,7 @@ namespace Inventory
 
 	__int64* GetEntryFromWeapon(UObject* Controller, UObject* Weapon)
 	{
-		auto instance = Inventory::GetItemInstanceFromGuid(Controller, *Weapon->Member<FGuid>("ItemEntryGuid")); // ahhhhhhhhhhhhhh
+		auto instance = Inventory::GetItemInstanceFromGuid(Controller, Inventory::GetWeaponGuid(Weapon)); // ahhhhhhhhhhhhhh
 		return GetItemEntryFromInstance(instance);
 	}
 }
@@ -1770,16 +1777,16 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 
 	std::cout << "wtfa!\n";
 
-	auto PlayerController = *Pawn->CachedMember<UObject*>(("Controller"));
+	auto PlayerController = Helper::GetControllerFromPawn(Pawn);
 
 	if (PlayerController)
 	{
-		auto WeaponGuidPtr = Weapon->CachedMember<FGuid>("ItemEntryGuid");
+		auto WeaponGuidPtr = Inventory::GetWeaponGuid(Weapon);
 
-		if (!WeaponGuidPtr) // i hate u vehicles
-			return;
+		// if (!WeaponGuidPtr) // i hate u vehicles
+			// return;
 
-		auto WeaponGuid = *WeaponGuidPtr;
+		auto WeaponGuid = WeaponGuidPtr;
 
 		auto WeaponItemEntry = GetItemEntryFromInstance(Inventory::FindItemInInventory(PlayerController, WeaponGuid));
 
@@ -2016,7 +2023,7 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 
 			if (OldCount && HeldWeaponAmmo)
 			{
-				Inventory::RemoveItem(Controller, *CurrentWeapon->CachedMember<FGuid>(("ItemEntryGuid")));
+				Inventory::RemoveItem(Controller, Inventory::GetWeaponGuid(CurrentWeapon));
 
 				auto DroppedPickup = Helper::SummonPickup(Pawn, HeldWeaponDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Player,
 					EFortPickupSpawnSource::Unset, *OldCount, true, false, *HeldWeaponAmmo);

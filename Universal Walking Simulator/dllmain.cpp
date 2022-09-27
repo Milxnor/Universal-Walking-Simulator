@@ -374,6 +374,7 @@ DWORD WINAPI Main(LPVOID)
     bUseAIBuild = aibuildfn && FnVerDouble < 19.00 && bDoubleBuildFix2;
 
     std::cout << "bUseAIBuild: " << bUseAIBuild << '\n';
+    std::cout << "SIZE: " << sizeof(FTS::Abilities::FGameplayAbilitySpecAA) << '\n';
 
     return 0;
 }
@@ -405,7 +406,6 @@ DWORD WINAPI MainTest(LPVOID)
     std::cout << "FortPlayerControllerAthena VTABLE: " << __int64(FindObject("FortPlayerControllerAthena /Script/FortniteGame.Default__FortPlayerControllerAthena")->VFTable) - Base << '\n';
     std::cout << "FortPlayerPawnAthena VTABLE: " << __int64(FindObject("FortPlayerPawnAthena /Script/FortniteGame.Default__FortPlayerPawnAthena")->VFTable) - Base << '\n';
     std::cout << "FortPlayerStateAthena VTABLE: " << __int64(FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena")->VFTable) - Base << '\n';
-
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,

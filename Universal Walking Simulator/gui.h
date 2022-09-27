@@ -1117,11 +1117,11 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							if (CurrentWeapon)
 							{
-								auto Guid = CurrentWeapon->Member<FGuid>(("ItemEntryGuid"));
+								auto Guid = Inventory::GetWeaponGuid(CurrentWeapon);
 
-								if (Guid)
+								// if (Guid)
 								{
-									auto Controller = *Pawn->Member<UObject*>(("Controller"));
+									auto Controller = Helper::GetControllerFromPawn(Pawn);
 									UObject* Definition = nullptr;
 									int Count = -1;
 
@@ -1141,7 +1141,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 												auto CurrentGuid = Inventory::GetItemGuid(ItemInstance);
 
-												if (CurrentGuid == *Guid)
+												if (CurrentGuid == Guid)
 												{
 													Definition = Inventory::GetItemDefinition(ItemInstance);
 													Count = *FFortItemEntry::GetCount(ItemInstance->Member<__int64>(("ItemEntry"))); // lets hope its a UFortWorldItem*

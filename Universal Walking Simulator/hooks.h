@@ -1441,7 +1441,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				Inventory::TakeItem(Controller, StoneGUID, CostPerMat);
 				Inventory::TakeItem(Controller, MetalGUID, CostPerMat);
 
-				Inventory::TakeItem(Controller, *CurrentWeapon->Member<FGuid>("ItemEntryGuid"), 1, true);
+				Inventory::TakeItem(Controller, Inventory::GetWeaponGuid(CurrentWeapon), 1, true);
 				Inventory::GiveItem(Controller, newDef, EFortQuickBars::Primary, 1, 1);
 			}
 
