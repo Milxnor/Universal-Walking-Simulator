@@ -376,10 +376,14 @@ DWORD WINAPI Main(LPVOID)
     std::cout << "bUseAIBuild: " << bUseAIBuild << '\n';
     // std::cout << "SIZE: " << sizeof(FTS::Abilities::FGameplayAbilitySpecAA) << '\n';
 
-    if (bUseAIBuild)
+    if (bUseAIBuild) // kms
     {
-        // auto sigfgwe = FindPattern("8B 81 ? ? ? ? 39 02 7F 7B");
-        auto sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE 40 32 FF FF 90 ? ? ? ? 0F B6 B4 24 ? ? ? ? 4D 8B CF 48 8B C8 4C");
+        // auto sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE 40 32 FF FF 90 ? ? ? ? 0F B6 B4 24 ? ? ? ? 4D 8B CF 48 8B C8 4C");
+
+        // if (!sigfgwe)
+            // sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE 32 DB FF 90 ? ? ? ? 0F B6 B4 24 ? ? ? ? 4D 8B CF 48 8B C8 4C 8B C5 48");
+
+        auto sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE ? ? FF");
 
         if (sigfgwe)
         {
@@ -392,7 +396,7 @@ DWORD WINAPI Main(LPVOID)
         }
         else
         {
-            std::cout << "Disabling doulb ebuild fix bvcua8fiu!\n";
+            std::cout << "Disabling doulb ebuild fix uhh dm milxnor!\n";
             bUseAIBuild = false;
         }
     }
