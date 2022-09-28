@@ -56,3 +56,51 @@ static UObject* GetLootPackages()
 
 	return LootPackages;
 }
+
+struct FRichCurveKey
+{
+	ERichCurveInterpMode GetInterpMode() const
+	{
+		static auto InterpModeOffset = FindOffsetStruct("ScriptStruct /Script/Engine.RichCurveKey", "InterpMode");
+
+		return *(ERichCurveInterpMode*)(__int64(this) + InterpModeOffset);
+	}
+
+	float GetTime() const
+	{
+		static auto TimeOffset = FindOffsetStruct("ScriptStruct /Script/Engine.RichCurveKey", "Time");
+
+		return *(float*)(__int64(this) + TimeOffset);
+	}
+
+	float GetValue() const
+	{
+		static auto ValueOffset = FindOffsetStruct("ScriptStruct /Script/Engine.RichCurveKey", "Value");
+
+		return *(float*)(__int64(this) + ValueOffset);
+	}
+
+	float GetLeaveTangent() const
+	{
+		static auto LeaveTangentOffset = FindOffsetStruct("ScriptStruct /Script/Engine.RichCurveKey", "LeaveTangent");
+
+		return *(float*)(__int64(this) + LeaveTangentOffset);
+	}
+
+	float GetArriveTangent() const
+	{
+		static auto ArriveTangentOffset = FindOffsetStruct("ScriptStruct /Script/Engine.RichCurveKey", "ArriveTangent");
+
+		return *(float*)(__int64(this) + ArriveTangentOffset);
+	}
+};
+
+namespace FRichCurve
+{
+#define MAX_flt			(3.402823466e+38F)
+
+	float Eval(UObject* Curve, float InTime, float InDefaultValue)
+	{
+		// i tried remaking but there was one eval function that was too much
+	}
+}

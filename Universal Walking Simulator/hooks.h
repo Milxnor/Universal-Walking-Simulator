@@ -1388,6 +1388,9 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 					else if (ReceivingActorName.contains("Ostrich")) // mech
 						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/WID_OstrichShotgunTest2.WID_OstrichShotgunTest2");
 
+					else if (ReceivingActorName.contains("MountedTurret"))
+						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Traps/MountedTurret/MountedTurret_Weapon.MountedTurret_Weapon");
+
 					std::cout << "goofy ahh\n";
 
 					if (VehicleWeaponDefinition)
@@ -2425,7 +2428,8 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), "OnBounceAnimationUpdate") &&
 					!strstr(FunctionName.c_str(), "ShouldShowSoundIndicator") &&
 					!strstr(FunctionName.c_str(), "Primitive_Structure_AmbAudioComponent_C") &&
-					!strstr(FunctionName.c_str(), "PlayStoppedIdleRotationAudio"))
+					!strstr(FunctionName.c_str(), "PlayStoppedIdleRotationAudio") &&
+					!strstr(FunctionName.c_str(), "UpdateOverheatCosmetics"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}

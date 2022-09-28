@@ -504,7 +504,7 @@ std::vector<UObject*> GiveAbilitySet(UObject* Pawn, UObject* AbilitySet)
 
                 AbilitiesToRet.push_back(ability);
 
-                std::cout << "Granting ability " << Ability->GetFullName() << '\n';
+                // std::cout << "Granting ability " << Ability->GetFullName() << '\n';
             }
         }
     }

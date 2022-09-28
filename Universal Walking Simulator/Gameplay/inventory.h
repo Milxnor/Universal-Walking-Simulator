@@ -330,8 +330,21 @@ namespace Inventory
 		{
 			auto FullName = Definition->GetFullName();
 			bool IsAGID = (FullName.contains(("AthenaGadgetItemDefinition ")) || FullName.contains(("FortGadgetItemDefinition "))); // TODO: Use IsA
-			
-			if (!IsAGID)
+
+			static auto FortTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortTrapItemDefinition");
+
+			if (Definition->IsA(FortTrapItemDefinitionClass)) // wrong? probs
+			{
+				static auto TrapToolClass = FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_BuildingTools/TrapTool.TrapTool_C");
+				auto newTrapTool = Easy::SpawnActor(TrapToolClass, Helper::GetActorLocation(Pawn));
+				
+				static auto PickUpActor = Pawn->Function("PickUpActor");
+				struct { UObject* PickupActor; UObject* PlacementDecoItemDefinition; } parms{newTrapTool, Definition};
+
+				Pawn->ProcessEvent(PickUpActor, &parms);
+			}
+
+			else if (!IsAGID)
 			{
 				UObject* Weapon = nullptr;
 

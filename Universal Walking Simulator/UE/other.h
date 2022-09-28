@@ -505,6 +505,18 @@ enum EName
 	// pragma = (pop_macro("TRUE")) pragma(pop_macro("FALSE")) # 18 "D:/DocSource/Engine/Source/Runtime/Core/Public/UObject/UnrealNames.h" 2 MaxHardcodedNameIndex,
 };
 
+enum ERichCurveInterpMode
+{
+	/** Use linear interpolation between values. */
+	RCIM_Linear,
+	/** Use a constant value. Represents stepped values. */
+	RCIM_Constant,
+	/** Cubic interpolation. See TangentMode for different cubic interpolation options. */
+	RCIM_Cubic,
+	/** No interpolation. */
+	RCIM_None
+};
+
 #define FASTASIN_HALF_PI (1.5707963050f)
 /**
 * Computes the ASin of a scalar value.

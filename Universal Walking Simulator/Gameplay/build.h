@@ -8,6 +8,25 @@
 
 // Includes building and editing..
 
+void SetBuildingActorTeam(UObject* BuildingActor, int NewTeamIndex)
+{
+	static auto TeamOffset = GetOffset(BuildingActor, "Team");
+
+	if (TeamOffset != -1)
+	{
+		auto Team = (TEnumAsByte<EFortTeam>*)(__int64(BuildingActor) + TeamOffset);
+		*Team = NewTeamIndex; // *PlayerState->Member<TEnumAsByte<EFortTeam>>("Team");
+	}
+
+	static auto Building_TeamIndexOffset = GetOffset(BuildingActor, "TeamIndex");
+
+	if (Building_TeamIndexOffset != -1)
+	{
+		auto TeamIndex = (uint8_t*)(__int64(BuildingActor) + Building_TeamIndexOffset);
+		*TeamIndex = NewTeamIndex;
+	}
+}
+
 inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
 	if (Controller && Parameters)
@@ -148,23 +167,9 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 						{
 							auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-							static auto TeamOffset = GetOffset(BuildingActor, "Team");
-
 							auto PlayersTeamIndex = *Teams::GetTeamIndex(PlayerState);;
 
-							if (TeamOffset != -1)
-							{
-								auto Team = (TEnumAsByte<EFortTeam>*)(__int64(BuildingActor) + TeamOffset);
-								*Team = PlayersTeamIndex; // *PlayerState->Member<TEnumAsByte<EFortTeam>>("Team");
-							}
-
-							static auto Building_TeamIndexOffset = GetOffset(BuildingActor, "TeamIndex");
-							
-							if (Building_TeamIndexOffset != -1)
-							{
-								auto TeamIndex = (uint8_t*)(__int64(BuildingActor) + Building_TeamIndexOffset);
-								*TeamIndex = PlayersTeamIndex;
-							}
+							SetBuildingActorTeam(BuildingActor, PlayersTeamIndex);
 
 							// Helper::SetMirrored(BuildingActor, bMirrored);
 							Helper::InitializeBuildingActor(Controller, BuildingActor, true);
@@ -430,10 +435,69 @@ inline bool ServerRepairBuildingActorHook(UObject* Controller, UFunction* Functi
 	return false;
 }
 
+inline bool ServerSpawnDecoHook(UObject* DecoTool, UFunction*, void* Parameters)
+{
+	if (DecoTool)
+	{
+		// DecoTool->TryToPlace // TODO: Try
+
+		struct parmas {
+			FVector Location; 
+			FRotator Rotation;
+			UObject* AttachedActor;
+			// TEnumAsByte<EBuildingAttachmentType> InBuildingAttachmentType
+		};
+
+		auto Params = (parmas*)Parameters;
+
+		auto Pawn = Helper::GetOwner(DecoTool);
+		auto Controller = Helper::GetControllerFromPawn(Pawn);
+
+		static auto ItemDefinitionOffset = GetOffset(DecoTool, "ItemDefinition");
+		auto TrapItemDefinition = *(UObject**)(__int64(DecoTool) + ItemDefinitionOffset);
+
+		// Inventory::DecreaseItemCount(Controller, Inventory::FindItemInInventory(Controller, TrapItemDefinition), 1);
+
+		static auto GetBlueprintClass = TrapItemDefinition->Function("GetBlueprintClass");
+		UObject* BlueprintClass = nullptr;
+		TrapItemDefinition->ProcessEvent(GetBlueprintClass, &BlueprintClass);
+
+		auto NewTrap = Easy::SpawnActor(BlueprintClass, Params->Location, Params->Rotation);
+
+		Helper::InitializeBuildingActor(Controller, NewTrap);
+
+		static auto AttachedToOffset = GetOffset(NewTrap, "AttachedTo");
+		auto AttachedTo = (UObject**)(__int64(NewTrap) + AttachedToOffset);
+
+		*AttachedTo = Params->AttachedActor;
+
+		// BuildingActor->BuildingAttachmentType = Params->InBuildingAttachmentType;
+
+		SetBuildingActorTeam(NewTrap, *Teams::GetTeamIndex(Helper::GetPlayerStateFromController(Controller)));
+
+		static auto NewTrapOffset = GetOffset(NewTrap, "AbilitySet");
+		auto TrapAbilitySet = *(UObject**)(__int64(NewTrap) + NewTrapOffset);
+
+		GiveAbilitySet(Pawn, TrapAbilitySet); // i raewlly dont think this is needed
+	}
+
+	return false;
+}
+
+inline bool ServerCreateBuildingAndSpawnDecoHook(UObject* DecoTool, UFunction*, void* Parameters) // ofc they change this (Params)
+{
+	if (DecoTool)
+	{
+
+	}
+}
+
 void InitializeBuildHooks()
 {
 	// if (Engine_Version < 426)
 	{
+		// AddHook("Function /Script/FortniteGame.FortDecoTool.ServerCreateBuildingAndSpawnDeco", ServerCreateBuildingAndSpawnDecoHook);
+		AddHook("Function /Script/FortniteGame.FortDecoTool.ServerSpawnDeco", ServerSpawnDecoHook);
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
 		AddHook("Function /Script/FortniteGame.FortPlayerController.ServerRepairBuildingActor", ServerRepairBuildingActorHook);
 
