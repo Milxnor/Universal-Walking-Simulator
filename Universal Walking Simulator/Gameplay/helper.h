@@ -20,7 +20,8 @@ int GetMaxBullets(UObject* Definition)
 		FName                                  RowName;                                           // 0x8(0x8)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	};
 
-	auto statHandle = Definition->Member<FDataTableRowHandle>("WeaponStatHandle");
+	static auto WeaponStatHandleOffset = GetOffset(Definition, "WeaponStatHandle");
+	auto statHandle = (FDataTableRowHandle*)(__int64(Definition) + WeaponStatHandleOffset);
 
 	if (!statHandle || !statHandle->DataTable || !statHandle->RowName.ComparisonIndex)
 		return 0;
@@ -413,6 +414,14 @@ namespace Helper
 		return FRotator();
 	}
 
+	__int64* GetEntryFromPickup(UObject* Pickup)
+	{
+		static auto PrimaryPickupItemEntryOffset = GetOffset(Pickup, "PrimaryPickupItemEntry");
+		auto PrimaryPickupItemEntry = (__int64*)(__int64(Pickup) + PrimaryPickupItemEntryOffset);
+
+		return PrimaryPickupItemEntry;
+	}
+
 	void ShowBuilding(UObject* Foundation, bool bShow = true)
 	{
 		if (!Foundation)
@@ -754,7 +763,7 @@ namespace Helper
 
 		if (Pickup && Definition)
 		{
-			auto ItemEntry = Pickup->CachedMember<__int64>(("PrimaryPickupItemEntry"));
+			auto ItemEntry = GetEntryFromPickup(Pickup);
 
 			static auto CountOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("Count"));
 			static auto ItemDefOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemDefinition"));
@@ -1607,7 +1616,10 @@ namespace Helper
 
 		if (Engine_Version <= 420)
 		{
-			*(PlayerState ? PlayerState : *Pawn->Member<UObject*>("PlayerState"))->Member<float>("MaxShield") = MaxShield;
+			PlayerState = PlayerState ? PlayerState : Helper::GetPlayerStateFromController(Helper::GetControllerFromPawn(Pawn));
+
+			static auto MaxShieldOffset = GetOffset(PlayerState, "MaxShield");
+			*(float*)(__int64(PlayerState) + MaxShieldOffset) = MaxShield;
 		}
 		else
 		{
