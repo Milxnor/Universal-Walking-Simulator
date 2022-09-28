@@ -18,7 +18,7 @@ namespace EventHelper
 
 	void TeleportPlayersToButterfly()
 	{
-		static auto scripting = FindObjectOld("BP_IslandScripting_C_", true);
+		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
 
 		if (!scripting)
 		{

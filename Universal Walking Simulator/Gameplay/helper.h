@@ -362,6 +362,34 @@ namespace Helper
 
 			return String.Data.GetData() ? String.ToString() : "INVALID_STRING";
 		}
+
+		FName StringToName(FString Str)
+		{
+			static auto KTL = FindObject(("KismetStringLibrary /Script/Engine.Default__KismetStringLibrary"));
+
+			FName Ret;
+
+			if (KTL)
+			{
+				static auto fn = KTL->Function(("Conv_StringToName"));
+
+				struct {
+					FString InStr;
+					FName ReturnValue;
+				} params{ Str };
+
+				if (fn)
+					KTL->ProcessEvent(fn, &params);
+				else
+					std::cout << ("Unable to find Conv_TextToString!\n");
+
+				Ret = params.ReturnValue;
+			}
+			else
+				std::cout << ("Unable to find KTL!\n");
+
+			return Ret;
+		}
 	}
 
 	static FName StringToName(FString Str)
