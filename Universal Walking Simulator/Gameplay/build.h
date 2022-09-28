@@ -475,10 +475,9 @@ inline bool ServerSpawnDecoHook(UObject* DecoTool, UFunction*, void* Parameters)
 
 		SetBuildingActorTeam(NewTrap, *Teams::GetTeamIndex(Helper::GetPlayerStateFromController(Controller)));
 
-		static auto NewTrapOffset = GetOffset(NewTrap, "AbilitySet");
-		auto TrapAbilitySet = *(UObject**)(__int64(NewTrap) + NewTrapOffset);
-
-		GiveAbilitySet(Pawn, TrapAbilitySet); // i raewlly dont think this is needed
+		static auto TrapDataOffset = GetOffset(NewTrap, "TrapData");
+		auto TrapData = (UObject**)(__int64(NewTrap) + TrapDataOffset);
+		*TrapData = TrapItemDefinition; // probably useless
 	}
 
 	return false;
