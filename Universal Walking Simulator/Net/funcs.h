@@ -547,7 +547,7 @@ static bool bUseBeacons = true;
 
 // change these ig
 
-static constexpr bool bDoubleBuildFix2 = false;
+static constexpr bool bDoubleBuildFix2 = true;
 static constexpr bool bDoubleBuildFix = false;
 static bool bClearInventoryOnAircraftJump = !bIsPlayground;
 static bool bIsInEvent = false;
@@ -574,3 +574,4 @@ static std::pair<std::string, int> StartingSlot5 = { "FortWeaponRangedItemDefini
 static int AmountOfRestarts = 0;
 static bool bInjectedOnStartup = false;
 static bool bUseAIBuild = false;
+static int funnythingy = 180;

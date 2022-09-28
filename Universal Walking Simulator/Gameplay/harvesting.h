@@ -2,6 +2,7 @@
 
 #include <Gameplay/helper.h>
 #include <Gameplay/inventory.h>
+#include <UE/DataTables.h>
 
 void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.f)
 {
@@ -14,21 +15,14 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 	// HasDestructionLoot
 
+	// int amoutnagug = 5;
+
 	if (!bIsCar)
 	{
-		struct FCurveTableRowHandle
-		{
-		public:
-			UObject* CurveTable;        // UCurveTable                                 // 0x0(0x8)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpeci`erPublic)
-			FName                                  RowName;                                           // 0x8(0x8)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		};
-
 		auto BuildingResourceAmountOverride = BuildingActor->Member<FCurveTableRowHandle>("BuildingResourceAmountOverride");
 
 		if (!BuildingResourceAmountOverride->RowName.ComparisonIndex) // player placed replacement
 			return;
-
-		using FRealCurve = void;
 
 		struct skunkedCurveTable : public UObject {
 			void* idkk;
@@ -37,43 +31,52 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 		// ClientRemotePlayerDamagedResourceBuilding
 
-		static auto curveTableClass = FindObject("Class /Script/Engine.CurveTable");
+		/* static auto curveTableClass = FindObject("Class /Script/Engine.CurveTable");
 		skunkedCurveTable* curveTable = (skunkedCurveTable*)BuildingResourceAmountOverride->CurveTable;
 
 		if (!curveTable)
 		{
 			std::cout << "unable to find curvetable!\n";
 			return;
-		}
-	}
+		} */
 
-	/* for (int i = 0; i < 15; i++)
-	{
-		auto rowMap = (TMap<FName, FRealCurve*>*)(__int64(curveTable) + offsetToRowMap + i);
-		
-		if (rowMap)
-			std::cout << std::format("[{}] RowMap Size: {}\n", i,rowMap->Pairs.Elements.Data.Num());
-		else
-			std::cout << std::format("[{}] Invalid pointer!\n", i);
-	} */
-
-	/* auto rowMap = &curveTable->RowMap; // (TMap<FName, FRealCurve*>*)(__int64(curveTable) + offsetToRowMap);
-
-	std::cout << "Amount of rows: " << rowMap->Pairs.Elements.Data.Num() << '\n';
-
-	auto rowToFindStr = BuildingResourceAmountOverride->RowName.ToString();
-
-	for (int i = 0; i < rowMap->Pairs.Elements.Data.Num(); i++)
-	{
-		auto& currentRow = rowMap->Pairs.Elements.Data.At(i).ElementData.Value;
-
-		// std::cout << std::format("[{}] {}\n", i, currentRow.First.ToString());
-
-		if (currentRow.First.ToString() == rowToFindStr)
+		/* for (int i = 0; i < 15; i++)
 		{
-			// help
+			auto rowMap = (TMap<FName, FRealCurve*>*)(__int64(curveTable) + offsetToRowMap + i);
+
+			if (rowMap)
+				std::cout << std::format("[{}] RowMap Size: {}\n", i,rowMap->Pairs.Elements.Data.Num());
+			else
+				std::cout << std::format("[{}] Invalid pointer!\n", i);
 		}
-	} */
+
+		auto rowMap = &curveTable->RowMap; // (TMap<FName, FRealCurve*>*)(__int64(curveTable) + offsetToRowMap);
+
+		std::cout << "Amount of rows: " << rowMap->Pairs.Elements.Data.Num() << '\n';
+
+		auto rowToFind = BuildingResourceAmountOverride->RowName;
+
+		for (int i = 0; i < rowMap->Pairs.Elements.Data.Num(); i++)
+		{
+			auto& currentRow = rowMap->Pairs.Elements.Data.At(i).ElementData.Value;
+
+			// std::cout << std::format("[{}] {}\n", i, currentRow.First.ToString());
+
+			if (currentRow.First.ComparisonIndex == rowToFind)
+			{
+				// help
+				std::cout << "mf!\n";
+
+				amoutnagug = currentRow.Second->GetDefaultValue();
+
+				std::cout << "PROPER L: " << amoutnagug << '\n';
+				break;
+			}
+		}
+
+		// float Y;
+		// BuildingResourceAmountOverride->Eval(1.0, &Y, FString()); */
+	}
 
 	std::random_device rd; // obtain a random number from hardware
 	std::mt19937 gen(rd()); // seed the generator
@@ -95,7 +98,10 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		funne += distr(gen);
 	}
 
-	std::cout << "StaticGameplayTags: " << BuildingActor->Member<FGameplayTagContainer>("StaticGameplayTags")->ToStringSimple(true) << '\n';
+	// std::cout << "StaticGameplayTags: " << BuildingActor->Member<FGameplayTagContainer>("StaticGameplayTags")->ToStringSimple(true) << '\n';
+
+	static auto ResourceTypeOffset = GetOffset(BuildingActor, "ResourceType");
+	auto ResourceType = *(TEnumAsByte<EFortResourceType>*)(__int64(BuildingActor) + ResourceTypeOffset);
 
 	struct
 	{
@@ -105,7 +111,7 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		bool                                               bDestroyed;                                               // (Parm, ZeroConstructor, IsPlainOldData)
 		bool                                               bJustHitWeakspot;                                         // (Parm, ZeroConstructor, IsPlainOldData)
 	} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, 
-		bIsCar ? EFortResourceType::Metal : *BuildingActor->Member<TEnumAsByte<EFortResourceType>>(("ResourceType")),
+		bIsCar ? EFortResourceType::Metal : ResourceType,
 		 funne, false, HitWeakspot }; // ender weakspotrs
 
 	static auto ClientReportDamagedResourceBuilding = Controller->Function(("ClientReportDamagedResourceBuilding"));

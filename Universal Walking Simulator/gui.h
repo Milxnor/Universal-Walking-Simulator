@@ -390,6 +390,10 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
 					ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
 					ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
+
+					// if (bDoubleBuildFix2)
+						// ImGui::InputInt("funnythingy", &funnythingy);
+						
 					// ImGui::Checkbox("Save The World", &bIsSTW);
 					// ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
 

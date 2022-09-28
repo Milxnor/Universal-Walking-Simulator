@@ -31,28 +31,31 @@ int GetMaxBullets(UObject* Definition)
 	// auto RangedWeaponRows = GetRowMap(RangedWeaponsTable);
 
 	static auto RowStructOffset = GetOffset(RangedWeaponsTable, "RowStruct");
-	auto& RangedWeaponRows = *(TMap<FName, uint8_t*>*)(__int64(RangedWeaponsTable) + (RowStructOffset + sizeof(UObject*))); // because after rowstruct is rowmap
+	auto RangedWeaponRows = (TMap<FName, uint8_t*>*)(__int64(RangedWeaponsTable) + (RowStructOffset + sizeof(UObject*))); // because after rowstruct is rowmap
 
 	static auto ClipSizeOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortBaseWeaponStats", "ClipSize");
 
 	// std::cout << "Number of RangedWeapons: " << RangedWeaponRows.Pairs.Elements.Data.Num() << '\n';
 
-	for (int i = 0; i < RangedWeaponRows.Pairs.Elements.Data.Num(); i++)
+	// if (RangedWeaponRows) // fix rare crash
 	{
-		auto& Man = RangedWeaponRows.Pairs.Elements.Data.At(i);
-		auto& Pair = Man.ElementData.Value;
-		auto RowFName = Pair.First;
-
-		if (!RowFName.ComparisonIndex)
-			continue;
-
-		// if (RowFName.ToString() == statHandle->RowName.ToString())
-		if (RowFName.ComparisonIndex == statHandle->RowName.ComparisonIndex)
+		for (int i = 0; i < RangedWeaponRows->Pairs.Elements.Data.Num(); i++)
 		{
-			auto data = Pair.Second;
-			auto ClipSize = *(int*)(__int64(data) + ClipSizeOffset);
-			// std::cout << "ClipSize: " << ClipSize << '\n';
-			return ClipSize;
+			auto& Man = RangedWeaponRows->Pairs.Elements.Data.At(i);
+			auto& Pair = Man.ElementData.Value;
+			auto RowFName = Pair.First;
+
+			if (!RowFName.ComparisonIndex)
+				continue;
+
+			// if (RowFName.ToString() == statHandle->RowName.ToString())
+			if (RowFName.ComparisonIndex == statHandle->RowName.ComparisonIndex)
+			{
+				auto data = Pair.Second;
+				auto ClipSize = *(int*)(__int64(data) + ClipSizeOffset);
+				// std::cout << "ClipSize: " << ClipSize << '\n';
+				return ClipSize;
+			}
 		}
 	}
 

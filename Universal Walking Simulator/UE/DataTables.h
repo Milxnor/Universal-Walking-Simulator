@@ -95,6 +95,16 @@ struct FRichCurveKey
 	}
 };
 
+struct FRealCurve
+{
+	float GetDefaultValue()
+	{
+		static auto DefaultValueOffset = FindOffsetStruct("ScriptStruct /Script/Engine.RealCurve", "DefaultValue");
+
+		return *(float*)(__int64(this) + DefaultValueOffset);
+	}
+};
+
 namespace FRichCurve
 {
 #define MAX_flt			(3.402823466e+38F)
@@ -104,3 +114,18 @@ namespace FRichCurve
 		// i tried remaking but there was one eval function that was too much
 	}
 }
+
+struct FCurveTableRowHandle
+{
+	UObject* CurveTable;
+	FName RowName;
+
+	bool Eval(float XValue, float* YValue, const FString& ContextString) const
+	{
+		__int64(__fastcall * EvalO)(__int64 CurveTable, float X, float* YValue, const FString & ContextString);
+
+		EvalO = decltype(EvalO)(FindPattern("4C 8B DC 53 48 83 EC 70 49 8B D8 0F 29 74 24 ? 45 33 C0 48 8D 05 ? ? ? ? 44 38 05 ? ? ? ? 4C 8D 51 08 49 8B D1"));
+
+		EvalO(__int64(this), XValue, YValue, ContextString);
+	}
+};

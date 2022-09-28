@@ -376,6 +376,27 @@ DWORD WINAPI Main(LPVOID)
     std::cout << "bUseAIBuild: " << bUseAIBuild << '\n';
     // std::cout << "SIZE: " << sizeof(FTS::Abilities::FGameplayAbilitySpecAA) << '\n';
 
+    if (bUseAIBuild)
+    {
+        // auto sigfgwe = FindPattern("8B 81 ? ? ? ? 39 02 7F 7B");
+        auto sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE 40 32 FF FF 90 ? ? ? ? 0F B6 B4 24 ? ? ? ? 4D 8B CF 48 8B C8 4C");
+
+        if (sigfgwe)
+        {
+            // MH_CreateHook((PVOID)sigfgwe, StupidMfDetour, nullptr);
+            // MH_EnableHook((PVOID)sigfgwe);
+            *(uint8_t*)(sigfgwe + 0) = 0;
+            *(uint8_t*)(sigfgwe + 1) = 0;
+            *(uint8_t*)(sigfgwe + 2) = 0;
+            *(uint8_t*)(sigfgwe + 3) = 0;
+        }
+        else
+        {
+            std::cout << "Disabling doulb ebuild fix bvcua8fiu!\n";
+            bUseAIBuild = false;
+        }
+    }
+
     return 0;
 }
 

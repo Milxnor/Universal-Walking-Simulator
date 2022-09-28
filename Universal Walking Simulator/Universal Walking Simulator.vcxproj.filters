@@ -112,9 +112,6 @@
     <ClInclude Include="gui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="finder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -132,6 +129,9 @@
     </ClInclude>
     <ClInclude Include="Net\funcs.h">
       <Filter>Header Files\Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

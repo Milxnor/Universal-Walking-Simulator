@@ -2541,8 +2541,6 @@ __int64 __fastcall ehehheDetour(__int64 NetViewer, UObject* Connection)
 	// return ehehheO(a1, a2);
 }
 
-
-
 static UObject* SpawnActorDetour(UObject* World, UObject* Class, FVector* Position, FRotator* Rotation, const FActorSpawnParameters& SpawnParameters)
 {
 	static auto BuildingSMActorClass = FindObject("Class /Script/FortniteGame.BuildingSMActor");
@@ -2563,6 +2561,11 @@ static UObject* SpawnActorDetour(UObject* World, UObject* Class, FVector* Positi
 	// if (bDoubleBuildFix2 && (SuperStructOfClass == BuildingSMActorClass || GetSuperStructOfClass(SuperStructOfClass) == BuildingSMActorClass))
 
 	return SpawnActorO(World, Class, Position, Rotation, SpawnParameters);
+}
+
+char __fastcall StupidMfDetour(__int64 a1, int* a2, __int64 a3)
+{
+	return 1;
 }
 
 void InitializeHooks()

@@ -2607,7 +2607,7 @@ struct FKeyHandle
 	uint32_t Index;
 };
 
-struct FKeyHandleMap
+/* struct FKeyHandleMap
 {
 	TMap<FKeyHandle, int32_t> KeyHandlesToIndices;
 	TArray<FKeyHandle> KeyHandles;
@@ -2626,8 +2626,7 @@ struct FRealCurve
 	TEnumAsByte<ERichCurveExtrapolation> PreInfinityExtrap;
 
 	TEnumAsByte<ERichCurveExtrapolation> PostInfinityExtrap;
-};
-
+}; */
 
 void* UFunction::GetFunc()
 {
@@ -2676,19 +2675,4 @@ public:
 	bool                                         bPlayPickupSound;                                  // 0x4D(0x1)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8_t                                        Pad_3687[0x2];                                     // Fixing Size After Last Property  [ Dumper-7 ]
 	FGuid                                 PickupGuid;                                        // 0x50(0x10)(ZeroConstructor, IsPlainOldData, RepSkip, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-};
-
-struct FCurveTableRowHandle
-{
-	UObject* CurveTable;
-	FName RowName;
-
-	bool Eval(float XValue, float* YValue, const FString& ContextString) const
-	{
-		__int64(__fastcall* EvalO)(__int64 CurveTable, float X, float* YValue, const FString& ContextString);
-
-		EvalO = decltype(EvalO)(FindPattern("4C 8B DC 53 48 83 EC 70 49 8B D8 0F 29 74 24 ? 45 33 C0 48 8D 05 ? ? ? ? 44 38 05 ? ? ? ? 4C 8D 51 08 49 8B D1"));
-
-		EvalO(__int64(this), XValue, YValue, ContextString);
-	}
 };
