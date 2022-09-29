@@ -356,6 +356,14 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			(*CheatManager)->ProcessEvent(God);
 	}
 
+	/* static auto SeasonLevelUIDisplayOffset = GetOffset(PlayerState, "SeasonLevelUIDisplay");
+	
+	if (SeasonLevelUIDisplayOffset != -1)
+	{
+		*(int*)(__int64(PlayerState) + SeasonLevelUIDisplayOffset) = 1;
+		PlayerState->ProcessEvent("OnRep_SeasonLevelUIDisplay");
+	} */
+
 	std::cout << ("Spawned Player!\n");
 
 	return PlayerController;
@@ -505,7 +513,7 @@ void InitializeNetHooks()
 	MH_CreateHook((PVOID)SpawnPlayActorAddr, SpawnPlayActorDetour, (void**)&SpawnPlayActor);
 	MH_EnableHook((PVOID)SpawnPlayActorAddr);
 
-	if (FnVerDouble < 14.00)
+	if (FnVerDouble < 11.00)
 	{
 		if (Engine_Version != 421 && Engine_Version != 419) // we dont really need this im just too lazy to get setworld sig
 		{

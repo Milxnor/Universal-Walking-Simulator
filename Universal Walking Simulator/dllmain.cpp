@@ -342,6 +342,9 @@ DWORD WINAPI Main(LPVOID)
 
     NoMcpAddr = FindPattern("E8 ? ? ? ? 84 C0 75 CE", true, 1);
 
+    if (Engine_Version >= 424)
+        NoMcpAddr = FindPattern("E8 ? ? ? ? 84 C0 75 C1", true, 1);
+
     funnyaddry = FindPattern("40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?");
 
     std::cout << "funnyaddry: " << funnyaddry << '\n';
@@ -350,7 +353,6 @@ DWORD WINAPI Main(LPVOID)
 
     if (NoMcpAddr && funnyaddry)
     {
-        if (Engine_Version < 424)
         {
             MH_CreateHook((PVOID)NoMcpAddr, IsNoMCPDetour, nullptr);
             MH_EnableHook((PVOID)NoMcpAddr);
@@ -384,6 +386,9 @@ DWORD WINAPI Main(LPVOID)
             // sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE 32 DB FF 90 ? ? ? ? 0F B6 B4 24 ? ? ? ? 4D 8B CF 48 8B C8 4C 8B C5 48");
 
         auto sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE ? ? FF");
+
+        if (!sigfgwe)
+            sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 07 49 8B CF 32 DB");
 
         if (sigfgwe)
         {

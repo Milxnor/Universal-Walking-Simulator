@@ -111,19 +111,17 @@ inline void initStuff()
 			{
 				// *AuthGameMode->Member<bool>("bAlwaysDBNO") = true;
 
-				AuthGameMode->ProcessEvent(AuthGameMode->Function(("StartPlay")), nullptr);
+				// AuthGameMode->ProcessEvent(AuthGameMode->Function(("StartPlay")), nullptr);
 
-				auto FNVer = FnVerDouble;
-
-				if (std::floor(FNVer) == 3 || FNVer >= 8.0) 
+				/* if (std::floor(FnVerDouble) == 3 || FnVerDouble >= 8.0)
 				{
 					//If This is called on Seasons 4, 6, or 7 then Setting The Playlist Crashes.
+
 					AuthGameMode->ProcessEvent("StartMatch");
-				}
+				} */
 
 				if (!bIsSTW)
 				{
-
 					bIsPlayground = PlaylistToUse == "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
 
 					if (FnVerDouble >= 6.10) // WRONG
@@ -561,6 +559,8 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags)
 	// UFortDeathCauseFromTagMapping
 	// FortDeathCauseFromTagMapping
 
+	static auto FortPlayerStateAthenaDefault = FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena");
+
 	/* struct
 	{
 		FGameplayTagContainer                       InTags;                                                   // (ConstParm, Parm, OutParm, ReferenceParm, NativeAccessSpecifierPublic)
@@ -568,10 +568,10 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags)
 		uint8_t                                        ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	} AFortPlayerStateAthena_ToDeathCause_Params{Tags, false};
 
-	static auto ToDeathCause = PlayerState->Function("ToDeathCause");
+	static auto ToDeathCause = FortPlayerStateAthenaDefault->Function("ToDeathCause");
 
 	if (ToDeathCause)
-		PlayerState->ProcessEvent(ToDeathCause, &AFortPlayerStateAthena_ToDeathCause_Params);
+		FortPlayerStateAthenaDefault->ProcessEvent(ToDeathCause, &AFortPlayerStateAthena_ToDeathCause_Params);
 
 	return AFortPlayerStateAthena_ToDeathCause_Params.ReturnValue; */
 
