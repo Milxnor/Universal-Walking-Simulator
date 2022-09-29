@@ -292,6 +292,22 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	if (!Pawn)
 		return nullptr; // PlayerController;
 
+	// todo: not do this for invicibility
+
+	if (Engine_Version <= 421 || NoMcpAddr)
+	{
+		static auto CheatManagerOffset = GetOffset(PlayerController, "CheatManager");
+		auto CheatManager = (UObject**)(__int64(PlayerController) + CheatManagerOffset);
+
+		static auto CheatManagerClass = FindObject("Class /Script/Engine.CheatManager");
+		*CheatManager = Easy::SpawnObject(CheatManagerClass, PlayerController);
+
+		static auto God = (*CheatManager)->Function("God");
+
+		if (God)
+			(*CheatManager)->ProcessEvent(God);
+	}
+
 	if (Engine_Version > 420)
 	{
 		// Teams::AssignTeam(PlayerController);
@@ -338,22 +354,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			Inventory::GiveAllAmmo(PlayerController);
 			Inventory::GiveMats(PlayerController);
 		}
-	}
-
-	// todo: not do this for invicibility
-
-	if (Engine_Version <= 421 || NoMcpAddr)
-	{
-		static auto CheatManagerOffset = GetOffset(PlayerController, "CheatManager");
-		auto CheatManager = (UObject**)(__int64(PlayerController) + CheatManagerOffset);
-
-		static auto CheatManagerClass = FindObject("Class /Script/Engine.CheatManager");
-		*CheatManager = Easy::SpawnObject(CheatManagerClass, PlayerController);
-
-		static auto God = (*CheatManager)->Function("God");
-
-		if (God)
-			(*CheatManager)->ProcessEvent(God);
 	}
 
 	/* static auto SeasonLevelUIDisplayOffset = GetOffset(PlayerState, "SeasonLevelUIDisplay");
@@ -513,7 +513,7 @@ void InitializeNetHooks()
 	MH_CreateHook((PVOID)SpawnPlayActorAddr, SpawnPlayActorDetour, (void**)&SpawnPlayActor);
 	MH_EnableHook((PVOID)SpawnPlayActorAddr);
 
-	if (FnVerDouble < 11.00)
+	if (FnVerDouble < 11.00 || std::floor(FnVerDouble) == 13)
 	{
 		if (Engine_Version != 421 && Engine_Version != 419) // we dont really need this im just too lazy to get setworld sig
 		{

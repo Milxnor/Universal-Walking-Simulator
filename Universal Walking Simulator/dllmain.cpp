@@ -180,6 +180,18 @@ void __fastcall sub_7FF700EF5E20Detour(__int64 a1, int a2)
     return sub_7FF700EF5E20O(a1, a2);
 }
 
+void(__fastcall* CALLMEIMCOOLO)(UObject* GameMode, __int64 a2, char setmetofalse, char a4);
+
+void __fastcall CALLMEIMCOOLDETOUR(UObject* GameMode, __int64 a2, char setmetofalse, char a4)
+{
+    std::cout << "GameMode: " << GameMode << '\n';
+    std::cout << "a2: " << a2 << '\n';
+    std::cout << "setmetofalse: " << setmetofalse << '\n';
+    std::cout << "a4: " << a4 << '\n';
+
+    return CALLMEIMCOOLO(GameMode, a2, false, a4);
+}
+
 char(__fastcall* stu8pduficnO)(__int64 a1, __int64 a2, __int64 a3, bool* a4);
 
 char __fastcall stu8pduficnDetour(__int64 a1, __int64 a2, __int64 a3, bool* a4)
@@ -363,6 +375,11 @@ DWORD WINAPI Main(LPVOID)
             bafuaqeu = true;
         }
     }
+    else
+    {
+        NoMcpAddr = 0;
+        funnyaddry = 0;
+    }
     
     if (!bafuaqeu)
         std::cout << "[WARNING] Will not be able to apply magical fix!\n";
@@ -405,6 +422,16 @@ DWORD WINAPI Main(LPVOID)
             bUseAIBuild = false;
         }
     }
+
+   /* auto agiuigf1 = FindPattern("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 30 48 8B B1 ? ? ? ? 41 0F B6 E9 45 0F B6 F0 48 8B FA");
+
+    if (!agiuigf1)
+        agiuigf1 = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 41 54 41 57 48 83 EC 30 48 89 6C 24 ? 33 DB 48 8B A9 ? ? ? ? 45 0F B6 F9 45 0F B6 E0 48 8B F2 48 8B");
+
+    std::cout << "agiuigf1: " << agiuigf1 << '\n';
+
+    MH_CreateHook((PVOID)agiuigf1, CALLMEIMCOOLDETOUR, (void**)&CALLMEIMCOOLO);
+    MH_EnableHook((PVOID)agiuigf1); */
 
     return 0;
 }
