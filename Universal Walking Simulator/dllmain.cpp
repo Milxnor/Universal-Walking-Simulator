@@ -388,7 +388,7 @@ DWORD WINAPI Main(LPVOID)
         auto sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE ? ? FF");
 
         if (!sigfgwe)
-            sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 07 49 8B CF 32 DB");
+            sigfgwe = FindPattern("FF 90 ? ? ? ? 48 8B ? ? 8B ? 32 DB");
 
         if (sigfgwe)
         {

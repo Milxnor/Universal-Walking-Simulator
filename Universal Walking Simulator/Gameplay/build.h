@@ -198,7 +198,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 						bool iguesssuccess;
 					} parms{ BuildingClass, BuildingLocation, newBuildingRot, bMirrored };
 
-					Controller->ProcessEvent(aibuildfn, &parms);
+					Controller->ProcessEvent(aibuildfn, &parms); // credits:: android for tellingm ethis
 				}
 			}
 		}

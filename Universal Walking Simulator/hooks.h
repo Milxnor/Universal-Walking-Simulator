@@ -232,8 +232,8 @@ inline void initStuff()
 			Helper::FixPOIs();
 		}
 		
-		if (FnVerDouble != 12.61)
-			LootingV2::InitializeWeapons(nullptr);
+		// if (FnVerDouble != 12.61)
+		LootingV2::InitializeWeapons(nullptr);
 
 		/* auto bUseDistanceBasedRelevancy = (*world->Member<UObject*>("NetworkManager"))->Member<bool>("bUseDistanceBasedRelevancy");
 		std::cout << "bUseDistanceBasedRelevancy: " << *bUseDistanceBasedRelevancy << '\n';
