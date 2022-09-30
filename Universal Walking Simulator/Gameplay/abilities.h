@@ -168,7 +168,7 @@ UObject* DoesASCHaveAbility(UObject* ASC, UObject* Ability)
     return AbilityToReturn;
 }
 
-static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass) // CREDITS: kem0x, raider3.5
+static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass, void** OutSpec = nullptr) // CREDITS: kem0x, raider3.5
 {
     if (!GameplayAbilityClass || !TargetPawn)
         return nullptr;
@@ -279,6 +279,9 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
         GiveAbilityFTS(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50>*)NewSpec);
     else
         GiveAbilityNewer(AbilitySystemComponent, Handle, *(FGameplayAbilitySpecNewer*)NewSpec);
+
+    if (OutSpec)
+        *OutSpec = NewSpec;
 
     return *GetAbilityFromSpec(NewSpec);
 }
@@ -574,7 +577,6 @@ void GiveAllBRAbilities(UObject* Pawn)
                         }
                     }
                 }
-
             }
 
             if (Engine_Version < 424) // i dont think needed

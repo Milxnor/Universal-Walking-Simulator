@@ -575,3 +575,4 @@ static int AmountOfRestarts = 0;
 static bool bInjectedOnStartup = false;
 static bool bUseAIBuild = false;
 static int funnythingy = 180;
+static bool boozasdgwq9i = false;

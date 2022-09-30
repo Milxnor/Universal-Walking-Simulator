@@ -407,6 +407,11 @@ DWORD WINAPI Main(LPVOID)
         if (!sigfgwe)
             sigfgwe = FindPattern("FF 90 ? ? ? ? 48 8B ? ? 8B ? 32 DB");
 
+        if (!sigfgwe)
+            sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 07 49 8B CF 32 DB FF");
+            
+        // FF 90 ? ? ? ? 49 8B ? 49 8B ? ? ? FF (TRY??)
+
         if (sigfgwe)
         {
             // MH_CreateHook((PVOID)sigfgwe, StupidMfDetour, nullptr);
@@ -432,6 +437,13 @@ DWORD WINAPI Main(LPVOID)
 
     MH_CreateHook((PVOID)agiuigf1, CALLMEIMCOOLDETOUR, (void**)&CALLMEIMCOOLO);
     MH_EnableHook((PVOID)agiuigf1); */
+
+    auto addy35125 = FindObject("FortAbilitySystemComponentAthena /Script/FortniteGame.Default__FortAbilitySystemComponentAthena")->VFTable[243];
+
+    CreateNewInstanceOfAbilityO = decltype(CreateNewInstanceOfAbilityO)(addy35125);
+
+    // MH_CreateHook((PVOID)addy35125, CreateNewInstanceOfAbilityDetour, (void**)&CreateNewInstanceOfAbilityO);
+    // MH_EnableHook((PVOID)addy35125);
 
     return 0;
 }

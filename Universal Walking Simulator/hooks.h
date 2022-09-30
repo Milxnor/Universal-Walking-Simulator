@@ -1125,9 +1125,13 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 			std::cout << "ugh: " << PlayMontageReplicated(Pawn, Montage, 0, 0) << '\n'; */
 
-			if (false && Montage && Engine_Version < 426 && Engine_Version >= 420)
+			static auto FN = FindObject("Function /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget.PlayMontageWaitTarget");
+			static auto Def = FindObject("FortAbilityTask_PlayMontageWaitTarget /Script/FortniteGame.Default__FortAbilityTask_PlayMontageWaitTarget");
+
+			auto AbilitySystemComponent = *Pawn->CachedMember<UObject*>(("AbilitySystemComponent"));
+
+			if (Montage && Engine_Version < 426 && Engine_Version >= 420)
 			{
-				auto AbilitySystemComponent = *Pawn->CachedMember<UObject*>(("AbilitySystemComponent"));
 				static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
 				TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>> Specs;
@@ -1142,7 +1146,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				auto GameData = Helper::GetGameData();
 				auto EmoteGameplayAbilityClass = EmoteClass; //  GameData->Member<UObject*>("EmoteGameplayAbility"); // its a tassetptr
 
-				if (false)
+				// if (false)
 				{
 					for (int i = 0; i < Specs.Num(); i++)
 					{
@@ -1167,6 +1171,8 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 							*EmoteAbility->Member<UObject*>("CurrentMontage") = Montage;
 
+							EmoteAbility->ProcessEvent("K2_ActivateAbility");
+
 							// EmoteAbility->ProcessEvent("PlayInitialEmoteMontage");
 
 							// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
@@ -1188,6 +1194,74 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 	}
 
 	return false;
+}
+
+UObject* (*CreateNewInstanceOfAbilityO)(UObject* ASC, FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>& Spec, UObject* Ability);
+
+UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>& Spec, UObject* Ability)
+{
+	static auto EmoteAbilityClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+
+	if (boozasdgwq9i)
+		Ability = EmoteAbilityClass;
+
+	auto newiNstanceavg = CreateNewInstanceOfAbilityO(ASC, Spec, Ability);
+
+	// std::cout << "newiNstanceavg: " << newiNstanceavg << '\n';
+	std::cout << "Aibliy: " << Ability->GetFullName() << '\n';
+	std::cout << "newiNstanceavzcqe2v2vg: " << newiNstanceavg->GetFullName() << '\n';
+
+	if (Ability == EmoteAbilityClass)
+	{
+		std::cout << "EMOTE??!\n";
+
+		enum class EFortGameplayAbilityMontageSectionToPlay : uint8_t
+		{
+			FirstSection = 0,
+			RandomSection = 1,
+			TestedRandomSection = 2,
+			EFortGameplayAbilityMontageSectionToPlay_MAX = 3
+		};
+
+		struct FFortGameplayAbilityMontageInfo
+		{
+			UObject* MontageToPlay;                                            // 0x0000(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                              AnimPlayRate;                                             // 0x0008(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                              AnimRootMotionTranslationScale;                           // 0x000C(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			EFortGameplayAbilityMontageSectionToPlay           MontageSectionToPlay;                                     // 0x0010(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      UnknownData00[0x3];                                       // 0x0011(0x0003) MISSED OFFSET
+			FName                                       OverrideSection;                                          // 0x0014(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			bool                                               bPlayRandomSection;                                       // 0x001C(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      UnknownData01[0x3];                                       // 0x001D(0x0003) MISSED OFFSET
+			TArray<__int64>       CharacterPartMontages;                                    // 0x0020(0x0010) (Edit, BlueprintVisible, ZeroConstructor, NativeAccessSpecifierPublic)
+			unsigned char                                      UnknownData02[0x28];                                      // 0x0030(0x0028) MISSED OFFSET
+		};
+
+		static auto TransientPackage = FindObject("Package /Engine/Transient");
+		static auto calcauq9 = FindObject("Class /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget");
+
+		auto NewAbilityTask = Easy::SpawnObject(calcauq9, TransientPackage);
+
+		// auto NewAbilityTask = UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params.ReturnValue;
+
+		std::cout << "NewAbilityTask: " << NewAbilityTask << '\n';
+
+		FFortGameplayAbilityMontageInfo AbilityMontageInfo = FFortGameplayAbilityMontageInfo{ FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Montages/Emotes/Emote_DanceMoves.Emote_DanceMoves"), 1.0f, 1.0f, EFortGameplayAbilityMontageSectionToPlay::FirstSection};
+
+		if (NewAbilityTask)
+		{
+			*NewAbilityTask->Member<FFortGameplayAbilityMontageInfo>("MontageInfo") = AbilityMontageInfo;
+			*NewAbilityTask->Member<UObject*>("AbilitySystemComponent") = ASC;
+			*NewAbilityTask->Member<UObject*>("Ability") = newiNstanceavg;
+			*NewAbilityTask->Member<FName>("InstanceName") = FName(-1);
+			newiNstanceavg->Member<TArray<UObject*>>("ActiveTasks")->Add(NewAbilityTask);
+			NewAbilityTask->ProcessEvent("ReadyForActivation");
+			void (*Activate)() = decltype(Activate)(NewAbilityTask->VFTable[0x48]);
+			Activate();
+		}
+	}
+
+	return newiNstanceavg;
 }
 
 void replace_all(std::string& input, const std::string& from, const std::string& to) {
