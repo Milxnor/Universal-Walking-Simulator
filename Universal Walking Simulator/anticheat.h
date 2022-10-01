@@ -27,16 +27,7 @@ static float GetFireRate(UObject* Weapon)
 
 bool basicLocationCheck(UObject* Actor, UObject* OtherActor, float FarthestPossible)
 {
-	static auto GetDistanceTo = Actor->Function("GetDistanceTo");
-
-	struct { UObject* otherActor; float distance; } GetDistanceTo_Params{OtherActor};
-
-	if (GetDistanceTo)
-		Actor->ProcessEvent(GetDistanceTo, &GetDistanceTo_Params);
-
-	std::cout << "distance: " << GetDistanceTo_Params.distance << '\n';
-
-	if (GetDistanceTo_Params.distance > FarthestPossible)
+	if (Helper::GetDistanceTo(Actor, OtherActor) > FarthestPossible)
 		return false;
 
 	return true;

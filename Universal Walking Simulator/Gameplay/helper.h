@@ -1547,6 +1547,18 @@ namespace Helper
 		return bIsLateGame;
 	}
 
+	float GetDistanceTo(UObject* Actor, UObject* OtherActor)
+	{
+		static auto GetDistanceTo = Actor->Function("GetDistanceTo");
+
+		struct { UObject* otherActor; float distance; } GetDistanceTo_Params{ OtherActor };
+
+		if (GetDistanceTo)
+			Actor->ProcessEvent(GetDistanceTo, &GetDistanceTo_Params);
+
+		return GetDistanceTo_Params.distance;
+	}
+
 	static UObject* GetRandomFoundation()
 	{
 		return nullptr;

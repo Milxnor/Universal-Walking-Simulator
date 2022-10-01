@@ -554,14 +554,14 @@ void LoadInMatch()
 	}
 }
 
-uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags)
+uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, int* OutWasDBNO = nullptr)
 {
 	// UFortDeathCauseFromTagMapping
 	// FortDeathCauseFromTagMapping
 
 	static auto FortPlayerStateAthenaDefault = FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena");
 
-	/* struct
+	struct
 	{
 		FGameplayTagContainer                       InTags;                                                   // (ConstParm, Parm, OutParm, ReferenceParm, NativeAccessSpecifierPublic)
 		bool                                               bWasDBNO;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -573,7 +573,12 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags)
 	if (ToDeathCause)
 		FortPlayerStateAthenaDefault->ProcessEvent(ToDeathCause, &AFortPlayerStateAthena_ToDeathCause_Params);
 
-	return AFortPlayerStateAthena_ToDeathCause_Params.ReturnValue; */
+	if (OutWasDBNO)
+	{
+
+	}
+
+	return AFortPlayerStateAthena_ToDeathCause_Params.ReturnValue;
 
 	return 1;
 }
@@ -647,12 +652,14 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 		auto DeathLocation = Helper::GetActorLocation(DeadPawn); // *(FVector*)(__int64(&*DeathInfo) + DeathLocationOffset);
 
+		static auto TagsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortPlayerDeathReport"), ("Tags"));
+		FGameplayTagContainer* Tags = (FGameplayTagContainer*)(__int64(&Params->DeathReport) + TagsOffset);
+		auto DeathCause = Tags ? GetDeathCause(DeadPlayerState, *Tags) : 0;
+
 		if (Helper::IsRespawnEnabled()) // || bIsTrickshotting ? !KillerController : false) // basically, if trickshotting, respawn player if they dont die to a player
 			Player::RespawnPlayer(DeadPC);
 		else
 		{
-			auto DeathCause = EDeathCause::SniperNoScope;
-
 			static auto PlayersLeftOffset = GetOffset(GameState, "PlayersLeft");
 			auto PlayersLeft = (int*)(__int64(GameState) + PlayersLeftOffset);
 
@@ -825,26 +832,26 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		}
 
 		{
-			if (KillerPlayerState)
+			// if (KillerPlayerState)
 			{
-				// idk whats wrong with the tagcontainer
-				/* static auto TagsOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("Tags"));
 				static auto DeathCauseOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathCause"));
 				static auto FinisherOrDownerOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("FinisherOrDowner"));
 				static auto bDBNOOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("bDBNO"));
+				static auto DistanceOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("Distance"));
 
 				// /Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamKillScore
 
-				FGameplayTagContainer* Tags = nullptr; // (FGameplayTagContainer*)(__int64(&*DeathInfo) + TagsOffset);
-
-				*(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) = Tags ? GetDeathCause(DeadPlayerState, *Tags) : (uint8_t)EDeathCause::Cube;
+				*(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) = DeathCause;
 				*(UObject**)(__int64(&*DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
 				*(bool*)(__int64(&*DeathInfo) + bDBNOOffset) = false;
+				*(float*)(__int64(&*DeathInfo) + DistanceOffset) = KillerPawn ? Helper::GetDistanceTo(KillerPawn, DeadPawn) : 0.f;
+
+				std::cout << "DeathCause: " << *(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) << '\n';
 
 				static auto OnRep_DeathInfo = DeadPlayerState->Function(("OnRep_DeathInfo"));
 
 				if (OnRep_DeathInfo)
-					DeadPlayerState->ProcessEvent(OnRep_DeathInfo); */
+					DeadPlayerState->ProcessEvent(OnRep_DeathInfo);
 			}
 		}
 
