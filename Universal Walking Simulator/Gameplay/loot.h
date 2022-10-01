@@ -361,13 +361,13 @@ namespace LootingV2
 							if (AmmoDef)
 							{
 								auto DropCount = *AmmoDef->Member<int>(("DropCount"));
-								Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DropCount);
+								Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DropCount, true, false);
 							}
 
 							auto ConsumableInRow = GetRandomItem(ItemType::Consumable);
 							if (ConsumableInRow.Definition)
 							{
-								Helper::SummonPickup(nullptr, ConsumableInRow.Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow.DropCount); // *Consumable->Member<int>(("DropCount")));
+								Helper::SummonPickup(nullptr, ConsumableInRow.Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow.DropCount, true, false); // *Consumable->Member<int>(("DropCount")));
 							}
 
 							static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
@@ -379,11 +379,11 @@ namespace LootingV2
 							int amountOfMaterialToDrop = GetRandomItem(ItemType::Resource, LootItems).DropCount;
 
 							if (random == 1)
-								Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
+								Helper::SummonPickup(nullptr, WoodItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop, true, false);
 							else if (random == 2)
-								Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
+								Helper::SummonPickup(nullptr, StoneItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop, true, false);
 							else
-								Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop);
+								Helper::SummonPickup(nullptr, MetalItemData, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, amountOfMaterialToDrop, true, false);
 						}
 					}
 				}

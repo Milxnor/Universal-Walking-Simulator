@@ -582,13 +582,13 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, int* Out
 
 		static auto DeathCauseEnum = FindObject("Enum /Script/FortniteGame.EDeathCause");
 
-		for (int i = 0; i < Tags.GameplayTags.Num(); i++)
+		for (int i = 0; i < Tags.GameplayTags.Num(); i++) // SKUNK
 		{
 			auto& Tag = Tags.GameplayTags.At(i);
 
 			if (Tag.TagName.ComparisonIndex)
 			{
-				auto TagNameStr = Tag.TagName.ToString();
+				auto TagNameStr = Tag.TagName.ToString(); // tbh we should compre fnames instead
 
 				if (TagNameStr.contains("Gameplay.Damage.Environment.Falling"))
 					return GetEnumValue(DeathCauseEnum, "FallDamage");
@@ -601,6 +601,30 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, int* Out
 
 				else if (TagNameStr.contains("weapon.ranged.assault."))
 					return GetEnumValue(DeathCauseEnum, "Rifle");
+
+				else if (TagNameStr.contains("DeathCause.LoggedOut"))
+					return GetEnumValue(DeathCauseEnum, "LoggedOut");
+
+				else if (TagNameStr.contains("Weapon.Ranged.SMG"))
+					return GetEnumValue(DeathCauseEnum, "SMG");
+
+				else if (TagNameStr.contains("weapon.ranged.sniper."))
+					return GetEnumValue(DeathCauseEnum, "Sniper");
+
+				else if (TagNameStr.contains("Weapon.Ranged.Pistol."))
+					return GetEnumValue(DeathCauseEnum, "Pistol");
+
+				else if (TagNameStr.contains("Weapon.Ranged.Grenade.Gas"))
+					return GetEnumValue(DeathCauseEnum, "GasGrenade");
+
+				else if (TagNameStr.contains("weapon.ranged.heavy.grenade_launcher"))
+					return GetEnumValue(DeathCauseEnum, "GrenadeLauncher");
+
+				else if (TagNameStr.contains("Weapon.Ranged.Minigun"))
+					return GetEnumValue(DeathCauseEnum, "Minigun");
+
+				else if (TagNameStr.contains("trap."))
+					return GetEnumValue(DeathCauseEnum, "Trap");
 			}
 		}
 	}

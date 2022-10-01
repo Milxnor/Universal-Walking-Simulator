@@ -408,6 +408,10 @@ DWORD WINAPI Main(LPVOID)
 
     // auto Mappings = FindObject("FortDeathCauseFromTagMapping /Game/Balance/DeathTagToEnumMapping.DeathTagToEnumMapping");
 
+    auto CanBuildAddr = FindPattern("48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0");
+
+    CanBuild = decltype(CanBuild)(CanBuildAddr);
+
     return 0;
 }
 

@@ -154,7 +154,7 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 				// BUG: You lose some mats if you have like 998 or idfk
 				if (*FFortItemEntry::GetCount(Entry) >= 999)
 				{
-					Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, AmountToGive);
+					Helper::SummonPickup(Pawn, ItemDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset, AmountToGive, true, false);
 					return;
 				}
 			}

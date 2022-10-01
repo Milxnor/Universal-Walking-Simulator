@@ -70,6 +70,7 @@ static UObject* (*CreateChannel)(UObject* Connection, EChannelType Type, bool bO
 static void (__fastcall* SendClientAdjustment)(UObject* controller);
 static void (__fastcall* CallPreReplication)(UObject* actor, UObject* driver);
 static char (__fastcall* ReplicateActor)(UObject* ActorChannel);
+static __int64 (*CanBuild)(UObject*, UObject*, FVector, FRotator, char, void*, char*);
 
 static char (*KickPlayer)(UObject* a1, UObject*, FText a3); // session, pc
 
