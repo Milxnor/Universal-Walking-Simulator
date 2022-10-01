@@ -504,11 +504,6 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 						Helper::SetShield(Pawn, 0.f);
 					}
 
-					static auto PlayEffectsForPlayerJumped = Aircraft->Function("PlayEffectsForPlayerJumped");
-
-					if (PlayEffectsForPlayerJumped)
-						Aircraft->ProcessEvent(PlayEffectsForPlayerJumped);
-
 					/* if (Engine_Version <= 421)
 					{
 						auto CheatManager = PlayerController->Member<UObject*>("CheatManager");
@@ -710,7 +705,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 					UObject* FinisherPawn;          // APawn                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					UObject* FinishingWeapon; // UFortWeaponItemDefinition                                          // (ConstParm, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					EDeathCause                                        DeathCause;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				} AFortPlayerControllerAthena_ClientNotifyWon_Params{ KillerPawn, FinishingWeaponDefinition, DeathCause };
+				} AFortPlayerControllerAthena_ClientNotifyWon_Params{ KillerPawn, FinishingWeaponDefinition, (EDeathCause)DeathCause };
 
 				auto lmbda = [&](UObject* Controller) {
 					if (Controller != DeadController)

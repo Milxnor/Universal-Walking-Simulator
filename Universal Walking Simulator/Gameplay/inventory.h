@@ -849,7 +849,7 @@ namespace Inventory
 			{
 				ReplicatedEntries->RemoveAt(x);
 				bSuccessful = true;
-				// break;
+				break;
 			}
 		}
 
@@ -1179,6 +1179,7 @@ namespace Inventory
 						if (CurrentWeaponInList && (*CurrentWeaponInList->Member<FGuid>("ItemEntryGuid") == Guid))
 						{
 							CurrentWeaponList->RemoveAt(i);
+							break;
 						}
 					}
 				}
