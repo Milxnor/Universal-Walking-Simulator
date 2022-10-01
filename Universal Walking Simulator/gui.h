@@ -25,6 +25,15 @@
 #include <Gameplay/harvesting.h>
 #include <set>
 
+#define GAME_TAB 1
+#define PLAYERS_TAB 2
+#define GAMEMODE_TAB 3
+#define THANOS_TAB 4
+#define EVENT_TAB 5
+#define LATEGAME_TAB 6
+#define SETTINGS_TAB 7
+#define CREDITS_TAB 8
+
 // THE BASE CODE IS FROM IMGUI GITHUB
 
 static LPDIRECT3D9              g_pD3D = NULL;
@@ -314,7 +323,7 @@ DWORD WINAPI GuiThread(LPVOID)
 			{
 				if (ImGui::BeginTabItem(ICON_FA_GAMEPAD " Game"))
 				{
-					Tab = 1;
+					Tab = GAME_TAB;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
@@ -324,14 +333,14 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					if (ImGui::BeginTabItem(ICON_FA_PEOPLE_CARRY " Players"))
 					{
-						Tab = 2;
+						Tab = PLAYERS_TAB;
 						ImGui::EndTabItem();
 					}
 				}
 
 				if (ImGui::BeginTabItem(("Gamemode")))
 				{
-					Tab = 3;
+					Tab = GAMEMODE_TAB;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
@@ -341,7 +350,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					if (ImGui::BeginTabItem(("Thanos")))
 					{
-						Tab = 4;
+						Tab = THANOS_TAB;
 						PlayerTab = -1;
 						bInformationTab = false;
 						ImGui::EndTabItem();
@@ -352,16 +361,24 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 					if (ImGui::BeginTabItem(("Event")))
 					{
-						Tab = 5;
+						Tab = EVENT_TAB;
 						PlayerTab = -1;
 						bInformationTab = false;
 						ImGui::EndTabItem();
 					}
 				}
 
+				if (bIsLateGame && ImGui::BeginTabItem(("Lategame")))
+				{
+					Tab = LATEGAME_TAB;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
 				if (ImGui::BeginTabItem(("Settings")))
 				{
-					Tab = 6;
+					Tab = SETTINGS_TAB;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
@@ -371,7 +388,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 				if (ImGui::BeginTabItem(("Credits")))
 				{
-					Tab = 7;
+					Tab = CREDITS_TAB;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
@@ -384,7 +401,7 @@ DWORD WINAPI GuiThread(LPVOID)
 			{
 				switch (Tab)
 				{
-				case 1:
+				case GAME_TAB:
 				{
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
@@ -459,6 +476,14 @@ DWORD WINAPI GuiThread(LPVOID)
 							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 						}
 
+						if (ImGui::Button("Start Zone"))
+						{
+							FString StartAircraftCmd;
+							StartAircraftCmd.Set(L"startsafezone");
+
+							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+						}
+
 						if (ImGui::Button("View Pickup"))
 						{
 							FString StartAircraftCmd;
@@ -496,8 +521,8 @@ DWORD WINAPI GuiThread(LPVOID)
 									if (WillSkipAircraft)
 										*WillSkipAircraft = true;
 
-									*AircraftStartTime = 1;
-									*Helper::GetGameState()->Member<float>(("WarmupCountdownEndTime")) = 1;
+									*AircraftStartTime = 0;
+									*Helper::GetGameState()->Member<float>(("WarmupCountdownEndTime")) = 0;
 								}
 								else
 								{
@@ -509,6 +534,9 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								if (Helper::IsSmallZoneEnabled())
 								{
+									if (AircraftStartTime)
+										Sleep(1000); // stupid
+
 									auto gameState = Helper::GetGameState();
 
 									auto Aircrafts = gameState->Member<TArray<UObject*>>(("Aircrafts"));
@@ -792,7 +820,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					break;
 				}
-				case 2:
+				case PLAYERS_TAB:
 					// ImGui::Text("Players Connected: ")
 					InitializePlayers();
 					for (int i = 0; i < Players.size(); i++)
@@ -810,7 +838,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 					}
 					break;
-				case 3:
+				case GAMEMODE_TAB:
 				{
 					if (!bStarted)
 						ImGui::InputText(("Playlist"), &PlaylistToUse);
@@ -828,7 +856,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 				}
 
-				case 4:
+				case THANOS_TAB:
 					if(ImGui::Button(("Spawn Mind Stone"))) {
 						FVector RandLocation;
 						std::random_device rd; // obtain a random number from hardware
@@ -940,7 +968,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 					break;
 
-				case 5:
+				case EVENT_TAB:
 					if (ImGui::Button(("Start Event")))
 						Events::StartEvent();
 
@@ -967,8 +995,10 @@ DWORD WINAPI GuiThread(LPVOID)
 							EventHelper::TeleportPlayersToButterfly(); */
 					}
 					break;
-
-				case 6: // settings
+				case LATEGAME_TAB:
+					// ImGui::SliderFloat("Zone Size")
+					break;
+				case SETTINGS_TAB:
 
 					ImGui::InputText("First Slot", &StartingSlot1.first);
 					ImGui::InputInt("First Slot Amount", &StartingSlot1.second);
@@ -987,7 +1017,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::NewLine();
 
 					break;
-				case 7:
+				case CREDITS_TAB:
 					TextCentered(("Credits:"));
 					TextCentered(("Milxnor: Made the base, main developer"));
 					TextCentered(("GD: Added events, cleans up code and adds features."));

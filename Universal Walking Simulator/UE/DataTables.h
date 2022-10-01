@@ -46,7 +46,7 @@ static UObject* GetLootPackages()
 	static auto ClassToUse = (LootPackagesName.contains("Composite")) ?
 		FindObject("Class /Script/Engine.CompositeDataTable") : FindObject("Class /Script/Engine.DataTable"); // cursed
 
-	auto LootPackages = StaticLoadObject(ClassToUse, nullptr, LootPackagesName); // some versions its loaded idk why but some not
+	auto LootPackages = StaticLoadObject(ClassToUse, nullptr, LootPackagesName);
 	std::cout << "LootPackages: " << LootPackages << '\n';
 
 	if (LootPackages)

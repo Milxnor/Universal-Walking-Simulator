@@ -1543,7 +1543,7 @@ namespace Helper
 
 	static bool IsSmallZoneEnabled()
 	{
-		return bIsLateGame;
+		return bIsLateGame || FnVerDouble >= 13.00;
 	}
 
 	float GetDistanceTo(UObject* Actor, UObject* OtherActor)

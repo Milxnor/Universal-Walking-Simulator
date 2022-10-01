@@ -279,14 +279,14 @@ namespace LootingV2
 				if (BuildingContainer && BuildingContainer->GetFullName().contains("Tiered_Athena_FloorLoot_"))
 				{
 					constexpr bool bTossPickup = true;
-					bool ShouldSpawn = RandomBoolWithWeight(0.7f);
+					bool ShouldSpawn = RandomBoolWithWeight(0.5f);
 
 					if (ShouldSpawn)
 					{
 						auto CorrectLocation = Helper::GetActorLocation(BuildingContainer);
 						CorrectLocation.Z += 50;
 
-						if (RandomBoolWithWeight(0.15f))
+						if (RandomBoolWithWeight(0.85f))
 						{
 							auto Consumable = GetRandomItem(ItemType::Consumable);
 
@@ -314,6 +314,8 @@ namespace LootingV2
 									EFortPickupSpawnSource::Unset, DropCount, bTossPickup, false);
 							}
 						}
+
+						std::cout << "I: " << i << '\n';
 
 						// Sleep(17);
 					}

@@ -363,13 +363,15 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 
 		auto NextCenter = Indicator->Member<FVector>("NextCenter");
 
-		if (bIsStartZone)
+		// if (bIsStartZone)
 		{
 			*Indicator->Member<float>("Radius") = 14000;
 			*NextCenter = AircraftLocationToUse;
 		}
-		else
-			*NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
+		// else
+			// *NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
+
+		std::cout << "SKidd!\n";
 	}
 
 	return true;
@@ -1390,6 +1392,11 @@ void replace_all(std::string& input, const std::string& from, const std::string&
 	}
 }
 
+char __fastcall CallsReinitializeALlProfilesDetour(__int64 a1, __int64 a2, char a3)
+{
+	return true;
+}
+
 inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function, void* Parameters)
 {
 	UObject* Controller = Controllera;
@@ -1673,6 +1680,8 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 {
 	if (Pawn && Parameters)
 	{
+		std::cout << "mf!\n";
+		
 		struct FZiplinePawnState
 		{
 			UObject* Zipline;           // AFortAthenaZipline                                        // 0x0000(0x0008) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -1707,13 +1716,15 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 		{
 			// TWeakObjectPtr<class AFortPlayerPawn>  CurrentInteractingPawn
 			
-			TWeakObjectPtr<UObject>* CurrentInteractingPawn = (*Zipline)->Member<TWeakObjectPtr<UObject>>("CurrentInteractingPawn");
+			TWeakObjectPtr<UObject>* CurrentInteractingPawn = nullptr; // (*Zipline)->Member<TWeakObjectPtr<UObject>>("CurrentInteractingPawn");
 
 			if (CurrentInteractingPawn)
 			{
 				CurrentInteractingPawn->ObjectIndex = Pawn->InternalIndex;
 				CurrentInteractingPawn->ObjectSerialNumber = GetSerialNumber(Pawn);
 			}
+
+			// Helper::SetLocalRole(Pawn, ENetRole::ROLE_AutonomousProxy);
 
 			struct
 			{
@@ -1735,10 +1746,10 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 			if (StartZipLining)
 				(*Zipline)->ProcessEvent(StartZipLining, &Pawn); */
 
-			Helper::GetAnimInstance(Pawn)->Member<FFortAnimInput_Zipline>("ZiplineInput")->bIsZiplining = true;
+			/* Helper::GetAnimInstance(Pawn)->Member<FFortAnimInput_Zipline>("ZiplineInput")->bIsZiplining = true;
 			
 			*Pawn->Member<FZiplinePawnState>("ZiplineState") = Params->ZiplineState;
-			Pawn->ProcessEvent("OnRep_ZiplineState");
+			Pawn->ProcessEvent("OnRep_ZiplineState"); */
 
 			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_AutonomousProxy);
 			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_Authority); // UNTESTED
@@ -2484,6 +2495,9 @@ void FinishInitializeUHooks()
 	AddHook("Function /Script/Engine.GameModeBase.MustSpectate", MustSpectateHook);
 	AddHook("Function /Script/Engine.GameModeBase.PlayerCanRestart", PlayerCanRestartHook);
 	// AddHook("Function /Script/FortniteGame.FortWeapon.OnPawnMontageBlendingOut", onpawnmotnageblendingoutHook);
+
+	// LoadObject<UObject>(FindObject("Class /Script/Engine.BlueprintGeneratedClass"), nullptr, "/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C"); // i think im slow
+
 	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
@@ -2620,7 +2634,10 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), "ShouldShowSoundIndicator") &&
 					!strstr(FunctionName.c_str(), "Primitive_Structure_AmbAudioComponent_C") &&
 					!strstr(FunctionName.c_str(), "PlayStoppedIdleRotationAudio") &&
-					!strstr(FunctionName.c_str(), "UpdateOverheatCosmetics"))
+					!strstr(FunctionName.c_str(), "UpdateOverheatCosmetics") &&
+					!strstr(FunctionName.c_str(), "StormFadeTimeline__UpdateFunc") &&
+					!strstr(FunctionName.c_str(), "BindVolumeEvents") &&
+					!strstr(FunctionName.c_str(), "UpdateStateEvent"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}

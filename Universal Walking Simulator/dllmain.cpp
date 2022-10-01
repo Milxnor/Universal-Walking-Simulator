@@ -373,6 +373,11 @@ DWORD WINAPI Main(LPVOID)
     if (!funnyaddry)
         funnyaddry = FindPattern("48 89 5C 24 ? 57 48 81 EC ? ? ? ? 48 8B D9 48 8B 0D ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 8B D3 E8 ? ? ? ? 48");
 
+    constexpr bool idkai3 = false;
+
+    if (idkai3 && !funnyaddry)
+        funnyaddry = FindPattern("48 83 79 ? ? 75 19 48 8B 81 ? ? ? ? 48 85 C0 74 08 48 8B C8 E9 ? ? ? ? E9 ? ? ? ? B8"); // 19.10 */
+
     std::cout << "funnyaddry: " << funnyaddry << '\n';
     std::cout << "NoMcpAddr: " << NoMcpAddr << '\n';
 
@@ -404,6 +409,14 @@ DWORD WINAPI Main(LPVOID)
         MH_EnableHook((PVOID)SpawnActorAddr);
     }
 
+    if (idkai3)
+    {
+        auto CallsReinitializeALlProfilesAddr = FindPattern("");
+
+        MH_CreateHook((PVOID)CallsReinitializeALlProfilesAddr, CallsReinitializeALlProfilesDetour, nullptr);
+        MH_EnableHook((PVOID)CallsReinitializeALlProfilesAddr);
+    }
+
    /* auto agiuigf1 = FindPattern("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 30 48 8B B1 ? ? ? ? 41 0F B6 E9 45 0F B6 F0 48 8B FA");
 
     if (!agiuigf1)
@@ -427,6 +440,9 @@ DWORD WINAPI Main(LPVOID)
 
     if (!CanBuildAddr)
         CanBuildAddr = FindPattern("48 89 54 24 ? 55 56 41 56 48 83 EC 50");
+
+    if (!CanBuildAddr)
+        CanBuildAddr = FindPattern("E8 ? ? ? ? 85 C0 0F 85 ? ? ? ? 80 65 28 F0", true, 1); // S19
 
     CanBuild = decltype(CanBuild)(CanBuildAddr);
 
