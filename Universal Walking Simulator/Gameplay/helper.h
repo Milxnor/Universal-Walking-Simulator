@@ -31,17 +31,16 @@ int GetMaxBullets(UObject* Definition)
 	// auto RangedWeaponRows = GetRowMap(RangedWeaponsTable);
 
 	static auto RowStructOffset = GetOffset(RangedWeaponsTable, "RowStruct");
-	auto RangedWeaponRows = (TMap<FName, uint8_t*>*)(__int64(RangedWeaponsTable) + (RowStructOffset + sizeof(UObject*))); // because after rowstruct is rowmap
+	auto RangedWeaponRows = *(TMap<FName, uint8_t*>*)(__int64(RangedWeaponsTable) + (RowStructOffset + sizeof(UObject*))); // because after rowstruct is rowmap
 
 	static auto ClipSizeOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortBaseWeaponStats", "ClipSize");
 
 	// std::cout << "Number of RangedWeapons: " << RangedWeaponRows.Pairs.Elements.Data.Num() << '\n';
 
-	// if (RangedWeaponRows) // fix rare crash
 	{
-		for (int i = 0; i < RangedWeaponRows->Pairs.Elements.Data.Num(); i++)
+		for (int i = 0; i < RangedWeaponRows.Pairs.Elements.Data.Num(); i++)
 		{
-			auto& Man = RangedWeaponRows->Pairs.Elements.Data.At(i);
+			auto& Man = RangedWeaponRows.Pairs.Elements.Data.At(i);
 			auto& Pair = Man.ElementData.Value;
 			auto RowFName = Pair.First;
 
@@ -1835,6 +1834,35 @@ namespace Helper
 
 		if (fn)
 			BuildingActor->ProcessEvent(fn, &bPropagateSilentDeath);
+	}
+
+	void DumpDeathCauses()
+	{
+		auto MappingsSoft = Helper::GetGameData()->Member<TSoftObjectPtr>("FortDeathCauseFromTagMapping");
+
+		auto Mappings = StaticLoadObject(FindObject("Class /Script/FortniteGame.FortDeathCauseFromTagMapping"), nullptr, MappingsSoft->ObjectID.AssetPathName.ToString());
+
+		struct FFortTagToDeathCause
+		{
+			FGameplayTag                                DeathTag;                                                 // 0x0000(0x0008) (Edit, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			EDeathCause                                        DBNOCause;                                                // 0x0008(0x0001) (Edit, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			EDeathCause                                        DeathCause;                                               // 0x0009(0x0001) (Edit, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			unsigned char                                      UnknownData00[0x2];                                       // 0x000A(0x0002) MISSED OFFSET
+		};
+
+		auto TagToDeathCauseArray = Mappings->Member<TArray<FFortTagToDeathCause>>("TagToDeathCauseArray");
+
+		if (TagToDeathCauseArray)
+		{
+			std::cout << "Num: " << TagToDeathCauseArray->Num() << '\n';
+
+			for (int i = 0; i < TagToDeathCauseArray->Num(); i++)
+			{
+				auto& DeathCauseTag = TagToDeathCauseArray->At(i);
+
+				WriteToFile(std::format("[{}] {} {}\n", DeathCauseTag.DeathTag.TagName.ToString(), std::to_string((uint8_t)DeathCauseTag.DeathCause), std::to_string((uint8_t)DeathCauseTag.DBNOCause)));
+			}
+		}
 	}
 
 	bool SetActorLocation(UObject* Actor, const FVector& Location)

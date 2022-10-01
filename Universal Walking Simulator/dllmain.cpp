@@ -406,6 +406,8 @@ DWORD WINAPI Main(LPVOID)
     // MH_CreateHook((PVOID)addy35125, CreateNewInstanceOfAbilityDetour, (void**)&CreateNewInstanceOfAbilityO);
     // MH_EnableHook((PVOID)addy35125);
 
+    // auto Mappings = FindObject("FortDeathCauseFromTagMapping /Game/Balance/DeathTagToEnumMapping.DeathTagToEnumMapping");
+
     return 0;
 }
 

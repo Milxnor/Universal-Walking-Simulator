@@ -7,6 +7,7 @@
 
 #include <math.h>
 #include <random>
+#include <fstream>
 
 static FORCEINLINE bool IsNaN(float A)
 {
@@ -523,6 +524,15 @@ enum class EFortAbilityTargetDataPolicy : uint8_t
 	SimulateOnServer = 1,
 	EFortAbilityTargetDataPolicy_MAX = 2
 };
+
+void WriteToFile(const std::string& Text, const std::string& FileName = "DUMP.txt")
+{
+	std::ofstream stream(FileName, std::ios::out | std::ios::app);
+
+	stream << Text << '\n';
+
+	stream.close();
+}
 
 enum class EFortGameplayAbilityMontageSectionToPlay : uint8_t
 {

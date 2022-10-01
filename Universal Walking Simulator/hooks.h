@@ -554,26 +554,63 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, int* Out
 	// UFortDeathCauseFromTagMapping
 	// FortDeathCauseFromTagMapping
 
-	static auto FortPlayerStateAthenaDefault = FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena");
+	uint8_t DeathCause = 0;
 
-	struct
+	std::cout << "Tags: " << Tags.ToStringSimple(true) << '\n';
+
+	if (FnVerDouble >= 6.21)
 	{
-		FGameplayTagContainer                       InTags;                                                   // (ConstParm, Parm, OutParm, ReferenceParm, NativeAccessSpecifierPublic)
-		bool                                               bWasDBNO;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		uint8_t                                        ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	} AFortPlayerStateAthena_ToDeathCause_Params{Tags, false};
+		static auto FortPlayerStateAthenaDefault = FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena");
 
-	static auto ToDeathCause = FortPlayerStateAthenaDefault->Function("ToDeathCause");
+		struct
+		{
+			FGameplayTagContainer                       InTags;                                                   // (ConstParm, Parm, OutParm, ReferenceParm, NativeAccessSpecifierPublic)
+			bool                                               bWasDBNO;                                                 // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			uint8_t                                        ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		} AFortPlayerStateAthena_ToDeathCause_Params{ Tags, false };
 
-	if (ToDeathCause)
-		FortPlayerStateAthenaDefault->ProcessEvent(ToDeathCause, &AFortPlayerStateAthena_ToDeathCause_Params);
+		static auto ToDeathCause = FortPlayerStateAthenaDefault->Function("ToDeathCause");
+
+		if (ToDeathCause)
+			FortPlayerStateAthenaDefault->ProcessEvent(ToDeathCause, &AFortPlayerStateAthena_ToDeathCause_Params);
+
+		DeathCause = AFortPlayerStateAthena_ToDeathCause_Params.ReturnValue;
+	}
+	else
+	{
+		// todo: loop through tags n stuff
+
+		static auto DeathCauseEnum = FindObject("Enum /Script/FortniteGame.EDeathCause");
+
+		for (int i = 0; i < Tags.GameplayTags.Num(); i++)
+		{
+			auto& Tag = Tags.GameplayTags.At(i);
+
+			if (Tag.TagName.ComparisonIndex)
+			{
+				auto TagNameStr = Tag.TagName.ToString();
+
+				if (TagNameStr.contains("Gameplay.Damage.Environment.Falling"))
+					return GetEnumValue(DeathCauseEnum, "FallDamage");
+
+				else if (TagNameStr.contains("Weapon.Ranged.Shotgun"))
+					return GetEnumValue(DeathCauseEnum, "Shotgun");
+
+				else if (TagNameStr.contains("weapon.ranged.heavy.rocket_launcher"))
+					return GetEnumValue(DeathCauseEnum, "RocketLauncher");
+
+				else if (TagNameStr.contains("weapon.ranged.assault."))
+					return GetEnumValue(DeathCauseEnum, "Rifle");
+			}
+		}
+	}
 
 	if (OutWasDBNO)
 	{
 
 	}
 
-	return AFortPlayerStateAthena_ToDeathCause_Params.ReturnValue;
+	return DeathCause;
 
 	return 1;
 }
@@ -841,7 +878,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				*(bool*)(__int64(&*DeathInfo) + bDBNOOffset) = false;
 				*(float*)(__int64(&*DeathInfo) + DistanceOffset) = KillerPawn ? Helper::GetDistanceTo(KillerPawn, DeadPawn) : 0.f;
 
-				std::cout << "DeathCause: " << *(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) << '\n';
+				std::cout << "DeathCause: " << (int)*(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) << '\n';
 
 				static auto OnRep_DeathInfo = DeadPlayerState->Function(("OnRep_DeathInfo"));
 
