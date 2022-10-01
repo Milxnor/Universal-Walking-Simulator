@@ -357,9 +357,24 @@ DWORD WINAPI Main(LPVOID)
     if (Engine_Version >= 424)
         NoMcpAddr = FindPattern("E8 ? ? ? ? 84 C0 75 C1", true, 1);
 
+    if (Engine_Version <= 420)
+        NoMcpAddr = FindPattern("E8 ? ? ? ? 90 EB E7", true, 0x6E);
+
+    if (!NoMcpAddr)
+        NoMcpAddr = FindPattern("E8 ? ? ? ? 84 C0 75 C0", true, 1); // 10.40
+
+    if (!NoMcpAddr)
+        NoMcpAddr = FindPattern("E8 ? ? ? ? 90 EB E1", true, 1); // 2.4.2
+
+    // 48 83 EC 28 65 48 8B 04 25 ? ? ? ? 8B 0D ? ? ? ? BA ? ? ? ? 48 8B 0C C8 8B 04 0A 39 05 ? ? ? ? 7F 0C 0F B6 05 ? ? ? ? 48 83 C4 28 C3 48 8D 0D ? ? ? ? E8 ? ? ? ? 83 3D ? ? ? ? ? 75 DF E8 ? ? ? ? 48 8B C8 48 8D 15 ? ? ? ? E8 ? ? ? ? 48 8D 0D ? ? ? ? 88 05 ? ? ? ? E8 ? ? ? ? EB B7
+
     funnyaddry = FindPattern("40 53 48 81 EC ? ? ? ? 48 83 79 ? ? 48 8B D9 74 0E B8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 48 8B 89 ? ? ? ? 48 85 C9 74 0D 48 81 C4 ? ? ? ? 5B E9 ? ? ? ? 48 8B 0D ? ? ? ?");
 
+    if (!funnyaddry)
+        funnyaddry = FindPattern("48 89 5C 24 ? 57 48 81 EC ? ? ? ? 48 8B D9 48 8B 0D ? ? ? ? 48 85 C9 0F 84 ? ? ? ? 48 8B D3 E8 ? ? ? ? 48");
+
     std::cout << "funnyaddry: " << funnyaddry << '\n';
+    std::cout << "NoMcpAddr: " << NoMcpAddr << '\n';
 
     bool bafuaqeu = false;
 
@@ -399,9 +414,9 @@ DWORD WINAPI Main(LPVOID)
     MH_CreateHook((PVOID)agiuigf1, CALLMEIMCOOLDETOUR, (void**)&CALLMEIMCOOLO);
     MH_EnableHook((PVOID)agiuigf1); */
 
-    auto addy35125 = FindObject("FortAbilitySystemComponentAthena /Script/FortniteGame.Default__FortAbilitySystemComponentAthena")->VFTable[243];
+    // auto addy35125 = FindObject("FortAbilitySystemComponentAthena /Script/FortniteGame.Default__FortAbilitySystemComponentAthena")->VFTable[243];
 
-    CreateNewInstanceOfAbilityO = decltype(CreateNewInstanceOfAbilityO)(addy35125);
+    // CreateNewInstanceOfAbilityO = decltype(CreateNewInstanceOfAbilityO)(addy35125);
 
     // MH_CreateHook((PVOID)addy35125, CreateNewInstanceOfAbilityDetour, (void**)&CreateNewInstanceOfAbilityO);
     // MH_EnableHook((PVOID)addy35125);
@@ -410,7 +425,12 @@ DWORD WINAPI Main(LPVOID)
 
     auto CanBuildAddr = FindPattern("48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0");
 
+    if (!CanBuildAddr)
+        CanBuildAddr = FindPattern("48 89 54 24 ? 55 56 41 56 48 83 EC 50");
+
     CanBuild = decltype(CanBuild)(CanBuildAddr);
+
+    std::cout << "CanBuildAddr: " << CanBuildAddr << '\n';
 
     return 0;
 }

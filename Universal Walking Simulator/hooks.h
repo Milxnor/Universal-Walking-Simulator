@@ -826,6 +826,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 						static auto bDropOnDeathOffset = GetOffset(Definition, "bDropOnDeath");
 						static auto bDropOnDeathBI = GetBitIndex(GetProperty(Definition, "bDropOnDeath"));
 
+						int LoadedAmmo = 0;
+
 						// if (readd((uint8_t*)(__int64(Actor) + bDropOnDeathOffset), bDropOnDeathBI)) // TODO: Test
 						if (IsDroppable(Definition))
 						{
@@ -834,7 +836,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 								auto loc = Helper::GetActorLocation(Pawn);
 
 								auto Pickup = Helper::SummonPickup(Pawn, Definition, DeathLocation, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::PlayerElimination,
-									Params->Count);
+									Params->Count, true, false, LoadedAmmo);
 							}
 						}
 					}
@@ -894,13 +896,25 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				static auto FinisherOrDownerOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("FinisherOrDowner"));
 				static auto bDBNOOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("bDBNO"));
 				static auto DistanceOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("Distance"));
+				static auto DeathCauseEnum = FindObject("Enum /Script/FortniteGame.EDeathCause");
 
 				// /Script/FortniteGame.FortPlayerStateAthena.OnRep_TeamKillScore
 
 				*(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) = DeathCause;
 				*(UObject**)(__int64(&*DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
 				*(bool*)(__int64(&*DeathInfo) + bDBNOOffset) = false;
-				*(float*)(__int64(&*DeathInfo) + DistanceOffset) = KillerPawn ? Helper::GetDistanceTo(KillerPawn, DeadPawn) : 0.f;
+
+				if (DeathCause != GetEnumValue(DeathCauseEnum, "FallDamage"))
+				{
+					*(float*)(__int64(&*DeathInfo) + DistanceOffset) = KillerPawn ? Helper::GetDistanceTo(KillerPawn, DeadPawn) : 0.f;
+				}
+				else
+				{
+					static auto LastFallDistanceOffset = GetOffset(DeadPawn, "LastFallDistance");
+
+					if (LastFallDistanceOffset != -1)
+						*(float*)(__int64(&*DeathInfo) + DistanceOffset) = *(float*)(__int64(DeadPawn) + LastFallDistanceOffset);
+				}
 
 				std::cout << "DeathCause: " << (int)*(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) << '\n';
 
@@ -1175,7 +1189,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				std::cout << "Unable to find ToyClass!\n";
 		}
 
-		if (fn)
+		if (fn && false)
 		{
 			EmoteAsset->ProcessEvent(fn, &GAHRParams);
 			auto Montage = GAHRParams.AnimMontage;

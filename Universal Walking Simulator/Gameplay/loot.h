@@ -270,7 +270,7 @@ namespace LootingV2
 			auto BuildingContainers = Helper::GetAllActorsOfClass(BuildingContainerClass);
 			// std::cout << "bb!\n";
 
-			std::cout << "Spawning: " << BuildingContainers.Num() << '\n';
+			// std::cout << "Spawning: " << BuildingContainers.Num() << '\n';
 
 			for (int i = 0; i < BuildingContainers.Num(); i++)
 			{
@@ -279,16 +279,17 @@ namespace LootingV2
 				if (BuildingContainer && BuildingContainer->GetFullName().contains("Tiered_Athena_FloorLoot_"))
 				{
 					constexpr bool bTossPickup = true;
-					bool ShouldSpawn = true; // RandomBoolWithWeight(0.7f);
+					bool ShouldSpawn = RandomBoolWithWeight(0.7f);
 
 					if (ShouldSpawn)
 					{
 						auto CorrectLocation = Helper::GetActorLocation(BuildingContainer);
 						CorrectLocation.Z += 50;
 
-						if (RandomBoolWithWeight(0.35f))
+						if (RandomBoolWithWeight(0.15f))
 						{
 							auto Consumable = GetRandomItem(ItemType::Consumable);
+
 							Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
 								EFortPickupSpawnSource::Unset, Consumable.DropCount, bTossPickup);
 						}
@@ -305,18 +306,21 @@ namespace LootingV2
 								struct { UObject* AmmoDefinition; }GetAmmoWorldItemDefinition_BP_Params{};
 								Weapon.Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
 								auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
+								static auto DropCountOffset = GetOffset(AmmoDef, "DropCount");
+
+								auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
 
 								Helper::SummonPickup(nullptr, AmmoDef, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
-									EFortPickupSpawnSource::Unset, *AmmoDef->Member<int>("DropCount"), bTossPickup);
+									EFortPickupSpawnSource::Unset, DropCount, bTossPickup, false);
 							}
 						}
 
-						Sleep(17);
+						// Sleep(17);
 					}
 				}
 			}
 
-			std::cout << "Finished!\n";
+			std::cout << "Finished spawning floorloot!\n";
 
 			BuildingContainers.Free();
 		}

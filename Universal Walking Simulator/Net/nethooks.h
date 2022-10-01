@@ -164,6 +164,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	{
 		LastResetNum = AmountOfRestarts;
 
+		// CreateThread(0, 0, LootingV2::SummonFloorLoot, 0, 0, 0);
+
 		if (Engine_Version >= 423)
 		{
 			Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol

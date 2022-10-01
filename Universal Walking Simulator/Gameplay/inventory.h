@@ -253,10 +253,10 @@ namespace Inventory
 	UObject* GetWorldInventory(UObject* Controller)
 	{
 		static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
-		auto WorldInventory = *(UObject**)(__int64(Controller) + WorldInventoryOffset);
+		auto WorldInventoryP = (UObject**)(__int64(Controller) + WorldInventoryOffset);
 
 		// return *Controller->Member<UObject*>(("WorldInventory"));
-		return WorldInventory;
+		return WorldInventoryP ? *WorldInventoryP : nullptr;
 	}
 
 	__int64* GetInventory(UObject* Controller)
