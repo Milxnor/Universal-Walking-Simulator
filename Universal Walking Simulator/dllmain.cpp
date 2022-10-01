@@ -389,45 +389,6 @@ DWORD WINAPI Main(LPVOID)
         MH_EnableHook((PVOID)SpawnActorAddr);
     }
 
-    static auto aibuildfn = FindObject("Function /Script/FortniteGame.FortAIController.CreateBuildingActor");
-    bUseAIBuild = aibuildfn && FnVerDouble < 19.00 && bDoubleBuildFix2;
-
-    std::cout << "bUseAIBuild: " << bUseAIBuild << '\n';
-    // std::cout << "SIZE: " << sizeof(FTS::Abilities::FGameplayAbilitySpecAA) << '\n';
-
-    if (bUseAIBuild) // kms
-    {
-        // auto sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE 40 32 FF FF 90 ? ? ? ? 0F B6 B4 24 ? ? ? ? 4D 8B CF 48 8B C8 4C");
-
-        // if (!sigfgwe)
-            // sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE 32 DB FF 90 ? ? ? ? 0F B6 B4 24 ? ? ? ? 4D 8B CF 48 8B C8 4C 8B C5 48");
-
-        auto sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 06 49 8B CE ? ? FF");
-
-        if (!sigfgwe)
-            sigfgwe = FindPattern("FF 90 ? ? ? ? 48 8B ? ? 8B ? 32 DB");
-
-        if (!sigfgwe)
-            sigfgwe = FindPattern("FF 90 ? ? ? ? 49 8B 07 49 8B CF 32 DB FF");
-            
-        // FF 90 ? ? ? ? 49 8B ? 49 8B ? ? ? FF (TRY??)
-
-        if (sigfgwe)
-        {
-            // MH_CreateHook((PVOID)sigfgwe, StupidMfDetour, nullptr);
-            // MH_EnableHook((PVOID)sigfgwe);
-            *(uint8_t*)(sigfgwe + 0) = 0;
-            *(uint8_t*)(sigfgwe + 1) = 0;
-            *(uint8_t*)(sigfgwe + 2) = 0;
-            *(uint8_t*)(sigfgwe + 3) = 0;
-        }
-        else
-        {
-            std::cout << "Disabling doulb ebuild fix uhh dm milxnor!\n";
-            bUseAIBuild = false;
-        }
-    }
-
    /* auto agiuigf1 = FindPattern("48 89 5C 24 ? 48 89 6C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 30 48 8B B1 ? ? ? ? 41 0F B6 E9 45 0F B6 F0 48 8B FA");
 
     if (!agiuigf1)

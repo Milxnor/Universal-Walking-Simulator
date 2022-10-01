@@ -1125,16 +1125,27 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 			std::cout << "ugh: " << PlayMontageReplicated(Pawn, Montage, 0, 0) << '\n'; */
 
+			using SpecType = TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>>; // 7.40
+
 			static auto FN = FindObject("Function /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget.PlayMontageWaitTarget");
 			static auto Def = FindObject("FortAbilityTask_PlayMontageWaitTarget /Script/FortniteGame.Default__FortAbilityTask_PlayMontageWaitTarget");
+			static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
 			auto AbilitySystemComponent = *Pawn->CachedMember<UObject*>(("AbilitySystemComponent"));
 
-			if (Montage && Engine_Version < 426 && Engine_Version >= 420)
-			{
-				static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+			auto sog = FindPattern("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 70 49 8B 40 10 49 8B D8 48 8B FA 48 8B F1 80 B8 ? ? ? ? ? 0F 84 ? ? ? ? 80 B8 ? ? ? ? ? 0F");
 
-				TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>> Specs;
+			// unsigned int* (__fastcall* GiveAbilityAndActivateOnce)(UObject* ASC, SpecType* Spec, void* GameplayEventData) = decltype(GiveAbilityAndActivateOnce)(sog);
+			unsigned int* (__fastcall * GiveAbilityAndActivateOnce)(UObject * ASC, int* outHandle, SpecType * Spec) = decltype(GiveAbilityAndActivateOnce)(sog);
+
+			// Pawn->ProcessEvent("PlayEmoteItem", EmoteAsset);
+
+			int out;
+			GiveAbilityAndActivateOnce(AbilitySystemComponent, &out, (SpecType*)GenerateNewSpec(GetDefaultObject(EmoteClass)));
+
+			if (false && Montage && Engine_Version < 426 && Engine_Version >= 420)
+			{
+				SpecType Specs;
 
 				if (Engine_Version <= 422)
 					Specs = (*AbilitySystemComponent->CachedMember<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
@@ -1200,7 +1211,7 @@ UObject* (*CreateNewInstanceOfAbilityO)(UObject* ASC, FGameplayAbilitySpec<FGame
 
 UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>& Spec, UObject* Ability)
 {
-	static auto EmoteAbilityClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
+	static auto EmoteAbilityClass = GetDefaultObject(FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C")));
 
 	if (boozasdgwq9i)
 		Ability = EmoteAbilityClass;
@@ -1213,6 +1224,9 @@ UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGa
 
 	if (Ability == EmoteAbilityClass)
 	{
+		static auto Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Montages/Emotes/Emote_DanceMoves.Emote_DanceMoves");
+		auto Dura = PlayMontage(ASC, newiNstanceavg, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(-1));
+
 		std::cout << "EMOTE??!\n";
 
 		enum class EFortGameplayAbilityMontageSectionToPlay : uint8_t
@@ -1240,15 +1254,36 @@ UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGa
 		static auto TransientPackage = FindObject("Package /Engine/Transient");
 		static auto calcauq9 = FindObject("Class /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget");
 
-		auto NewAbilityTask = Easy::SpawnObject(calcauq9, TransientPackage);
 
-		// auto NewAbilityTask = UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params.ReturnValue;
+		struct
+		{
+			UObject* OwningAbility;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FName                                       TaskInstanceName;                                         // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			UObject* MontageToPlay;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                              AnimPlayRate;                                             // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			EFortGameplayAbilityMontageSectionToPlay           SectionToPlay;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			FName                                       OverrideSection;                                          // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			float                                              AnimRootMotionTranslationScale;                           // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			EFortAbilityTargetDataPolicy                       TargetDataPolicy;                                         // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			UObject* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+		} UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params{ newiNstanceavg, FName(-1), Montage, 1.0f, EFortGameplayAbilityMontageSectionToPlay::FirstSection,
+		FName(-1), 1.0f, EFortAbilityTargetDataPolicy::SimulateOnServer };
+
+		static auto FN = FindObject("Function /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget.PlayMontageWaitTarget");
+		static auto Def = FindObject("FortAbilityTask_PlayMontageWaitTarget /Script/FortniteGame.Default__FortAbilityTask_PlayMontageWaitTarget");
+
+		Def->ProcessEvent(FN, &UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params);
+
+		// auto NewAbilityTask = Easy::SpawnObject(calcauq9, TransientPackage);
+
+		auto NewAbilityTask = UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params.ReturnValue;
 
 		std::cout << "NewAbilityTask: " << NewAbilityTask << '\n';
 
-		FFortGameplayAbilityMontageInfo AbilityMontageInfo = FFortGameplayAbilityMontageInfo{ FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Montages/Emotes/Emote_DanceMoves.Emote_DanceMoves"), 1.0f, 1.0f, EFortGameplayAbilityMontageSectionToPlay::FirstSection};
+		FFortGameplayAbilityMontageInfo AbilityMontageInfo = FFortGameplayAbilityMontageInfo{
+			Montage, 1.0f, 1.0f, EFortGameplayAbilityMontageSectionToPlay::FirstSection};
 
-		if (NewAbilityTask)
+		/* if (NewAbilityTask)
 		{
 			*NewAbilityTask->Member<FFortGameplayAbilityMontageInfo>("MontageInfo") = AbilityMontageInfo;
 			*NewAbilityTask->Member<UObject*>("AbilitySystemComponent") = ASC;
@@ -1256,9 +1291,14 @@ UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGa
 			*NewAbilityTask->Member<FName>("InstanceName") = FName(-1);
 			newiNstanceavg->Member<TArray<UObject*>>("ActiveTasks")->Add(NewAbilityTask);
 			NewAbilityTask->ProcessEvent("ReadyForActivation");
+
+			// newiNstanceavg->ProcessEvent("PlayInitialEmoteMontage");
+
 			void (*Activate)() = decltype(Activate)(NewAbilityTask->VFTable[0x48]);
 			Activate();
-		}
+		} */
+
+		ASC->ProcessEvent("OnRep_ReplicatedAnimMontage");
 	}
 
 	return newiNstanceavg;

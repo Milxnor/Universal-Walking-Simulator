@@ -517,6 +517,21 @@ enum ERichCurveInterpMode
 	RCIM_None
 };
 
+enum class EFortAbilityTargetDataPolicy : uint8_t
+{
+	ReplicateToServer = 0,
+	SimulateOnServer = 1,
+	EFortAbilityTargetDataPolicy_MAX = 2
+};
+
+enum class EFortGameplayAbilityMontageSectionToPlay : uint8_t
+{
+	FirstSection = 0,
+	RandomSection = 1,
+	TestedRandomSection = 2,
+	EFortGameplayAbilityMontageSectionToPlay_MAX = 3
+};
+
 #define FASTASIN_HALF_PI (1.5707963050f)
 /**
 * Computes the ASin of a scalar value.

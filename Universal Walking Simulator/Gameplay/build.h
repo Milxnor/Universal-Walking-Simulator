@@ -40,8 +40,6 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 
 		auto Pawn = Helper::GetPawnFromController(Controller);
 
-		static auto aibuildfn = FindObject("Function /Script/FortniteGame.FortAIController.CreateBuildingActor");
-
 		UObject* BuildingClass = nullptr;
 		FVector BuildingLocation;
 		FRotator BuildingRotation;
@@ -73,7 +71,6 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				BuildingRotation = Params->CreateBuildingData.BuildRot;
 				bMirrored = Params->CreateBuildingData.bMirrored;
 
-				if (!bUseAIBuild)
 				{
 					static auto RemoteBuildingMaterialOffset = GetOffset(*RemoteClientInfo, "RemoteBuildingMaterial");
 					auto RemoteBuildingMaterial = (TEnumAsByte<EFortResourceType>*)(__int64(*RemoteClientInfo) + RemoteBuildingMaterialOffset);
@@ -124,7 +121,12 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				return false;
 
 			{
-				if (!bUseAIBuild)
+				__int64 (*CanBuild)(UObject*, UObject*, FVector, FRotator, char, void*, char*) = nullptr;
+				CanBuild = decltype(CanBuild)(FindPattern("48 89 5C 24 10 48 89 6C 24 18 48 89 74 24 20 41 56 48 83 EC ? 49 8B E9 4D 8B F0")); // creds android for this
+				__int64 v32[2]{};
+				char dababy;
+
+				if (!CanBuild || (CanBuild && !CanBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy)))
 				{
 					UObject* BuildingActor = Easy::SpawnActor(BuildingClass, BuildingLocation, BuildingRotation, Pawn);
 
@@ -184,21 +186,6 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 							}
 						}
 					}
-				}
-				else
-				{
-					auto newBuildingRot = BuildingRotation;
-					// newBuildingRot.Yaw += funnythingy;
-
-					struct {
-						UObject* BuildingClass;
-						FVector BuildLoc;
-						FRotator BuildRot;
-						bool bMirrored;
-						bool iguesssuccess;
-					} parms{ BuildingClass, BuildingLocation, newBuildingRot, bMirrored };
-
-					Controller->ProcessEvent(aibuildfn, &parms); // credits:: android for tellingm ethis
 				}
 			}
 		}

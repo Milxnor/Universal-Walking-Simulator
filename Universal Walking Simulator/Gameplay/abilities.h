@@ -168,6 +168,80 @@ UObject* DoesASCHaveAbility(UObject* ASC, UObject* Ability)
     return AbilityToReturn;
 }
 
+void* GenerateNewSpec(UObject* DefaultObject)
+{
+    static auto GameplayAbilitySpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
+    static auto GameplayAbilitySpecSize = GetSizeOfStruct(GameplayAbilitySpecStruct);
+
+    if (Engine_Version < 426)
+        std::cout << "Size of GameplayAbilitySpec: " << GameplayAbilitySpecSize << '\n';
+
+    auto ptr = malloc(GameplayAbilitySpecSize);
+
+    if (!ptr)
+        return nullptr;
+
+    RtlSecureZeroMemory(ptr, GameplayAbilitySpecSize);
+
+    FGameplayAbilitySpecHandle Handle{};
+    Handle.GenerateNewHandle();
+
+    ((FFastArraySerializerItem*)ptr)->MostRecentArrayReplicationKey = -1;
+    ((FFastArraySerializerItem*)ptr)->ReplicationID = -1;
+    ((FFastArraySerializerItem*)ptr)->ReplicationKey = -1;
+
+    static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
+    static auto AbilityOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
+    static auto LevelOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Level");
+    static auto InputIDOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputID");
+
+    *(FGameplayAbilitySpecHandle*)(__int64(ptr) + HandleOffset) = Handle;
+    *(UObject**)(__int64(ptr) + AbilityOffset) = DefaultObject;
+    *(int*)(__int64(ptr) + LevelOffset) = 1;
+    *(int*)(__int64(ptr) + InputIDOffset) = -1;
+
+    return ptr;
+}
+
+static UObject* GetDefaultObject(UObject* Class)
+{
+    UObject* DefaultObject = nullptr;
+
+    if (!Class->GetFullName().contains("Class "))
+        DefaultObject = Class; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
+    else
+    {
+        // im dumb
+        static std::unordered_map<std::string, UObject*> defaultAbilities; // normal class name, default ability.
+
+        auto name = Class->GetFullName();
+
+        auto defaultafqaf = defaultAbilities.find(name);
+
+        if (defaultafqaf != defaultAbilities.end())
+        {
+            DefaultObject = defaultafqaf->second;
+        }
+        else
+        {
+            // skunked class to default
+            auto ending = name.substr(name.find_last_of(".") + 1);
+            auto path = name.substr(0, name.find_last_of(".") + 1);
+
+            path = path.substr(path.find_first_of(" ") + 1);
+
+            auto DefaultAbilityName = std::format("{1} {0}Default__{1}", path, ending);
+
+            // std::cout << "DefaultAbilityName: " << DefaultAbilityName << '\n';
+
+            DefaultObject = FindObject(DefaultAbilityName);
+            defaultAbilities.emplace(name, DefaultObject);
+        }
+    }
+
+    return DefaultObject;
+}
+
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass, void** OutSpec = nullptr) // CREDITS: kem0x, raider3.5
 {
     if (!GameplayAbilityClass || !TargetPawn)
@@ -221,41 +295,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
 
     static auto HandleOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Handle");
 
-    auto GenerateNewSpec = [&]() -> void*
-    {
-        static auto GameplayAbilitySpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
-        static auto GameplayAbilitySpecSize = GetSizeOfStruct(GameplayAbilitySpecStruct);
-
-        if (Engine_Version < 426)
-            std::cout << "Size of GameplayAbilitySpec: " << GameplayAbilitySpecSize << '\n';
-
-        auto ptr = malloc(GameplayAbilitySpecSize);
-
-        if (!ptr)
-            return nullptr;
-
-        RtlSecureZeroMemory(ptr, GameplayAbilitySpecSize);
-
-        FGameplayAbilitySpecHandle Handle{};
-        Handle.GenerateNewHandle();
-
-        ((FFastArraySerializerItem*)ptr)->MostRecentArrayReplicationKey = -1;
-        ((FFastArraySerializerItem*)ptr)->ReplicationID = -1;
-        ((FFastArraySerializerItem*)ptr)->ReplicationKey = -1;
-
-        static auto AbilityOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Ability");
-        static auto LevelOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "Level");
-        static auto InputIDOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", "InputID");
-
-        *(FGameplayAbilitySpecHandle*)(__int64(ptr) + HandleOffset) = Handle;
-        *(UObject**)(__int64(ptr) + AbilityOffset) = DefaultObject;
-        *(int*)(__int64(ptr) + LevelOffset) = 1;
-        *(int*)(__int64(ptr) + InputIDOffset) = -1;
-
-        return ptr;
-    };
-
-    void* NewSpec = GenerateNewSpec();
+    void* NewSpec = GenerateNewSpec(DefaultObject);
 
     if (!NewSpec)
         return nullptr;

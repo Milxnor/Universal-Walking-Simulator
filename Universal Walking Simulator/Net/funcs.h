@@ -153,7 +153,7 @@ struct FGameplayAbilitySpecHandle
     int Handle; 
     static inline std::unordered_set<int> Handles;
 
-    void GenerateNewHandle()
+    void GenerateNewHandle() // severe brain damaage
     {
         // Must be in C++ to avoid duplicate statics across execution units
         /* static int32_t GHandle = 1;
@@ -573,6 +573,4 @@ static std::pair<std::string, int> StartingSlot5 = { "FortWeaponRangedItemDefini
 
 static int AmountOfRestarts = 0;
 static bool bInjectedOnStartup = false;
-static bool bUseAIBuild = false;
-static int funnythingy = 180;
 static bool boozasdgwq9i = false;
