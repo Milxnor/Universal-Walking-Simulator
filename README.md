@@ -28,7 +28,5 @@ If you take anything from here, please credit the appropiate person and link the
 
 Some of this code is from or inspired by <a href="https://github.com/kem0x/raider3.5">Raider by kem0x</a>.
 <br>
-The flashing fix (hooking GetPlayerViewpoint) was found by <a href="https://github.com/biggest-d">danii</a>.
-<br>
 The ability fix (hooking CanActivateAbility) was found by <a href="https://github.com/android1337">android</a>.
 
