@@ -445,7 +445,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							LoadInMatch();
 						}
 
-						if (false && FnVerDouble >= 7 && ImGui::Button(("Load in Creative")))
+						if (true && FnVerDouble >= 7 && ImGui::Button(("Load in Creative")))
 						{
 							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2";
 							bIsCreative = true;
@@ -1004,7 +1004,6 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 				case SETTINGS_TAB:
 
-					if (false && Engine_Version >= 424)
 					{
 						ImGui::InputText("CID", &CIDToUse);
 						ImGui::NewLine();
@@ -1065,7 +1064,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							auto PlayerName = Helper::GetfPlayerName(Controller);
 							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (("Player: ") + PlayerName.ToString()).c_str());
-							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), std::string("Team: " + std::to_string((int)*Teams::GetTeamIndex(CurrentPlayer.second))).c_str());
+							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), std::string("Team: " + std::to_string(((int)*Teams::GetTeamIndex(CurrentPlayer.second)) - 2)).c_str());
 
 							// TODO: Add Inventory, let them drop, delete, add, modify, etc.
 							if (ImGui::Button(("Game Statistics")))

@@ -250,7 +250,7 @@ namespace Inventory
 		auto WorldInventoryP = (UObject**)(__int64(Controller) + WorldInventoryOffset);
 
 		// return *Controller->Member<UObject*>(("WorldInventory"));
-		return WorldInventoryP ? *WorldInventoryP : nullptr;
+		return !IsBadReadPtr(WorldInventoryP) ? *WorldInventoryP : nullptr;
 	}
 
 	__int64* GetInventory(UObject* Controller)
@@ -1188,7 +1188,14 @@ namespace Inventory
 		UObject* ItemInstance = nullptr;
 
 		auto ItemInstances = GetItemInstances(Controller);
+
+		if (!ItemInstances)
+			return nullptr;
+
 		auto Pawn = Helper::GetPawnFromController(Controller);
+
+		if (!Pawn)
+			return nullptr;
 
 		std::vector<UObject*> InstancesOfItem;
 

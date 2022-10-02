@@ -324,7 +324,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	{
 		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
 
-		static auto PickaxeDef = Helper::GetPickaxeDef(PlayerController);
+		auto PickaxeDef = Helper::GetPickaxeDef(PlayerController);
 
 		static int LastResetNum = 0;
 

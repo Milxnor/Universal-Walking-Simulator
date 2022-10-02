@@ -2615,6 +2615,18 @@ bool OnBounceHook(UObject* ConsumablePrj, UFunction*, void* Parameters)
 	return false;
 }
 
+bool ServerTeleportToPlaygroundLobbyIslandHook(UObject* Controller, UFunction*, void* Parameters)
+{
+	auto Pawn = Helper::GetPawnFromController(Controller);
+
+	if (Pawn)
+	{
+		Helper::SetActorLocation(Pawn, Helper::GetPlayerStart());
+	}
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
@@ -2626,6 +2638,7 @@ void FinishInitializeUHooks()
 	if (bExperimentalRespawning)
 		AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawnHook);
 
+	AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerTeleportToPlaygroundLobbyIsland", ServerTeleportToPlaygroundLobbyIslandHook);
 	AddHook("Function /Script/FortniteGame.FortPawn.NetMulticast_InvokeGameplayCueExecuted_WithParams", NetMulticast_InvokeGameplayCueExecuted_WithParamsHook);
 	// AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerPlaySquadQuickChatMessage", ServerPlaySquadQuickChatMessageHook);
 	// AddHook("Function /Script/FortniteGame.FortWeapon.OnPawnMontageBlendingOut", onpawnmotnageblendingoutHook);

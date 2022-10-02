@@ -1790,6 +1790,57 @@ namespace Helper
 		return *(*GetEngine()->Member<UObject*>("AssetManager"))->Member<UObject*>("GameData");
 	}
 
+	void ApplyCID(UObject* Pawn, UObject* CID)
+	{
+		// CID->Hero->Specialization
+		
+		if (!CID)
+			return;
+
+		static auto CCPClass = FindObject("Class /Script/FortniteGame.CustomCharacterPart");
+
+		auto HeroDefinition = *CID->CachedMember<UObject*>("HeroDefinition");
+
+		if (!HeroDefinition)
+			return;
+
+		auto HeroSpecializations = HeroDefinition->CachedMember<TArray<TSoftObjectPtr>>("Specializations");
+
+		if (!HeroSpecializations)
+		{
+			std::cout << "No HeroSpecializations!\n";
+			return;
+		}
+
+		for (int j = 0; j < HeroSpecializations->Num(); j++)
+		{
+			static auto SpecializationClass = FindObject("Class /Script/FortniteGame.FortHeroSpecialization");
+
+			auto SpecializationName = HeroSpecializations->At(j).ObjectID.AssetPathName.ToString();
+
+			auto Specialization = StaticLoadObject(SpecializationClass, nullptr, SpecializationName);
+
+			auto CharacterParts = Specialization->Member<TArray<TSoftObjectPtr>>("CharacterParts");
+
+			if (!CharacterParts)
+			{
+				std::cout << "No CharacterParts!\n";
+				return;
+			}
+
+			for (int i = 0; i < CharacterParts->Num(); i++)
+			{
+				auto CharacterPart = StaticLoadObject(CCPClass, nullptr, CharacterParts->At(i).ObjectID.AssetPathName.ToString());
+
+				if (CharacterPart)
+				{
+					auto PartType = *CharacterPart->CachedMember<TEnumAsByte<EFortCustomPartType>>("CharacterPartType");
+					Helper::ChoosePart(Pawn, PartType, CharacterPart);
+				}
+			}
+		}
+	}
+
 	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart(), bool bResetTeams = false)
 	{
 		UObject* PlayerState = GetPlayerStateFromController(PC);
@@ -1832,9 +1883,11 @@ namespace Helper
 		else
 			std::cout << ("Unable to find setMaxHealthFn!\n");
 
-		if (FnVerDouble < 4)
+		auto CIDObject = FindObject(CIDToUse);
+
+		// if (FnVerDouble < 4)
 		{
-			static const auto HeroType = FindObject(("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
+			const auto HeroType = CIDObject ? *CIDObject->Member<UObject*>("HeroDefinition") : FindObject(("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
 
 			*PlayerState->Member<UObject*>(("HeroType")) = HeroType;
 
@@ -1844,11 +1897,14 @@ namespace Helper
 				PlayerState->ProcessEvent(OnRepHeroType);
 		}
 
-		if (FnVerDouble < 19.00) // they are just automatic when you touch the ground lol
+		if (FnVerDouble < 19.00 && bResetCharacterParts) // they are just automatic when you touch the ground lol
 		{
+			static auto CCPClass = FindObject("Class /Script/FortniteGame.CustomCharacterPart");
+			static auto backpackPart = FindObject("CustomCharacterPart /Game/Characters/CharacterParts/Backpacks/NoBackpack.NoBackpack");
+
 			static auto headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/F_Med_Head1.F_Med_Head1"));
 			static auto bodyPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Bodies/F_Med_Soldier_01.F_Med_Soldier_01"));
-			static auto noBackpack = FindObject("CustomCharacterPart /Game/Characters/CharacterParts/Backpacks/NoBackpack.NoBackpack");
+			static auto hatPart = nullptr;
 
 			if (!headPart)
 				headPart = FindObject(("CustomCharacterPart /Game/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RebirthDefaultA.CP_Head_F_RebirthDefaultA"));
@@ -1856,34 +1912,21 @@ namespace Helper
 			if (!bodyPart)
 				bodyPart = FindObject(("CustomCharacterPart /Game/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.CP_Body_Commando_F_RebirthDefaultA"));
 
-			if (headPart && bodyPart && bResetCharacterParts)
+			if (headPart && bodyPart)
 			{
 				Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
 				Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
-				Helper::ChoosePart(Pawn, EFortCustomPartType::Backpack, noBackpack);
+				Helper::ChoosePart(Pawn, EFortCustomPartType::Hat, hatPart);
+				Helper::ChoosePart(Pawn, EFortCustomPartType::Backpack, backpackPart);
 			}
 			else
 				std::cout << ("Unable to find Head and Body!\n");
 		}
 
-		/* if (CIDToUse != "None")
+		if (CIDObject)
 		{
-			static auto DefaultObject = GetDefaultObject(FindObject("Class /Script/FortniteGame.FortItemAndVariantSwapHelpers"));
-
-			if (DefaultObject)
-			{
-				static auto PushCosmeticOverrideOntoPawn = DefaultObject->Function("PushCosmeticOverrideOntoPawn");
-
-				auto CIDObject = FindObject(CIDToUse);
-
-				if (PushCosmeticOverrideOntoPawn && CIDObject)
-				{
-					struct { UObject* Pawn; UObject* CID; } parmaas{ Pawn, CIDObject };
-
-					DefaultObject->ProcessEvent(PushCosmeticOverrideOntoPawn, &parmaas);
-				}
-			}
-		} */
+			ApplyCID(Pawn, CIDObject);
+		}
 
 		static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
 
