@@ -578,3 +578,4 @@ static int AmountOfRestarts = 0;
 static bool bInjectedOnStartup = false;
 static bool boozasdgwq9i = false;
 static UObject* GlobalPickaxeDefObject = nullptr;
+constexpr bool bEmotingEnabled = false;

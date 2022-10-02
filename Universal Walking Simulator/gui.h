@@ -1036,9 +1036,9 @@ DWORD WINAPI GuiThread(LPVOID)
 						/* if (ImGui::Button("Show Before Event Lake"))
 							EventHelper::LoadAndUnloadLake(false);
 						if (ImGui::Button("Show After Event Lake"))
-							EventHelper::LoadAndUnloadLake(true);
+							EventHelper::LoadAndUnloadLake(true); */
 						if (ImGui::Button("Teleport Players to Butterfly"))
-							EventHelper::TeleportPlayersToButterfly(); */
+							EventHelper::TeleportPlayersToButterfly();
 					}
 					break;
 				case LATEGAME_TAB:

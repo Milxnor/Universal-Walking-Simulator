@@ -427,12 +427,15 @@ DWORD WINAPI Main(LPVOID)
     MH_CreateHook((PVOID)agiuigf1, CALLMEIMCOOLDETOUR, (void**)&CALLMEIMCOOLO);
     MH_EnableHook((PVOID)agiuigf1); */
 
-    // auto addy35125 = FindObject("FortAbilitySystemComponentAthena /Script/FortniteGame.Default__FortAbilitySystemComponentAthena")->VFTable[243];
+    if (FnVerDouble == 7.40 && bEmotingEnabled)
+    {
+        auto addy35125 = FindObject("FortAbilitySystemComponentAthena /Script/FortniteGame.Default__FortAbilitySystemComponentAthena")->VFTable[243];
 
-    // CreateNewInstanceOfAbilityO = decltype(CreateNewInstanceOfAbilityO)(addy35125);
+        CreateNewInstanceOfAbilityO = decltype(CreateNewInstanceOfAbilityO)(addy35125);
 
-    // MH_CreateHook((PVOID)addy35125, CreateNewInstanceOfAbilityDetour, (void**)&CreateNewInstanceOfAbilityO);
-    // MH_EnableHook((PVOID)addy35125);
+        MH_CreateHook((PVOID)addy35125, CreateNewInstanceOfAbilityDetour, (void**)&CreateNewInstanceOfAbilityO);
+        MH_EnableHook((PVOID)addy35125);
+    }
 
     // auto Mappings = FindObject("FortDeathCauseFromTagMapping /Game/Balance/DeathTagToEnumMapping.DeathTagToEnumMapping");
 

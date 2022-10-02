@@ -1188,7 +1188,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				std::cout << "Unable to find ToyClass!\n";
 		}
 
-		if (fn && false)
+		if (fn && bEmotingEnabled)
 		{
 			EmoteAsset->ProcessEvent(fn, &GAHRParams);
 			auto Montage = GAHRParams.AnimMontage;
@@ -1348,18 +1348,18 @@ UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGa
 		static auto FN = FindObject("Function /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget.PlayMontageWaitTarget");
 		static auto Def = FindObject("FortAbilityTask_PlayMontageWaitTarget /Script/FortniteGame.Default__FortAbilityTask_PlayMontageWaitTarget");
 
-		Def->ProcessEvent(FN, &UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params);
+		// Def->ProcessEvent(FN, &UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params);
 
-		// auto NewAbilityTask = Easy::SpawnObject(calcauq9, TransientPackage);
+		auto NewAbilityTask = Easy::SpawnObject(calcauq9, TransientPackage);
 
-		auto NewAbilityTask = UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params.ReturnValue;
+		// auto NewAbilityTask = UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params.ReturnValue;
 
 		std::cout << "NewAbilityTask: " << NewAbilityTask << '\n';
 
 		FFortGameplayAbilityMontageInfo AbilityMontageInfo = FFortGameplayAbilityMontageInfo{
 			Montage, 1.0f, 1.0f, EFortGameplayAbilityMontageSectionToPlay::FirstSection};
 
-		/* if (NewAbilityTask)
+		if (NewAbilityTask)
 		{
 			*NewAbilityTask->Member<FFortGameplayAbilityMontageInfo>("MontageInfo") = AbilityMontageInfo;
 			*NewAbilityTask->Member<UObject*>("AbilitySystemComponent") = ASC;
@@ -1372,7 +1372,7 @@ UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGa
 
 			void (*Activate)() = decltype(Activate)(NewAbilityTask->VFTable[0x48]);
 			Activate();
-		} */
+		}
 
 		ASC->ProcessEvent("OnRep_ReplicatedAnimMontage");
 	}

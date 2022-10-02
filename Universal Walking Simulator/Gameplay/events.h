@@ -18,7 +18,7 @@ namespace EventHelper
 
 	void TeleportPlayersToButterfly()
 	{
-		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
+		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3");
 
 		if (!scripting)
 		{
@@ -27,11 +27,18 @@ namespace EventHelper
 		}
 
 		UObject* ButterflyBP = *scripting->Member<UObject*>("ButterflyBP");
+		
+		auto PlayersArrayPawns = ButterflyBP->Member<TArray<UObject*>>("PlayersArray");
+
+		std::cout << "PlayersArrayPawns: " << PlayersArrayPawns->Num() << '\n';
+
+		ButterflyBP->ProcessEvent("TeleportPawns");
+
 		auto Locations = ButterflyBP->Member<TArray<FTransform>>("PlayerLocations");
 
 		std::cout << "Num PlayerLocations: " << Locations->Num() << '\n';
 
-		auto World = Helper::GetWorld();
+		/* auto World = Helper::GetWorld();
 
 		if (World)
 		{
@@ -59,8 +66,7 @@ namespace EventHelper
 					}
 				}
 			}
-		}
-
+		} */
 	}
 	
 	void ApplyGEsTravis()
