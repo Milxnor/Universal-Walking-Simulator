@@ -759,6 +759,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				}
 
 				static auto ClientNotifyWon = FindObject("Function /Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
+				static auto PlayWinEffects = FindObject("Function /Script/FortniteGame.FortPlayerControllerAthena.PlayWinEffects");
 
 				struct
 				{
@@ -769,7 +770,12 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 				auto lmbda = [&](UObject* Controller) {
 					if (Controller != DeadController)
+					{
 						Controller->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
+
+						// if (Engine_Version >= 424)
+							// Controller->ProcessEvent(PlayWinEffects, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
+					}
 				};
 
 				Helper::LoopAlivePlayers(lmbda);

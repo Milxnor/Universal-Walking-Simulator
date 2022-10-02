@@ -290,6 +290,7 @@ DWORD WINAPI Main(LPVOID)
 #endif
 
     std::cout << "f: " << FnVerDouble << '\n';
+    std::cout << "e: " << Engine_Version << '\n';
 
     SetConsoleTitleA(("Project Reboot Server"));
 
@@ -385,6 +386,7 @@ DWORD WINAPI Main(LPVOID)
 
     if (NoMcpAddr && funnyaddry)
     {
+        if (Engine_Version < 426) // IsNoMCP leads to wrong addr (atleast for S13)
         {
             MH_CreateHook((PVOID)NoMcpAddr, IsNoMCPDetour, nullptr);
             MH_EnableHook((PVOID)NoMcpAddr);
@@ -395,14 +397,13 @@ DWORD WINAPI Main(LPVOID)
             bafuaqeu = true;
         }
     }
-    else
+    
+    if (!bafuaqeu)
     {
+        std::cout << "[WARNING] Will not be able to apply magical fix!\n";
         NoMcpAddr = 0;
         funnyaddry = 0;
     }
-    
-    if (!bafuaqeu)
-        std::cout << "[WARNING] Will not be able to apply magical fix!\n";
 
     {
         MH_CreateHook((PVOID)SpawnActorAddr, SpawnActorDetour, (void**)&SpawnActorO);

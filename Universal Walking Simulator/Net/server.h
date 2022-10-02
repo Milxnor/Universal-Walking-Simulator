@@ -237,6 +237,8 @@ void Listen(int Port = 7777)
 
     AllowConnections(NetDriver);
 
+    setWorld(NetDriver, World);
+
     serverStatus = EServerStatus::Up;
 
     if (NetDriver && Engine_Version >= 420)
@@ -266,7 +268,7 @@ void Listen(int Port = 7777)
         std::cout << dye::red(("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
 
     auto LevelCollections = World->Member<TArray<__int64>>(("LevelCollections"));
-    auto LevelCollectionsDa = World->Member<TArray<FLevelCollection>>(("LevelCollections"));
+    // auto LevelCollectionsDa = World->Member<TArray<FLevelCollection>>(("LevelCollections"));
     static auto LevelCollectionsSize = GetSizeOfStruct(FindObject("ScriptStruct /Script/Engine.LevelCollection"));
     static auto NetDriverOffset = FindOffsetStruct("ScriptStruct /Script/Engine.LevelCollection", "NetDriver");
 

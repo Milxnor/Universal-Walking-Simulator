@@ -1313,16 +1313,14 @@ namespace Helper
 
 		auto GamePhase = *GetGamePhase();
 
-		std::cout << "PlayerStart Count: " << ActorsNum << '\n';
-
 		if (WarmupClass && Engine_Version != 419 && ActorsNum != 0 && (GamePhase <= EAthenaGamePhase::Warmup))
 		{
-			auto ActorToUseNum = RandomIntInRange(2, ActorsNum);
+			auto ActorToUseNum = RandomIntInRange(2, ActorsNum - 1);
 			auto ActorToUse = (OutActors)[ActorToUseNum];
 
 			while (!ActorToUse)
 			{
-				ActorToUseNum = RandomIntInRange(2, ActorsNum);
+				ActorToUseNum = RandomIntInRange(2, ActorsNum - 1);
 				ActorToUse = (OutActors)[ActorToUseNum];
 			}
 

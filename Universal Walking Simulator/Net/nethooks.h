@@ -215,11 +215,11 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		Helper::KickController(PlayerController, Reason);
 	}
 
-	if (FnVerDouble >= 12.61) // fix crash kinda
+	/* if (FnVerDouble >= 12.61) // fix crash kinda
 	{
 		static auto NetPriorityOffset = GetOffset(PlayerController, "NetPriority");
 		*(float*)(__int64(Inventory::GetWorldInventory(PlayerController)) + NetPriorityOffset) = 3.0f;
-	}
+	} */
 
 	static auto Connection_PlayerController = GetOffset(NewPlayer, "PlayerController");
 	*(UObject**)(__int64(NewPlayer) + Connection_PlayerController) = PlayerController;
@@ -315,8 +315,10 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		// Teams::AssignTeam(PlayerController);
 	}
 
-	if (FnVerDouble < 13.00 || std::floor(FnVerDouble) == 15)
+	if (FnVerDouble < 13.00)
+	{
 		GiveAllBRAbilities(Pawn);
+	}
 
 	// if (Engine_Version >= 420) // && FnVerDouble < 19.00)
 	{
@@ -525,6 +527,12 @@ void InitializeNetHooks()
 			MH_CreateHook((PVOID)World_NotifyControlMessageAddr, World_NotifyControlMessageDetour, (void**)&World_NotifyControlMessage);
 			MH_EnableHook((PVOID)World_NotifyControlMessageAddr);
 		}
+	}
+
+	if (std::floor(FnVerDouble) == 14 || std::floor(FnVerDouble) == 18)
+	{
+		MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
+		MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);
 	}
 
 	if (Engine_Version < 424 && GetNetModeAddr) // i dont even think we have to hook this

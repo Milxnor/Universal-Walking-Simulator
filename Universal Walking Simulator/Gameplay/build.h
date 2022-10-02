@@ -124,7 +124,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				__int64 v32[2]{};
 				char dababy;
 
-				if (!CanBuild || (CanBuild && !CanBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy)))
+				if (!CanBuild || FnVerDouble >= 13 || (CanBuild && !CanBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy)))
 				{
 					UObject* BuildingActor = Easy::SpawnActor(BuildingClass, BuildingLocation, BuildingRotation, Pawn);
 

@@ -576,14 +576,14 @@ void InitializePatterns()
         {
             std::cout << ("[WARNING] Failed to find GiveAbility, abilities will be disabled!\n");
         }
-        else if (FnVerDouble < 19.00) // on s19 internaltryactivateability crashes idk why
+        // else if (FnVerDouble < 19.00)
         {
             if (Engine_Version < 426 && Engine_Version >= 420)
                 CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbility);
             else if (Engine_Version < 420)
                 CheckPattern("GiveAbility", GiveAbilityAddr, &GiveAbilityOLDDD);
-            else if (std::floor(FnVerDouble) == 15)
-                CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityAHH);
+            else if (std::floor(FnVerDouble) == 14 || std::floor(FnVerDouble) == 15)
+                CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityS14ANDS15);
             else if (Engine_Version == 426)
                 CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityFTS);
             else
@@ -602,7 +602,7 @@ void InitializePatterns()
 
             if (Engine_Version < 426)
                 CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbility);
-            else if (FnVerDouble < 19.00) // idk if right
+            else if (FnVerDouble < 18.00) // idk if right
                 CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbilityFTS);
             else
                 CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbilityNewer);
