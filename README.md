@@ -31,4 +31,6 @@ Some of this code is from or inspired by <a href="https://github.com/kem0x/raide
 The flashing fix (hooking GetPlayerViewpoint) was found by <a href="https://github.com/biggest-d">danii</a>.
 <br>
 The ability fix (hooking CanActivateAbility) was found by <a href="https://github.com/android1337">android</a>.
+<br>
+The relevancy fix (hooking FNetViewer constructor) was found by <a href="https://github.com/Ender-0001">ender</a>.
 
