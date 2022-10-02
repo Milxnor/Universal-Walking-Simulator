@@ -2209,16 +2209,6 @@ public:
 	int32_t ObjectSerialNumber;
 };
 
-template<class T, class TWeakObjectPtrBase = FWeakObjectPtr>
-struct TWeakObjectPtr : public FWeakObjectPtr
-{
-public:
-
-	inline T* Get() {
-		return GetByIndex<T>(ObjectIndex);
-	}
-};
-
 template<typename TObjectID>
 class TPersistentObjectPtr
 {
@@ -2252,6 +2242,31 @@ auto GetSerialNumber(UObject* Object)
 {
 	return (ObjObjects ? ObjObjects->GetItemById(Object->InternalIndex) : OldObjects->GetItemById(Object->InternalIndex))->SerialNumber;
 }
+
+template<class T = UObject, class TWeakObjectPtrBase = FWeakObjectPtr>
+struct TWeakObjectPtr : public FWeakObjectPtr
+{
+public:
+	inline T* Get() {
+		return GetByIndex<T>(ObjectIndex);
+	}
+
+	TWeakObjectPtr(int32_t ObjectIndex)
+	{
+		this->ObjectIndex = ObjectIndex;
+		this->ObjectSerialNumber = GetSerialNumber(GetByIndex<UObject>(ObjectIndex));
+	}
+
+	TWeakObjectPtr(UObject* Obj)
+	{
+		this->ObjectIndex = Obj->InternalIndex;
+		this->ObjectSerialNumber = GetSerialNumber(GetByIndex<UObject>(Obj->InternalIndex));
+	}
+
+	TWeakObjectPtr()
+	{
+	}
+};
 
 namespace EAbilityGenericReplicatedEvent
 {

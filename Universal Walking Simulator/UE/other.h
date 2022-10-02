@@ -702,7 +702,7 @@ struct FTransform // https://github.com/EpicGames/UnrealEngine/blob/c3caf7b6bf12
 	FQuat Rotation;
 	FVector Translation;
 	char pad_1C[0x4]; // Padding never changes
-	FVector Scale3D;
+	FVector Scale3D = FVector{ 1, 1, 1 };
 	char pad_2C[0x4];
 
 	/* bool ContainsNaN() const

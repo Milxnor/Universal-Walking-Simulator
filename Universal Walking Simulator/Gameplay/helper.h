@@ -1301,7 +1301,7 @@ namespace Helper
 
 	FVector GetPlayerStart(UObject** PlayerStartActor = nullptr)
 	{
-		static auto WarmupClass = FindObject(("Class /Script/FortniteGame.FortPlayerStartWarmup"));
+		static auto WarmupClass = bIsCreative ? FindObject("Class /Script/FortniteGame.FortPlayerStartCreative") : FindObject(("Class /Script/FortniteGame.FortPlayerStartWarmup"));
 		TArray<UObject*> OutActors = GetAllActorsOfClass(WarmupClass);
 
 		auto ActorsNum = OutActors.Num();
@@ -1312,6 +1312,8 @@ namespace Helper
 		SpawnTransform.Translation = FVector{ 1250, 1818, 3284 }; // Next to salty
 
 		auto GamePhase = *GetGamePhase();
+
+		std::cout << "PlayerStart Count: " << ActorsNum << '\n';
 
 		if (WarmupClass && Engine_Version != 419 && ActorsNum != 0 && (GamePhase <= EAthenaGamePhase::Warmup))
 		{
@@ -1614,16 +1616,32 @@ namespace Helper
 			Actor->ProcessEvent(SetActorScaleFn, &params);
 	}
 
-	static FString GetfPlayerName(UObject* PlayerState)
+	static FString GetfPlayerName(UObject* Controller)
 	{
+		if (!Controller)
+			return FString();
+
+		auto MCPProfileGroupPTR = Controller->Member<UObject*>("McpProfileGroup");
+
 		FString Name; // = *PlayerState->Member<FString>(("PlayerNamePrivate"));
 
-		if (PlayerState)
+		if (!MCPProfileGroupPTR || !*MCPProfileGroupPTR)
 		{
-			static auto fn = PlayerState->Function(("GetPlayerName"));
+			auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-			if (fn)
-				PlayerState->ProcessEvent(fn, &Name);
+			if (PlayerState)
+			{
+				static auto fn = PlayerState->Function(("GetPlayerName"));
+
+				if (fn)
+					PlayerState->ProcessEvent(fn, &Name);
+			}
+		}
+		else
+		{
+			auto MCPProfileGroup = *MCPProfileGroupPTR;
+
+			Name = *MCPProfileGroup->Member<FString>("PlayerName");
 		}
 
 		return Name;
@@ -1673,9 +1691,9 @@ namespace Helper
 		return nullptr;
 	}
 
-	static std::string GetPlayerName(UObject* PlayerState)
+	static std::string GetPlayerName(UObject* Controller)
 	{
-		auto name = GetfPlayerName(PlayerState);
+		auto name = GetfPlayerName(Controller);
 		return name.Data.GetData() ? name.ToString() : "";
 	}
 
@@ -2084,7 +2102,7 @@ namespace Helper
 
 	void KickController(UObject* Controller, FString Reason)
 	{
-		if (KickPlayer && Controller && Reason.Data.GetData())
+		if (false && KickPlayer && Controller && Reason.Data.GetData())
 		{
 			FText text = Conversion::StringToText(Reason);
 			auto World = Helper::GetWorld();
@@ -2187,5 +2205,15 @@ namespace Helper
 
 			return false;
 		}
+	}
+
+	float GetRespawnHeight()
+	{
+		auto Playlist = GetPlaylist();
+
+		if (Playlist)
+			return Playlist->Member<FScalableFloat>("RespawnHeight")->Value; // improper cuz yeah but yeah
+
+		return 10000.f;
 	}
 }

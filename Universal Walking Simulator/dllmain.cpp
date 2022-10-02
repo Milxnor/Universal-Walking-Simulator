@@ -465,6 +465,19 @@ DWORD WINAPI Main(LPVOID)
         MH_EnableHook((PVOID)logdfunc);
     }
 
+    if (bEmotingEnabled && false && FnVerDouble == 7.40)
+    {
+        auto getewaoe = FindPattern("44 8B 41 04 45 85 C0 74 4E 8B 01 85 C0 78 48 3B 05 ? ? ? ? 7D 40 99 0F B7 D2 03 C2 8B C8 0F B7 C0 2B C2 C1 F9 10 48 98 48 63 C9 48 8D");
+
+        MH_CreateHook((PVOID)getewaoe, FWeakObjectPtr_GetDetour, (PVOID*)&FWeakObjectPtr_GetO);
+        MH_EnableHook((PVOID)getewaoe);
+
+        auto getewaoe2 = FindPattern("44 8B 49 04 44 0F B6 D2 45 85 C9 74 63 8B 01 85 C0 78 5D 3B 05 ? ? ? ? 7D 55 99 0F B7 D2 03 C2 8B C8 0F B7 C0 2B C2 C1 F9 10 48 98 48");
+
+        MH_CreateHook((PVOID)getewaoe2, FWeakObjectPtr_Get2Detour, (PVOID*)&FWeakObjectPtr_Get2O);
+        MH_EnableHook((PVOID)getewaoe2);
+    }
+
     GlobalPickaxeDefObject = FindObject(PickaxeDef);
 
     return 0;

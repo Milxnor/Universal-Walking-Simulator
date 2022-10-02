@@ -197,7 +197,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	if (!PlayerState) // this happened somehow
 		return PlayerController;
 
-	auto OPlayerName = Helper::GetPlayerName(PlayerState);
+	auto OPlayerName = Helper::GetPlayerName(PlayerController);
 	std::string PlayerName = OPlayerName;
 	std::transform(OPlayerName.begin(), OPlayerName.end(), OPlayerName.begin(), ::tolower);
 
@@ -215,7 +215,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		Helper::KickController(PlayerController, Reason);
 	}
 
-	if (FnVerDouble >= 12.61) // fix crash mostly
+	if (FnVerDouble >= 12.61) // fix crash kinda
 	{
 		static auto NetPriorityOffset = GetOffset(PlayerController, "NetPriority");
 		*(float*)(__int64(Inventory::GetWorldInventory(PlayerController)) + NetPriorityOffset) = 3.0f;
@@ -292,7 +292,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	// FindObjectOld(".FortReplicationGraphNode_AlwaysRelevantForSquad_")->Member<TArray<UObject*>>("PlayerStates")->Add(PlayerState);
 
 	if (!Pawn)
-		return nullptr; // PlayerController;
+		return PlayerController;
 
 	// todo: not do this for invicibility
 

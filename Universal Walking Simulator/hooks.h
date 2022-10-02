@@ -41,8 +41,6 @@ inline void initStuff()
 		{
 			auto AuthGameMode = Helper::GetGameMode();
 
-			*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = 100; // GameState->GetMaxPlaylistPlayers()
-
 			auto dbnoEnabledPtr = AuthGameMode->Member<bool>("bDBNOEnabled");
 
 			if (dbnoEnabledPtr)
@@ -52,6 +50,12 @@ inline void initStuff()
 
 			*AuthGameMode->Member<bool>("bStartPlayersAsSpectators") = false;
 			
+			if (bAutomaticPawnSpawning) // one of these make the battle bus start when soemone joins
+			{
+				*gameState->Member<bool>("bPlayerSpawningBlocked_Temporarily") = false;
+				*AuthGameMode->Member<bool>("bWorldIsReady") = true; // bitfield moment
+			}
+
 			if (AuthGameMode)
 			{
 				auto PlayerControllerClass = // bIsSTW ? FindObject("Class /Script/FortniteGame.FortPlayerControllerZone") :
@@ -173,6 +177,8 @@ inline void initStuff()
 			{
 				std::cout << dye::yellow(("[WARNING] ")) << ("Failed to find AuthorityGameMode!\n");
 			}
+
+			*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = *Playlist->Member<int>("MaxPlayers"); // GameState->GetMaxPlaylistPlayers()
 
 			if (Engine_Version != 421)
 			{
@@ -610,6 +616,9 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, int* Out
 
 				else if (TagNameStr.contains("trap."))
 					return GetEnumValue(DeathCauseEnum, "Trap");
+
+				else if (TagNameStr.contains("Gameplay.Damage.TeamSwitchSuicide"))
+					return GetEnumValue(DeathCauseEnum, "TeamSwitchSuicide");
 			}
 		}
 	}
@@ -698,7 +707,12 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		auto DeathCause = Tags ? GetDeathCause(DeadPlayerState, *Tags) : 0;
 
 		if (Helper::IsRespawnEnabled()) // || bIsTrickshotting ? !KillerController : false) // basically, if trickshotting, respawn player if they dont die to a player
-			Player::RespawnPlayer(DeadPC);
+		{
+			if (bExperimentalRespawning)
+				DeadController->ProcessEvent("RespawnPlayer");
+			else
+				Player::RespawnPlayer(DeadPC);
+		}
 		else
 		{
 			static auto PlayersLeftOffset = GetOffset(GameState, "PlayersLeft");
@@ -1219,6 +1233,8 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 			int out;
 			GiveAbilityAndActivateOnce(AbilitySystemComponent, &out, (SpecType*)GenerateNewSpec(GetDefaultObject(EmoteClass)));
 
+			Pawn->ProcessEvent("EmoteStarted", &EmoteParams->EmoteAsset);
+
 			if (false && Montage && Engine_Version < 426 && Engine_Version >= 420)
 			{
 				SpecType Specs;
@@ -1300,84 +1316,174 @@ UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGa
 
 	if (Ability == EmoteAbilityClass)
 	{
-		static auto Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Montages/Emotes/Emote_DanceMoves.Emote_DanceMoves");
-		auto Dura = PlayMontage(ASC, newiNstanceavg, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(-1));
+		// newiNstanceavg->ProcessEvent("OnMontageStartedPlaying");
+		// newiNstanceavg->ProcessEvent("PlayInitialEmoteMontage");
 
-		std::cout << "EMOTE??!\n";
-
-		enum class EFortGameplayAbilityMontageSectionToPlay : uint8_t
+		// if (false)
 		{
-			FirstSection = 0,
-			RandomSection = 1,
-			TestedRandomSection = 2,
-			EFortGameplayAbilityMontageSectionToPlay_MAX = 3
-		};
+			auto PlayerState = Helper::GetOwner(ASC);
+			auto Pawn = *PlayerState->Member<UObject*>("PawnPrivate");
+			auto Controller = Helper::GetControllerFromPawn(Pawn);
 
-		struct FFortGameplayAbilityMontageInfo
-		{
-			UObject* MontageToPlay;                                            // 0x0000(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			float                                              AnimPlayRate;                                             // 0x0008(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			float                                              AnimRootMotionTranslationScale;                           // 0x000C(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			EFortGameplayAbilityMontageSectionToPlay           MontageSectionToPlay;                                     // 0x0010(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			unsigned char                                      UnknownData00[0x3];                                       // 0x0011(0x0003) MISSED OFFSET
-			FName                                       OverrideSection;                                          // 0x0014(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			bool                                               bPlayRandomSection;                                       // 0x001C(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			unsigned char                                      UnknownData01[0x3];                                       // 0x001D(0x0003) MISSED OFFSET
-			TArray<__int64>       CharacterPartMontages;                                    // 0x0020(0x0010) (Edit, BlueprintVisible, ZeroConstructor, NativeAccessSpecifierPublic)
-			unsigned char                                      UnknownData02[0x28];                                      // 0x0030(0x0028) MISSED OFFSET
-		};
+			std::cout << "Controller: " << Controller << '\n';
 
-		static auto TransientPackage = FindObject("Package /Engine/Transient");
-		static auto calcauq9 = FindObject("Class /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget");
+			static auto Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Montages/Emotes/Emote_DanceMoves.Emote_DanceMoves");
+			// auto Dura = PlayMontage(ASC, newiNstanceavg, FGameplayAbilityActivationInfo(), Montage, 1.0f, FName(-1));
 
+			std::cout << "EMOTE??!\n";
 
-		struct
-		{
-			UObject* OwningAbility;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FName                                       TaskInstanceName;                                         // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			UObject* MontageToPlay;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			float                                              AnimPlayRate;                                             // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			EFortGameplayAbilityMontageSectionToPlay           SectionToPlay;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			FName                                       OverrideSection;                                          // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			float                                              AnimRootMotionTranslationScale;                           // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			EFortAbilityTargetDataPolicy                       TargetDataPolicy;                                         // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			UObject* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-		} UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params{ newiNstanceavg, FName(-1), Montage, 1.0f, EFortGameplayAbilityMontageSectionToPlay::FirstSection,
-		FName(-1), 1.0f, EFortAbilityTargetDataPolicy::SimulateOnServer };
+			enum class EFortGameplayAbilityMontageSectionToPlay : uint8_t
+			{
+				FirstSection = 0,
+				RandomSection = 1,
+				TestedRandomSection = 2,
+				EFortGameplayAbilityMontageSectionToPlay_MAX = 3
+			};
 
-		static auto FN = FindObject("Function /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget.PlayMontageWaitTarget");
-		static auto Def = FindObject("FortAbilityTask_PlayMontageWaitTarget /Script/FortniteGame.Default__FortAbilityTask_PlayMontageWaitTarget");
+			struct FFortGameplayAbilityMontageInfo
+			{
+				UObject* MontageToPlay;                                            // 0x0000(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				float                                              AnimPlayRate;                                             // 0x0008(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				float                                              AnimRootMotionTranslationScale;                           // 0x000C(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				EFortGameplayAbilityMontageSectionToPlay           MontageSectionToPlay;                                     // 0x0010(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				unsigned char                                      UnknownData00[0x3];                                       // 0x0011(0x0003) MISSED OFFSET
+				FName                                       OverrideSection;                                          // 0x0014(0x0008) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				bool                                               bPlayRandomSection;                                       // 0x001C(0x0001) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				unsigned char                                      UnknownData01[0x3];                                       // 0x001D(0x0003) MISSED OFFSET
+				TArray<__int64>       CharacterPartMontages;                                    // 0x0020(0x0010) (Edit, BlueprintVisible, ZeroConstructor, NativeAccessSpecifierPublic)
+				unsigned char                                      UnknownData02[0x28];                                      // 0x0030(0x0028) MISSED OFFSET
+			};
 
-		// Def->ProcessEvent(FN, &UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params);
+			// static auto calcauq9 = FindObject("Class /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget");
+			static auto calcauq9 = FindObject("Class /Script/FortniteGame.FortAbilityTask_PlayAnimWaitTarget");
 
-		auto NewAbilityTask = Easy::SpawnObject(calcauq9, TransientPackage);
+			struct
+			{
+				UObject* OwningAbility;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				FName                                       TaskInstanceName;                                         // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				UObject* MontageToPlay;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				float                                              AnimPlayRate;                                             // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				EFortGameplayAbilityMontageSectionToPlay           SectionToPlay;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				FName                                       OverrideSection;                                          // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				float                                              AnimRootMotionTranslationScale;                           // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				EFortAbilityTargetDataPolicy                       TargetDataPolicy;                                         // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				UObject* ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+			} UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params{ newiNstanceavg, FName(NAME_None), Montage, 1.0f, EFortGameplayAbilityMontageSectionToPlay::FirstSection,
+			FName(NAME_None), 1.0f, EFortAbilityTargetDataPolicy::SimulateOnServer };
 
-		// auto NewAbilityTask = UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params.ReturnValue;
+			static auto FN = FindObject("Function /Script/FortniteGame.FortAbilityTask_PlayMontageWaitTarget.PlayMontageWaitTarget");
+			static auto Def = FindObject("FortAbilityTask_PlayMontageWaitTarget /Script/FortniteGame.Default__FortAbilityTask_PlayMontageWaitTarget");
 
-		std::cout << "NewAbilityTask: " << NewAbilityTask << '\n';
+			/*
 
-		FFortGameplayAbilityMontageInfo AbilityMontageInfo = FFortGameplayAbilityMontageInfo{
-			Montage, 1.0f, 1.0f, EFortGameplayAbilityMontageSectionToPlay::FirstSection};
+			Def->ProcessEvent(FN, &UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params);
+			auto NewAbilityTask = UFortAbilityTask_PlayMontageWaitTarget_PlayMontageWaitTarget_Params.ReturnValue;
 
-		if (NewAbilityTask)
-		{
-			*NewAbilityTask->Member<FFortGameplayAbilityMontageInfo>("MontageInfo") = AbilityMontageInfo;
-			*NewAbilityTask->Member<UObject*>("AbilitySystemComponent") = ASC;
-			*NewAbilityTask->Member<UObject*>("Ability") = newiNstanceavg;
-			*NewAbilityTask->Member<FName>("InstanceName") = FName(-1);
-			newiNstanceavg->Member<TArray<UObject*>>("ActiveTasks")->Add(NewAbilityTask);
-			NewAbilityTask->ProcessEvent("ReadyForActivation");
+			*/
 
-			// newiNstanceavg->ProcessEvent("PlayInitialEmoteMontage");
+			auto NewAbilityTask = Easy::SpawnObject(calcauq9, Helper::GetTransientPackage());
 
-			void (*Activate)() = decltype(Activate)(NewAbilityTask->VFTable[0x48]);
-			Activate();
+			std::cout << "NewAbilityTask: " << NewAbilityTask << '\n';
+
+			FFortGameplayAbilityMontageInfo AbilityMontageInfo = FFortGameplayAbilityMontageInfo{
+				Montage, 1.0f, 1.0f, EFortGameplayAbilityMontageSectionToPlay::FirstSection };
+
+			if (NewAbilityTask)
+			{
+				*NewAbilityTask->Member<FFortGameplayAbilityMontageInfo>("MontageInfo") = AbilityMontageInfo;
+				*NewAbilityTask->Member<UObject*>("AbilitySystemComponent") = ASC;
+				*NewAbilityTask->Member<UObject*>("Ability") = newiNstanceavg;
+				*NewAbilityTask->Member<FName>("InstanceName") = FName(-1);
+				newiNstanceavg->Member<TArray<UObject*>>("ActiveTasks")->Add(NewAbilityTask);
+				NewAbilityTask->ProcessEvent("ReadyForActivation");
+
+				struct FGameplayAbilityActorInfo
+				{
+					unsigned char                                      UnknownData00[0x8];                                       // 0x0000(0x0008) MISSED OFFSET
+					TWeakObjectPtr<UObject>                       OwnerActor;                                               // 0x0008(0x0008) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+					TWeakObjectPtr<UObject>                       AvatarActor;                                              // 0x0010(0x0008) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+					TWeakObjectPtr<UObject>            PlayerController;                                         // 0x0018(0x0008) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+					TWeakObjectPtr<UObject>      AbilitySystemComponent;                                   // 0x0020(0x0008) (BlueprintVisible, ExportObject, BlueprintReadOnly, ZeroConstructor, InstancedReference, IsPlainOldData)
+					TWeakObjectPtr<UObject>       SkeletalMeshComponent;                                    // 0x0028(0x0008) (BlueprintVisible, ExportObject, BlueprintReadOnly, ZeroConstructor, InstancedReference, IsPlainOldData)
+					TWeakObjectPtr<UObject>                AnimInstance;                                             // 0x0030(0x0008) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+					TWeakObjectPtr<UObject>           MovementComponent;                                        // 0x0038(0x0008) (BlueprintVisible, ExportObject, BlueprintReadOnly, ZeroConstructor, InstancedReference, IsPlainOldData)
+					FName                                       AffectedAnimInstanceTag;                                  // 0x0040(0x0008) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData)
+				};
+
+				auto Character = *Controller->Member<UObject*>("Character");
+				auto ASC = *Pawn->Member<UObject*>("AbilitySystemComponent");
+				auto SkeletalMeshComponent = *Character->Member<UObject*>("Mesh");
+
+				// if (false)
+				{
+
+					auto CurrentActorInfo = (FGameplayAbilityActorInfo*)(__int64(newiNstanceavg) + 0x378);
+
+					std::cout << "CurrentActorInfo: " << CurrentActorInfo << '\n';
+
+					std::cout << "SkeletalMeshComponent: " << SkeletalMeshComponent << '\n';
+
+					auto newActorInfo = FGameplayAbilityActorInfo();
+					newActorInfo.PlayerController = TWeakObjectPtr(Controller);
+					newActorInfo.AbilitySystemComponent = TWeakObjectPtr(ASC);
+					newActorInfo.AnimInstance = TWeakObjectPtr(Helper::GetAnimInstance(Pawn));
+					newActorInfo.SkeletalMeshComponent = TWeakObjectPtr(SkeletalMeshComponent); // WHY DOESNT THIS FIX IT!
+					newActorInfo.MovementComponent = TWeakObjectPtr(*Character->Member<UObject*>("CharacterMovement"));
+					newActorInfo.OwnerActor = TWeakObjectPtr(*ASC->Member<UObject*>("OwnerActor"));
+					newActorInfo.AvatarActor = TWeakObjectPtr(*ASC->Member<UObject*>("AvatarActor"));
+					newActorInfo.AffectedAnimInstanceTag = FName(NAME_None);
+
+					*CurrentActorInfo = newActorInfo;
+				}
+
+				// newiNstanceavg->ProcessEvent("PlayInitialEmoteMontage");
+
+				Sleep(15);
+
+				// *(TWeakObjectPtr<UObject>*)(__int64(&*(FGameplayAbilityActorInfo*)(newiNstanceavg + 0x378)) + 0x28) = TWeakObjectPtr(SkeletalMeshComponent);
+
+				void (*Activate)(UObject * AbilityTask) = decltype(Activate)(NewAbilityTask->VFTable[0x48]);
+				Activate(NewAbilityTask);
+			}
+
+			// ASC->ProcessEvent("OnRep_ReplicatedAnimMontage");
 		}
-
-		ASC->ProcessEvent("OnRep_ReplicatedAnimMontage");
 	}
 
 	return newiNstanceavg;
+}
+
+static __int64 (__fastcall* FWeakObjectPtr_GetO)(__int64 a1);
+
+__int64 __fastcall FWeakObjectPtr_GetDetour(__int64 a1)
+{
+	auto RetOffset = (uintptr_t)_ReturnAddress() - (uintptr_t)GetModuleHandleW(0);
+
+	if (bPrintFUnny && RetOffset != 0x27d3757 && RetOffset != 0x2706264 && RetOffset != 0x3195dd && RetOffset != 0xcd23ea && RetOffset != 0x1ac1363 && RetOffset != 0x2895b00
+		)
+	{
+		// std::cout << std::format("RetOffset: 0x{:x}\n", RetOffset);
+	}
+
+	if (!a1 || RetOffset == 0xB31C27 || RetOffset == 0x30d146 || RetOffset == 0x6e0d82)
+		return 0;
+
+	return FWeakObjectPtr_GetO(a1);
+}
+
+__int64 (__fastcall* FWeakObjectPtr_Get2O)(int* a1, char a2);
+
+__int64 __fastcall FWeakObjectPtr_Get2Detour(int* a1, char a2)
+{
+	auto RetOffset = (uintptr_t)_ReturnAddress() - (uintptr_t)GetModuleHandleW(0);
+
+	if (bPrintFUnny && RetOffset != 0x318dbf)
+		std::cout << std::format("RetOffset: 0x{:x}\n", RetOffset);
+
+	if (!a1 || RetOffset == 0x6e0da4)
+		return 0;
+
+	return FWeakObjectPtr_Get2O(a1, a2);
 }
 
 void replace_all(std::string& input, const std::string& from, const std::string& to) {
@@ -1905,7 +2011,7 @@ inline bool pawnClassHook(UObject* GameModeBase, UFunction*, void* Parameters)
 	auto Params = (parms*)Parameters;
 	Params->Class = PawnClass;
 
-	return false;
+	return true;
 }
 
 inline bool AircraftExitedDropZoneHook(UObject* GameMode, UFunction* Function, void* Parameters)
@@ -2323,51 +2429,26 @@ bool RiftPortalActivateAbility(UObject* Ability, UObject* Func, void* Parameters
 bool PlayerCanRestartHook(UObject* GameMode, UFunction*, void* Parameters)
 {
 	std::cout << "eehhg!~\n";
+
+	struct parm { UObject* PC; bool ret; };
+
+	auto Params = (parm*)(Parameters);
+
+	Params->ret = true;
+
 	return true;
 }
 
 bool MustSpectateHook(UObject* GameMode, UFunction*, void* Parameters)
 {
+	struct parm { UObject* PC; bool ret; };
+
+	auto Params = (parm*)(Parameters);
+
+	Params->ret = true;
+
 	std::cout << "aefiu132q8f!\n";
 	return false;
-}
-
-bool IsProjectileBeingKilledHook(UObject* Interface, UFunction* func, void* Parameters)
-{
-	ProcessEventO(Interface, func, Parameters);
-
-	auto isBeingKilled = *(bool*)(Parameters);
-
-	std::cout << "isBeingKilled: " << isBeingKilled << '\n';
-
-	static auto GetInstigatorPlayerController = Interface->Function("GetInstigatorPlayerController");
-
-	UObject* Controller = nullptr;
-
-	if (GetInstigatorPlayerController)
-		Interface->ProcessEvent(GetInstigatorPlayerController, &Controller);
-
-	static auto GetFortProjectileMovementComponent = Interface->Function("GetFortProjectileMovementComponent");
-
-	UObject* ProjectileMovementComponent = nullptr;
-
-	if (GetFortProjectileMovementComponent)
-		Interface->ProcessEvent(GetFortProjectileMovementComponent, &ProjectileMovementComponent);
-
-	static auto GetCurrentLocation = Interface->Function("GetCurrentLocation");
-
-	FVector CurrentLocation;
-
-	if (GetCurrentLocation)
-		Interface->ProcessEvent(GetCurrentLocation, &CurrentLocation);
-
-	if (Controller)
-	{
-		auto Pawn = Helper::GetPawnFromController(Controller);
-		Helper::SummonPickup(Pawn, *Helper::GetCurrentWeapon(Pawn)->Member<UObject*>("WeaponData"), CurrentLocation, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset);
-	}
-
-	return true;
 }
 
 bool ServerPlaySquadQuickChatMessageHook(UObject* Controller, UFunction* func, void* Parameters)
@@ -2476,21 +2557,71 @@ bool OnBuildingActorInitializedHook(UObject* newBuilding, UFunction*, void* Para
 	return false;
 }
 
+bool SpawnDefaultPawnForHook(UObject* GameMode, UFunction*, void* Parameters)
+{
+	struct parms { UObject* NewPlayer; UObject* StartSpot; UObject* Pawn; };
+
+	auto Params = (parms*)Parameters;
+
+	Helper::GetPlayerStart(&Params->StartSpot); // probably unneeded
+
+	// static auto PawnClass = FindObject(("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
+	// Params->Pawn = Easy::SpawnActor(PawnClass, Helper::GetActorLocation(Params->StartSpot)); // Helper::InitPawn(Params->NewPlayer);
+
+	FTransform Transform;
+	Transform.Translation = Helper::GetActorLocation(Params->StartSpot);
+	Transform.Scale3D = FVector{ 1, 1, 1 };
+
+	struct {
+		UObject* NewController;
+		FTransform SpawnTransform;
+		UObject* NewPawn;
+	} SpawnDefaultPawnAtTransform_Params{Params->NewPlayer, Transform};
+
+	static auto SpawnDefaultPawnAtTransform = GameMode->Function("SpawnDefaultPawnAtTransform");
+
+	if (SpawnDefaultPawnAtTransform)
+		GameMode->ProcessEvent(SpawnDefaultPawnAtTransform, &SpawnDefaultPawnAtTransform_Params);
+
+	auto NewPawn = SpawnDefaultPawnAtTransform_Params.NewPawn;
+
+	return true;
+}
+
+bool ServerClientIsReadyToRespawnHook(UObject* Controller, UFunction*, void* Parameters)
+{
+	if (!bIsPlayground)
+		return false;
+
+	auto Pawn = Controller->Member<UObject*>("Pawn");
+
+	auto RespawnLocation = FVector(); // help
+
+	*Pawn = Helper::InitPawn(Controller, false, RespawnLocation);
+
+	return false;
+}
+
+bool OnBounceHook(UObject* ConsumablePrj, UFunction*, void* Parameters)
+{
+	// I DONT HAVE A SDK IDK WHAT TO DO
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
 	if (Engine_Version < 422)
 		AddHook(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
 	if (Engine_Version >= 424)
-		AddHook("Function /Script/FortniteGame.FortProjectileMovementInterface.IsProjectileBeingKilled", IsProjectileBeingKilledHook);
+		AddHook("Function /Game/Athena/Items/Consumables/Parents/B_Prj_Athena_Consumable_Thrown.B_Prj_Athena_Consumable_Thrown_C.OnBounce", OnBounceHook);
 
-	// if (bUseAIBuild)
-		// AddHook("Function /Script/FortniteGame.BuildingActor.OnBuildingActorInitialized", OnBuildingActorInitializedHook);
+	if (bExperimentalRespawning)
+		AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawnHook);
 
 	AddHook("Function /Script/FortniteGame.FortPawn.NetMulticast_InvokeGameplayCueExecuted_WithParams", NetMulticast_InvokeGameplayCueExecuted_WithParamsHook);
 	// AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerPlaySquadQuickChatMessage", ServerPlaySquadQuickChatMessageHook);
-	AddHook("Function /Script/Engine.GameModeBase.MustSpectate", MustSpectateHook);
-	AddHook("Function /Script/Engine.GameModeBase.PlayerCanRestart", PlayerCanRestartHook);
 	// AddHook("Function /Script/FortniteGame.FortWeapon.OnPawnMontageBlendingOut", onpawnmotnageblendingoutHook);
 
 	// LoadObject<UObject>(FindObject("Class /Script/Engine.BlueprintGeneratedClass"), nullptr, "/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C"); // i think im slow
@@ -2498,7 +2629,18 @@ void FinishInitializeUHooks()
 	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
-	AddHook("Function /Script/Engine.GameModeBase.GetDefaultPawnClassForController", pawnClassHook);
+
+	if (bAutomaticPawnSpawning)
+	{
+		AddHook("Function /Script/Engine.GameModeBase.MustSpectate", MustSpectateHook);
+		AddHook("Function /Script/Engine.GameModeBase.PlayerCanRestart", PlayerCanRestartHook);
+		AddHook("Function /Script/Engine.GameModeBase.GetDefaultPawnClassForController", pawnClassHook);
+
+		// ^^ pretyt sure these are useless
+
+		AddHook("Function /Script/Engine.GameModeBase.SpawnDefaultPawnFor", SpawnDefaultPawnForHook);
+	}
+
 	// AddHook("Function /Script/Engine.Actor.ReceiveActorEndOverlap", ReceiveActorEndOverlapHook);
 
 	// AddHook("Function /Script/FortniteGame.FortPlayerPawn.ServerUpdateVehicleInputStateReliable", ServerUpdateVehicleInputStateReliableHook);

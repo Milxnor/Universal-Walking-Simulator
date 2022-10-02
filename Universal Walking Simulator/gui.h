@@ -403,10 +403,28 @@ DWORD WINAPI GuiThread(LPVOID)
 				{
 				case GAME_TAB:
 				{
+					static std::string ConsoleCommand;
+
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
 					ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
 					ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
+
+					if (bEmotingEnabled)
+						ImGui::Checkbox("bPrintFUnny", &bPrintFUnny);
+
+					ImGui::InputText("Console command", &ConsoleCommand);
+
+					if (ImGui::Button("Execute console command"))
+					{
+						auto wstr = std::wstring(ConsoleCommand.begin(), ConsoleCommand.end());
+
+						FString cmd;
+						cmd.Set(wstr.c_str());
+
+						Helper::Console::ExecuteConsoleCommand(cmd);
+					}
+
 					// ImGui::Checkbox("boozasdgwq9i", &boozasdgwq9i);
 
 					// if (bDoubleBuildFix2)
@@ -420,8 +438,17 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (serverStatus == EServerStatus::Down && !bTraveled)
 					{
 						// TODO: Map name
-						if (ImGui::Button(("Load in the Match")))
+
+						if (ImGui::Button(("Load in Battle Royale")))
 						{
+							bIsCreative = false;
+							LoadInMatch();
+						}
+
+						if (false && FnVerDouble >= 7 && ImGui::Button(("Load in Creative")))
+						{
+							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2";
+							bIsCreative = true;
 							LoadInMatch();
 						}
 					}
@@ -480,14 +507,6 @@ DWORD WINAPI GuiThread(LPVOID)
 						{
 							FString StartAircraftCmd;
 							StartAircraftCmd.Set(L"startsafezone");
-
-							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
-						}
-
-						if (ImGui::Button("View Pickup"))
-						{
-							FString StartAircraftCmd;
-							StartAircraftCmd.Set(L"viewclass FortPickup");
 
 							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 						}
@@ -580,72 +599,9 @@ DWORD WINAPI GuiThread(LPVOID)
 								ExistingBuildings.clear(); */
 							}
 						}
-
-						if (ImGui::Button("Do the funny"))
-						{
-							auto GameState = Helper::GetGameState();
-
-							auto MapInfo = *GameState->Member<UObject*>("MapInfo");
-
-							std::cout << "MapInfo: " << MapInfo << '\n';
-
-							UObject** playlist;
-							Helper::GetPlaylist(&playlist);
-
-							*playlist = FindObject("FortPlaylistAthena /Game/Athena/Playlists/SolidGold/Playlist_SolidGold_Duos.Playlist_SolidGold_Duos");
-
-							GameState->ProcessEvent("OnRep_CurrentPlaylistInfo");
-						}
-
-						if (ImGui::Button("Print FlightInfo Size"))
-						{
-							auto GameState = Helper::GetGameState();
-							auto TeamFlightPaths = GameState->Member<TArray<FAircraftFlightInfo>>("TeamFlightPaths");
-							// auto MapInfo = *GameState->Member<UObject*>("MapInfo");
-							// auto FlightInfos = MapInfo->Member<TArray<__int64>>("FlightInfos");
-							std::cout << "FlightInfos Addr: " << TeamFlightPaths << '\n';
-							std::cout << "FlightInfos Size: " << TeamFlightPaths->Num() << '\n';
-
-							for (int i = 0; i < TeamFlightPaths->Num(); i++)
-							{
-								auto& FlightPath = TeamFlightPaths->At(i);
-
-								std::cout << std::format("[{}]\n\n", i);
-								std::cout << std::format("FlightStartLocation: {}\n", FlightPath.FlightStartLocation.Describe());
-								std::cout << std::format("TimeTillDropEnd: {}\n", FlightPath.TimeTillDropEnd);
-								std::cout << std::format("TimeTillDropStart: {}\n", FlightPath.TimeTillDropStart);
-								std::cout << std::format("TimeTillFlightEnd: {}\n\n", FlightPath.TimeTillFlightEnd);
-							}
-						}
 						
 						// else
 						{
-							if (ImGui::Button(("Change Phase to Aircraft"))) // TODO: Improve phase stuff
-							{
-								auto world = Helper::GetWorld();
-								auto gameState = *world->Member<UObject*>(("GameState"));
-
-								*gameState->Member<EAthenaGamePhase>(("GamePhase")) = EAthenaGamePhase::Aircraft;
-
-								struct {
-									EAthenaGamePhase OldPhase;
-								} params2{ EAthenaGamePhase::None };
-
-								static const auto fnGamephase = gameState->Function(("OnRep_GamePhase"));
-
-								// if (fnGamephase)
-									// gameState->ProcessEvent(fnGamephase);
-
-								std::cout << ("Changed Phase to Aircraft.");
-
-								// TODO: Hook a func for this
-
-								static auto BuildingSMActorClass = FindObject(("Class /Script/FortniteGame.BuildingSMActor"));
-
-								// Helper::DestroyAll(BuildingSMActorClass);
-
-								ExistingBuildings.clear();
-							}
 						}
 
 						if (ImGui::Button(("Summon Llamas")))
@@ -789,7 +745,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					{
 						auto scripting = FindObjectOld("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
 						std::cout << "scripting: " << scripting << '\n';
-
+						
 						if (scripting)
 						{
 							// *scripting->Member<FVector>("IslandPosition") = FVector{ 1250, 1818, 3284 };
@@ -838,7 +794,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (ImGui::Button(("OpenVaults"))) {
 						Henchmans::OpenVaults();
 					}*/
-					if (Engine_Version >= 422 && Engine_Version < 424) 
+					if (false && Engine_Version >= 422 && Engine_Version < 424) 
 					{
 						if (ImGui::Button("Spawn Volume (stay in 1 place to get creative inventory)"))
 						{
@@ -878,7 +834,9 @@ DWORD WINAPI GuiThread(LPVOID)
 							continue;
 
 						// if (ImGui::Button(Helper::GetfPlayerName(PlayerState).ToString().c_str()))
-						if (ImGui::Button(wstring_to_utf8(std::wstring(Helper::GetfPlayerName(PlayerState).Data.GetData())).c_str()))
+						auto wstr = std::wstring(Helper::GetfPlayerName(Helper::GetControllerFromPawn(Player.first)).Data.GetData());
+
+						if (ImGui::Button(std::string(wstr.begin(), wstr.end()).c_str()))
 						{
 							PlayerTab = i;
 						}
@@ -886,7 +844,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 				case GAMEMODE_TAB:
 				{
-					if (!bStarted)
+					if (!bStarted && !bIsCreative)
 						ImGui::InputText(("Playlist"), &PlaylistToUse);
 		
 					if (ImGui::Checkbox(("Playground"), &bIsPlayground))
@@ -1055,6 +1013,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (ImGui::InputText("PickaxeDef", &PickaxeDef))
 					{
 						GlobalPickaxeDefObject = FindObject(PickaxeDef);
+						std::cout << "New pickaxedef is " << GlobalPickaxeDefObject ? "valid\n" : "invalid\n";
 					}
 
 					ImGui::NewLine();
@@ -1089,7 +1048,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				InitializePlayers();
 				if (PlayerTab < Players.size())
 				{
-					auto& CurrentPlayer = Players.at(PlayerTab); // Iirc .at does more checking
+					auto& CurrentPlayer = Players.at(PlayerTab);
 
 					if (CurrentPlayer.first && CurrentPlayer.second)
 					{
@@ -1102,9 +1061,11 @@ DWORD WINAPI GuiThread(LPVOID)
 							static int Count = 1;
 							static int LoadedAmmo = 0;
 
-							auto PlayerName = Helper::GetfPlayerName(CurrentPlayer.second);
+							auto Controller = Helper::GetControllerFromPawn(Pawn);
+
+							auto PlayerName = Helper::GetfPlayerName(Controller);
 							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (("Player: ") + PlayerName.ToString()).c_str());
-							// ImGui::TextColored(ImVec4(18, 253, 112, 0.8), (("Team: ") + *Teams::GetTeamIndex(CurrentPlayer.second)).c_str());
+							ImGui::TextColored(ImVec4(18, 253, 112, 0.8), std::string("Team: " + std::to_string((int)*Teams::GetTeamIndex(CurrentPlayer.second))).c_str());
 
 							// TODO: Add Inventory, let them drop, delete, add, modify, etc.
 							if (ImGui::Button(("Game Statistics")))
@@ -1112,7 +1073,6 @@ DWORD WINAPI GuiThread(LPVOID)
 								bInformationTab = true;
 							}
 							ImGui::NewLine();
-							auto Controller = *CurrentPlayer.first->Member<UObject*>(("Controller"));
 							/* if (ImGui::Button(ICON_FA_HAMMER " Ban"))
 							{
 								auto IP = Helper::GetfIP(CurrentPlayer.second);

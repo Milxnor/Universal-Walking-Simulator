@@ -118,8 +118,6 @@ char(__fastcall* NoReserve)(__int64* a1, __int64 a2, char a3, __int64* a4);
 
 static std::unordered_map<UFunction*, std::function<bool(UObject*, UFunction*, void*)>> FunctionsToHook;
 
-static bool bIsSTW = false;
-
 void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, void*)> func)
 {
     // auto funcObject = FindObjectOld<UFunction>(str, true);
@@ -134,18 +132,6 @@ void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, vo
 }
 
 static auto AircraftLocationToUse = FVector{ 3500, -9180, 10500 };
-
-const wchar_t* GetMapName()
-{
-    if (FnVerDouble >= 19.00)
-        return L"Artemis_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
-    else if (Engine_Version >= 424)
-        return L"Apollo_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
-    else if (Engine_Version < 424)
-        return bIsSTW ? L"Zone_Outpost_Stonewood" : L"Athena_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C"; // L"DS_BuilderGridPlane?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
-    return L"";
-}
-
 
 // START ABILITIES
 
@@ -562,8 +548,8 @@ static std::string PickaxeDef = "FortWeaponMeleeItemDefinition /Game/Athena/Item
 static std::string CIDToUse = "None"; // C2 only
 
 // std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
-std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";
-// "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
+std::string PlaylistToUse = // "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";
+"FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
 // "FortPlaylistAthena /Game/Athena/Playlists/Low/Playlist_Low_Solo.Playlist_Low_Solo";
 
 static std::pair<std::string, int> StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
@@ -579,3 +565,29 @@ static bool bInjectedOnStartup = false;
 static bool boozasdgwq9i = false;
 static UObject* GlobalPickaxeDefObject = nullptr;
 constexpr bool bEmotingEnabled = false;
+static bool bPrintFUnny = false;
+
+// highly experimental
+
+static bool bIsSTW = false;
+static bool bIsCreative = false;
+static constexpr bool bAutomaticPawnSpawning = false;
+static constexpr bool bExperimentalRespawning = false;
+
+const wchar_t* GetMapName()
+{
+    // TBH we should get it from the playlist
+
+    if (bIsCreative)
+    {
+        return L"/Game/Playgrounds/Maps/Islands/CreativeHub/PG_CreativeHub_03?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+    }
+
+    if (FnVerDouble >= 19.00)
+        return L"Artemis_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+    else if (Engine_Version >= 424)
+        return L"Apollo_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+    else if (Engine_Version < 424)
+        return bIsSTW ? L"Zone_Outpost_Stonewood" : L"Athena_Terrain?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C"; // L"DS_BuilderGridPlane?game=/Game/Athena/Athena_GameMode.Athena_GameMode_C";
+    return L"";
+}
