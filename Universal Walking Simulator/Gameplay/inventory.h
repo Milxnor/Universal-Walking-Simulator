@@ -161,7 +161,7 @@ namespace QuickBars
 		if (!Controller)
 			return false;
 
-		static auto PickaxeDefObject = FindObject((PickaxeDef));
+		static auto PickaxeDefObject = Helper::GetPickaxeDef(Controller);
 
 		auto Pawn = Helper::GetPawnFromController(Controller);
 
@@ -228,12 +228,6 @@ namespace QuickBars
 	}
 }
 
-static UObject* GetPickaxeDef(UObject* Controller)
-{
-	static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
-	return PickaxeDef;
-}
-
 namespace Inventory
 {
 	FGuid GetWeaponGuid(UObject* Weapon)
@@ -293,7 +287,7 @@ namespace Inventory
 
 	inline UObject* EquipWeapon(UObject* Pawn, UObject* FortWeapon, const FGuid& Guid, int Ammo = 0)
 	{
-		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+		static auto PickaxeDef = Helper::GetPickaxeDef(Helper::GetControllerFromPawn(Pawn));
 		auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
 
 		if (FortWeapon && CurrentWeapon && Pawn)
@@ -572,7 +566,7 @@ namespace Inventory
 		}
 
 		auto currentWeapon = Helper::GetCurrentWeapon(Pawn);
-		static auto PickaxeDefObject = FindObject((PickaxeDef));
+		static auto PickaxeDefObject = Helper::GetPickaxeDef(Controller);
 
 		// if (!QuickBars::IsHoldingPickaxe()) 
 		if (currentWeapon && Helper::GetWeaponData(currentWeapon) != PickaxeDefObject)
@@ -2072,7 +2066,7 @@ bool IsDroppable(UObject* CurrentItemDefinition, bool bTakePickaxe = true)
 	static auto BuildingItemData_Floor = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Floor.BuildingItemData_Floor"));
 	static auto BuildingItemData_Stair_W = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
 	static auto BuildingItemData_RoofS = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
-	static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+	static auto PickaxeDef = Helper::GetPickaxeDef(nullptr);
 
 	if (CurrentItemDefinition == BuildingItemData_Wall || CurrentItemDefinition == BuildingItemData_Floor
 		|| CurrentItemDefinition == (BuildingItemData_Stair_W) || CurrentItemDefinition == (BuildingItemData_RoofS) || CurrentItemDefinition == PickaxeDef)
@@ -2088,7 +2082,7 @@ void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 	static auto BuildingItemData_Stair_W = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
 	static auto BuildingItemData_RoofS = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
 	static auto EditTool = FindObject(("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
-	static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+	static auto PickaxeDef = Helper::GetPickaxeDef(Controller);
 
 	auto ItemInstances = Inventory::GetItemInstances(Controller);
 

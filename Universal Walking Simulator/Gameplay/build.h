@@ -474,7 +474,7 @@ void InitializeBuildHooks()
 		// AddHook("Function /Script/FortniteGame.FortDecoTool.ServerCreateBuildingAndSpawnDeco", ServerCreateBuildingAndSpawnDecoHook);
 		AddHook("Function /Script/FortniteGame.FortDecoTool.ServerSpawnDeco", ServerSpawnDecoHook);
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerCreateBuildingActor"), ServerCreateBuildingActorHook);
-		AddHook("Function /Script/FortniteGame.FortPlayerController.ServerRepairBuildingActor", ServerRepairBuildingActorHook);
+		// AddHook("Function /Script/FortniteGame.FortPlayerController.ServerRepairBuildingActor", ServerRepairBuildingActorHook);
 
 		// if (Engine_Version < 424)
 		if (std::floor(FnVerDouble) != 15)

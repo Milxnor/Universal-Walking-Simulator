@@ -559,6 +559,8 @@ static bool bIsTrickshotting = false; // this is stupid
 static constexpr bool bAreVehicleWeaponsEnabled = false;
 static std::string PickaxeDef = "FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01";
 
+static std::string CIDToUse = "None"; // C2 only
+
 // std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
 std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";
 // "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground"
@@ -575,3 +577,4 @@ static std::pair<std::string, int> StartingSlot5 = { "FortWeaponRangedItemDefini
 static int AmountOfRestarts = 0;
 static bool bInjectedOnStartup = false;
 static bool boozasdgwq9i = false;
+static UObject* GlobalPickaxeDefObject = nullptr;

@@ -495,22 +495,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						{
 							if (ImGui::Button(("Start Aircraft")))
 							{
-								auto GamePhase = Helper::GetGameState()->Member<EAthenaGamePhase>(("GamePhase"));
-
-								// if (Engine_Version >= 420)
-								if (GamePhase)
-								{
-									*GamePhase = EAthenaGamePhase::Warmup;
-
-									struct {
-										EAthenaGamePhase OldPhase;
-									} params2{ EAthenaGamePhase::None };
-
-									static const auto fnGamephase = Helper::GetGameState()->Function(("OnRep_GamePhase"));
-
-									if (fnGamephase)
-										Helper::GetGameState()->ProcessEvent(fnGamephase, &params2);
-								}
+								Helper::SetGamePhase(EAthenaGamePhase::Warmup);
 
 								auto AircraftStartTime = Helper::GetGameState()->Member<float>(("AircraftStartTime"));
 
@@ -671,6 +656,67 @@ DWORD WINAPI GuiThread(LPVOID)
 						if (ImGui::Button("Fill Vending Machines"))
 						{
 							CreateThread(0, 0, LootingV2::FillVendingMachines, 0, 0, 0);
+						}
+					}
+
+					if (false && ImGui::Button("Dump CharacterParts"))
+					{
+						static auto CIDClass = FindObject("Class /Script/FortniteGame.AthenaCharacterItemDefinition");
+
+						static auto AllCIDS = Helper::GetAllObjectsOfClass(CIDClass);
+
+						for (auto i = 0; i < AllCIDS.size(); i++)
+						{
+							auto CID = AllCIDS.at(i);
+
+							if (CID)
+							{
+								auto DisplayNameFText = *CID->CachedMember<FText>("DisplayName");
+								auto DisplayNameStr = Helper::Conversion::TextToString(DisplayNameFText);
+
+								auto HeroDefinition = *CID->CachedMember<UObject*>("HeroDefinition");
+
+								if (!HeroDefinition)
+									continue;
+
+								auto HeroSpecializations = HeroDefinition->CachedMember<TArray<TSoftObjectPtr>>("Specializations");
+
+								if (!HeroSpecializations)
+								{
+									std::cout << "No HeroSpecializations!\n";
+									continue;
+								}
+
+								for (int j = 0; j < HeroSpecializations->Num(); j++)
+								{
+									static auto SpecializationClass = FindObject("Class /Script/FortniteGame.FortHeroSpecialization");
+
+									auto SpecializationName = HeroSpecializations->At(j).ObjectID.AssetPathName.ToString();
+
+									auto Specialization = StaticLoadObject(SpecializationClass, nullptr, SpecializationName);
+
+									if (!Specialization)
+									{
+										std::cout << "No Specialization!\n";
+										continue;
+									}
+
+									auto CharacterParts = Specialization->Member<TArray<TSoftObjectPtr>>("CharacterParts");
+
+									if (!CharacterParts)
+									{
+										std::cout << "No CharacterParts!\n";
+										continue;
+									}
+
+									for (int i = 0; i < CharacterParts->Num(); i++)
+									{
+										static auto CCPClass = FindObject("Class /Script/FortniteGame.CustomCharacterPart");
+
+										WriteToFile(std::format("[{}] {}", DisplayNameStr, CharacterParts->At(i).ObjectID.AssetPathName.ToString()), "CharacterParts.txt");
+									}
+								}
+							}
 						}
 					}
 
@@ -999,6 +1045,19 @@ DWORD WINAPI GuiThread(LPVOID)
 					// ImGui::SliderFloat("Zone Size")
 					break;
 				case SETTINGS_TAB:
+
+					if (false && Engine_Version >= 424)
+					{
+						ImGui::InputText("CID", &CIDToUse);
+						ImGui::NewLine();
+					}
+
+					if (ImGui::InputText("PickaxeDef", &PickaxeDef))
+					{
+						GlobalPickaxeDefObject = FindObject(PickaxeDef);
+					}
+
+					ImGui::NewLine();
 
 					ImGui::InputText("First Slot", &StartingSlot1.first);
 					ImGui::InputInt("First Slot Amount", &StartingSlot1.second);

@@ -143,7 +143,7 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		// IMPROPER, we should account weakspot here.
 
 		auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Controller));
-		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+		static auto PickaxeDef = Helper::GetPickaxeDef(Controller);
 
 		if (CurrentWeapon && Helper::GetWeaponData(CurrentWeapon) == PickaxeDef)
 		{
@@ -196,12 +196,11 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 
 		if (DamageCauser && InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass))
 		{
-			// std::cout << "name: " << DamageCauser->GetFullName() << '\n';
+			// std::cout << "DamageCauser name: " << DamageCauser->GetFullName() << '\n';
 
 			if (DamageCauser->IsA(MeleeClass))
 			{
-				// TODO: Not hardcode the PickaxeDef, do like slot 0  or something
-				static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+				static auto PickaxeDef = Helper::GetPickaxeDef(InstigatedBy);
 
 				auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(InstigatedBy));
 
@@ -235,7 +234,7 @@ inline bool BlueprintCanAttemptGenerateResourcesHook(UObject* BuildingActor, UFu
 	if (!Params || !Params->InstigatorController || !Params->InstigatorController->IsA(PlayerControllerClass)) // thanks s18
 		return true;
 
-	static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+	static auto PickaxeDef = Helper::GetPickaxeDef(Params->InstigatorController);
 	auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Params->InstigatorController));
 
 	if (CurrentWeapon && Helper::GetWeaponData(CurrentWeapon) == PickaxeDef)

@@ -66,7 +66,10 @@ namespace Teams
 		auto AllTeams = (TArray<AFortTeamInfo*>*)(__int64(GameState) + TeamsOffset);
 
 		if (!AllTeams)
+		{
+			std::cout << "No AllTeams!\n";
 			return;
+		}
 
 		if (AllTeams->Num() <= 1)
 		{

@@ -203,45 +203,6 @@ void* GenerateNewSpec(UObject* DefaultObject)
     return ptr;
 }
 
-static UObject* GetDefaultObject(UObject* Class)
-{
-    UObject* DefaultObject = nullptr;
-
-    if (!Class->GetFullName().contains("Class "))
-        DefaultObject = Class; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
-    else
-    {
-        // im dumb
-        static std::unordered_map<std::string, UObject*> defaultAbilities; // normal class name, default ability.
-
-        auto name = Class->GetFullName();
-
-        auto defaultafqaf = defaultAbilities.find(name);
-
-        if (defaultafqaf != defaultAbilities.end())
-        {
-            DefaultObject = defaultafqaf->second;
-        }
-        else
-        {
-            // skunked class to default
-            auto ending = name.substr(name.find_last_of(".") + 1);
-            auto path = name.substr(0, name.find_last_of(".") + 1);
-
-            path = path.substr(path.find_first_of(" ") + 1);
-
-            auto DefaultAbilityName = std::format("{1} {0}Default__{1}", path, ending);
-
-            // std::cout << "DefaultAbilityName: " << DefaultAbilityName << '\n';
-
-            DefaultObject = FindObject(DefaultAbilityName);
-            defaultAbilities.emplace(name, DefaultObject);
-        }
-    }
-
-    return DefaultObject;
-}
-
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass, void** OutSpec = nullptr) // CREDITS: kem0x, raider3.5
 {
     if (!GameplayAbilityClass || !TargetPawn)

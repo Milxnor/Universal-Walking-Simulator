@@ -88,24 +88,7 @@ inline void initStuff()
 				std::cout << "FriendlyFireType is not valid!\n";
 			}
 
-			auto GamePhase = gameState->Member<EAthenaGamePhase>(("GamePhase"));
-
-			// if (Engine_Version >= 420)
-			if (GamePhase)
-			{
-				*GamePhase = EAthenaGamePhase::None;
-
-				struct {
-					EAthenaGamePhase OldPhase;
-				} params2{ EAthenaGamePhase::None };
-
-				static const auto fnGamephase = gameState->Function(("OnRep_GamePhase"));
-
-				if (fnGamephase)
-					gameState->ProcessEvent(fnGamephase, &params2);
-			}
-			else
-				std::cout << "No Gamephase?? Probably wont drop ls??!\n";
+			Helper::SetGamePhase(EAthenaGamePhase::None);
 
 			if (AuthGameMode)
 			{
@@ -374,7 +357,7 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 		std::cout << "SKidd!\n";
 	}
 
-	return true;
+	return false;
 }
 
 bool ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Function, void* Parameters)
@@ -467,7 +450,7 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
 	if (Engine_Version >= 424)
-		PlayerController = Helper::GetOwnerOfComponent(PlayerController);
+		PlayerController = Helper::GetOwnerOfComponent(PlayerController); // CurrentAircraft
 
 	struct Param{
 		FRotator                                    ClientRotation;
@@ -1066,6 +1049,20 @@ inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Functio
 __int64 IsNoMCPDetour()
 {
 	return 1;
+}
+
+__int64 __fastcall FReplicationGraphDebugInfo_LogDetour(__int64 a1, __int64 a2)
+{
+	std::cout << "logg!\n";
+	return 0;
+}
+
+UObject* __fastcall CreateReplicationDriverDetour(__int64 NetDriver, __int64 URL, __int64 World)
+{
+	// idk why bu the replciationdriverclas iusnt set and if i set it ig it gvets unset by initreplicationdriverclass
+	std::cout << "Skidad!\n";
+	static auto ReplicationDriverClass = FindObject(("Class /Script/FortniteGame.FortReplicationGraph"));
+	return Easy::SpawnObject(ReplicationDriverClass, Helper::GetTransientPackage());
 }
 
 __int64(__fastcall* getnetmodeO)(UObject* World);

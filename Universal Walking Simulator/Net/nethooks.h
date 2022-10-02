@@ -322,7 +322,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	{
 		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
 
-		static auto PickaxeDef = FindObject(("FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01"));
+		static auto PickaxeDef = Helper::GetPickaxeDef(PlayerController);
 
 		static int LastResetNum = 0;
 

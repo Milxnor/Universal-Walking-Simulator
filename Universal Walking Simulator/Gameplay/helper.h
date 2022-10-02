@@ -61,6 +61,48 @@ int GetMaxBullets(UObject* Definition)
 	return 0;
 }
 
+static UObject* GetDefaultObject(UObject* Class)
+{
+	if (!Class)
+		return nullptr;
+
+	UObject* DefaultObject = nullptr;
+
+	if (!Class->GetFullName().contains("Class "))
+		DefaultObject = Class; //->CreateDefaultObject(); // Easy::SpawnObject(GameplayAbilityClass, GameplayAbilityClass->OuterPrivate);
+	else
+	{
+		// im dumb
+		static std::unordered_map<std::string, UObject*> defaultAbilities; // normal class name, default ability.
+
+		auto name = Class->GetFullName();
+
+		auto defaultafqaf = defaultAbilities.find(name);
+
+		if (defaultafqaf != defaultAbilities.end())
+		{
+			DefaultObject = defaultafqaf->second;
+		}
+		else
+		{
+			// skunked class to default
+			auto ending = name.substr(name.find_last_of(".") + 1);
+			auto path = name.substr(0, name.find_last_of(".") + 1);
+
+			path = path.substr(path.find_first_of(" ") + 1);
+
+			auto DefaultAbilityName = std::format("{1} {0}Default__{1}", path, ending);
+
+			// std::cout << "DefaultAbilityName: " << DefaultAbilityName << '\n';
+
+			DefaultObject = FindObject(DefaultAbilityName);
+			defaultAbilities.emplace(name, DefaultObject);
+		}
+	}
+
+	return DefaultObject;
+}
+
 UObject* GetGameViewport()
 {
 	static auto GameViewportOffset = GetOffset(GetEngine(), "GameViewport");
@@ -722,11 +764,37 @@ namespace Helper
 		return Location + RightVector * 70.0f + FVector{ 0, 0, 50 };
 	}
 
+	UObject* GetTransientPackage()
+	{
+		static auto TransientPackage = FindObject("Package /Engine/Transient");
+		return TransientPackage;
+	}
+
+	static std::vector<UObject*> GetAllObjectsOfClass(UObject* Class)
+	{
+		std::vector<UObject*> Objects;
+
+		for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
+		{
+			auto Object = ObjObjects ? ObjObjects->GetObjectById(i) : OldObjects->GetObjectById(i);
+
+			if (!Object) continue;
+
+			if (Object->IsA(Class))
+			{
+				Objects.push_back(Object);
+			}
+		}
+
+		return Objects;
+	}
+
 	void EnablePickupAnimation(UObject* Pawn, UObject* Pickup, float FlyTime = 0.75f, FVector StartDirection = FVector())
 	{
 		if (bPickupAnimsEnabled)
 		{
-			auto PickupLocationData = Pickup->Member<FFortPickupLocationData>("PickupLocationData");
+			static auto PickupLocationDataOffset = GetOffset(Pickup, "PickupLocationData");
+			auto PickupLocationData = (FFortPickupLocationData*)(__int64(Pickup) + PickupLocationDataOffset);
 
 			if (PickupLocationData)
 			{
@@ -736,7 +804,7 @@ namespace Helper
 				PickupLocationData->FlyTime = FlyTime;
 				PickupLocationData->StartDirection = StartDirection;
 				static auto GuidOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemGuid"));
-				auto Guid = (FGuid*)(__int64(&*Pickup->CachedMember<__int64>(("PrimaryPickupItemEntry"))) + GuidOffset);
+				auto Guid = (FGuid*)(__int64(GetEntryFromPickup(Pickup)) + GuidOffset);
 
 				if (Guid)
 					PickupLocationData->PickupGuid = *Guid; // *FFortItemEntry::GetGuid(Pickup->Member<__int64>(("PrimaryPickupItemEntry")));
@@ -1396,6 +1464,26 @@ namespace Helper
 		return ActorsNum;
 	}
 
+	void SetGamePhase(EAthenaGamePhase newPhase)
+	{
+		auto GamePhase = Helper::GetGameState()->Member<EAthenaGamePhase>(("GamePhase"));
+
+		// if (Engine_Version >= 420)
+		if (GamePhase)
+		{
+			*GamePhase = newPhase;
+
+			struct {
+				EAthenaGamePhase OldPhase;
+			} params2{ EAthenaGamePhase::None };
+
+			static const auto fnGamephase = Helper::GetGameState()->Function(("OnRep_GamePhase"));
+
+			if (fnGamephase)
+				Helper::GetGameState()->ProcessEvent(fnGamephase, &params2);
+		}
+	}
+
 	namespace Console
 	{
 		static UObject** ViewportConsole = nullptr;
@@ -1643,6 +1731,12 @@ namespace Helper
 		return 0;
 	}
 
+	static UObject* GetPickaxeDef(UObject* Controller)
+	{
+		// GlobalPickaxeDefObject = FindObject(PickaxeDef);
+		return GlobalPickaxeDefObject;
+	}
+
 	void SetHealth(UObject* Pawn, float Health)
 	{
 		static auto SetHealth = Pawn->Function("SetHealth");
@@ -1751,15 +1845,34 @@ namespace Helper
 				Helper::ChoosePart(Pawn, EFortCustomPartType::Head, headPart);
 				Helper::ChoosePart(Pawn, EFortCustomPartType::Body, bodyPart);
 				Helper::ChoosePart(Pawn, EFortCustomPartType::Backpack, noBackpack);
-
-				static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
-
-				if (OnRep_Parts)
-					PlayerState->ProcessEvent(OnRep_Parts, nullptr);
 			}
 			else
 				std::cout << ("Unable to find Head and Body!\n");
 		}
+
+		/* if (CIDToUse != "None")
+		{
+			static auto DefaultObject = GetDefaultObject(FindObject("Class /Script/FortniteGame.FortItemAndVariantSwapHelpers"));
+
+			if (DefaultObject)
+			{
+				static auto PushCosmeticOverrideOntoPawn = DefaultObject->Function("PushCosmeticOverrideOntoPawn");
+
+				auto CIDObject = FindObject(CIDToUse);
+
+				if (PushCosmeticOverrideOntoPawn && CIDObject)
+				{
+					struct { UObject* Pawn; UObject* CID; } parmaas{ Pawn, CIDObject };
+
+					DefaultObject->ProcessEvent(PushCosmeticOverrideOntoPawn, &parmaas);
+				}
+			}
+		} */
+
+		static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
+
+		if (OnRep_Parts)
+			PlayerState->ProcessEvent(OnRep_Parts, nullptr);
 
 		return Pawn;
 	}

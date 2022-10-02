@@ -444,9 +444,25 @@ DWORD WINAPI Main(LPVOID)
     if (!CanBuildAddr)
         CanBuildAddr = FindPattern("E8 ? ? ? ? 85 C0 0F 85 ? ? ? ? 80 65 28 F0", true, 1); // S19
 
-    CanBuild = decltype(CanBuild)(CanBuildAddr);
+    if (Engine_Version != 426)
+        CanBuild = decltype(CanBuild)(CanBuildAddr);
 
     std::cout << "CanBuildAddr: " << CanBuildAddr << '\n';
+
+    if (false) // 21.00
+    {
+        auto CreatereplicationadfiAd = FindPattern("48 89 5C 24 ? 48 89 6C 24 ? 56 57 41 54 41 56 41 57 48 83 EC 40 49 8B F8 48 8B F2 4C 8B F9 E8 ? ? ? ? 33 DB 39 58 08 74 36 48 8B 08");
+
+        MH_CreateHook((PVOID)CreatereplicationadfiAd, CreateReplicationDriverDetour, nullptr);
+        MH_EnableHook((PVOID)CreatereplicationadfiAd);
+
+        auto logdfunc = FindPattern("83 7A 08 00 4C 8D 05 ? ? ? ? 74 05 4C 8B 0A EB 03 4D 8B C8 83 79 18 00 74 04 4C 8B 41 10 48 8B 09 48 8D 15 ? ? ? ? E9 ? ? ? ?");
+
+        MH_CreateHook((PVOID)logdfunc, FReplicationGraphDebugInfo_LogDetour, nullptr);
+        MH_EnableHook((PVOID)logdfunc);
+    }
+
+    GlobalPickaxeDefObject = FindObject(PickaxeDef);
 
     return 0;
 }
