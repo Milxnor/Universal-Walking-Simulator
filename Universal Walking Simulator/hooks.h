@@ -647,6 +647,20 @@ void Restart()
 	bRestarting = true;
 	AmountOfRestarts++;
 
+	std::string KickReason = "Server is restarting!";
+	std::wstring wstr = std::wstring(KickReason.begin(), KickReason.end());
+	FString Reason;
+	Reason.Set(wstr.c_str());
+
+	auto afdau = [&](UObject* Controller) {
+		static auto ClientReturnToMainMenu = Controller->Function("ClientReturnToMainMenu");
+
+		if (ClientReturnToMainMenu)
+			Controller->ProcessEvent(ClientReturnToMainMenu, &Reason);
+	};
+
+	Helper::LoopConnections(afdau);
+
 	DisableNetHooks();
 
 	if (BeaconHost)
@@ -2617,6 +2631,9 @@ bool OnBounceHook(UObject* ConsumablePrj, UFunction*, void* Parameters)
 
 bool ServerTeleportToPlaygroundLobbyIslandHook(UObject* Controller, UFunction*, void* Parameters)
 {
+	if (!bIsCreative)
+		return false;
+
 	auto Pawn = Helper::GetPawnFromController(Controller);
 
 	if (Pawn)

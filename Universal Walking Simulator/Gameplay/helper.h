@@ -1792,6 +1792,9 @@ namespace Helper
 
 	void ApplyCID(UObject* Pawn, UObject* CID)
 	{
+		// CID->ItemVariants
+		// CID->DefaultBackpack
+
 		// CID->Hero->Specialization
 		
 		if (!CID)
@@ -1887,9 +1890,13 @@ namespace Helper
 
 		// if (FnVerDouble < 4)
 		{
-			const auto HeroType = CIDObject ? *CIDObject->Member<UObject*>("HeroDefinition") : FindObject(("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
+			static auto HeroDefinitionOffset = GetOffset(CIDObject, "HeroDefinition");
 
-			*PlayerState->Member<UObject*>(("HeroType")) = HeroType;
+			const auto HeroType = CIDObject ? *(UObject**)(__int64(CIDObject) + HeroDefinitionOffset)
+				: FindObject(("FortHeroType /Game/Athena/Heroes/HID_058_Athena_Commando_M_SkiDude_GER.HID_058_Athena_Commando_M_SkiDude_GER"));
+
+			static auto HeroTypeOffset = GetOffset(PlayerState, "HeroType");
+			*(UObject**)(__int64(PlayerState) + HeroTypeOffset) = HeroType;
 
 			static auto OnRepHeroType = PlayerState->Function(("OnRep_HeroType"));
 
@@ -2122,36 +2129,30 @@ namespace Helper
 		}
 	}
 
-	FBuildingSupportCellIndex GetCellIndexFromLocation(const FVector& Location)
-	{
-		auto StructuralSupportSystem = GetStructuralSupportSystem();
-
-		struct
-		{
-			FVector                                     WorldLoc;                                                 // (ConstParm, Parm, OutParm, ReferenceParm, IsPlainOldData)
-			FBuildingSupportCellIndex                   OutGridIndices;                                           // (Parm, OutParm)
-			bool                                               ReturnValue;                                              // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData)
-		} UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params{Location};
-
-		static auto K2_GetGridIndicesFromWorldLoc = StructuralSupportSystem->Function("K2_GetGridIndicesFromWorldLoc");
-
-		if (K2_GetGridIndicesFromWorldLoc)
-			StructuralSupportSystem->ProcessEvent(K2_GetGridIndicesFromWorldLoc, &UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params);
-
-		return UBuildingStructuralSupportSystem_K2_GetGridIndicesFromWorldLoc_Params.OutGridIndices;
-	}
-
 	void KickController(UObject* Controller, FString Reason)
 	{
 		if (false && KickPlayer && Controller && Reason.Data.GetData())
 		{
-			FText text = Conversion::StringToText(Reason);
+			// FText text = Conversion::StringToText(Reason);
 			auto World = Helper::GetWorld();
-			auto GameMode = *World->Member<UObject*>(("AuthorityGameMode"));
+			auto GameMode = Helper::GetGameMode();
 			auto GameSession = *World->Member<UObject*>(("GameSession"));
 
 			if (GameSession)
-				KickPlayer(GameSession, Controller, text); // TODO: Use a differentfunction, this crashes after a second try.
+			{
+				std::cout << "EH!\n";
+
+				static auto ServerReturnToMainMenu = Controller->Function("ServerReturnToMainMenu");
+
+				Controller->ProcessEvent(ServerReturnToMainMenu);
+
+				/*
+				static auto ClientReturnToMainMenu = Controller->Function("ClientReturnToMainMenu");
+
+				if (ClientReturnToMainMenu)
+					Controller->ProcessEvent(ClientReturnToMainMenu, &Reason);
+				*/
+			}
 			else
 				std::cout << ("Unable to find GameSession!\n");
 		}
@@ -2187,8 +2188,12 @@ namespace Helper
 			stream.close();
 
 			FString Reason;
-			Reason.Set(L"You are banned!");
-			Helper::KickController(Controller, Reason);
+			Reason.Set(L"You have beeb banned!");
+
+			static auto ClientReturnToMainMenu = Controller->Function("ClientReturnToMainMenu");
+
+			if (ClientReturnToMainMenu)
+				Controller->ProcessEvent(ClientReturnToMainMenu, &Reason);
 
 			return true;
 		}

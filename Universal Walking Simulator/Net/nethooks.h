@@ -201,18 +201,24 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	std::string PlayerName = OPlayerName;
 	std::transform(OPlayerName.begin(), OPlayerName.end(), OPlayerName.begin(), ::tolower);
 
+	static auto ClientReturnToMainMenu = PlayerController->Function("ClientReturnToMainMenu");
+
 	if (OPlayerName.contains(("fuck")) || OPlayerName.contains(("shit")))
 	{
 		FString Reason;
 		Reason.Set(L"Inappropriate name!");
-		Helper::KickController(PlayerController, Reason);
+
+		if (ClientReturnToMainMenu)
+			PlayerController->ProcessEvent(ClientReturnToMainMenu, &Reason);
 	}
 
 	if (OPlayerName.length() >= 40)
 	{
 		FString Reason;
 		Reason.Set(L"Too long of a name!");
-		Helper::KickController(PlayerController, Reason);
+
+		if (ClientReturnToMainMenu)
+			PlayerController->ProcessEvent(ClientReturnToMainMenu, &Reason);
 	}
 
 	/* if (FnVerDouble >= 12.61) // fix crash kinda

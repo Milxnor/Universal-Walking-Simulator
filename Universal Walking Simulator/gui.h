@@ -31,8 +31,9 @@
 #define THANOS_TAB 4
 #define EVENT_TAB 5
 #define LATEGAME_TAB 6
-#define SETTINGS_TAB 7
-#define CREDITS_TAB 8
+#define DUMP_TAB 7
+#define SETTINGS_TAB 8
+#define CREDITS_TAB 9
 
 // THE BASE CODE IS FROM IMGUI GITHUB
 
@@ -376,6 +377,14 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
+				if (ImGui::BeginTabItem("Dump"))
+				{
+					Tab = DUMP_TAB;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
 				if (ImGui::BeginTabItem(("Settings")))
 				{
 					Tab = SETTINGS_TAB;
@@ -615,122 +624,6 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 					}
 
-					if (false && ImGui::Button("Dump CharacterParts"))
-					{
-						static auto CIDClass = FindObject("Class /Script/FortniteGame.AthenaCharacterItemDefinition");
-
-						static auto AllCIDS = Helper::GetAllObjectsOfClass(CIDClass);
-
-						for (auto i = 0; i < AllCIDS.size(); i++)
-						{
-							auto CID = AllCIDS.at(i);
-
-							if (CID)
-							{
-								auto DisplayNameFText = *CID->CachedMember<FText>("DisplayName");
-								auto DisplayNameStr = Helper::Conversion::TextToString(DisplayNameFText);
-
-								auto HeroDefinition = *CID->CachedMember<UObject*>("HeroDefinition");
-
-								if (!HeroDefinition)
-									continue;
-
-								auto HeroSpecializations = HeroDefinition->CachedMember<TArray<TSoftObjectPtr>>("Specializations");
-
-								if (!HeroSpecializations)
-								{
-									std::cout << "No HeroSpecializations!\n";
-									continue;
-								}
-
-								for (int j = 0; j < HeroSpecializations->Num(); j++)
-								{
-									static auto SpecializationClass = FindObject("Class /Script/FortniteGame.FortHeroSpecialization");
-
-									auto SpecializationName = HeroSpecializations->At(j).ObjectID.AssetPathName.ToString();
-
-									auto Specialization = StaticLoadObject(SpecializationClass, nullptr, SpecializationName);
-
-									if (!Specialization)
-									{
-										std::cout << "No Specialization!\n";
-										continue;
-									}
-
-									auto CharacterParts = Specialization->Member<TArray<TSoftObjectPtr>>("CharacterParts");
-
-									if (!CharacterParts)
-									{
-										std::cout << "No CharacterParts!\n";
-										continue;
-									}
-
-									for (int i = 0; i < CharacterParts->Num(); i++)
-									{
-										static auto CCPClass = FindObject("Class /Script/FortniteGame.CustomCharacterPart");
-
-										WriteToFile(std::format("[{}] {}", DisplayNameStr, CharacterParts->At(i).ObjectID.AssetPathName.ToString()), "CharacterParts.txt");
-									}
-								}
-							}
-						}
-					}
-
-					if (ImGui::Button("Dump Playlists")) // iirc ftext changed but idk
-					{
-						std::ofstream PlaylistsFile("Playlists.txt");
-
-						if (PlaylistsFile.is_open())
-						{
-							PlaylistsFile << "Fortnite Version: " + FN_Version << "\n\n";
-							static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylist");
-							// static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylistAthena");
-
-							for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
-							{
-								auto Object = GetByIndex(i);
-
-								if (Object && Object->IsA(FortPlaylistClass))
-								{
-									// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
-									std::string PlaylistName = Helper::Conversion::TextToString(*Object->Member<FText>("UIDisplayName"));
-
-									PlaylistsFile << std::format("[{}] {}\n", PlaylistName, Object->GetFullName());
-								}
-							}
-						}
-						else
-							std::cout << "Failed to open playlist file!\n";
-					}
-
-					if (ImGui::Button("Dump Weapons")) // iirc ftext changed but idk
-					{
-						std::ofstream WeaponsFile("Weapons.txt");
-
-						if (WeaponsFile.is_open())
-						{
-							WeaponsFile << "Fortnite Version: " + FN_Version << "\n\n";
-							static auto FortWeaponItemDefinitionClass = FindObjectOld("Class /Script/FortniteGame.FortWeaponItemDefinition", true);
-
-							for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
-							{
-								auto Object = GetByIndex(i);
-
-								if (Object && Object->IsA(FortWeaponItemDefinitionClass))
-								{
-									// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
-									std::string ItemDefinitionName = Helper::Conversion::TextToString(*Object->Member<FText>("DisplayName"));
-
-									// check if it contains gallery or playset?
-
-									WeaponsFile << std::format("[{}] {}\n", ItemDefinitionName, Object->GetFullName());
-								}
-							}
-						}
-						else
-							std::cout << "Failed to open playlist file!\n";
-					}
-
 					/* if (ImGui::Button("idfk2"))
 					{
 						Helper::DestroyActor(FindObjectOld("B_BaseGlider_C /Game/Athena/Maps/Athena_Terrain.Athena_Terrain.PersistentLevel.B_BaseGlider_C_"));
@@ -781,12 +674,6 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (/* bStarted && */ ImGui::Button("Restart"))
 					{
 						Restart();
-					}
-
-					if (ImGui::Button(("Dump Objects (Win64/Objects.log)")))
-					{
-						std::cout << "Creating DumpObjects Thread \n";
-						Helper::DumpObjects(nullptr);
 					}
 					/*if (ImGui::Button(("SetupTurrets"))) {
 						Henchmans::SpawnHenchmans();
@@ -1002,6 +889,93 @@ DWORD WINAPI GuiThread(LPVOID)
 				case LATEGAME_TAB:
 					// ImGui::SliderFloat("Zone Size")
 					break;
+				case DUMP_TAB:
+
+					ImGui::Text("The dumped file will be in your Win64 folder (FortniteVersion/FortniteGame/Binaries/Win64).");
+
+					if (ImGui::Button(("Dump Objects (Objects.log)")))
+					{
+						Helper::DumpObjects(nullptr);
+					}
+
+					if (ImGui::Button("Dump Skins (Skins.txt)"))
+					{
+						std::ofstream SkinsFile("Skins.txt");
+
+						if (SkinsFile.is_open())
+						{
+							static auto CIDClass = FindObject("Class /Script/FortniteGame.AthenaCharacterItemDefinition");
+
+							auto AllObjects = Helper::GetAllObjectsOfClass(CIDClass);
+
+							for (int i = 0; i < AllObjects.size(); i++)
+							{
+								auto CurrentCID = AllObjects.at(i);
+
+								static auto DisplayNameOffset = GetOffset(CurrentCID, "DisplayName");
+								auto DisplayNameFText = (FText*)(__int64(CurrentCID) + DisplayNameOffset);
+
+								SkinsFile << std::format("[{}] {}\n", Helper::Conversion::TextToString(*DisplayNameFText), CurrentCID->GetFullName());
+							}
+						}
+					}
+
+					if (ImGui::Button("Dump Playlists (Playlists.txt)"))
+					{
+						std::ofstream PlaylistsFile("Playlists.txt");
+
+						if (PlaylistsFile.is_open())
+						{
+							PlaylistsFile << "Fortnite Version: " + FN_Version << "\n\n";
+							static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylist");
+							// static auto FortPlaylistClass = FindObject("Class /Script/FortniteGame.FortPlaylistAthena");
+
+							for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
+							{
+								auto Object = GetByIndex(i);
+
+								if (Object && Object->IsA(FortPlaylistClass))
+								{
+									// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
+									std::string PlaylistName = Helper::Conversion::TextToString(*Object->Member<FText>("UIDisplayName"));
+
+									PlaylistsFile << std::format("[{}] {}\n", PlaylistName, Object->GetFullName());
+								}
+							}
+						}
+						else
+							std::cout << "Failed to open playlist file!\n";
+					}
+
+					if (ImGui::Button("Dump Weapons (Weapons.txt)"))
+					{
+						std::ofstream WeaponsFile("Weapons.txt");
+
+						if (WeaponsFile.is_open())
+						{
+							WeaponsFile << "Fortnite Version: " + FN_Version << "\n\n";
+							static auto FortWeaponItemDefinitionClass = FindObjectOld("Class /Script/FortniteGame.FortWeaponItemDefinition", true);
+
+							for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
+							{
+								auto Object = GetByIndex(i);
+
+								if (Object && Object->IsA(FortWeaponItemDefinitionClass))
+								{
+									// std::string PlaylistName = Object->Member<FName>("PlaylistName")->ToString(); // Short name basically
+									std::string ItemDefinitionName = Helper::Conversion::TextToString(*Object->Member<FText>("DisplayName"));
+
+									// check if it contains gallery or playset?
+
+									WeaponsFile << std::format("[{}] {}\n", ItemDefinitionName, Object->GetFullName());
+								}
+							}
+						}
+						else
+							std::cout << "Failed to open playlist file!\n";
+					}
+
+					break;
 				case SETTINGS_TAB:
 
 					{
@@ -1059,6 +1033,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							static std::string WID;
 							static int Count = 1;
 							static int LoadedAmmo = 0;
+							static std::string KickReason = "You have been kicked!";
 
 							auto Controller = Helper::GetControllerFromPawn(Pawn);
 
@@ -1071,22 +1046,41 @@ DWORD WINAPI GuiThread(LPVOID)
 							{
 								bInformationTab = true;
 							}
+
 							ImGui::NewLine();
+
 							/* if (ImGui::Button(ICON_FA_HAMMER " Ban"))
 							{
 								auto IP = Helper::GetfIP(CurrentPlayer.second);
 								Helper::Banning::Ban(PlayerName.Data.GetData(), Controller, IP.Data.GetData());
 							}  */
-							if (ImGui::Button(("Kick (Do not use twice)")))
-							{
-								FString Reason;
-								Reason.Set(L"You have been kicked!");
-								Helper::KickController(Controller, Reason);
-							}
-							if (ImGui::Button(ICON_FA_CROSSHAIRS " Kill"))
-							{
 
+							ImGui::InputText("Kick Reason", &KickReason);
+							if (ImGui::Button("Kick"))
+							{
+								std::wstring wstr = std::wstring(KickReason.begin(), KickReason.end());
+								FString Reason;
+								Reason.Set(wstr.c_str());
+
+								static auto ClientReturnToMainMenu = Controller->Function("ClientReturnToMainMenu");
+
+								if (ClientReturnToMainMenu)
+									Controller->ProcessEvent(ClientReturnToMainMenu, &Reason);
 							}
+
+							static auto ForceKillFn = FindObject("Function /Script/FortniteGame.FortPawn.ForceKill");
+
+							if (ForceKillFn && ImGui::Button(ICON_FA_CROSSHAIRS " Kill"))
+							{
+								struct {
+									FGameplayTag DeathReason; 
+									UObject* KillerController;
+									UObject* KillerActor;
+								} ForceKill_Params{FGameplayTag(), nullptr, nullptr};
+
+								Pawn->ProcessEvent(ForceKillFn, &ForceKill_Params);
+							}
+
 							/* ImGui::InputText(("VehicleClass"), &VehicleClass);
 							if (ImGui::Button("Spawn Vehicle"))
 							{
