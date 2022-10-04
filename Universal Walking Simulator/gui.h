@@ -462,10 +462,15 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 					}
 
-					// https://media.discordapp.net/attachments/998297579857137734/1006634482884939807/unknown.png
-					/* if (ImGui::Button("Spawn AI"))
+					if (FnVerDouble == 12.41 && ImGui::Button("Open All Vaults"))
 					{
-						static auto aiPCClass = FindObject("Class /Script/FortniteGame.FortAthenaAIBotController");
+						FortAI::OpenVaults();
+					}
+					
+					// https://media.discordapp.net/attachments/998297579857137734/1006634482884939807/unknown.png
+					if (bAISpawningEnabled && ImGui::Button("Spawn AI"))
+					{
+						static auto aiPCClass = FindObject("Class /Script/FortniteGame.AthenaAIController");
 						auto AiPC = Easy::SpawnActor(aiPCClass);
 
 						auto AIPawn = Helper::InitPawn(AiPC, false, Helper::GetPlayerStart(), false);
@@ -485,21 +490,16 @@ DWORD WINAPI GuiThread(LPVOID)
 							std::cout << "Invalid SkillSets!\n";
 
 						std::cout << "Setup AI!\n";
-					} */
+					}
 
 					if (/* Engine_Version == 420 && */ ImGui::Button("Summon Floorloot"))
 					{
 						LootingV2::SummonFloorLoot(nullptr);
 					}
 
-					/* if (ImGui::Button("Spawn Vehicles"))
+					if (false && ImGui::Button("Spawn Vehicles"))
 					{
-						CreateThread(0, 0, Looting::Tables::SpawnVehicles, 0, 0, 0);
-					} */
-
-					if (ImGui::Button("Refresh Stuff"))
-					{
-						Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol
+						LootingV2::SpawnVehicles(nullptr);
 					}
 
 					if (serverStatus == EServerStatus::Up)
@@ -1068,6 +1068,14 @@ DWORD WINAPI GuiThread(LPVOID)
 									Controller->ProcessEvent(ClientReturnToMainMenu, &Reason);
 							}
 
+							static auto CurrentWeaponOffset = GetOffset(Pawn, "CurrentWeapon");
+							auto CurrentWeapon = Pawn ? *(UObject**)(__int64(Pawn) + CurrentWeaponOffset) : nullptr;
+							static auto AmmoCountOffset = FindOffsetStruct("Class /Script/FortniteGame.FortWeapon", "AmmoCount");
+
+							static int stud = 0;
+
+							ImGui::InputInt("Ammo Count of CurrentWeapon", CurrentWeapon ? (int*)(__int64(CurrentWeapon) + AmmoCountOffset) : &stud);
+
 							static auto ForceKillFn = FindObject("Function /Script/FortniteGame.FortPawn.ForceKill");
 
 							if (ForceKillFn && ImGui::Button(ICON_FA_CROSSHAIRS " Kill"))
@@ -1115,7 +1123,7 @@ DWORD WINAPI GuiThread(LPVOID)
 									std::cout << ("Invalid WID! Please make sure it's a valid object.\n");
 							}
 
-							if (ImGui::Button("aa"))
+							if (ImGui::Button("Spawn Rift"))
 							{
 								static auto riftPortalClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Consumables/RiftItem/BGA_RiftPortal_Item_Athena.BGA_RiftPortal_Item_Athena_C");
 
@@ -1130,12 +1138,41 @@ DWORD WINAPI GuiThread(LPVOID)
 									*newRift->Member<FScalableFloat>("TeleportHeight") = FScalableFloat(100000);
 								}
 							}
-							
-							if (ImGui::Button("bb"))
-							{
-								static auto crashPadClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/Passives/AppleSun/BGA_AppleSun_Apple_Athena.BGA_AppleSun_Apple_Athena_C");
 
-								auto newCrashPad = Easy::SpawnActor(crashPadClass, Helper::GetActorLocation(Pawn));
+							if (FnVerDouble == 6.21)
+							{
+								if (ImGui::Button("Spawn Fiend (has no AI)"))
+								{
+									static auto riftPortalClass = FindObject("BlueprintGeneratedClass /Game/Athena/Deimos/Pawns/Deimos_Fiend.Deimos_Fiend_C");
+
+									auto newRift = Easy::SpawnActor(riftPortalClass, Helper::GetActorLocation(Pawn));
+								}
+
+								if (ImGui::Button("Spawn Brute (has no AI)"))
+								{
+									static auto riftPortalClass = FindObject("BlueprintGeneratedClass /Game/Athena/Deimos/Pawns/Deimos_Brute.Deimos_Brute_C");
+
+									auto newRift = Easy::SpawnActor(riftPortalClass, Helper::GetActorLocation(Pawn));
+								}
+
+								if (ImGui::Button("Spawn Deimos Rift"))
+								{
+									static auto riftPortalClass = FindObject("BlueprintGeneratedClass /Game/Athena/Deimos/Spawners/RiftSpawners/BP_DeimosRift.BP_DeimosRift_C");
+
+									auto newRift = Easy::SpawnActor(riftPortalClass, Helper::GetActorLocation(Pawn));
+								}
+
+								if (ImGui::Button("Spawn Dynamic Deimos Rift"))
+								{
+									static auto riftPortalClass = FindObject("BlueprintGeneratedClass /Game/Athena/Deimos/Spawners/RiftSpawners/BP_DeimosRift_Dynamic.BP_DeimosRift_Dynamic_C");
+
+									auto newRift = Easy::SpawnActor(riftPortalClass, Helper::GetActorLocation(Pawn));
+
+									if (newRift)
+									{
+										// newRift->ProcessEvent("SpawnEffects");
+									}
+								}
 							}
 
 							if (ImGui::Button("Do Funny"))

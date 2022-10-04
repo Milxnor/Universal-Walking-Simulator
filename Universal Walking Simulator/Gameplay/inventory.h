@@ -335,7 +335,8 @@ namespace Inventory
 
 			static auto FortTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortTrapItemDefinition");
 			static auto FortContextTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortContextTrapItemDefinition");
-			
+			static auto FortDecoItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortDecoItemDefinition");
+
 			if (Definition->IsA(FortContextTrapItemDefinitionClass))
 			{
 
@@ -407,7 +408,7 @@ namespace Inventory
 
 				return Weapon;
 			}
-			else
+			else if (IsAGID)
 			{
 				// std::cout << ("Equipping AGID!\n");
 				static auto GetItemDefinition = Definition->Function(("GetWeaponItemDefinition"));
@@ -430,6 +431,16 @@ namespace Inventory
 				else
 					std::cout << ("Failed to get AGID's Definition!\n");
 			}
+			/* else if (Definition->IsA(FortDecoItemDefinitionClass))
+			{
+				static auto BlueprintClassOffset = GetOffset(Definition, "BlueprintClass");
+				auto BlueprintPickup = Easy::SpawnActor(*(UObject**)(__int64(Definition) + BlueprintClassOffset), Helper::GetActorLocation(Pawn));
+
+				static auto PickUpActor = Pawn->Function("PickUpActor");
+				struct { UObject* PickupActor; UObject* PlacementDecoItemDefinition; } parms{ BlueprintPickup, Definition };
+
+				Pawn->ProcessEvent(PickUpActor, &parms);
+			} */
 		}
 
 		return nullptr;

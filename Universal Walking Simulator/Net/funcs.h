@@ -446,8 +446,8 @@ static std::string PickaxeDef = "FortWeaponMeleeItemDefinition /Game/Athena/Item
 static std::string CIDToUse = "None";
 
 // std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
-std::string PlaylistToUse = // "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";
-"FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
+std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";
+// "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
 // "FortPlaylistAthena /Game/Athena/Playlists/Low/Playlist_Low_Solo.Playlist_Low_Solo";
 
 static std::pair<std::string, int> StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
@@ -464,6 +464,7 @@ static bool boozasdgwq9i = false;
 static UObject* GlobalPickaxeDefObject = nullptr;
 constexpr bool bEmotingEnabled = false;
 static bool bPrintFUnny = false;
+static constexpr double AboveVersionDisableAbilities = 13.00; // Any version Above this abilities will be disabled
 
 // highly experimental
 
@@ -471,6 +472,7 @@ static bool bIsSTW = false;
 static bool bIsCreative = false;
 static constexpr bool bAutomaticPawnSpawning = false;
 static constexpr bool bExperimentalRespawning = false;
+static constexpr bool bAISpawningEnabled = false;
 
 const wchar_t* GetMapName()
 {

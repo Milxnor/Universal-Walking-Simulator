@@ -154,6 +154,8 @@ namespace Teams
 		if (OnRep_TeamIndex)
 			PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIdx);
 
+		// PlayerState->FriendsInSquad
+
 		// (*PlayerTeam)->CachedMember<TArray<AController*>>("TeamMembers")->Add(Controller);
 
 		/* std::cout << "Current Team PrivateInfo: " << (*CurrentTeam->Member<UObject*>("PrivateInfo"))->GetFullName() << '\n';

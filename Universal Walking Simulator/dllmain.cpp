@@ -222,6 +222,9 @@ DWORD WINAPI Main(LPVOID)
         return 1;
     }
 
+    std::cout << "f: " << FnVerDouble << '\n';
+    std::cout << "e: " << Engine_Version << '\n';
+
     /* static auto GameViewportOffset = GetOffset(FindObjectOld("FortEngine_"), "GameViewport");
     auto GameViewport = *(UObject**)(__int64(FindObjectOld("FortEngine_")) + GameViewportOffset);
 
@@ -289,9 +292,6 @@ DWORD WINAPI Main(LPVOID)
     CreateThread(0, 0, BotThread, 0, 0, 0);
 #endif
 
-    std::cout << "f: " << FnVerDouble << '\n';
-    std::cout << "e: " << Engine_Version << '\n';
-
     SetConsoleTitleA(("Project Reboot Server"));
 
     if (Engine_Version < 422)
@@ -308,6 +308,7 @@ DWORD WINAPI Main(LPVOID)
 
     TestAbilitySizeDifference();
 
+    std::cout << "StaticLoadObject: " << StaticLoadObjectO << '\n';
     std::cout << "SetWorld: " << SetWorld << '\n';
     std::cout << "ReplicateActor: " << ReplicateActor << '\n';
     std::cout << "SetChannelActor: " << SetChannelActor << '\n';

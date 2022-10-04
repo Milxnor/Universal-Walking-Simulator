@@ -17,7 +17,7 @@ static uint8_t* FindRow(UObject* DataTable, const std::string& RowName)
 // this dont really belong here
 static UObject* GetLootPackages()
 {
-	if (FnVerDouble <= 2.5 || Engine_Version == 419) // TSOFTOBJECTPTR CHANGED or soemthing and theres no playlist
+	if (FnVerDouble <= 2.69 || Engine_Version == 419) // TSOFTOBJECTPTR CHANGED or soemthing and theres no playlist
 		return nullptr;
 
 	UObject* Playlist = Helper::GetPlaylist();

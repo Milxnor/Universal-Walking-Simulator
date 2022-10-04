@@ -426,7 +426,7 @@ bool hk_CanActivateAbility(UObject* GameplayAbility, const FGameplayAbilitySpecH
 
 void InitializeAbilityHooks()
 {
-    if (FnVerDouble < 19.00)
+    if (FnVerDouble < AboveVersionDisableAbilities)
     {
         AddHook(("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbility"), ServerTryActivateAbilityHook);
         AddHook(("Function /Script/GameplayAbilities.AbilitySystemComponent.ServerTryActivateAbilityWithEventData"), ServerTryActivateAbilityWithEventDataHook);

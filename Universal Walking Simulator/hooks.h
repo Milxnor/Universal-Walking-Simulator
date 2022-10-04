@@ -178,7 +178,10 @@ inline void initStuff()
 				std::cout << dye::yellow(("[WARNING] ")) << ("Failed to find AuthorityGameMode!\n");
 			}
 
-			*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = *Playlist->Member<int>("MaxPlayers"); // GameState->GetMaxPlaylistPlayers()
+			static auto Playlist_MaxPlayersOffset = GetOffset(Playlist, "MaxPlayers");
+
+			if (Playlist_MaxPlayersOffset != -1)
+				*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = *(int*)(__int64(Playlist) + Playlist_MaxPlayersOffset); // GameState->GetMaxPlaylistPlayers()
 
 			if (Engine_Version != 421)
 			{
@@ -940,7 +943,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				static auto OnRep_DeathInfo = DeadPlayerState->Function(("OnRep_DeathInfo"));
 
 				if (OnRep_DeathInfo)
-					DeadPlayerState->ProcessEvent(OnRep_DeathInfo);
+					DeadPlayerState->ProcessEvent(OnRep_DeathInfo); // sopmetimes crashes
 			}
 		}
 

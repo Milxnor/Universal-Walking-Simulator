@@ -322,6 +322,61 @@ namespace LootingV2
 		return Num;
 	}
 
+
+	static DWORD WINAPI SpawnVehicles(LPVOID)
+	{
+		if (!StaticLoadObjectO)
+		{
+			std::cout << "No StaticLoadObject!\n";
+			return 1;
+		}
+
+		// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_QuadSpawner.Athena_QuadSpawner_C
+		// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_OctopusSpawner.Athena_OctopusSpawner_C
+		// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_BiplaneSpawner.Athena_BiplaneSpawner_C
+		// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_JackalSpawner.Athena_JackalSpawner_C
+		// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_CartSpawner.Athena_CartSpawner_C
+		// World /Game/Athena/Maps/Athena_DroneSpawners.Athena_DroneSpawners
+
+		static auto FortVehicleSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_QuadSpawner.Athena_QuadSpawner_C"); // FindObject("Class /Script/FortniteGame.FortAthenaVehicleSpawner");
+		static auto BoatSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Meatball/Athena_Meatball_L_Spawner.Athena_Meatball_L_Spawner_C");
+
+		auto spawnerClass = BoatSpawnerClass;
+
+		auto Spawners = Helper::GetAllActorsOfClass(spawnerClass);
+
+		std::cout << "Spawning: " << Spawners.Num() << " vehicles\n";
+
+		for (int i = 0; i < Spawners.Num(); i++)
+		{
+			auto Spawner = Spawners[i];
+
+			if (Spawner)
+			{
+				// auto VehicleClassSoft = Spawner->Member<TSoftClassPtr>("VehicleClass");
+
+				{
+					auto SpawnerLoc = Helper::GetActorLocation(Spawner);
+					// std::cout << std::format("Spawning {} at {} {} {}", VehicleName, SpawnerLoc.X, SpawnerLoc.Y, SpawnerLoc.Z);
+					UObject* VehicleClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/DrivableVehicles/Meatball/Meatball_Large/MeatballVehicle_L.MeatballVehicle_L_C");
+
+					if (VehicleClass)
+					{
+						Easy::SpawnActor(VehicleClass, SpawnerLoc, Helper::GetActorRotation(Spawner));
+					}
+					else
+						std::cout << "No vehicle class!\n";
+				}
+			}
+		}
+
+		Spawners.Free();
+
+		std::cout << "Spawned vehicles!\n";
+
+		return 0;
+	}
+
 	DWORD WINAPI SummonFloorLoot(LPVOID)
 	{
 		constexpr bool dehh = true;
@@ -440,11 +495,13 @@ namespace LootingV2
 
 							if (AmmoDef)
 							{
-								auto DropCount = *AmmoDef->Member<int>(("DropCount"));
+								static auto DropCountOffset = GetOffset(AmmoDef, "DropCount");
+								auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
 								Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DropCount, true, false);
 							}
 
 							auto ConsumableInRow = GetRandomItem(ItemType::Consumable);
+
 							if (ConsumableInRow.Definition)
 							{
 								Helper::SummonPickup(nullptr, ConsumableInRow.Definition, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, ConsumableInRow.DropCount, true, false); // *Consumable->Member<int>(("DropCount")));

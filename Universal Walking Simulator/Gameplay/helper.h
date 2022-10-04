@@ -789,6 +789,13 @@ namespace Helper
 		return Objects;
 	}
 
+	UObject* GetBGAClass()
+	{
+		static auto BGAClass = FindObject("Class /Script/Engine.BlueprintGeneratedClass");
+
+		return BGAClass;
+	}
+
 	void EnablePickupAnimation(UObject* Pawn, UObject* Pickup, float FlyTime = 0.75f, FVector StartDirection = FVector())
 	{
 		if (bPickupAnimsEnabled)
@@ -1313,7 +1320,7 @@ namespace Helper
 
 		auto GamePhase = *GetGamePhase();
 
-		if (WarmupClass && Engine_Version != 419 && ActorsNum != 0 && (GamePhase <= EAthenaGamePhase::Warmup))
+		if (WarmupClass && ActorsNum != 0 && (GamePhase <= EAthenaGamePhase::Warmup))
 		{
 			auto ActorToUseNum = RandomIntInRange(2, ActorsNum - 1);
 			auto ActorToUse = (OutActors)[ActorToUseNum];
@@ -1802,7 +1809,9 @@ namespace Helper
 
 		static auto CCPClass = FindObject("Class /Script/FortniteGame.CustomCharacterPart");
 
-		auto HeroDefinition = *CID->CachedMember<UObject*>("HeroDefinition");
+		static auto HeroDefinitionOffset = GetOffset(CID, "HeroDefinition");
+
+		auto HeroDefinition = *(UObject**)(__int64(CID) + HeroDefinitionOffset);
 
 		if (!HeroDefinition)
 			return;
@@ -1860,8 +1869,6 @@ namespace Helper
 
 		// setBitfield(Pawn, "bReplicateMovement", true);
 
-		// prob not needed here from
-
 		static auto PossessFn = PC->Function(("Possess"));
 
 		if (PossessFn)
@@ -1886,7 +1893,7 @@ namespace Helper
 		else
 			std::cout << ("Unable to find setMaxHealthFn!\n");
 
-		auto CIDObject = FindObject(CIDToUse);
+		auto CIDObject = CIDToUse == "None" ? nullptr : FindObject(CIDToUse); // we need the check cuz if we dont have staticfindobject then it finds it
 
 		// if (FnVerDouble < 4)
 		{
@@ -1928,14 +1935,14 @@ namespace Helper
 			}
 			else
 				std::cout << ("Unable to find Head and Body!\n");
+
+			if (CIDObject)
+			{
+				ApplyCID(Pawn, CIDObject);
+			}
 		}
 
-		if (CIDObject)
-		{
-			ApplyCID(Pawn, CIDObject);
-		}
-
-		static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts")); //Make sure its s10 and up
+		static auto OnRep_Parts = (FnVerDouble >= 10) ? PlayerState->Function(("OnRep_CharacterData")) : PlayerState->Function(("OnRep_CharacterParts"));
 
 		if (OnRep_Parts)
 			PlayerState->ProcessEvent(OnRep_Parts, nullptr);

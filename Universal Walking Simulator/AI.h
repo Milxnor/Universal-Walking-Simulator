@@ -3,59 +3,60 @@
 #include <UE/structs.h>
 #include <UE/other.h>
 
-namespace Henchmans
+namespace FortAI
 {
 	void SpawnHenchmans()
 	{
-
-
 		auto world = Helper::GetWorld();
 		auto AuthGameMode = Helper::GetGameMode();
 
-		auto BotManagerClass = FindObject("Class /Script/FortniteGame.FortServerBotManagerAthena");
-		
-		//auto BotManager = Easy::SpawnActor(BotManagerClass);
-		
+		auto HenchmanSpawnerClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/AI/MANG/BP_MANG_Spawner.BP_MANG_Spawner_C");
+		auto HenchmanClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/AI/MANG/BP_MangPlayerPawn_Boss.BP_MangPlayerPawn_Boss_C");
 
-		if (*AuthGameMode->Member<UObject*>("ServerBotManagerClass") == BotManagerClass)
+		std::cout << "Henchman Class: " << HenchmanClass << '\n';
+		std::cout << "HenchmanSpawnerClass Class: " << HenchmanSpawnerClass << '\n';
+
+		auto AllSpawners = Helper::GetAllActorsOfClass(HenchmanSpawnerClass);
+
+		std::cout << "Henchman Spawners: " << AllSpawners.Num() << '\n';
+
+		for (int i = 0; i < AllSpawners.Num(); i++)
 		{
-			auto AIBotControllerClass = FindObject("Class /Script/FortniteGame.FortAthenaAIBotController");
-			auto AIBotController = Easy::SpawnActor(AIBotControllerClass);
-			auto AIBotPawnClass = FindObject("Class /Script/FortniteGame.FortPlayerPawnAthena");
-			auto AIBotPawn = Easy::SpawnActor(AIBotPawnClass);
-			*AIBotControllerClass->Member<UObject*>("PlayerBotPawn") = AIBotPawn;
-			*AIBotControllerClass->Member<UObject*>("CachedBotManager") = BotManagerClass;
-			auto PossessFn = AIBotController->Function("Possess");
-			struct {
-				UObject* InPawn;
-			} params{ AIBotPawn }; // idk man
-			AIBotController->ProcessEvent(PossessFn, &params);
+			auto CurrentSpawner = AllSpawners.At(i);
 
+			if (CurrentSpawner)
+			{
+				auto Henchman = Easy::SpawnActor(HenchmanClass, Helper::GetActorLocation(CurrentSpawner));
+			}
 		}
 
-
-
-
-		/*static auto BPC = FindObject("Class /Script/Engine.BlueprintGeneratedClass");
-		//auto HenchmanSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/AI/MANG/BP_MANG_Spawner_C.BP_MANG_Spawner_C");
-		auto HenchmanSpawner = StaticLoadObject(BPC, nullptr, "/Game/Athena/AI/MANG/BP_MANG_Spawner_C.BP_MANG_Spawner_C");
-		Easy::SpawnActor(HenchmanSpawner);
-
-		auto SetupTurretsFn = HenchmanSpawner->Function("SetupTurrets");
-
-		bool CO = true;
-
-		if (HenchmanSpawner)
-			HenchmanSpawner->ProcessEvent(SetupTurretsFn, &CO);*/
+		AllSpawners.Free();
 	}
+
 	void OpenVaults()
 	{
-		static auto AgencyVault = FindObject("BlueprintGeneratedClass /Game/Athena/Items/EnvironmentalItems/Locks/Keycard/Actors/Locks/BGA_Athena_Keycard_Lock_TheAgency.BGA_Athena_Keycard_Lock_TheAgency_C");
+		auto AgencyVault = FindObjectOld("PersistentLevel.BGA_Athena_Keycard_Lock_TheAgency_");
+		auto SharkVault = FindObjectOld("PersistentLevel.BGA_Athena_Keycard_Lock_SharkIsland_");
+		auto OilRigVault = FindObjectOld("PersistentLevel.BGA_Athena_Keycard_Lock_OilRig_");
+		auto UndergroundBaseVault = FindObjectOld("PersistentLevel..BGA_Athena_Keycard_Lock_UndergroundBase_");
+		auto YachtVault = FindObjectOld("PersistentLevel.BGA_Athena_Keycard_Lock_Yacht");
 
 		static auto OpenVaultFn = FindObject("Function /Game/Athena/Items/EnvironmentalItems/Locks/Keycard/Actors/Locks/BGA_Athena_Keycard_Lock_Parent.BGA_Athena_Keycard_Lock_Parent_C.CallOpenVault");
 		//bool CO = true;
 
 		if (AgencyVault)
 			AgencyVault->ProcessEvent(OpenVaultFn);
+
+		if (YachtVault)
+			YachtVault->ProcessEvent(OpenVaultFn);
+
+		if (SharkVault)
+			SharkVault->ProcessEvent(OpenVaultFn);
+
+		if (UndergroundBaseVault)
+			UndergroundBaseVault->ProcessEvent(OpenVaultFn);
+
+		if (OilRigVault)
+			OilRigVault->ProcessEvent(OpenVaultFn);
 	}
 }

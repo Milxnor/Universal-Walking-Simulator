@@ -124,8 +124,10 @@ void InitializePatterns()
         SetChannelActorSig = "4C 8B DC 55 53 57 41 54 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 45 33 E4 4D 89 73 D0 44 89 A5 ? ? ? ? 4C 8D 35 ? ? ? ? 48 8B 41 28 48 8B D9 4D";
         CreateChannelSig = "40 56 57 41 54 41 55 41 57 48 83 EC 60 48 8B 01 41 8B F9 45 0F B6 E0 4C 63 FA 48 8B F1 FF 90 ? ? ? ? 45 33 ED 83 FF FF 75 52 41 8B FD 48 8D 8E ? ? ? ? 41 83 FF 01 B8";
         ReplicateActorSig = "40 55 53 57 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8D 59 68 4C 8B F1 48 8B 0B 48 8B 01 FF 90 ? ? ? ? 41 8B 4E 30 48 8D 3D";
-        SetWorldSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B B1 ? ? ? ? 48 8B FA 48 8B D9 48 85 F6 74 5C 48 8B 93 ? ? ? ? 48 8D 8E ? ? ? ? E8";
+        SetWorldSig = "48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 20 48 8B B1 ? ? ? ? 48 8B FA 48 8B D9 48 85 F6 74 5C 48 8B 93";
         SendClientAdjustmentSig = "40 53 48 83 EC 20 48 8B 99 ? ? ? ? 48 39 99 ? ? ? ? 74 0A 48 83 B9 ? ? ? ? ? 74 78 48 85 DB 75 0C 48 8B 99 ? ? ? ? 48 85 DB 74 67 80 BB ? ? ? ? ? 75 5E";
+        StaticFindObjectSig = "4C 8B DC 57 48 81 EC ? ? ? ? 80 3D ? ? ? ? ? 49 89 6B F0 49 89 73 E8 49 8B F0";
+        NoReserveSig = "48 89 5C 24 ? 48 89 6C 24 ? 57 41 56 41 57 48 81 EC ? ? ? ? 48 8B 01 49 8B E9 45 0F";
     }
 
     if (FnVerDouble >= 2.5 && FnVerDouble <= 3.3)
@@ -577,6 +579,7 @@ void InitializePatterns()
             std::cout << ("[WARNING] Failed to find GiveAbility, abilities will be disabled!\n");
         }
         // else if (FnVerDouble < 19.00)
+        else if (Engine_Version >= 417)
         {
             if (Engine_Version < 426 && Engine_Version >= 420)
                 CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbility);
@@ -671,8 +674,8 @@ void InitializePatterns()
             if (!SetWorldAddr)
                 SetWorldAddr = FindPattern(("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
 
-            if (Engine_Version >= 419)
-                CheckPattern(("SetWorld"), SetWorldAddr, &SetWorld);
+            // if (Engine_Version >= 419)
+            CheckPattern(("SetWorld"), SetWorldAddr, &SetWorld);
         }
     }
 
@@ -727,6 +730,8 @@ void InitializePatterns()
         StaticLoadObjectAddr = FindPattern("4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 33 D2");
     }
 
+    // 4C 89 4C 24 ? 48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 ??
+
     if (!StaticLoadObjectAddr)
     {
         Finder::Functions::GetStaticLoadObject(35, &StaticLoadObjectAddr);
@@ -766,6 +771,10 @@ void InitializePatterns()
         CheckPattern(("CreateChannel"), CreateChannelAddr, &CreateChannel);
 
         ReplicateActorAddr = FindPattern(ReplicateActorSig);
+
+        if (!ReplicateActorAddr)
+            ReplicateActorAddr = FindPattern("40 55 53 57 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8D 59 68 4C 8B F1 48 8B 0B 48");
+
         CheckPattern(("ReplicateActor"), ReplicateActorAddr, &ReplicateActor);
 
         SetChannelActorAddr = FindPattern(SetChannelActorSig);
@@ -773,12 +782,18 @@ void InitializePatterns()
         if (!SetChannelActorAddr)
             SetChannelActorAddr = FindPattern("48 8B C4 55 53 57 41 54 48 8D A8 ? ? ? ? 48 81 EC ? ? ? ? 45 33 E4 48 89 70 D8 44 89 A5 ? ? ? ? 48 8D 35 ? ? ? ? 4C 89 78 C8 48 8B D9 48 8B 41 28 48 8B FA 45 8B FC 48");
 
+        if (!SetChannelActorAddr)
+            SetChannelActorAddr = FindPattern("4C 8B DC 55 53 57 41 54 49 8D AB ? ? ? ? 48 81 EC ? ? ? ? 45 33 E4 4D 89 73 D0 44 89 A5");
+
         CheckPattern(("SetChannelActor"), SetChannelActorAddr, &SetChannelActor);
 
         CallPreReplicationAddr = FindPattern(CallPreReplicationSig);
 
         if (!CallPreReplicationAddr)
             CallPreReplicationAddr = FindPattern("48 85 D2 0F 84 ? ? ? ? 48 8B C4 55 57 41 54 48 8D 68 A1 48 81 EC ? ? ? ? 48 89 58 08 4C 8B E2 48 89 70 10 48 8D 55 D7 48 8B");
+
+        if (!CallPreReplicationAddr)
+            CallPreReplicationAddr = FindPattern("48 85 D2 0F 84 ? ? ? ? 48 8B C4 55 57 41 57 48 8D 68 A1 48");
 
         CheckPattern(("CallPreReplication"), CallPreReplicationAddr, &CallPreReplication);
     }

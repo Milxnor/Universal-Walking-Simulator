@@ -298,7 +298,10 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	// FindObjectOld(".FortReplicationGraphNode_AlwaysRelevantForSquad_")->Member<TArray<UObject*>>("PlayerStates")->Add(PlayerState);
 
 	if (!Pawn)
+	{
+		std::cout << "Failed to spawn Pawn!\n";
 		return PlayerController;
+	}
 
 	// todo: not do this for invicibility
 
@@ -321,7 +324,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		// Teams::AssignTeam(PlayerController);
 	}
 
-	if (FnVerDouble < 13.00)
+	if (FnVerDouble < AboveVersionDisableAbilities)
 	{
 		GiveAllBRAbilities(Pawn);
 	}
@@ -500,6 +503,12 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 
 char Beacon_NotifyControlMessageDetour(UObject* Beacon, UObject* Connection, uint8_t MessageType, __int64* Bunch)
 {
+	if (MessageType)
+	{
+		std::cout << "Message 15!\n";
+		return true;
+	}
+
 	std::cout << "beacon ncm!\n";
 	World_NotifyControlMessageDetour(Helper::GetWorld(), Connection, MessageType, Bunch);
 	return true;
