@@ -99,11 +99,11 @@ namespace Teams
 		std::cout << "CurrentTeamMembers->Num(): " << CurrentTeamMembers->Num() << '\n';
 		std::cout << "MaxPlayersPerTeam: " << MaxPlayersPerTeam << '\n';
 
-		if (CurrentTeamMembers->Num() >= (MaxPlayersPerTeam + (NextTeamIndex - StartingTeamIndex)))
+		/* if (CurrentTeamMembers->Num() >= (MaxPlayersPerTeam + (NextTeamIndex - StartingTeamIndex)))
 		{
 			CurrentTeam = AllTeams->At(++NextTeamIndex);
 			CurrentTeamMembers = (TArray<AController*>*)(__int64(CurrentTeam) + TeamMembersOffset);
-		}
+		} */
 
 		// now we have the correct teaminfo and members
 
@@ -188,5 +188,7 @@ namespace Teams
 				}
 			}
 		}
+
+		++NextTeamIndex;
 	}
 }

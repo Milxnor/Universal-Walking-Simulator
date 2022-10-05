@@ -456,7 +456,7 @@ static bool bPrintSpawnActor = false;
 static bool bRestarting = false;
 static bool bIsReadyToRestart = true; // i hate my life
 static bool bIsTrickshotting = false; // this is stupid
-static constexpr bool bAreVehicleWeaponsEnabled = false;
+static constexpr bool bAreVehicleWeaponsEnabled = true;
 static std::string PickaxeDef = "FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01";
 
 static std::string CIDToUse = "None";

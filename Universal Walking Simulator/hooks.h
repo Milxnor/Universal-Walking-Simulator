@@ -411,8 +411,6 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 		FRotator                                    ClientRotation;
 	};
 
-	std::cout << "Called!\n";
-
 	auto Params = (Param*)Parameters;
 
 	if (PlayerController && Params) // PlayerController->IsInAircraft()
@@ -420,7 +418,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 		auto world = Helper::GetWorld();
 		auto GameState = Helper::GetGameState();
 
-		if (GameState)
+		if (GameState && Helper::IsInAircraft(PlayerController))
 		{
 			static auto AircraftsOffset = GetOffset(GameState, "Aircrafts");
 			auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
@@ -1006,22 +1004,18 @@ inline bool ServerAttemptExitVehicleHook(UObject* Controller, UFunction* Functio
 
 			if (bAreVehicleWeaponsEnabled)
 			{
-				UObject* VehicleWeaponDef = nullptr; // Vehicle->Member<UObject*>("CachedWeaponDef");
+				UObject* VehicleWeaponDef = Helper::GetWeaponForVehicle(Helper::GetVehicle(Pawn));
 
-				// Function /Script/FortniteGame.FortPlayerControllerZone.ServerRequestSeatChange
+				std::cout << "VehicleWeaponDef: " << VehicleWeaponDef << '\n';
 
 				if (VehicleWeaponDef)
 				{
-					VehicleWeaponDef = Helper::GetWeaponData(Helper::GetCurrentWeapon(Pawn)); // scuffed? noooo
+					auto VehicleWeaponInstance = Inventory::FindItemInInventory(Controller, VehicleWeaponDef);
 
-					if (VehicleWeaponDef)
+					if (VehicleWeaponInstance)
 					{
-						auto VehicleWeaponInstance = Inventory::FindItemInInventory(Controller, VehicleWeaponDef);
-
-						if (VehicleWeaponInstance)
-						{
-							Inventory::RemoveItem(Controller, Inventory::GetItemGuid(VehicleWeaponInstance));
-						}
+						Inventory::RemoveItem(Controller, Inventory::GetItemGuid(VehicleWeaponInstance));
+						Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, Helper::GetPickaxeDef(Controller)))); // crazy
 					}
 				}
 			}
@@ -1484,7 +1478,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 	struct SAIParams {
 		UObject* ReceivingActor;                                           // (Parm, ZeroConstructor, IsPlainOldData)
-		UObject* InteractComponent;                                        // (Parm, ZeroConstructor, InstancedReference, IsPlainOldData)
+		UObject* InteractComponent;                // mesh normally
 		TEnumAsByte<ETInteractionType>                     InteractType;                                             // (Parm, ZeroConstructor, IsPlainOldData)
 		UObject* OptionalObjectData;                                       // (Parm, ZeroConstructor, IsPlainOldData)
 	};
@@ -1496,7 +1490,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 		auto Pawn = Helper::GetPawnFromController(Controller);
 		auto ReceivingActor = Params->ReceivingActor;
 
-		if (ReceivingActor && basicLocationCheck(Pawn, ReceivingActor, 450.f))
+		if (ReceivingActor && (true || basicLocationCheck(Pawn, ReceivingActor, 450.f)))
 		{
 			auto ReceivingActorName = ReceivingActor->GetName(); // There has to be a better way, right?
 
@@ -1646,22 +1640,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 				if (bAreVehicleWeaponsEnabled)
 				{
-					UObject* VehicleWeaponDefinition = nullptr;
-
-					if (ReceivingActorName.contains("Ferret")) // plane
-						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Ferret_Weapon.Ferret_Weapon");
-
-					else if (ReceivingActorName.contains("Octopus")) // baller
-						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/WID_Octopus_Weapon.WID_Octopus_Weapon");
-
-					else if (ReceivingActorName.contains("Cannon")) // cannon
-						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/ShipCannon_Weapon_InCannon.ShipCannon_Weapon_InCannon");
-
-					else if (ReceivingActorName.contains("Ostrich")) // mech
-						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/WID_OstrichShotgunTest2.WID_OstrichShotgunTest2");
-
-					else if (ReceivingActorName.contains("MountedTurret"))
-						VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Traps/MountedTurret/MountedTurret_Weapon.MountedTurret_Weapon");
+					UObject* VehicleWeaponDefinition = Helper::GetWeaponForVehicle(ReceivingActor);
 
 					std::cout << "goofy ahh\n";
 
@@ -2595,8 +2574,54 @@ bool ServerTeleportToPlaygroundLobbyIslandHook(UObject* Controller, UFunction*, 
 	return false;
 }
 
+bool ServerRequestSeatChangeHook(UObject* Controller, UFunction*, void* Parameters)
+{
+	auto Pawn = Helper::GetPawnFromController(Controller);
+
+	if (Pawn && Parameters)
+	{
+		// CURSED
+
+		if (bAreVehicleWeaponsEnabled)
+		{
+			EVehicleType Type;
+			UObject* VehicleWeaponDef = Helper::GetWeaponForVehicle(Helper::GetVehicle(Pawn), &Type);
+
+			auto TargetSeatIndex = *(int*)Parameters;
+
+			if (VehicleWeaponDef && Type != EVehicleType::Unknown)
+			{
+				auto VehicleWeaponInstance = Inventory::FindItemInInventory(Controller, VehicleWeaponDef);
+
+				if (VehicleWeaponInstance)
+				{
+					Inventory::RemoveItem(Controller, Inventory::GetItemGuid(VehicleWeaponInstance));
+					Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(Inventory::FindItemInInventory(Controller, Helper::GetPickaxeDef(Controller)))); // crazy
+				}
+
+				switch (Type)
+				{
+				case EVehicleType::Biplane:
+					if (TargetSeatIndex == 0) // idk if for all vehicles seat 0 is driver (well i dont think all have ewwea9fuohgaoii ida skid
+					{
+						auto instnace = Inventory::GiveItem(Controller, VehicleWeaponDef, EFortQuickBars::Primary, 1, 1);
+						*FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(instnace)) = INT32_MAX; // pro code
+						Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(instnace));
+					}
+				}
+			}
+			
+			std::cout << "TargetSeatIndex: " << TargetSeatIndex << '\n';
+		}
+	}
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
+	AddHook("Function /Script/FortniteGame.FortPlayerControllerZone.ServerRequestSeatChange", ServerRequestSeatChangeHook);
+
 	if (Engine_Version < 422)
 		AddHook(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
@@ -2667,7 +2692,8 @@ void FinishInitializeUHooks()
 	}
 
 	// if (PlayMontage)
-	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
+	if (bEmotingEnabled)
+		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 
 	if (Engine_Version < 423)
 	{ // ??? Idk why we need the brackets

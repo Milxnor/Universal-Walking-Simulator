@@ -738,6 +738,18 @@ struct TEnumAsByte // https://github.com/EpicGames/UnrealEngine/blob/4.21/Engine
 	}
 };
 
+enum class EVehicleType
+{
+	Biplane,
+	Cannon,
+	Baller,
+	Mech,
+	Turret,
+	Boat,
+	Helicopter,
+	Unknown
+};
+
 enum class ETInteractionType : uint8_t
 {
 	IT_NoInteraction = 0,

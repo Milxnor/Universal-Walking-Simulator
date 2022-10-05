@@ -320,9 +320,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			(*CheatManager)->ProcessEvent(God);
 	}
 
-	if (Engine_Version > 420)
+	if (false)
 	{
-		// Teams::AssignTeam(PlayerController);
+		if (FnVerDouble >= 8 && FnVerDouble < 13)
+		{
+			Teams::AssignTeam(PlayerController);
+		}
 	}
 
 	if (FnVerDouble < AboveVersionDisableAbilities)
@@ -551,7 +554,8 @@ void InitializeNetHooks()
 
 	if (FnVerDouble < 11.00)
 	{
-		if (std::floor(FnVerDouble) != 13 && Engine_Version != 421 && Engine_Version != 419 && Engine_Version != 422 && Engine_Version != 416 && Engine_Version != 423) // we dont really need this im just too lazy to get setworld sig
+		if (std::floor(FnVerDouble) != 13 && Engine_Version != 421 && Engine_Version != 419 && Engine_Version != 422 && Engine_Version != 416 && Engine_Version != 423 
+			&& Engine_Version != 420) // we dont really need this im just too lazy to get setworld sig
 		{
 			MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
 			MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);

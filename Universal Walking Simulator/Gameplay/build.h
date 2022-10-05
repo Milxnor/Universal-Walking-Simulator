@@ -477,7 +477,8 @@ void InitializeBuildHooks()
 		// AddHook("Function /Script/FortniteGame.FortPlayerController.ServerRepairBuildingActor", ServerRepairBuildingActorHook);
 
 		// if (Engine_Version < 424)
-		if (std::floor(FnVerDouble) != 15)
+		// if (std::floor(FnVerDouble) != 15)
+		if (Engine_Version != 420)
 		{
 			AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerBeginEditingBuildingActor"), ServerBeginEditingBuildingActorHook);
 			AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor"), ServerEditBuildingActorHook);

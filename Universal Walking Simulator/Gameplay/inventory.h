@@ -325,7 +325,7 @@ namespace Inventory
 			std::cout << ("No weapon!\n");
 	}
 
-	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, const FGuid& Guid, int Ammo = 0, const FGuid& TrackerGuid = FGuid())
+	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, const FGuid& Guid, int Ammo = -1, const FGuid& TrackerGuid = FGuid(), bool ahhh = false)
 	{
 		if (Pawn && Definition)
 		{
@@ -397,6 +397,12 @@ namespace Inventory
 					// *Weapon->Member<int>(("AmmoCount")) = Ammo; // GetEntryhFromGuid(Gretequi r08wig09wr
 
 					// bUpdateLocalAmmoCount
+
+					if (Ammo != -1 && ahhh)
+					{
+						static auto AmmoCountOffset = GetOffset(Weapon, "AmmoCount");
+						*(int*)(__int64(Weapon) + AmmoCountOffset) = Ammo;
+					}
 
 					static auto OnRep_ReplicatedWeaponData = ("OnRep_ReplicatedWeaponData");
 
@@ -1429,13 +1435,17 @@ inline bool ServerExecuteInventoryWeaponHook(UObject* Controller, UFunction* Fun
 		auto Guid = Inventory::GetWeaponGuid(*Weapon);
 		auto Def = Helper::GetWeaponData(*Weapon);
 
-		int Ammo = 0; // TODO: implmeent
+		int* AmmoPTR = FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(Inventory::FindItemInInventory(Controller, Guid))); // TODO: implmeent
 
 		// Inventory::EquipInventoryItem(Controller, Guid); // "hacky" // this doesjnt work maybe
 
-		if (Def)
+		if (Def && AmmoPTR)
 		{
-			Inventory::EquipWeaponDefinition(Pawn, Def, Guid, Ammo); // scuffed
+			auto Ammo = *AmmoPTR;
+
+			std::cout << " execute ammo: " << Ammo << '\n';
+
+			Inventory::EquipWeaponDefinition(Pawn, Def, Guid, Ammo, FGuid(), true); // scuffed
 
 			/* static auto ClientGivenTo = (*Weapon)->Function("ClientGivenTo");
 

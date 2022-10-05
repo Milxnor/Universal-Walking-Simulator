@@ -52,7 +52,6 @@ int GetMaxBullets(UObject* Definition)
 			{
 				auto data = Pair.Second;
 				auto ClipSize = *(int*)(__int64(data) + ClipSizeOffset);
-				// std::cout << "ClipSize: " << ClipSize << '\n';
 				return ClipSize;
 			}
 		}
@@ -328,6 +327,13 @@ namespace Easy
 
 namespace Helper
 {
+	UObject* GetHealthSet(UObject* Pawn)
+	{
+		static auto HealthSetOffset = GetOffset(Pawn, "HealthSet");
+
+		return *(UObject**)(__int64(Pawn) + HealthSetOffset);
+	}
+
 	namespace Conversion
 	{
 		UObject* SoftObjectToObject(TSoftObjectPtr SoftObject)
@@ -660,11 +666,6 @@ namespace Helper
 		}
 	}
 
-	void SetHealth()
-	{
-
-	}
-
 	void ForceNetUpdate(UObject* Actor)
 	{
 		static auto ForceNetUpdate = Actor->Function("ForceNetUpdate");
@@ -675,13 +676,31 @@ namespace Helper
 
 	void SetShield(UObject* Pawn, float Shield)
 	{
-		static auto setShieldFn = Pawn->Function(("SetShield"));
-		struct { float NewValue; }shieldParams{ Shield };
+		if (Engine_Version >= 421)
+		{
+			static auto setShieldFn = Pawn->Function(("SetShield"));
+			struct { float NewValue; }shieldParams{ Shield };
 
-		if (setShieldFn)
-			Pawn->ProcessEvent(setShieldFn, &shieldParams);
+			if (setShieldFn)
+				Pawn->ProcessEvent(setShieldFn, &shieldParams);
+			else
+				std::cout << ("Unable to find setShieldFn!\n");
+		}
 		else
-			std::cout << ("Unable to find setShieldFn!\n");
+		{
+			static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+
+			auto HealthSet = GetHealthSet(Pawn);
+
+			static auto ShieldOffset = GetOffset(HealthSet, "Shield");
+			static auto CurrentShieldOffset = GetOffset(HealthSet, "CurrentShield");
+
+			auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+			auto CurrentShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+
+			*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
+			*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
+		}
 	}
 	
 	UObject* GetWorld()
@@ -1621,8 +1640,56 @@ namespace Helper
 		return bIsLateGame || FnVerDouble >= 13.00;
 	}
 
+	UObject* GetWeaponForVehicle(UObject* Vehicle, EVehicleType* outType = nullptr)
+	{
+		if (!Vehicle)
+			return nullptr;
+
+		auto ReceivingActorName = Vehicle->GetName();
+		UObject* VehicleWeaponDefinition = nullptr;
+		EVehicleType type = EVehicleType::Unknown;
+
+		if (ReceivingActorName.contains("Ferret")) // plane
+		{
+			VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Ferret_Weapon.Ferret_Weapon");
+			type = EVehicleType::Biplane;
+		}
+
+		else if (ReceivingActorName.contains("Octopus")) // baller
+		{
+			VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/WID_Octopus_Weapon.WID_Octopus_Weapon");
+			type = EVehicleType::Baller;
+		}
+
+		else if (ReceivingActorName.contains("Cannon")) // cannon // die
+		{
+			VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/ShipCannon_Weapon_InCannon.ShipCannon_Weapon_InCannon");
+			type = EVehicleType::Cannon;
+		}
+
+		else if (ReceivingActorName.contains("Ostrich")) // mech
+		{
+			VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/Vehicles/WID_OstrichShotgunTest2.WID_OstrichShotgunTest2");
+			type = EVehicleType::Mech;
+		}
+
+		else if (ReceivingActorName.contains("MountedTurret"))
+		{
+			VehicleWeaponDefinition = FindObject("FortWeaponRangedItemDefinition /Game/Athena/Items/Traps/MountedTurret/MountedTurret_Weapon.MountedTurret_Weapon");
+			type = EVehicleType::Turret;
+		}
+
+		if (outType)
+			*outType = type;
+
+		return VehicleWeaponDefinition;
+	}
+
 	float GetDistanceTo(UObject* Actor, UObject* OtherActor)
 	{
+		if (!Actor)
+			return 0.f;
+
 		static auto GetDistanceTo = Actor->Function("GetDistanceTo");
 
 		struct { UObject* otherActor; float distance; } GetDistanceTo_Params{ OtherActor };
@@ -1730,6 +1797,32 @@ namespace Helper
 
 		if (SetHealth)
 			Pawn->ProcessEvent(SetHealth, &Health);
+		else
+		{
+			static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+
+			auto HealthSet = GetHealthSet(Pawn);
+
+			static auto HealthOffset = GetOffset(HealthSet, "Health");
+
+			auto HealthData = (__int64*)(__int64(HealthSet) + HealthOffset);
+
+			*(float*)(__int64(HealthData) + CurrentValueOffset) = Health;
+		}
+	}
+
+	void SetMaxHealth(UObject* Pawn, float MaxHealth)
+	{
+		static auto MaximumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Maximum");
+
+		auto HealthSet = GetHealthSet(Pawn);
+
+		static auto MaxHealthOffset = GetOffset(HealthSet, "MaxHealth");
+		static auto CurrentShieldOffset = GetOffset(HealthSet, "CurrentShield");
+
+		auto MaxHealthData = (__int64*)(__int64(HealthSet) + MaxHealthOffset);
+
+		*(float*)(__int64(MaxHealthData) + MaximumOffset) = MaxHealth;
 	}
 
 	void SetMaxShield(UObject* Pawn, float MaxShield, UObject* PlayerState = nullptr)
@@ -1743,6 +1836,19 @@ namespace Helper
 
 			static auto MaxShieldOffset = GetOffset(PlayerState, "MaxShield");
 			*(float*)(__int64(PlayerState) + MaxShieldOffset) = MaxShield;
+
+			static auto MaximumOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.FortGameplayAttributeData", "Maximum");
+
+			auto HealthSet = GetHealthSet(Pawn);
+
+			static auto ShieldOffset = GetOffset(HealthSet, "Shield");
+			static auto CurrentShieldOffset = GetOffset(HealthSet, "CurrentShield");
+
+			auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+			auto CurrentShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+
+			*(float*)(__int64(ShieldData) + MaximumOffset) = MaxShield;
+			*(float*)(__int64(CurrentShieldData) + MaximumOffset) = MaxShield;
 		}
 		else
 		{
@@ -1851,14 +1957,9 @@ namespace Helper
 		Helper::SetOwner(Pawn, PC); // prob not needed
 
 		SetMaxShield(Pawn, 100, PlayerState);
-
-		static auto setMaxHealthFn = Pawn->Function(("SetMaxHealth"));
-		struct { float NewHealthVal; }healthParams{ 100 };
-
-		if (setMaxHealthFn)
-			Pawn->ProcessEvent(setMaxHealthFn, &healthParams);
-		else
-			std::cout << ("Unable to find setMaxHealthFn!\n");
+		SetMaxHealth(Pawn, 100);
+		// SetHealth(Pawn, 100);
+		// SetShield(Pawn, 0);
 
 		auto CIDObject = CIDToUse == "None" ? nullptr : FindObject(CIDToUse); // we need the check cuz if we dont have staticfindobject then it finds it
 
