@@ -381,6 +381,17 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	std::cout << ("Spawned Player!\n");
 
+	/* if (FnVerDouble >= 8) // just make the color blue // bruh it sets it to 2 after ??
+	{
+		auto CurrentTeamIdx = Teams::StartingTeamIndex;
+		*Teams::GetTeamIndex(PlayerState) = CurrentTeamIdx;
+
+		auto SquadId = CurrentTeamIdx;
+
+		static auto SquadIdOffset = GetOffset(PlayerState, "SquadId");
+		*(uint8_t*)(__int64(PlayerState) + SquadIdOffset) = SquadId;
+	} */
+
 	return PlayerController;
 }
 
@@ -540,7 +551,7 @@ void InitializeNetHooks()
 
 	if (FnVerDouble < 11.00)
 	{
-		if (std::floor(FnVerDouble) != 13 && Engine_Version != 421 && Engine_Version != 419 && Engine_Version != 422 && Engine_Version != 416) // we dont really need this im just too lazy to get setworld sig
+		if (std::floor(FnVerDouble) != 13 && Engine_Version != 421 && Engine_Version != 419 && Engine_Version != 422 && Engine_Version != 416 && Engine_Version != 423) // we dont really need this im just too lazy to get setworld sig
 		{
 			MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
 			MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);

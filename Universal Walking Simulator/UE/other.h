@@ -1387,3 +1387,9 @@ struct FTimespan
 {
 	__int64 Ticks;
 };
+
+template <typename T>
+static T* GetFromOffset(void* Instance, int Offset)
+{
+	return (T*)(__int64(Instance) + Offset);
+}

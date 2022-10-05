@@ -29,17 +29,21 @@ static UObject* GetLootPackages()
 
 	bool bForcePlaygroundLoot = Engine_Version >= 424;
 
-	// FortniteGame/Content/Athena/Playlists/Fortnite/AthenaCompositeLP_Fortnite
 	std::string Default = bIsPlayground || bForcePlaygroundLoot ? "/Game/Athena/Playlists/Playground/AthenaLootPackages_Client.AthenaLootPackages_Client" : "/Game/Items/Datatables/AthenaLootPackages_Client.AthenaLootPackages_Client";
 
 	auto& LootPackagesName = Default;
 
-	if (LootPackagesSoft && LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex && !bForcePlaygroundLoot) {
-		LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
-		// std::cout << "SubPath: " << LootPackagesSoft->ObjectID.SubPathString.ToString();
+	if (!bForcePlaygroundLoot)
+	{
+		if (LootPackagesSoft && LootPackagesSoft->ObjectID.AssetPathName.ComparisonIndex) {
+			LootPackagesName = LootPackagesSoft->ObjectID.AssetPathName.ToString();
+			// std::cout << "SubPath: " << LootPackagesSoft->ObjectID.SubPathString.ToString();
+		}
+		else
+			std::cout << std::format("Unable to find LootPackages! Falling back to default {}.\n", bIsPlayground ? "playground" : "solos");
 	}
 	else
-		std::cout << std::format("Unable to find LootPackages! Falling back to default {}.\n", bIsPlayground ? "playground" : "solos");
+		std::cout << std::format("bForcePlaygroundLoot is true! Falling back to default {}.\n", bIsPlayground ? "playground" : "solos");
 
 	std::cout << "AssetPathName: " << LootPackagesName << '\n';
 
