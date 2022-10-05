@@ -182,6 +182,8 @@ inline void initStuff()
 
 			if (Playlist_MaxPlayersOffset != -1)
 				*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = *(int*)(__int64(Playlist) + Playlist_MaxPlayersOffset); // GameState->GetMaxPlaylistPlayers()
+			else
+				*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = 100;
 
 			if (Engine_Version != 421)
 			{
