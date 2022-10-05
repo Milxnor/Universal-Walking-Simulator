@@ -1151,9 +1151,24 @@ namespace Helper
 	{
 		auto world = GetWorldW();
 
+		if (!world)
+			return nullptr;
+
 		static auto AuthorityGameModeOffset = GetOffset(world, "AuthorityGameMode");
 
 		return *(UObject**)(__int64(world) + AuthorityGameModeOffset);
+	}
+
+	UObject* GetSafeZoneIndicator()
+	{
+		auto GameMode = GetGameMode();
+
+		if (!GameMode)
+			return nullptr;
+
+		static auto SafeZoneIndicatorOffset = GetOffset(GameMode, "SafeZoneIndicator");
+
+		return *(UObject**)(__int64(GameMode) + SafeZoneIndicatorOffset);
 	}
 
 	UObject* GetGameState(UObject* World = nullptr)
@@ -1171,76 +1186,6 @@ namespace Helper
 		auto GameState = Helper::GetGameState();
 
 		return *GameState->Member<UObject*>("StructuralSupportSystem");
-	}
-
-	void IDoNotKnow(UObject* BuildingActor)
-	{
-		/* void(__fastcall * IDONTKNOW)(UObject * a1);
-
-		auto Addy = FindPattern("40 53 48 81 EC ? ? ? ? F6 81 ? ? ? ? ? 48 8B D9 0F 85 ? ? ? ? 48 8B 01 48 89 BC 24 ? ? ? ? FF 90 ? ? ? ? 48 8B C8 E8 ? ? ? ? 48 8B F8 0F B6 83 ? ? ? ? 24 40 75 4A 48 8B 8B ? ? ? ? 48 85 C9 74 3E 48 8B 01");
-
-		IDONTKNOW = decltype(IDONTKNOW)(Addy);
-
-		std::cout << "IDONTKNOW ADDY: " << IDONTKNOW << '\n';
-
-		return IDONTKNOW ? IDONTKNOW(BuildingActor) : void(); */
-
-		/* char(__fastcall * sub_7FF706A6EF90)(UObject * a1, UObject * a2, int* a3);
-
-		auto addy = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 55 57 41 56 48 8B EC 48 81 EC ? ? ? ? 48 8B 02 48 8B F2 4D 8B F0 48 8D 55 D0 48 8B D9 33 FF 45");
-
-		sub_7FF706A6EF90 = decltype(sub_7FF706A6EF90)(addy);
-
-		std::cout << "ADXDY: " << addy << '\n';
-
-		int idk = -1;
-
-		if (sub_7FF706A6EF90)
-			sub_7FF706A6EF90(Helper::GetStructuralSupportSystem(), BuildingActor, &idk);
-
-		std::cout << "idk: " << idk << '\n'; */
-
-		// int someoutidk = -1;
-
-		// bool(__fastcall * hmmmmm)(UObject * StructuralSupportSystem, float* a2, int* someOut);
-
-		/* float idk;
-
-		__int64(__fastcall * bozoratio)(UObject* a1, float* a2, __int64 a3, __int64 a4);
-
-		bozoratio = decltype(bozoratio)(FindPattern("48 89 74 24 ? 48 89 7C 24 ? 55 48 8B EC 48 81 EC ? ? ? ? 48 8B FA 48 8B F1 4D 85 C0 74 17 41"));
-
-		bozoratio(BuildingActor, &idk, 0, 0);
-		
-		std::cout << "idk: " << idk << '\n'; */
-
-		/* auto addy = FindPattern("48 83 EC 28 F3 0F 10 99 ? ? ? ? 4D 8B D0 F3 0F 10 0D ? ? ? ? F3 0F 10 15 ? ? ? ? 0F 29 74 24 ? 0F 29 3C");
-
-		hmmmmm = decltype(hmmmmm)(addy);
-
-		std::cout << "hmmmmm addy: " << hmmmmm << '\n';
-
-		float idk = 0;
-		int v35[2];
-
-		auto reet = hmmmmm(Helper::GetStructuralSupportSystem(), &idk, v35);
-
-		std::cout << "idkafg9qu: " << someoutidk << '\n';
-
-		std::cout << "rett: " << reet << '\n'; */
-	}
-
-	char CanAddBuildingActorClass(UObject* BuildingActorClass)
-	{
-		auto Addy = FindPattern("40 55 56 57 41 55 41 56 48 8D AC 24 ? ? ? ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 83 B9 ? ? ? ? ? 4D 8B E8 48 8B F2 48 8B F9 74 1A 48 8B 89 ? ? ? ? 48 85 C9");
-	
-		char(__fastcall * CanAddBuildingActorClassToGrid)(UObject * World, UObject * a2, UObject * StructuralSupportSystem);
-
-		CanAddBuildingActorClassToGrid = decltype(CanAddBuildingActorClassToGrid)(Addy);
-
-		std::cout << "CanAddBuildingActorClassToGrid Addy: " << CanAddBuildingActorClassToGrid << '\n';
-
-		return CanAddBuildingActorClassToGrid ? CanAddBuildingActorClassToGrid(GetWorldW(), BuildingActorClass, GetStructuralSupportSystem()) : false;
 	}
 
 	EAthenaGamePhase* GetGamePhase()
@@ -2195,7 +2140,7 @@ namespace Helper
 			stream.close();
 
 			FString Reason;
-			Reason.Set(L"You have beeb banned!");
+			Reason.Set(L"You have been banned!");
 
 			static auto ClientReturnToMainMenu = Controller->Function("ClientReturnToMainMenu");
 

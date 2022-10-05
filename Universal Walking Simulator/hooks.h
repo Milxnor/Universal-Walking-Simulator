@@ -315,60 +315,6 @@ bool ServerReviveFromDBNOHook(UObject* DownedPawn, UFunction*, void* Parameters)
 	return false;
 }
 
-bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Parameters) // TODO: Change this func
-{
-	std::cout << "OnSafeZoneStateChange!\n";
-
-	if (Indicator && Parameters && Helper::IsSmallZoneEnabled())
-	{
-		struct ASafeZoneIndicator_C_OnSafeZoneStateChange_Params
-		{
-		public:
-			EFortSafeZoneState              NewState;                                          // 0x0(0x1)(BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
-			bool                                       bInitial;                                          // 0x1(0x1)(BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, IsPlainOldData, NoDestructor)
-		};
-
-		auto Params = (ASafeZoneIndicator_C_OnSafeZoneStateChange_Params*)Parameters;
-
-		std::random_device rd; // obtain a random number from hardware
-		std::mt19937 gen(rd()); // seed the generator
-		std::uniform_int_distribution<> distr(300.f, 5000.f);
-
-		std::random_device rd1; // obtain a random number from hardware
-		std::mt19937 gen1(rd1()); // seed the generator
-		std::uniform_int_distribution<> distr1(300.f, 5000.f);
-
-		std::random_device rd2; // obtain a random number from hardware
-		std::mt19937 gen2(rd2()); // seed the generator
-		std::uniform_int_distribution<> distr2(300.f, 5000.f);
-
-		auto world = Helper::GetWorld();
-		auto AuthGameMode = Helper::GetGameMode();
-		auto SafeZonePhase = *AuthGameMode->Member<int>("SafeZonePhase");
-
-		bool bIsStartZone = SafeZonePhase == 0; // Params->NewState == EFortSafeZoneState::Starting
-		
-		// *Indicator->Member<float>("SafeZoneStartShrinkTime") // how fast the storm iwll shrink
-
-		auto Radius = *Indicator->Member<float>("Radius");
-		*Indicator->Member<float>("NextRadius") = bIsStartZone ? 10000 : Radius / 2;
-
-		auto NextCenter = Indicator->Member<FVector>("NextCenter");
-
-		// if (bIsStartZone)
-		{
-			*Indicator->Member<float>("Radius") = 14000;
-			*NextCenter = AircraftLocationToUse;
-		}
-		// else
-			// *NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
-
-		std::cout << "SKidd!\n";
-	}
-
-	return false;
-}
-
 bool ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Function, void* Parameters)
 {
 	// auto PlayerState = *PlayerController->Member<UObject*>(("PlayerState"));
@@ -476,7 +422,8 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 		if (GameState)
 		{
-			auto Aircrafts = GameState->Member<TArray<UObject*>>(("Aircrafts"));
+			static auto AircraftsOffset = GetOffset(GameState, "Aircrafts");
+			auto Aircrafts = (TArray<UObject*>*)(__int64(GameState) + AircraftsOffset);
 
 			if (Aircrafts)
 			{
@@ -484,7 +431,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 				if (Aircraft)
 				{
-					if (bClearInventoryOnAircraftJump)
+					if (bClearInventoryOnAircraftJump && FnVerDouble < 19.00)
 						ClearInventory(PlayerController); // TODO: Clear on ServerSetInAircraft
 
 					auto ExitLocation = Helper::GetActorLocation(Aircraft);
@@ -534,7 +481,7 @@ void LoadInMatch()
 		FString Map;
 		Map.Set(GetMapName());
 		PlayerController->ProcessEvent(SwitchLevelFn, &Map);
-		// Map.Free();
+		// Map.FreeString();
 		bTraveled = true;
 	}
 	else
@@ -649,6 +596,7 @@ void Restart()
 	bTraveled = false;
 	bRestarting = true;
 	AmountOfRestarts++;
+	serverStatus = EServerStatus::Restarting;
 
 	std::string KickReason = "Server is restarting!";
 	std::wstring wstr = std::wstring(KickReason.begin(), KickReason.end());
@@ -2658,6 +2606,11 @@ void FinishInitializeUHooks()
 	if (bExperimentalRespawning)
 		AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawnHook);
 
+	if (FnVerDouble < 19.00)
+		AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
+	else
+		AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
+
 	AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerTeleportToPlaygroundLobbyIsland", ServerTeleportToPlaygroundLobbyIslandHook);
 	AddHook("Function /Script/FortniteGame.FortPawn.NetMulticast_InvokeGameplayCueExecuted_WithParams", NetMulticast_InvokeGameplayCueExecuted_WithParamsHook);
 	// AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerPlaySquadQuickChatMessage", ServerPlaySquadQuickChatMessageHook);
@@ -2665,7 +2618,6 @@ void FinishInitializeUHooks()
 
 	// LoadObject<UObject>(FindObject("Class /Script/Engine.BlueprintGeneratedClass"), nullptr, "/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C"); // i think im slow
 
-	AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
 
@@ -2815,7 +2767,9 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), "UpdateOverheatCosmetics") &&
 					!strstr(FunctionName.c_str(), "StormFadeTimeline__UpdateFunc") &&
 					!strstr(FunctionName.c_str(), "BindVolumeEvents") &&
-					!strstr(FunctionName.c_str(), "UpdateStateEvent"))
+					!strstr(FunctionName.c_str(), "UpdateStateEvent") &&
+					!strstr(FunctionName.c_str(), "VISUALS__UpdateFunc") &&
+					!strstr(FunctionName.c_str(), "Flash__UpdateFunc"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}

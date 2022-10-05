@@ -243,7 +243,22 @@ struct FGameplayTagContainer
     }
 };
 
-struct PaddingHex224 // i lied its not hex
+struct PaddingDec24
+{
+    char pad[24];
+};
+
+struct PaddingDec224
+{
+    char pad[224];
+};
+
+struct PaddingDec232
+{
+    char pad[224];
+};
+
+struct PaddingDec32
 {
     char pad[224];
 };
@@ -387,7 +402,8 @@ static FGameplayAbilitySpecHandle* (*GiveAbility)(UObject* comp, FGameplayAbilit
 static FGameplayAbilitySpecHandle* (*GiveAbilityOLDDD)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0> inSpec);
 static FGameplayAbilitySpecHandle* (*GiveAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50> inSpec);
 static FGameplayAbilitySpecHandle* (*GiveAbilityNewer)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, FGameplayAbilitySpecNewer inSpec);
-static FGameplayAbilitySpecHandle* (*GiveAbilityS14ANDS15)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PaddingHex224 inSpec);
+static FGameplayAbilitySpecHandle* (*GiveAbilityS14ANDS15)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PaddingDec224 inSpec);
+static FGameplayAbilitySpecHandle* (*GiveAbilityS16)(UObject* comp, FGameplayAbilitySpecHandle* outHandle, PaddingDec232 inSpec);
 
 static bool (*InternalTryActivateAbility)(UObject* comp, FGameplayAbilitySpecHandle Handle, FPredictionKey InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
 static bool (*InternalTryActivateAbilityFTS)(UObject* comp, FGameplayAbilitySpecHandle Handle, FPredictionKeyFTS InPredictionKey, UObject** /* UGameplayAbility** */ OutInstancedAbility, void* OnGameplayAbilityEndedDelegate, __int64* TriggerEventData); // // https://github.com/EpicGames/UnrealEngine/blob/46544fa5e0aa9e6740c19b44b0628b72e7bbd5ce/Engine/Plugins/Runtime/GameplayAbilities/Source/GameplayAbilities/Private/AbilitySystemComponent_Abilities.cpp#L1327
@@ -464,7 +480,7 @@ static bool boozasdgwq9i = false;
 static UObject* GlobalPickaxeDefObject = nullptr;
 constexpr bool bEmotingEnabled = false;
 static bool bPrintFUnny = false;
-static constexpr double AboveVersionDisableAbilities = 13.00; // Any version Above this abilities will be disabled
+static constexpr double AboveVersionDisableAbilities = 19.00; // Any version Above this abilities will be disabled
 
 // highly experimental
 

@@ -10,6 +10,7 @@
 
 #include <discord.h>
 #include <Net/replication.h>
+#include <Gameplay/zone.h>
 #include <Gameplay/harvesting.h>
 #include <team.h>
 
@@ -180,7 +181,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 		InitializeHarvestingHooks();
 
-		AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
+		// AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 	}
 
 	std::cout << ("SpawnPlayActor called!\n");
@@ -330,6 +331,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	}
 
 	// if (Engine_Version >= 420) // && FnVerDouble < 19.00)
+
 	{
 		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
 
@@ -501,17 +503,21 @@ void World_NotifyControlMessageDetour(UObject* World, UObject* Connection, uint8
 	return World_NotifyControlMessage(correctWorld, Connection, MessageType, Bunch);
 }
 
-char Beacon_NotifyControlMessageDetour(UObject* Beacon, UObject* Connection, uint8_t MessageType, __int64* Bunch)
+static bool fau2881q = false;
+
+void Beacon_NotifyControlMessageDetour(UObject* Beacon, UObject* Connection, uint8_t MessageType, __int64* Bunch)
 {
-	if (MessageType)
+	// if (fau2881q)
+		// return World_NotifyControlMessage(Helper::GetWorld(), Connection, MessageType, Bunch);
+
+	if (MessageType == 15)
 	{
-		std::cout << "Message 15!\n";
-		return true;
+		std::cout << "NMT_PCSwap this should not happen!\n";
+		return;
 	}
 
 	std::cout << "beacon ncm!\n";
 	World_NotifyControlMessageDetour(Helper::GetWorld(), Connection, MessageType, Bunch);
-	return true;
 }
 
 char __fastcall NoReserveDetour(__int64* a1, __int64 a2, char a3, __int64* a4)
@@ -532,9 +538,9 @@ void InitializeNetHooks()
 	MH_CreateHook((PVOID)SpawnPlayActorAddr, SpawnPlayActorDetour, (void**)&SpawnPlayActor);
 	MH_EnableHook((PVOID)SpawnPlayActorAddr);
 
-	if (FnVerDouble < 11.00 || std::floor(FnVerDouble) == 13)
+	if (FnVerDouble < 11.00)
 	{
-		if (Engine_Version != 421 && Engine_Version != 419) // we dont really need this im just too lazy to get setworld sig
+		if (std::floor(FnVerDouble) != 13 && Engine_Version != 421 && Engine_Version != 419 && Engine_Version != 422 && Engine_Version != 416) // we dont really need this im just too lazy to get setworld sig
 		{
 			MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
 			MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);
@@ -544,10 +550,12 @@ void InitializeNetHooks()
 		}
 	}
 
-	if (std::floor(FnVerDouble) == 14 || std::floor(FnVerDouble) == 18)
+	if (std::floor(FnVerDouble) == 13 || std::floor(FnVerDouble) == 14 || std::floor(FnVerDouble) == 18) // bruhhh
 	{
 		MH_CreateHook((PVOID)Beacon_NotifyControlMessageAddr, Beacon_NotifyControlMessageDetour, (void**)&Beacon_NotifyControlMessage);
 		MH_EnableHook((PVOID)Beacon_NotifyControlMessageAddr);
+
+		fau2881q = true;
 	}
 
 	if (Engine_Version < 424 && GetNetModeAddr) // i dont even think we have to hook this

@@ -139,6 +139,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="UE\other.h" />
     <ClInclude Include="UE\structs.h" />
+    <ClInclude Include="Gameplay\zone.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

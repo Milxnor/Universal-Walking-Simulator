@@ -417,8 +417,10 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
 					ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
-					ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
 
+					if (FnVerDouble < 19.00)
+						ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
+	
 					if (bEmotingEnabled)
 						ImGui::Checkbox("bPrintFUnny", &bPrintFUnny);
 
@@ -508,14 +510,6 @@ DWORD WINAPI GuiThread(LPVOID)
 						{
 							FString StartAircraftCmd;
 							StartAircraftCmd.Set(L"toggledebugcamera");
-
-							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
-						}
-
-						if (ImGui::Button("Start Zone"))
-						{
-							FString StartAircraftCmd;
-							StartAircraftCmd.Set(L"startsafezone");
 
 							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
 						}
@@ -887,7 +881,51 @@ DWORD WINAPI GuiThread(LPVOID)
 					}
 					break;
 				case LATEGAME_TAB:
-					// ImGui::SliderFloat("Zone Size")
+					if (auto SafeZoneIndicator = Helper::GetSafeZoneIndicator())
+					{
+						static auto bPausedOffset = FindOffsetStruct("Class /Script/FortniteGame.FortSafeZoneIndicator", "bPaused");
+						auto bPaused = (bool*)(__int64(SafeZoneIndicator) + bPausedOffset);
+
+						if (ImGui::Checkbox("Paused", bPaused))
+						{
+							std::cout << "bPaused: " << *bPaused << '\n';
+							static auto bPausedForPreviewOffset = FindOffsetStruct("Class /Script/FortniteGame.FortSafeZoneIndicator", "bPausedForPreview");
+
+							if (bPausedForPreviewOffset != -1)
+								*(bool*)(__int64(SafeZoneIndicator) + bPausedForPreviewOffset) = *bPaused;
+						}
+
+						static auto NextCenterOffset = FindOffsetStruct("Class /Script/FortniteGame.FortSafeZoneIndicator", "NextCenter");
+						auto NextCenter = (FVector*)(__int64(SafeZoneIndicator) + NextCenterOffset);
+						ImGui::SliderFloat("Next Center X", &NextCenter->X, 1, 100000);
+						ImGui::SliderFloat("Next Center Y", &NextCenter->Y, 1, 100000);
+
+						// static auto RadiusOffset = FindOffsetStruct("Class /Script/FortniteGame.FortSafeZoneIndicator", "Radius");
+						// ImGui::SliderFloat("Radius", (float*)(__int64(SafeZoneIndicator) + RadiusOffset), 1, 100000);
+
+						static auto NextRadiusOffset = FindOffsetStruct("Class /Script/FortniteGame.FortSafeZoneIndicator", "NextRadius");
+						ImGui::SliderFloat("NextRadius", (float*)(__int64(SafeZoneIndicator) + NextRadiusOffset), 1, 200000);
+
+						static auto SafeZoneFinishShrinkTimeOffset = FindOffsetStruct("Class /Script/FortniteGame.FortSafeZoneIndicator", "SafeZoneFinishShrinkTime");
+						ImGui::SliderFloat("SafeZoneFinishShrinkTime", (float*)(__int64(SafeZoneIndicator) + SafeZoneFinishShrinkTimeOffset), 1, 10000);
+
+						static auto SafeZoneStartShrinkTimeOffset = FindOffsetStruct("Class /Script/FortniteGame.FortSafeZoneIndicator", "SafeZoneStartShrinkTime");
+						ImGui::SliderFloat("SafeZoneStartShrinkTime", (float*)(__int64(SafeZoneIndicator) + SafeZoneStartShrinkTimeOffset), 1, 10000);
+					}
+					else
+					{
+						ImGui::Text("Safezone has not started yet!");
+
+						if (serverStatus == EServerStatus::Up && 
+							ImGui::Button("Start zone"))
+						{
+							FString StartAircraftCmd;
+							StartAircraftCmd.Set(L"startsafezone"); // todo: not
+
+							Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
+						}
+					}
+
 					break;
 				case DUMP_TAB:
 

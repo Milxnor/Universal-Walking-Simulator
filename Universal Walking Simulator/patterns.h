@@ -587,6 +587,8 @@ void InitializePatterns()
                 CheckPattern("GiveAbility", GiveAbilityAddr, &GiveAbilityOLDDD);
             else if (std::floor(FnVerDouble) == 14 || std::floor(FnVerDouble) == 15)
                 CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityS14ANDS15);
+            else if (std::floor(FnVerDouble) == 16)
+                CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityS16);
             else if (Engine_Version == 426)
                 CheckPattern(("GiveAbility"), GiveAbilityAddr, &GiveAbilityFTS);
             else
@@ -605,7 +607,7 @@ void InitializePatterns()
 
             if (Engine_Version < 426)
                 CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbility);
-            else if (FnVerDouble < 18.00) // idk if right
+            else if (FnVerDouble < 17.00)
                 CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbilityFTS);
             else
                 CheckPattern(("InternalTryActivateAbility"), InternalTryActivateAbilityAddr, &InternalTryActivateAbilityNewer);
@@ -666,17 +668,20 @@ void InitializePatterns()
             ValidationFailure = decltype(ValidationFailure)(ValidationFailureAddr);
 
         // CheckPattern(("ValidationFailure"), ValidationFailureAddr, &ValidationFailure);
+    }
 
-        if (Engine_Version < 426) // it becomes virtual bruh
-        {
-            SetWorldAddr = FindPattern(SetWorldSig);
+    if (Engine_Version < 426) // it becomes virtual bruh
+    {
+        SetWorldAddr = FindPattern(SetWorldSig);
 
-            if (!SetWorldAddr)
-                SetWorldAddr = FindPattern(("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
+        if (!SetWorldAddr)
+            SetWorldAddr = FindPattern(("48 89 5C 24 ? 57 48 83 EC 20 48 8B FA 48 8B D9 48 8B 91 ? ? ? ? 48 85 D2 74 28 E8 ? ? ? ? 48 8B 8B ? ? ? ? 33 C0 48 89 83 ? ? ? ? 48 89 83 ? ? ? ? 48 89 83"));
 
-            // if (Engine_Version >= 419)
-            CheckPattern(("SetWorld"), SetWorldAddr, &SetWorld);
-        }
+        if (!SetWorldAddr)
+            SetWorldAddr = FindPattern("48 89 74 24 ? 57 48 83 EC 20 48 8B F2 48 8B F9 48 8B 91 ? ? ? ? 48 85 D2 74 5E 48 89 5C 24 ? E8");
+
+        // if (Engine_Version >= 419)
+        CheckPattern(("SetWorld"), SetWorldAddr, &SetWorld);
     }
 
     PlayMontageAddr = FindPattern(PlayMontageSig);

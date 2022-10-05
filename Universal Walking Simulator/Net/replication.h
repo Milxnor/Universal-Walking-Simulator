@@ -288,9 +288,13 @@ void ReplicateActors(UObject* NetDriver, UObject* World = nullptr)
 
             if (!Actor)
             {
-                std::cout << "NULL HOW\n";
                 continue;
             }
+
+            static auto PlayerControllerClass = FindObject(("Class /Script/Engine.PlayerController"));
+
+            if (Actor->IsA(PlayerControllerClass) && Actor != PC)
+                continue;
 
             // std::cout << "Considering: " << Actor->GetFullName() << '\n';
 
@@ -324,11 +328,6 @@ void ReplicateActors(UObject* NetDriver, UObject* World = nullptr)
 
             if (!Channel)
             {
-                static auto PlayerControllerClass = FindObject(("Class /Script/Engine.PlayerController"));
-
-                if (Actor->IsA(PlayerControllerClass) && Actor != PC)
-                    continue;
-
                 Channel = CreateChannel(Connection, EChannelType::CHTYPE_Actor, true, -1);
 
                 if (Channel) {

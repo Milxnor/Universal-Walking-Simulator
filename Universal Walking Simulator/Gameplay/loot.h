@@ -409,7 +409,14 @@ namespace LootingV2
 							auto CorrectLocation = Helper::GetActorLocation(BuildingContainer);
 							CorrectLocation.Z += 50;
 
-							if (RandomBoolWithWeight(0.85f))
+							if (RandomBoolWithWeight(0.97f))
+							{
+								auto Ammo = GetRandomItem(ItemType::Ammo);
+
+								Helper::SummonPickup(nullptr, Ammo.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+									EFortPickupSpawnSource::Unset, Ammo.DropCount, bTossPickup);
+							}
+							else if (RandomBoolWithWeight(0.85f))
 							{
 								auto Consumable = GetRandomItem(ItemType::Consumable);
 

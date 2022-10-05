@@ -617,11 +617,11 @@ namespace Inventory
 
 		EquipWeaponDefinition(Pawn, Def, Guid, currentWeaponAmmo/* *FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(CurrentItemInstance)) */, TrackerGuid);
 
-		std::string FullName = Def->GetFullName();
+		/* std::string FullName = Def->GetFullName();
 
 		if (FullName.contains("CarminePack") || FullName.contains("AshtonPack.")) {
 			Items::HandleCarmine(Controller);
-		}
+		} */
 
 		return nullptr;
 	}
@@ -1622,6 +1622,67 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 					if (bPickedUpFn)
 						Params->Pickup->ProcessEvent(bPickedUpFn);
 				}
+
+				bool bDidStack = false;
+				UObject* newInstance = nullptr;
+
+				if (Definition && *Definition && Count)
+				{
+					auto quickBarsItemShouldGoIn = QuickBars::WhatQuickBars(*Definition);
+
+					newInstance = Inventory::GiveItem(Controller, *Definition, quickBarsItemShouldGoIn, slotToGoInto, *Count, &bDidStack, nullptr, ItemToStackInto);
+
+					// Inventory::GetWorldInventory(Controller)->Member<TArray<UObject*>>("PendingInstances")->Add(newInstance);
+
+					if (newInstance)
+					{
+						// the below crashes sometimes
+
+						auto newItemLoadedAmmo = FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(newInstance));
+
+						if (newItemLoadedAmmo)
+						{
+							auto pickupLoadedAmmo = FFortItemEntry::GetLoadedAmmo(PrimaryPickupItemEntry);
+
+							if (pickupLoadedAmmo)
+								*newItemLoadedAmmo = *pickupLoadedAmmo;
+						}
+					}
+
+				}
+				else
+				{
+					std::cout << "Detected invalid ptr!\n";
+					std::cout << "Def: " << Definition << '\n';
+					if (Definition)
+						std::cout << "Def Deref: " << *Definition << '\n';
+					std::cout << "Count: " << Count << '\n';
+				}
+
+				if (bShouldSwap && !bDidStack)
+				{
+					auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
+					auto HeldWeaponDef = Helper::GetWeaponData(CurrentWeapon);
+
+					auto Entry = Inventory::GetEntryFromWeapon(Controller, CurrentWeapon);
+
+					auto HeldWeaponAmmo = FFortItemEntry::GetLoadedAmmo(Entry); // *CurrentWeapon->Member<int>("AmmoCount");
+					auto OldCount = FFortItemEntry::GetCount(Entry);
+
+					if (OldCount && HeldWeaponAmmo)
+					{
+						Inventory::RemoveItem(Controller, Inventory::GetWeaponGuid(CurrentWeapon));
+
+						auto DroppedPickup = Helper::SummonPickup(Pawn, HeldWeaponDef, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Player,
+							EFortPickupSpawnSource::Unset, *OldCount, true, false, *HeldWeaponAmmo);
+
+						if (bShouldSwap && Definition)
+						{
+							Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(newInstance));
+							// Inventory::EquipWeaponDefinition(Pawn, *Definition, Inventory::GetItemGuid(newInstance));
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1917,6 +1978,9 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 
 		auto ItemInstances = Inventory::GetItemInstances(Controller);
 
+		if (!ItemInstances)
+			return false;
+
 		auto quickBarsToGoIn = QuickBars::WhatQuickBars(*Definition);
 		bool shouldGoInSecondaryBar = quickBarsToGoIn == EFortQuickBars::Secondary;
 
@@ -2041,7 +2105,10 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 void InitializeInventoryHooks()
 {
 	// AddHook("Function /Script/FortniteGame.FortPlayerPawn.OnCapsuleBeginOverlap", OnCapsuleBeginOverlapHook);
-	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
+
+	if (FnVerDouble < 16.00)
+		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerExecuteInventoryItem"), ServerExecuteInventoryItemHook);
+
 	AddHook("Function /Script/FortniteGame.FortPlayerController.ServerCombineInventoryItems", ServerCombineInventoryItemsHook);
 
 	if (Engine_Version >= 423 && FnVerDouble < 16.00)
@@ -2050,7 +2117,7 @@ void InitializeInventoryHooks()
 	// if (FnVerDouble >= 7)
 		// AddHook("Function /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups_Parent.B_Pickups_Parent_C.OnAboutToEnterBackpack", OnAboutToEnterBackpackHook);
 	// else
-		AddHook("Function /Script/Engine.Actor.ReceiveEndPlay", OnAboutToEnterBackpackHook); //  Function /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups.B_Pickups_C.ReceiveDestroyed
+		// AddHook("Function /Script/Engine.Actor.ReceiveEndPlay", OnAboutToEnterBackpackHook); //  Function /Game/Effects/Fort_Effects/Gameplay/Pickups/B_Pickups.B_Pickups_C.ReceiveDestroyed
 
 	if (Engine_Version >= 420)
 		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerAttemptInventoryDrop"), ServerAttemptInventoryDropHook);

@@ -132,7 +132,7 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
 
     if (Engine_Version < 426)
         res = InternalTryActivateAbility(ASC, Handle, *PredictionKey, &InstancedAbility, nullptr, TriggerEventData);
-    else if (FnVerDouble < 18.00)
+    else if (FnVerDouble < 17.00)
         res = InternalTryActivateAbilityFTS(ASC, Handle, *(FPredictionKeyFTS*)PredictionKey, &InstancedAbility, nullptr, TriggerEventData);
     else
         res = InternalTryActivateAbilityNewer(ASC, Handle, *(FPredictionKeyNewer*)PredictionKey, &InstancedAbility, nullptr, TriggerEventData);
@@ -187,8 +187,7 @@ void* GenerateNewSpec(UObject* DefaultObject)
     static auto GameplayAbilitySpecStruct = FindObjectOld("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec", true);
     static auto GameplayAbilitySpecSize = GetSizeOfStruct(GameplayAbilitySpecStruct);
 
-    if (Engine_Version < 426)
-        std::cout << "Size of GameplayAbilitySpec: " << GameplayAbilitySpecSize << '\n';
+    std::cout << "Size of GameplayAbilitySpec: " << GameplayAbilitySpecSize << '\n';
 
     auto ptr = malloc(GameplayAbilitySpecSize);
 
@@ -289,7 +288,9 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     else if (Engine_Version < 420)
         GiveAbilityOLDDD(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0>*)NewSpec);
     else if (std::floor(FnVerDouble) == 14 || std::floor(FnVerDouble) == 15)
-        GiveAbilityS14ANDS15(AbilitySystemComponent, Handle, *(PaddingHex224*)NewSpec);
+        GiveAbilityS14ANDS15(AbilitySystemComponent, Handle, *(PaddingDec224*)NewSpec);
+    else if (std::floor(FnVerDouble) == 16)
+        GiveAbilityS16(AbilitySystemComponent, Handle, *(PaddingDec232*)NewSpec);
     else if (Engine_Version == 426)
         GiveAbilityFTS(AbilitySystemComponent, Handle, *(FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50>*)NewSpec);
     else
@@ -462,7 +463,7 @@ void TestAbilitySizeDifference()
 
     if (Engine_Version < 426)
         AHH<FPredictionKey>(("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
-    else if (FnVerDouble < 18.00)
+    else if (FnVerDouble < 17.00)
         AHH<FPredictionKeyFTS>(("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
     else
         AHH<FPredictionKeyNewer>(("ScriptStruct /Script/GameplayAbilities.PredictionKey"));
@@ -475,7 +476,9 @@ void TestAbilitySizeDifference()
     else if (Engine_Version < 420)
         AHH<FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0>>(("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec"));
     else if (std::floor(FnVerDouble) == 14 || std::floor(FnVerDouble) == 15)
-        AHH<PaddingHex224>("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec");
+        AHH<PaddingDec224>("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec");
+    else if (std::floor(FnVerDouble) == 16)
+        AHH<PaddingDec232>("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec");
     else if (Engine_Version == 426)
         AHH<FGameplayAbilitySpec<FGameplayAbilityActivationInfoFTS, 0x50>>(("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpec"));
     else
@@ -483,6 +486,8 @@ void TestAbilitySizeDifference()
 
     if (FnVerDouble >= 19.00)
         AHH<FGameplayAbilityActivationInfoNewer>("ScriptStruct /Script/GameplayAbilities.GameplayAbilityActivationInfo");
+    else if (std::floor(FnVerDouble) == 16)
+        AHH<PaddingDec32>("ScriptStruct /Script/GameplayAbilities.GameplayAbilityActivationInfo");
     else if (Engine_Version == 426)
         AHH<FGameplayAbilityActivationInfoFTS>("ScriptStruct /Script/GameplayAbilities.GameplayAbilityActivationInfo");
     else
@@ -538,7 +543,7 @@ std::vector<UObject*> GiveAbilitySet(UObject* Pawn, UObject* AbilitySet)
 
 void GiveAllBRAbilities(UObject* Pawn)
 {
-    if (GiveAbility || GiveAbilityFTS || GiveAbilityNewer || GiveAbilityOLDDD || GiveAbilityS14ANDS15)
+    if (GiveAbility || GiveAbilityFTS || GiveAbilityNewer || GiveAbilityOLDDD || GiveAbilityS14ANDS15 || GiveAbilityS16)
     {
         auto AbilitySystemComponent = *Pawn->CachedMember<UObject*>(("AbilitySystemComponent"));
 
@@ -597,6 +602,8 @@ void GiveAllBRAbilities(UObject* Pawn)
                             }
                         }
                     }
+                    else
+                        std::cout << "No AbilitySet!\n";
                 }
             }
 
