@@ -221,8 +221,7 @@ static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* Gamepl
     if (!GameplayAbilityClass || !TargetPawn)
         return nullptr;
 
-    static auto AbilitySystemComponentOffset = GetOffset(TargetPawn, "AbilitySystemComponent");
-    auto AbilitySystemComponent = *(UObject**)(__int64(TargetPawn) + AbilitySystemComponentOffset);
+    auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(TargetPawn);
 
     if (!AbilitySystemComponent)
         return nullptr;
@@ -502,7 +501,7 @@ void TestAbilitySizeDifference()
     else
         AHH<FGameplayAbilitySpecContainerSE>(("ScriptStruct /Script/GameplayAbilities.GameplayAbilitySpecContainer"));
 
-    if (Engine_Version <= 422)
+    if (FnVerDouble < 8.30)
         AHH<FFastArraySerializerOL>(("ScriptStruct /Script/Engine.FastArraySerializer"));
     else
         AHH<FFastArraySerializerSE>(("ScriptStruct /Script/Engine.FastArraySerializer"));
@@ -518,7 +517,8 @@ std::vector<UObject*> GiveAbilitySet(UObject* Pawn, UObject* AbilitySet)
     {
         std::cout << ("Granting abiityst!\n");
 
-        auto Abilities = AbilitySet->CachedMember<TArray<UObject*>>(("GameplayAbilities"));
+        static auto GameplayAbilitiesOffset = GetOffset(AbilitySet, "GameplayAbilities");
+        auto Abilities = (TArray<UObject*>*)(__int64(AbilitySet) + GameplayAbilitiesOffset);
 
         if (Abilities)
         {
@@ -545,19 +545,20 @@ void GiveAllBRAbilities(UObject* Pawn)
 {
     if (GiveAbility || GiveAbilityFTS || GiveAbilityNewer || GiveAbilityOLDDD || GiveAbilityS14ANDS15 || GiveAbilityS16)
     {
-        auto AbilitySystemComponent = *Pawn->CachedMember<UObject*>(("AbilitySystemComponent"));
+        auto AbilitySystemComponent = Helper::GetAbilitySystemComponent(Pawn);
 
         if (AbilitySystemComponent)
         {
             std::cout << ("Granting abilities!\n");
 
-            if (FnVerDouble < 8)
+            if (FnVerDouble < 8.30)
             {
                 static auto AbilitySet = FindObject(("FortAbilitySet /Game/Abilities/Player/Generic/Traits/DefaultPlayer/GAS_DefaultPlayer.GAS_DefaultPlayer"));
 
                 if (AbilitySet)
                 {
-                    auto Abilities = AbilitySet->Member<TArray<UObject*>>(("GameplayAbilities"));
+                    static auto GameplayAbilitiesOffset = GetOffset(AbilitySet, "GameplayAbilities");
+                    auto Abilities = (TArray<UObject*>*)(__int64(AbilitySet) + GameplayAbilitiesOffset);
 
                     if (Abilities)
                     {
@@ -586,7 +587,8 @@ void GiveAllBRAbilities(UObject* Pawn)
 
                     if (AbilitySet)
                     {
-                        auto Abilities = AbilitySet->Member<TArray<UObject*>>(("GameplayAbilities"));
+                        static auto GameplayAbilitiesOffset = GetOffset(AbilitySet, "GameplayAbilities");
+                        auto Abilities = (TArray<UObject*>*)(__int64(AbilitySet) + GameplayAbilitiesOffset);
 
                         if (Abilities)
                         {

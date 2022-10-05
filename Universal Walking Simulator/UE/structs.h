@@ -2155,7 +2155,7 @@ struct FFastArraySerializerOL
 
 void MarkArrayDirty(void* Array)
 {
-	if (Engine_Version <= 422)
+	if (FnVerDouble < 8.30)
 		((FFastArraySerializerOL*)Array)->MarkArrayDirty();
 	else
 		((FFastArraySerializerSE*)Array)->MarkArrayDirty();
@@ -2163,7 +2163,7 @@ void MarkArrayDirty(void* Array)
 
 void MarkItemDirty(void* Array, FFastArraySerializerItem* Item)
 {
-	if (Engine_Version <= 422)
+	if (FnVerDouble < 8.30)
 		((FFastArraySerializerOL*)Array)->MarkItemDirty(Item);
 	else
 		((FFastArraySerializerSE*)Array)->MarkItemDirty(Item);

@@ -1188,6 +1188,16 @@ namespace Helper
 		return *GameState->Member<UObject*>("StructuralSupportSystem");
 	}
 
+	UObject* GetAbilitySystemComponent(UObject* Pawn)
+	{
+		if (!Pawn)
+			return nullptr;
+
+		static auto AbilitySystemComponentOffset = GetOffset(Pawn, "AbilitySystemComponent");
+
+		return *(UObject**)(__int64(Pawn) + AbilitySystemComponentOffset);
+	}
+
 	EAthenaGamePhase* GetGamePhase()
 	{
 		return GetGameState()->Member<EAthenaGamePhase>(("GamePhase"));
@@ -1418,21 +1428,23 @@ namespace Helper
 
 	void SetGamePhase(EAthenaGamePhase newPhase)
 	{
-		auto GamePhase = Helper::GetGameState()->Member<EAthenaGamePhase>(("GamePhase"));
+		auto GamePhase = Helper::GetGamePhase();
+		auto OldPhase = GamePhase ? *GamePhase : EAthenaGamePhase::None;
+		auto GameState = Helper::GetGameState();
 
 		// if (Engine_Version >= 420)
-		if (GamePhase)
+		if (GamePhase && GameState)
 		{
 			*GamePhase = newPhase;
 
 			struct {
 				EAthenaGamePhase OldPhase;
-			} params2{ EAthenaGamePhase::None };
+			} params2{ EAthenaGamePhase::None }; // OldPhase
 
-			static const auto fnGamephase = Helper::GetGameState()->Function(("OnRep_GamePhase"));
+			static const auto fnGamephase = GameState->Function(("OnRep_GamePhase"));
 
 			if (fnGamephase)
-				Helper::GetGameState()->ProcessEvent(fnGamephase, &params2);
+				GameState->ProcessEvent(fnGamephase, &params2);
 		}
 	}
 
@@ -1498,7 +1510,10 @@ namespace Helper
 
 	void SetOwner(UObject* Actor, UObject* Owner)
 	{
-		*Actor->Member<UObject*>(("Owner")) = Owner; // TODO: Call SetOwner
+		static auto OwnerOffset = GetOffset(Actor, "Owner");
+
+		*(UObject**)(__int64(Actor) + OwnerOffset) = Owner; // TODO: Call SetOwner
+
 		static auto OnRepOwner = Actor->Function(("OnRep_Owner"));
 
 		if (OnRepOwner)
@@ -1549,12 +1564,14 @@ namespace Helper
 
 	void SetLocalRole(UObject* Actor, ENetRole LocalRole)
 	{
-		*Actor->Member<ENetRole>(("Role")) = LocalRole;
+		static auto RoleOffset = GetOffset(Actor, "Role");
+		*(ENetRole*)(__int64(Actor) + RoleOffset) = LocalRole;
 	}
 
 	void SetRemoteRole(UObject* Actor, ENetRole RemoteRole)
 	{
-		*Actor->Member<ENetRole>(("RemoteRole")) = RemoteRole;
+		static auto RemoteRoleOffset = GetOffset(Actor, "RemoteRole");
+		*(ENetRole*)(__int64(Actor) + RemoteRoleOffset) = RemoteRole;
 	}
 
 	static void SetActorScale3D(UObject* Actor, const FVector& Scale)
@@ -1571,7 +1588,8 @@ namespace Helper
 		if (!Controller)
 			return FString();
 
-		auto MCPProfileGroupPTR = Controller->Member<UObject*>("McpProfileGroup");
+		static auto McpProfileGroupOffset = GetOffset(Controller, "McpProfileGroup");
+		auto MCPProfileGroupPTR = (UObject**)(__int64(Controller) + McpProfileGroupOffset);
 
 		FString Name; // = *PlayerState->Member<FString>(("PlayerNamePrivate"));
 
@@ -1591,7 +1609,8 @@ namespace Helper
 		{
 			auto MCPProfileGroup = *MCPProfileGroupPTR;
 
-			Name = *MCPProfileGroup->Member<FString>("PlayerName");
+			static auto PlayerNameOffset = GetOffset(MCPProfileGroup, "PlayerName");
+			Name = *(FString*)(__int64(MCPProfileGroup) + PlayerNameOffset);
 		}
 
 		return Name;
@@ -1761,7 +1780,8 @@ namespace Helper
 		if (!HeroDefinition)
 			return;
 
-		auto HeroSpecializations = HeroDefinition->CachedMember<TArray<TSoftObjectPtr>>("Specializations");
+		static auto SpecializationsOffset = GetOffset(HeroDefinition, "Specializations");
+		auto HeroSpecializations = (TArray<TSoftObjectPtr>*)(__int64(HeroDefinition) + SpecializationsOffset);
 
 		if (!HeroSpecializations)
 		{
@@ -1777,7 +1797,8 @@ namespace Helper
 
 			auto Specialization = StaticLoadObject(SpecializationClass, nullptr, SpecializationName);
 
-			auto CharacterParts = Specialization->Member<TArray<TSoftObjectPtr>>("CharacterParts");
+			static auto CharacterPartsOffset = GetOffset(Specialization, "CharacterParts");
+			auto CharacterParts = (TArray<TSoftObjectPtr>*)(__int64(Specialization) + CharacterPartsOffset);
 
 			if (!CharacterParts)
 			{
@@ -1791,7 +1812,8 @@ namespace Helper
 
 				if (CharacterPart)
 				{
-					auto PartType = *CharacterPart->CachedMember<TEnumAsByte<EFortCustomPartType>>("CharacterPartType");
+					static auto CharacterPartTypeOffset = GetOffset(CharacterPart, "CharacterPartType");
+					auto PartType = *(TEnumAsByte<EFortCustomPartType>*)(__int64(CharacterPart) + CharacterPartTypeOffset);
 					Helper::ChoosePart(Pawn, PartType, CharacterPart);
 				}
 			}

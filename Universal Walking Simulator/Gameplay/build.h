@@ -45,7 +45,7 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 		FRotator BuildingRotation;
 		bool bMirrored;
 
-		if (FnVerDouble > 8)
+		if (FnVerDouble >= 8.30)
 		{
 			struct FCreateBuildingActorData
 			{
