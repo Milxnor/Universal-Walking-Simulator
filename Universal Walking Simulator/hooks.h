@@ -438,7 +438,15 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 					auto Pawn = Helper::InitPawn(PlayerController, false, ExitLocation);
 
-					// ClientSetRotation
+					static auto CSRfn = PlayerController->Function(("ClientSetRotation"));
+
+					struct {
+						FRotator NewRotation;
+						bool bResetCamera;
+					} CSRparams{ Params->ClientRotation, false };
+
+					if (CSRfn)
+						PlayerController->ProcessEvent(CSRfn, &CSRparams);
 
 					if (Pawn)
 					{
