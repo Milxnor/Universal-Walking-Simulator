@@ -144,9 +144,12 @@ void InternalServerTryActivateAbility(UObject* ASC, FGameplayAbilitySpecHandle H
         std::cout << std::format("InternalServerTryActivateAbility. Rejecting ClientActivation of {}. InternalTryActivateAbility failed\n", (*GetAbilityFromSpec(Spec))->GetName());
         Helper::Abilities::ClientActivateAbilityFailed(ASC, Handle, *GetCurrent(PredictionKey));
 
-        if (((bool(1) << 1) & *(bool*)(inad)) != 1)
+        // if (inad && !IsBadReadPtr(inad))
         {
-            *inad = (*inad & ~1) | (false ? 1 : 0);
+            if (((bool(1) << 1) & *(bool*)(inad)) != 1)
+            {
+                *inad = (*inad & ~1) | (false ? 1 : 0);
+            }
         }
 
         /* if (Engine_Version < 426)

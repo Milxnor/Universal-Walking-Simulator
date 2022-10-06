@@ -519,6 +519,9 @@ void InitializePatterns()
     {
         CanActivateAbilityAddr = FindPattern(("48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 49 8B F0 8B DA 48 8B F9 4D 85 C0 0F 84 ? ? ? ? 49 8D 48 10 E8 ? ? ? ? 48 85"));
 
+        if (!CanActivateAbilityAddr)
+            CanActivateAbilityAddr = FindPattern("48 89 5C 24 ? 4C 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 81 EC ? ? ? ? 49 8B F0 8B DA");
+
         if (!CanActivateAbilityAddr && Engine_Version > 420)
             std::cout << ("[WARNING] Abilities may fail!\n");
     }

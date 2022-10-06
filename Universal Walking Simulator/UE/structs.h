@@ -2163,6 +2163,9 @@ void MarkArrayDirty(void* Array)
 
 void MarkItemDirty(void* Array, FFastArraySerializerItem* Item)
 {
+	if (!Array)
+		return;
+
 	if (FnVerDouble < 8.30)
 		((FFastArraySerializerOL*)Array)->MarkItemDirty(Item);
 	else

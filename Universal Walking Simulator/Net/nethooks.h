@@ -323,7 +323,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		}
 	}
 
-	if (FnVerDouble < AboveVersionDisableAbilities)
+	if (FnVerDouble < AboveVersionDisableAbilities && std::floor(FnVerDouble) != 13)
 	{
 		GiveAllBRAbilities(Pawn);
 	}

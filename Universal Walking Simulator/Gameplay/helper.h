@@ -527,11 +527,24 @@ namespace Helper
 			Foundation->ProcessEvent(OnRep_ServerStreamedInLevel);
 
 		if (FnVerDouble >= 10.0) {
-			auto DynamicFoundationRepData = Foundation->Member<__int64>("DynamicFoundationRepData");
+			static auto DynamicFoundationRepDataOffset = GetOffset(Foundation, "DynamicFoundationRepData");
+			auto DynamicFoundationRepData = (__int64*)(__int64(Foundation) + DynamicFoundationRepDataOffset);
+
 			static int EnabledState_Offset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.DynamicBuildingFoundationRepData", "EnabledState");
 			*reinterpret_cast<uint8_t*>(__int64(DynamicFoundationRepData) + EnabledState_Offset) = 1;
-			*Foundation->Member<uint8_t>("FoundationEnabledState") = 1;
-			Foundation->ProcessEvent("OnRep_DynamicFoundationRepData");
+
+			static auto FoundationEnabledStateOffset = GetOffset(Foundation, "FoundationEnabledState");
+			*(uint8_t*)(__int64(Foundation) + FoundationEnabledStateOffset) = 1;
+
+			static auto HideHLODProxies = Foundation->Function("HideHLODProxies");
+
+			if (HideHLODProxies)
+				Foundation->ProcessEvent(HideHLODProxies);
+
+			static auto OnRep_DynamicFoundationRepData = Foundation->Function("OnRep_DynamicFoundationRepData");
+
+			if (OnRep_DynamicFoundationRepData)
+				Foundation->ProcessEvent(OnRep_DynamicFoundationRepData);
 		}
 	}
 
@@ -585,6 +598,10 @@ namespace Helper
 		float Version = std::stof(FN_Version);
 		int Season = (int)Version;
 		//Volcano
+		if (Season == 13) {
+			static auto SpawnIsland = FindObject("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Lobby_Foundation");
+			ShowBuilding(SpawnIsland);
+		}
 		if (Season == 8) {
 			auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
 			ShowBuilding(Volcano);

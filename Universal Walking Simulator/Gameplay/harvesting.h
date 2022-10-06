@@ -19,7 +19,8 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 	if (!bIsCar)
 	{
-		auto BuildingResourceAmountOverride = BuildingActor->Member<FCurveTableRowHandle>("BuildingResourceAmountOverride");
+		static auto BuildingResourceAmountOverrideOffset = GetOffset(BuildingActor, "BuildingResourceAmountOverride");
+		auto BuildingResourceAmountOverride = (FCurveTableRowHandle*)(__int64(BuildingActor) + BuildingResourceAmountOverrideOffset);
 
 		if (!BuildingResourceAmountOverride->RowName.ComparisonIndex) // player placed replacement
 			return;
