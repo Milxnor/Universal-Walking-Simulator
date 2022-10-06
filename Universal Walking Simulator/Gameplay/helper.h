@@ -615,6 +615,27 @@ namespace Helper
 			ShowBuilding(tiltedtower);
 		}
 
+		// Travis Scott Stage and Heads
+		if (Version == 12.41f) {
+			auto JS03 = FindObject(("LF_Athena_POI_19x19_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_Athena_POI_19x19_2"));
+			ShowBuilding(JS03);
+
+			auto JH00 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head6_18"));
+			ShowBuilding(JH00);
+
+			auto JH01 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head5_14"));
+			ShowBuilding(JH01);
+
+			auto JH02 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head3_8"));
+			ShowBuilding(JH02);
+
+			auto JH03 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head_2"));
+			ShowBuilding(JH03);
+
+			auto JH04 = FindObject(("LF_1x1_FoundationNoSnap_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.BP_Jerky_Head4_11"));
+			ShowBuilding(JH04);
+		}
+
 		if (Season >= 7 && Engine_Version < 424)
 		{
 			auto TheBlock = FindObject("BuildingFoundationSlab_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.SLAB_2"); // SLAB_3 is blank
@@ -679,6 +700,7 @@ namespace Helper
 			}
 
 			// *scripting->Member<FVector>("IslandPosition") = Helper::GetActorLocation(FloatingIsland);
+
 
 		}
 	}
