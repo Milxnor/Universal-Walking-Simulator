@@ -121,10 +121,16 @@ inline bool ServerCreateBuildingActorHook(UObject* Controller, UFunction* Functi
 				return false;
 
 			{
-				__int64 v32[2]{};
-				char dababy;
+				bool bCanBuild = true;
 
-				if (!CanBuild || FnVerDouble >= 13 || (CanBuild && !CanBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy)))
+				if (CanBuild)
+				{
+					__int64 v32[2]{};
+					char dababy;
+
+					bCanBuild = !CanBuild(Helper::GetWorld(), BuildingClass, BuildingLocation, BuildingRotation, bMirrored, v32, &dababy);
+				}
+
 				{
 					UObject* BuildingActor = Easy::SpawnActor(BuildingClass, BuildingLocation, BuildingRotation, Pawn);
 
@@ -243,44 +249,6 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 	return false;
 }
 
-/* inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
-{
-	struct Parms {
-		UObject* BuildingActorToEdit;                                      // (Parm, ZeroConstructor, IsPlainOldData)
-		UObject* NewBuildingClass;                                         // (Parm, ZeroConstructor, IsPlainOldData)
-		int                                                RotationIterations;                                       // (Parm, ZeroConstructor, IsPlainOldData)
-		bool                                               bMirrored;                                                // (Parm, ZeroConstructor, IsPlainOldData)
-	};
-
-	auto Params = (Parms*)Parameters;
-
-	if (Params && Controller)
-	{
-		auto BuildingActor = Params->BuildingActorToEdit;
-		auto NewBuildingClass = Params->NewBuildingClass;
-
-		static auto bMirroredOffset = FindOffsetStruct("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "bMirrored");
-		auto bMirrored = *(bool*)(__int64(Parameters) + bMirroredOffset);
-
-		static auto RotationIterationsOffset = FindOffsetStruct("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "RotationIterations");
-		auto RotationIterations = *(int*)(__int64(Parameters) + RotationIterationsOffset);
-
-		if (BuildingActor && NewBuildingClass)
-		{
-			// TODO: Check EditTool's EditActor and make sure its the BuildingActor
-			
-			// bool bDestroyed = readBitfield(BuildingActor, "bDestroyed");
-
-			if (RotationIterations > 3)
-				return false;
-
-			Helper::ReplaceBuildingActor(Controller, BuildingActor, NewBuildingClass, RotationIterations, bMirrored);
-		}
-	}
-
-	return false;
-} */
-
 inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function, void* Parameters)
 {
 	struct Parms {
@@ -301,15 +269,14 @@ inline bool ServerEditBuildingActorHook(UObject* Controller, UFunction* Function
 		auto bMirrored = *(bool*)(__int64(Parameters) + bMirroredOffset);
 
 		static auto RotationIterationsOffset = FindOffsetStruct("Function /Script/FortniteGame.FortPlayerController.ServerEditBuildingActor", "RotationIterations");
-		auto RotationIterations = *(int*)(__int64(Parameters) + RotationIterationsOffset);
+		auto RotationIterations = FnVerDouble < 8.30 ? *(int*)(__int64(Parameters) + RotationIterationsOffset) : *(char*)(__int64(Parameters) + RotationIterationsOffset); // I HATE FORTNITE
 
 		if (BuildingActor && NewBuildingClass)
 		{
 			// if (false && RotationIterations > 3)
 				// return false;
 
-			auto Location = Helper::GetActorLocation(BuildingActor);
-			auto Rotation = Helper::GetActorRotation(BuildingActor);
+			// std::cout << "rotation iterations: " << RotationIterations << '\n';
 
 			static bool bFound = false;
 
@@ -470,6 +437,7 @@ inline bool ServerCreateBuildingAndSpawnDecoHook(UObject* DecoTool, UFunction*, 
 void InitializeBuildHooks()
 {
 	// if (Engine_Version < 426)
+	if (std::floor(FnVerDouble) != 14)
 	{
 		// AddHook("Function /Script/FortniteGame.FortDecoTool.ServerCreateBuildingAndSpawnDeco", ServerCreateBuildingAndSpawnDecoHook);
 		AddHook("Function /Script/FortniteGame.FortDecoTool.ServerSpawnDeco", ServerSpawnDecoHook);

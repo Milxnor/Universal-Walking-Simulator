@@ -424,6 +424,32 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (bEmotingEnabled)
 						ImGui::Checkbox("bPrintFUnny", &bPrintFUnny);
 
+					if (false)
+					{
+						auto GameState = Helper::GetGameState();
+
+						if (GameState)
+						{
+							auto GamePhase = Helper::GetGamePhase();
+
+							if (GamePhase && *GamePhase == EAthenaGamePhase::Warmup)
+							{
+								static auto AircraftStartTimeOffset = GetOffset(GameState, "AircraftStartTime");
+
+								if (AircraftStartTimeOffset != -1)
+								{
+									auto AircraftStartTime = (float*)(__int64(GameState) + AircraftStartTimeOffset);
+									ImGui::InputFloat("Aircraft Start Time", AircraftStartTime);
+
+									static auto WarmupCountdownEndTimeOffset = GetOffset(GameState, "WarmupCountdownEndTime");
+									auto WarmupCountdownEndTime = (float*)(__int64(GameState) + WarmupCountdownEndTimeOffset);
+
+									ImGui::InputFloat("Warmup End Time", AircraftStartTime);
+								}
+							}
+						}
+					}
+
 					ImGui::InputText("Console command", &ConsoleCommand);
 
 					if (ImGui::Button("Execute console command"))
@@ -456,7 +482,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							LoadInMatch();
 						}
 
-						if (true && FnVerDouble >= 7 && ImGui::Button(("Load in Creative")))
+						if (FnVerDouble == 7.40 && ImGui::Button(("Load in Creative")))
 						{
 							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2";
 							bIsCreative = true;

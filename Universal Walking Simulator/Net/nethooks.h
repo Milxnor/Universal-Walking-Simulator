@@ -161,27 +161,22 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 {
 	static int LastResetNum = 824524899135;
 
-	if (LastResetNum != AmountOfRestarts)
+	if (LastResetNum != AmountOfRestarts) // only run these once per game
 	{
 		LastResetNum = AmountOfRestarts;
 
+		InitializeHarvestingHooks();
+
+		// AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
+
 		// CreateThread(0, 0, LootingV2::SummonFloorLoot, 0, 0, 0);
+
+		// Helper::SetGamePhase(EAthenaGamePhase::Warmup); // i hate u nomcp
 
 		if (Engine_Version >= 423)
 		{
 			Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol
 		}
-	}
-
-	static bool bbbb = false;
-
-	if (!bbbb)
-	{
-		bbbb = true;
-
-		InitializeHarvestingHooks();
-
-		// AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 	}
 
 	std::cout << ("SpawnPlayActor called!\n");
@@ -239,8 +234,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 		if (QuickBars)
 		{
-			*QuickBars = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator());
-			Helper::SetOwner(*QuickBars, PlayerController);
+			*QuickBars = Easy::SpawnActor(QuickBarsClass, FVector(), FRotator(), PlayerController);
+			Helper::SetOwner(*QuickBars, PlayerController); // unneeded?
 		}
 	}
 

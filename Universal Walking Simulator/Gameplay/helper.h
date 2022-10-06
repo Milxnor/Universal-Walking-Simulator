@@ -1219,7 +1219,9 @@ namespace Helper
 
 	EAthenaGamePhase* GetGamePhase()
 	{
-		return GetGameState()->Member<EAthenaGamePhase>(("GamePhase"));
+		auto GameState = GetGameState();
+		static auto GamePhaseOffset = GetOffset(GameState, "GamePhase");
+		return (EAthenaGamePhase*)(__int64(GameState) + GamePhaseOffset);
 	}
 
 	bool HasAircraftStarted()
@@ -1342,7 +1344,7 @@ namespace Helper
 		}
 	}
 
-	bool IsControllerAlive(UObject* Controller) // NOT RECOMMENDED
+	bool IsControllerAlive(UObject* Controller) // NOT RECOMMENDED (for speed)
 	{
 		// bMarkedAlive
 
