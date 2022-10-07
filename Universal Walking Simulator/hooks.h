@@ -229,10 +229,6 @@ inline void initStuff()
 		// if (FnVerDouble != 12.61)
 		LootingV2::InitializeWeapons(nullptr);
 
-		/* auto bUseDistanceBasedRelevancy = (*world->Member<UObject*>("NetworkManager"))->Member<bool>("bUseDistanceBasedRelevancy");
-		std::cout << "bUseDistanceBasedRelevancy: " << *bUseDistanceBasedRelevancy << '\n';
-		*bUseDistanceBasedRelevancy = !(*bUseDistanceBasedRelevancy); */
-
 		/*
 
 		// cursed server pawn if you want to see level names or something
@@ -1048,10 +1044,27 @@ __int64 __fastcall FReplicationGraphDebugInfo_LogDetour(__int64 a1, __int64 a2)
 
 UObject* __fastcall CreateReplicationDriverDetour(__int64 NetDriver, __int64 URL, __int64 World)
 {
+	static bool bbb = false;
+
+	if (!bbb) // needed idk
+	{
+		std::cout << "Blocking creation!\n";
+		bbb = true;
+		return nullptr;
+	}
+
 	// idk why bu the replciationdriverclas iusnt set and if i set it ig it gvets unset by initreplicationdriverclass
 	std::cout << "Skidad!\n";
 	static auto ReplicationDriverClass = FindObject(("Class /Script/FortniteGame.FortReplicationGraph"));
 	return Easy::SpawnObject(ReplicationDriverClass, Helper::GetTransientPackage());
+}
+
+void (__fastcall* LifeO)(_int64 a1, const void* a2, int a3);
+
+void __fastcall LifeDetour(__int64 a1, const void* a2, int a3)
+{
+	std::cout << std::format("off: 0x{:x}\n", (uintptr_t)_ReturnAddress() - (uintptr_t)GetModuleHandleW(0));
+	return LifeO(a1, a2, a3);
 }
 
 __int64(__fastcall* getnetmodeO)(UObject* World);
@@ -2805,7 +2818,10 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), "BindVolumeEvents") &&
 					!strstr(FunctionName.c_str(), "UpdateStateEvent") &&
 					!strstr(FunctionName.c_str(), "VISUALS__UpdateFunc") &&
-					!strstr(FunctionName.c_str(), "Flash__UpdateFunc"))
+					!strstr(FunctionName.c_str(), "Flash__UpdateFunc") &&
+					!strstr(FunctionName.c_str(), "SetCollisionEnabled") &&
+					!strstr(FunctionName.c_str(), "SetIntensity") &&
+					!strstr(FunctionName.c_str(), "Storm__UpdateFunc"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}

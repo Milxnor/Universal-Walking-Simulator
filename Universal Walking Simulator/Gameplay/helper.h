@@ -8,6 +8,16 @@
 
 static bool bPickupAnimsEnabled = true;
 
+static UObject* GetSnowScripting()
+{
+	return FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
+}
+
+static UObject* GetIslandScripting()
+{
+	return FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3");
+}
+
 int GetMaxBullets(UObject* Definition)
 {
 	if (!Definition)
@@ -572,6 +582,21 @@ namespace Helper
 			Pawn->ProcessEvent(TeleportToSkyDiveFn, &TeleportToSkyDiveParams);
 	}
 
+	UObject* GetWorld()
+	{
+		return GetWorldW();
+	}
+
+	UObject* GetGameState(UObject* World = nullptr)
+	{
+		auto world = World ? World : Helper::GetWorld();
+
+		static auto gameStateOffset = GetOffset(world, "GameState");
+		auto gameState = *(UObject**)(__int64(world) + gameStateOffset);
+
+		return gameState;
+	}
+
 	UObject* LoadLevelInstance(const FString& LevelName)
 	{
 		struct ULevelStreamingDynamic_LoadLevelInstance_Params
@@ -656,14 +681,17 @@ namespace Helper
 			Block_25x25_TrickyTracks - 8.50
 
 			Block_25x25_AlienSanctuary - 8.50
-			
+			s
 			*/
 		}
 
 		//Marshamello
 		if (Version == 7.30f) {
-			auto PleasantPark = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"));
-			ShowBuilding(PleasantPark);
+			auto PleasantParkIdk = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"));
+			ShowBuilding(PleasantParkIdk);
+
+			auto PleasantParkGround = FindObject("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkDefault");
+			ShowBuilding(PleasantParkGround);
 		}
 
 		if (Season == 13) {
@@ -675,15 +703,18 @@ namespace Helper
 			WL->ProcessEvent(Func2);
 		}
 
+		if (FnVerDouble == 6.21)
+		{
+			auto buildingbylootlake = FindObject("BuildingFoundation3x3 /Temp/Game/Athena/Maps/POI/Athena_POI_Lake_002_5d9a86c8.Athena_POI_Lake_002.PersistentLevel.BuildingFoundation3x35");
+			ShowBuilding(buildingbylootlake);
+		}
+
 		//Loot Lake
 		if (Season == 6) {
 			if (FnVerDouble != 6.10)
 			{
-				auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
 				auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake1"));
 				auto Lake2 = FindObject("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Lake2");
-
-				ShowBuilding(FloatingIsland);
 
 				if (FnVerDouble <= 6.21)
 					ShowBuilding(Lake);
@@ -692,16 +723,33 @@ namespace Helper
 			}
 			else
 			{
-				auto FloatingIsland = FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13"));
 				auto Lake = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest12"));
 
-				ShowBuilding(FloatingIsland);
 				ShowBuilding(Lake);
 			}
 
-			// *scripting->Member<FVector>("IslandPosition") = Helper::GetActorLocation(FloatingIsland);
+			auto FloatingIsland = Version == 6.10f ? FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest13")) :
+				FindObject(("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_FloatingIsland"));
 
+			std::cout << "FloatingIsland: " << FloatingIsland << '\n';
 
+			struct {
+				FVector WorldPos;
+				bool bActivated;
+			} SetFloatingIslandInformation_Params{ Helper::GetActorLocation(FloatingIsland), false };
+
+			Helper::GetGameState()->ProcessEvent("SetFloatingIslandInformation", &SetFloatingIslandInformation_Params);
+
+			ShowBuilding(FloatingIsland);
+
+			UObject* IslandScripting = GetIslandScripting();
+
+			if (IslandScripting)
+			{
+				*IslandScripting->Member<FVector>("IslandPosition") = Helper::GetActorLocation(FloatingIsland);
+				IslandScripting->ProcessEvent("OnRep_CachedTime");
+				IslandScripting->ProcessEvent("OnRep_IslandPosition");
+			}
 		}
 	}
 
@@ -740,11 +788,6 @@ namespace Helper
 			*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
 			*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
 		}
-	}
-	
-	UObject* GetWorld()
-	{
-		return GetWorldW();
 	}
 
 	static void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart)
@@ -1227,16 +1270,6 @@ namespace Helper
 		static auto SafeZoneIndicatorOffset = GetOffset(GameMode, "SafeZoneIndicator");
 
 		return *(UObject**)(__int64(GameMode) + SafeZoneIndicatorOffset);
-	}
-
-	UObject* GetGameState(UObject* World = nullptr)
-	{
-		auto world = World ? World : Helper::GetWorld();
-
-		static auto gameStateOffset = GetOffset(world, "GameState");
-		auto gameState = *(UObject**)(__int64(world) + gameStateOffset);
-
-		return gameState;
 	}
 
 	auto GetStructuralSupportSystem()
@@ -1828,7 +1861,6 @@ namespace Helper
 
 	static UObject* GetPickaxeDef(UObject* Controller)
 	{
-		// GlobalPickaxeDefObject = FindObject(PickaxeDef);
 		return GlobalPickaxeDefObject;
 	}
 

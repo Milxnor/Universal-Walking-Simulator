@@ -7,13 +7,41 @@ static UObject* JerkyBPLoader = nullptr;
 static UObject* JerkyLoaderActual = nullptr;
 static UObject* JerkyPlayerInteraction = nullptr;
 
+bool POI1Hook(UObject* SequenceDirector, UFunction*, void* Parameters)
+{
+	auto SnowScripting = GetSnowScripting();
+
+	// SnowScripting->ProcessEvent("LoadFoundation1");
+
+	return false;
+}
+
+bool POI2Hook(UObject* SequenceDirector, UFunction*, void* Parameters)
+{
+	auto SnowScripting = GetSnowScripting();
+
+	// SnowScripting->ProcessEvent("LoadFoundation2");
+
+	return false;
+}
+
+bool POI3Hook(UObject* SequenceDirector, UFunction*, void* Parameters)
+{
+	auto SnowScripting = GetSnowScripting();
+
+	// SnowScripting->ProcessEvent("LoadFoundation3");
+
+	return false;
+}
+
 namespace EventHelper
 {
 	std::string UV_ItemName = "DrumGun";
 	void UnvaultItem(FName ItemName) {
-		UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
+		UObject* BSS = GetSnowScripting();
 		UObject* Func = BSS->Function("PillarsConcluded");
 		BSS->ProcessEvent(Func, &ItemName);
+		BSS->ProcessEvent("PillarsAlreadyConcluded");
 	}
 
 	void TeleportPlayersToButterfly()
@@ -182,6 +210,7 @@ namespace Events { // made by GD
 
 	void LoadEvents() {
 		float Version = std::stof(FN_Version);
+		int Season = std::floor(Version);
 
 		if (HasEvent()) {
 			std::cout << ("Loading Event!\n");
@@ -222,10 +251,6 @@ namespace Events { // made by GD
 				bool Condition = true;
 				CD->ProcessEvent(Func, &Condition);
 			}
-			/*if (Version == 8.51f) {
-				UObject* SS = FindObject("");
-				UObject* Func = SS->Function("FinalSequence");
-			}*/
 			if (Version == 7.20f) {
 				//Ice King
 				UObject* ML = FindObject(("BP_MooneyLoader_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_MooneyLoader_2"));
@@ -239,12 +264,6 @@ namespace Events { // made by GD
 				UObject* BF = FindObject(("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
 				UObject* Func = BF->Function(("LoadButterflySublevel"));
 				BF->ProcessEvent(Func);
-
-				static auto scripting = FindObjectOld("BP_IslandScripting_C_", true);
-				scripting->ProcessEvent("LoadDynamicLevels");
-
-				scripting->ProcessEvent("OnRep_CachedTime");
-				scripting->ProcessEvent("TrySetIslandLocation");
 			}
 		}
 	}
@@ -371,27 +390,67 @@ namespace Events { // made by GD
 				UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
 				UObject* Func = BSS->Function("FinalSequence");
 				BSS->ProcessEvent(Func);
-				//(TODO) Teleport back after unvaulting part is done.
 
 				// BSS->Member<FTimespan>("TimeUntilCountdownEnd")->Ticks = 1000000000; // 1:38
+				// StartCountdown
 			}
 
 			else if (Version == 7.30f) {
 				//Marshmello
-				UObject* FS = FindObjectOld(".Athena_POI_CommunityPark_003_M.PersistentLevel.FestivusSequence_01_2.AnimationPlayer2");
+				/* UObject* FS = FindObjectOld(".Athena_POI_CommunityPark_003_M.PersistentLevel.FestivusSequence_01_2.AnimationPlayer");
 				if (FS)
 				{
 					UObject* Func = FS->Function(("Play"));
 					FS->ProcessEvent(Func);
 				}
 				else
-					std::cout << "Failed to find FestivusSequence!\n";
+					std::cout << "Failed to find FestivusSequence!\n"; */
+
+				UObject* RepSequencePlayer = FindObjectOld(".PersistentLevel.BP_RepSequencePlayer_");
+
+				std::cout << "RepSequencePlayer: " << RepSequencePlayer << '\n';
+
+				if (RepSequencePlayer)
+				{
+					auto SequenceActor = *RepSequencePlayer->Member<UObject*>("Sequence");
+
+					std::cout << "SequenceActor: " << SequenceActor << '\n';
+
+					if (SequenceActor)
+					{
+						SequenceActor->ProcessEvent("PlaySequence");
+						*SequenceActor->Member<bool>("ShouldPlaySequence") = true;
+						SequenceActor->ProcessEvent("OnRep_ShouldPlaySequence");
+
+						auto FestivusManager = *SequenceActor->Member<UObject*>("FestivusManager");
+
+						std::cout << "FestivusManager: " << FestivusManager << '\n';
+
+						if (FestivusManager)
+						{
+							FestivusManager->ProcessEvent("StartFestivus");
+							FestivusManager->ProcessEvent("MulticastLoad");
+							FestivusManager->ProcessEvent("PlayConcert");
+						}
+					}
+				}
 			}
 			else if (Version == 7.20f) {
 				//Ice King
 				UObject* MS = FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S7/MooneySequenceMap.MooneySequenceMap.PersistentLevel.MooneySequence.AnimationPlayer"));
 				UObject* Func = MS->Function(("Play"));
 				MS->ProcessEvent(Func);
+
+				auto Scripoting = FindObjectOld("BP_MooneyScripting_C_");
+				std::cout << "BP_MooneyScripting_C: " << Scripoting << '\n';
+
+				if (Scripoting)
+				{
+					std::cout << "Scripoting Name: " << Scripoting->GetFullName() << '\n';
+
+					// Scripting->ProcessEvent("BeginIceKingEvent");
+					// Scripting->ProcessEvent("SetupCountdown");
+				}
 			}
 			else if (Version == 6.21f) {
 				//Butterfly
@@ -406,17 +465,26 @@ namespace Events { // made by GD
 					void ButterflyStart();
 					void CubeEvent();
 
-				*/
-
-				
+				*/			
 			}
 			else if (Version == 4.5f) {
 				//Rocket
 				UObject* LR = FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/Events/Athena_Gameplay_Geode.Athena_Gameplay_Geode.PersistentLevel.LevelSequence_LaunchRocket.AnimationPlayer"));
 				UObject* Func = LR->Function(("Play"));
+
 				if (Func)
 					LR->ProcessEvent(Func);
 			}
 		}
+	}
+}
+
+void InitializeEventHooks()
+{
+	if (FnVerDouble == 8.51)
+	{
+		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI1", POI1Hook); // Retail
+		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI2", POI2Hook); // Polar
+		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI3", POI3Hook); // Tilted
 	}
 }

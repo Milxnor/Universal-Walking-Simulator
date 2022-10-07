@@ -155,6 +155,7 @@ namespace Teams
 			PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIdx);
 
 		// PlayerState->FriendsInSquad
+		// OnRep_SquadListUpdateValue
 
 		// (*PlayerTeam)->CachedMember<TArray<AController*>>("TeamMembers")->Add(Controller);
 

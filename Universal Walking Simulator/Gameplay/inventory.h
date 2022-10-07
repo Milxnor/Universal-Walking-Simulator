@@ -619,9 +619,11 @@ namespace Inventory
 		else
 			std::cout << "Brudaa!\n";
 
-		std::cout << "currentWeapon ammo: " << currentWeaponAmmo << '\n';
+		int equippingAmmo = *FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(CurrentItemInstance));
 
-		EquipWeaponDefinition(Pawn, Def, Guid, currentWeaponAmmo/* *FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(CurrentItemInstance)) */, TrackerGuid);
+		std::cout << "equippingAmmo ammo: " << equippingAmmo << '\n';
+
+		EquipWeaponDefinition(Pawn, Def, Guid, equippingAmmo/* *FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(CurrentItemInstance)) */, TrackerGuid);
 
 		/* std::string FullName = Def->GetFullName();
 

@@ -12,6 +12,7 @@
 #include <Net/replication.h>
 #include <Gameplay/zone.h>
 #include <Gameplay/harvesting.h>
+#include <Gameplay/events.h>
 #include <team.h>
 
 static bool bTraveled = false;
@@ -161,11 +162,12 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 {
 	static int LastResetNum = 824524899135;
 
-	if (LastResetNum != AmountOfRestarts) // only run these once per game
+	if (LastResetNum != AmountOfRestarts) // only run these once per game // we would do this when map is fully loaded but no func
 	{
 		LastResetNum = AmountOfRestarts;
 
 		InitializeHarvestingHooks();
+		InitializeEventHooks();
 
 		// AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 
@@ -334,6 +336,8 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
 
 		auto PickaxeDef = Helper::GetPickaxeDef(PlayerController);
+
+		std::cout << "PickaxeDef: " << PickaxeDef << '\n';
 
 		static int LastResetNum = 0;
 

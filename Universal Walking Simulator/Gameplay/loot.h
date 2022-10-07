@@ -402,14 +402,14 @@ namespace LootingV2
 					if (BuildingContainer && BuildingContainer->GetFullName().contains("Tiered_Athena_FloorLoot_"))
 					{
 						constexpr bool bTossPickup = true;
-						bool ShouldSpawn = RandomBoolWithWeight(0.5f);
+						bool ShouldSpawn = RandomBoolWithWeight(0.3f);
 
 						if (ShouldSpawn)
 						{
 							auto CorrectLocation = Helper::GetActorLocation(BuildingContainer);
 							CorrectLocation.Z += 50;
 
-							if (RandomBoolWithWeight(0.97f))
+							if (RandomBoolWithWeight(0.93f))
 							{
 								auto Ammo = GetRandomItem(ItemType::Ammo);
 
