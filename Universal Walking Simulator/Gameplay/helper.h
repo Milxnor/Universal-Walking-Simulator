@@ -634,6 +634,24 @@ namespace Helper
 		if (Version == 17.40f) {
 			auto AbductedCoral = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.CoralPhase_02")); // Coral Castle Phases (CoralPhase_01, CoralPhase_02 and CoralPhase_03)
 			ShowBuilding(AbductedCoral);
+
+			auto CoralFoundation_01 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation_0"));
+			ShowBuilding(CoralFoundation_01);
+
+			auto CoralFoundation_05 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation6"));
+			ShowBuilding(CoralFoundation_05);
+
+			auto CoralFoundation_07 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation3"));
+			ShowBuilding(CoralFoundation_07);
+
+			auto CoralFoundation_10 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation2_1"));
+			ShowBuilding(CoralFoundation_10);
+
+			auto CoralFoundation_13 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation4"));
+			ShowBuilding(CoralFoundation_13);
+
+			auto CoralFoundation_17 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation5"));
+			ShowBuilding(CoralFoundation_17);
 		}
 
 		if (Version == 17.30f) {
