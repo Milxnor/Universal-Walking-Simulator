@@ -657,6 +657,9 @@ namespace Helper
 		if (Version == 17.30f) {
 			auto AbductedSlurpy = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.Slurpy_Phase03")); // Slurpy Swamp Phases (Slurpy_Phase01, Slurpy_Phase02 and Slurpy_Phase03)
 			ShowBuilding(AbductedSlurpy);
+
+			auto Buffet = FindObject(("LF_Athena_POI_30x30_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_9x12_Parent9"));
+			ShowBuilding(Buffet)
 		}
 		//Volcano
 		if (Season == 13) {
