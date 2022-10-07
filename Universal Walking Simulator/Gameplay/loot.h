@@ -465,7 +465,7 @@ namespace LootingV2
 		else */
 		{
 			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C"), 13);
-			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"), 13); // we can take our time
+			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"), 15); // we can take our time
 		}
 
 		std::cout << "Finished spawning " << amountSpawned << " floorloot!\n";

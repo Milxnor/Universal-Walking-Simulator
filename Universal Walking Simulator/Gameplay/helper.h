@@ -777,11 +777,26 @@ namespace Helper
 			static auto CurrentShieldOffset = GetOffset(HealthSet, "CurrentShield");
 
 			auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
-			auto CurrentShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+			auto CurrentShieldData = (__int64*)(__int64(HealthSet) + CurrentShieldOffset);
 
 			*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
 			*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
 		}
+	}
+
+	float GetShield(UObject* Pawn)
+	{
+		static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+
+		auto HealthSet = GetHealthSet(Pawn);
+
+		static auto ShieldOffset = GetOffset(HealthSet, "Shield");
+		static auto CurrentShieldOffset = GetOffset(HealthSet, "CurrentShield");
+
+		auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+		auto CurrentShieldData = (__int64*)(__int64(HealthSet) + CurrentShieldOffset);
+
+		return *(float*)(__int64(CurrentShieldData) + CurrentValueOffset);
 	}
 
 	static void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart)
@@ -1428,7 +1443,7 @@ namespace Helper
 		return bIsControllerAlive;
 	}
 
-	void LoopConnections(std::function<void(UObject* Controller)> fn)
+	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false)
 	{
 		auto World = Helper::GetWorld();
 
@@ -1458,15 +1473,8 @@ namespace Helper
 							// auto aaPlayerState = Helper::GetPlayerStateFromController(aaController);
 							auto aaPawn = Helper::GetPawnFromController(aaController);
 
-							if (aaPawn)
+							if (aaPawn || bPassWithNoPawn)
 							{
-								static auto IsActorBeingDestroyed = aaPawn->Function(("IsActorBeingDestroyed"));
-
-								bool bIsActorBeingDestroyed = true;
-
-								if (IsActorBeingDestroyed)
-									aaPawn->ProcessEvent(IsActorBeingDestroyed, &bIsActorBeingDestroyed);
-
 								fn(aaController);
 							}
 						}
@@ -1770,29 +1778,21 @@ namespace Helper
 
 	static UObject* GetRandomFoundation()
 	{
-		return nullptr;
+		static auto BuildingFoundationClass = FindObject("Class /Script/FortniteGame.BuildingFoundation");
 
-		srand(time(0));
+		auto AllBuildingFoundations = Helper::GetAllActorsOfClass(BuildingFoundationClass);
 
-		if (Helper::IsSmallZoneEnabled())
+		UObject* Foundation = nullptr;
+
+		while (!Foundation)
 		{
-			auto POIManager = *Helper::GetGameState()->Member<UObject*>("PoiManager");
+			auto random = rand();
 
-			if (POIManager)
-			{
-				auto AllPois = POIManager->Member<TArray<UObject*>>("AllPoiVolumes");
-
-				if (AllPois)
-				{
-					auto POI = AllPois->At(rand() % (AllPois->Num()));
-					
-					if (POI)
-						return POI;
-				}
-			}
+			if (random >= 1)
+				Foundation = AllBuildingFoundations[random % (AllBuildingFoundations.Num())];
 		}
 
-		return nullptr;
+		return Foundation;
 	}
 
 	static std::string GetPlayerName(UObject* Controller)
@@ -1876,6 +1876,19 @@ namespace Helper
 
 			*(float*)(__int64(HealthData) + CurrentValueOffset) = Health;
 		}
+	}
+
+	float GetHealth(UObject* Pawn)
+	{
+		static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+
+		auto HealthSet = GetHealthSet(Pawn);
+
+		static auto HealthOffset = GetOffset(HealthSet, "Health");
+
+		auto HealthData = (__int64*)(__int64(HealthSet) + HealthOffset);
+
+		return *(float*)(__int64(HealthData) + CurrentValueOffset);
 	}
 
 	void SetMaxHealth(UObject* Pawn, float MaxHealth)
@@ -2397,6 +2410,8 @@ namespace Helper
 
 	float GetRespawnHeight()
 	{
+		return 10000.f;
+
 		auto Playlist = GetPlaylist();
 
 		if (Playlist)

@@ -417,6 +417,8 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
 					ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
+					ImGui::Checkbox(std::format("Restart {} seconds after someone wins", RestartSeconds).c_str(), &bAutoRestart);
+					ImGui::Checkbox("Siphon", &bSiphonEnabled);
 
 					if (FnVerDouble < 19.00)
 						ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
@@ -595,9 +597,9 @@ DWORD WINAPI GuiThread(LPVOID)
 
 												auto RandomFoundation = Helper::GetRandomFoundation();
 
-												if (true || RandomFoundation)
+												if (RandomFoundation)
 												{
-													// AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{0, 0, 5000};
+													AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{0, 0, 10000};
 
 													*FlightStartLocation = AircraftLocationToUse;
 													Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
@@ -606,7 +608,14 @@ DWORD WINAPI GuiThread(LPVOID)
 												else
 													std::cout << "No POI!\n";
 
-												// *gameState->Member<bool>("bAircraftIsLocked") = false;
+												struct wtf {
+													uint8_t ahh : 1;
+													uint8_t ahh4 : 1;
+													uint8_t ahh2 : 1;
+													uint8_t ahh3 : 1;
+												};
+
+												gameState->Member<wtf>("bAircraftIsLocked")->ahh = false;
 
 												FString ifrogor;
 												ifrogor.Set(L"startsafezone");

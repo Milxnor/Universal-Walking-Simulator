@@ -131,7 +131,7 @@ void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, vo
         FunctionsToHook.insert({ funcObject, func });
 }
 
-static auto AircraftLocationToUse = FVector{ 3500, -9180, 10500 };
+static auto AircraftLocationToUse = FVector{ 3500, -10000, 10500 };
 
 // START ABILITIES
 
@@ -458,6 +458,9 @@ static bool bIsReadyToRestart = true; // i hate my life
 static bool bIsTrickshotting = false; // this is stupid
 static constexpr bool bAreVehicleWeaponsEnabled = false;
 static std::string PickaxeDef = "FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01";
+static bool bAutoRestart = false;
+static int RestartSeconds = 10; // give them time to get slomo n stuff
+static bool bSiphonEnabled = false;
 
 static std::string CIDToUse = "None";
 

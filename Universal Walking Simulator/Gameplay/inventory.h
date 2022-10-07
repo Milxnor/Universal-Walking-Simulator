@@ -1897,7 +1897,7 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 				std::cout << "WEaponLoadedAMmo: " << *WeaponLoadedAmmo << '\n';
 
 				*WeaponLoadedAmmo = *WeaponAmmoCount;
-				setBitfield(Weapon, "bUpdateLocalAmmoCount", true);
+				// setBitfield(Weapon, "bUpdateLocalAmmoCount", true);
 
 				Inventory::Update(PlayerController, -1, true, (FFastArraySerializerItem*)WeaponItemEntry);
 

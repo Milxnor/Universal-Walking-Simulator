@@ -449,15 +449,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 						Helper::SetShield(Pawn, 0.f);
 					}
 
-					/* if (Engine_Version <= 421)
-					{
-						auto CheatManager = PlayerController->Member<UObject*>("CheatManager");
-
-						static auto God = (*CheatManager)->Function("God");
-
-						if (God)
-							(*CheatManager)->ProcessEvent(God);
-					} */
+					// ASC->RemoveActiveGameplayEffectBySourceEffect(SlurpEffect);
 				}
 			}
 		}
@@ -475,9 +467,21 @@ bool ReadyToStartMatchHook(UObject* Object, UFunction* Function, void* Parameter
 
 void LoadInMatch()
 {
-	auto GameInstance = *GetEngine()->Member<UObject*>(("GameInstance"));
-	auto& LocalPlayers = *GameInstance->Member<TArray<UObject*>>(("LocalPlayers"));
-	auto PlayerController = *LocalPlayers.At(0)->Member<UObject*>(("PlayerController"));
+	auto Engine = GetEngine(); 
+	static auto GameInstanceOffset = GetOffset(Engine, "GameInstance");
+	auto GameInstance = *(UObject**)(__int64(Engine) + GameInstanceOffset);
+
+	static auto LocalPlayersOffset = GetOffset(GameInstance, "LocalPlayers");
+	auto& LocalPlayers = *(TArray<UObject*>*)(__int64(GameInstance) + LocalPlayersOffset);
+
+	if (LocalPlayers.Num() == 0)
+	{
+		std::cout << "No LocalPlayer!\n";
+		return;
+	}
+
+	static auto LocalPlayer_PlayerControllerOffset = GetOffset(LocalPlayers.At(0), "PlayerController");
+	auto PlayerController = *(UObject**)(__int64(LocalPlayers.At(0)) + LocalPlayer_PlayerControllerOffset);
 
 	if (PlayerController)
 	{
@@ -614,7 +618,7 @@ void Restart()
 			Controller->ProcessEvent(ClientReturnToMainMenu, &Reason);
 	};
 
-	Helper::LoopConnections(afdau);
+	Helper::LoopConnections(afdau, true);
 
 	DisableNetHooks();
 
@@ -632,9 +636,11 @@ void Restart()
 
 DWORD WINAPI AutoRestartThread(LPVOID)
 {
-	Sleep(6000); // the issue why we cant auto restart is because destroying the beacon actor kicks all players
+	Sleep(RestartSeconds * 1000); // the issue why we cant auto restart is because destroying the beacon actor kicks all players
 
 	Restart();
+
+	return 0;
 }
 
 inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Parameters)
@@ -703,7 +709,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			Helper::LoopAlivePlayers(laivefoap);
 
-			bool bShouldPlayWinEffects = AliveTeamIndexes.size() <= 1; // *PlayersLeft <= Teams::GetMaxPlayersPerTeam();
+			bool bShouldPlayWinEffects = Helper::HasAircraftStarted() && AliveTeamIndexes.size() <= 1; // *PlayersLeft <= Teams::GetMaxPlayersPerTeam();
 
 			if (bShouldPlayWinEffects)
 			{
@@ -755,7 +761,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				{
 					// KillerController->ProcessEvent(ClientNotifyWon, &AFortPlayerControllerAthena_ClientNotifyWon_Params);
 
-					// CreateThread(0, 0, AutoRestartThread, 0, 0, 0);
+					if (bAutoRestart)
+						CreateThread(0, 0, AutoRestartThread, 0, 0, 0);
 
 					auto WinningPlayerState = GameState->Member<UObject*>("WinningPlayerState");
 
@@ -880,7 +887,9 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				*(UObject**)(__int64(&*DeathInfo) + FinisherOrDownerOffset) = KillerPlayerState ? KillerPlayerState : DeadPlayerState;
 				*(bool*)(__int64(&*DeathInfo) + bDBNOOffset) = false;
 
-				if (DeathCause != GetEnumValue(DeathCauseEnum, "FallDamage"))
+				static auto FallDamageEnumValue = GetEnumValue(DeathCauseEnum, "FallDamage");
+
+				if (DeathCause != FallDamageEnumValue)
 				{
 					*(float*)(__int64(&*DeathInfo) + DistanceOffset) = KillerPawn ? Helper::GetDistanceTo(KillerPawn, DeadPawn) : 0.f;
 				}
@@ -898,6 +907,40 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 				if (OnRep_DeathInfo)
 					DeadPlayerState->ProcessEvent(OnRep_DeathInfo); // sopmetimes crashes
+
+				if (bSiphonEnabled && KillerPawn)
+				{
+					float Health = Helper::GetHealth(KillerPawn);
+					float Shield = Helper::GetShield(KillerPawn);
+
+					int MaxHealth = 100;
+					int MaxShield = 100;
+					int AmountGiven = 0;
+
+					if ((MaxHealth - Health) > 0)
+					{ 
+						int AmountToGive = MaxHealth - Health >= 50 ? 50 : MaxHealth - Health;
+						Helper::SetHealth(KillerPawn, Health + AmountToGive);
+						AmountGiven += AmountToGive;
+						std::cout << "Health To Give: " << AmountToGive << '\n';
+					}
+
+					std::cout << "Before Shield AmountGiven: " << AmountGiven << '\n';
+					std::cout << "MaxShield - Shield: " << MaxShield - Shield << '\n';
+
+					if ((MaxShield - Shield) > 0 && AmountGiven < 50)
+					{
+						int AmountToGive = MaxShield - Shield >= 50 ? 50 : MaxShield - Shield;
+						AmountToGive -= AmountGiven;
+
+						if (AmountToGive > 0)
+						{
+							Helper::SetShield(KillerPawn, Shield + AmountToGive);
+							AmountGiven += AmountToGive;
+							std::cout << "Shield to Give: " << AmountToGive << '\n';
+						}
+					}
+				}
 			}
 		}
 
