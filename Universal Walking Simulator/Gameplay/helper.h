@@ -659,7 +659,7 @@ namespace Helper
 			ShowBuilding(AbductedSlurpy);
 
 			auto Buffet = FindObject(("LF_Athena_POI_30x30_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.LF_9x12_Parent9"));
-			ShowBuilding(Buffet)
+			ShowBuilding(Buffet);
 		}
 		//Volcano
 		if (Season == 13) {
