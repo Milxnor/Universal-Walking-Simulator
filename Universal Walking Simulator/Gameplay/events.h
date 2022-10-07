@@ -48,10 +48,9 @@ namespace EventHelper
 {
 	std::string UV_ItemName = "DrumGun";
 	void UnvaultItem(FName ItemName) {
-		UObject* BSS = GetSnowScripting();
+		UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
 		UObject* Func = BSS->Function("PillarsConcluded");
 		BSS->ProcessEvent(Func, &ItemName);
-		BSS->ProcessEvent("PillarsAlreadyConcluded");
 	}
 
 	void TeleportPlayersToButterfly()
@@ -163,6 +162,25 @@ namespace EventHelper
 		// OnRep_ShowLakeRainbow
 	}
 
+	// 5.30 Event hook for spawning the Cube
+	bool SpawnCube(UObject* EventComponents, UFunction*, void* Parameters)
+	{
+		static auto bAlreadySpawned = false;
+
+		if (!bAlreadySpawned)
+		{
+			auto Cube = FindObject(("CUBE_C /Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2"));
+
+			if (Cube) {
+				auto Func = Cube->Function(("SpawnCube"));
+				Cube->ProcessEvent(Func);
+			}
+
+			bAlreadySpawned = true;
+		}
+		return false;
+	}
+
 	void BoostUpTravis()
 	{
 		TArray<UObject*> Pawns;
@@ -215,7 +233,7 @@ namespace EventHelper
 namespace Events { // made by GD
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 13.40f || Version == 13.30f || Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
+		return (Version == 13.40f || Version == 13.30f || Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 5.30f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
@@ -276,6 +294,21 @@ namespace Events { // made by GD
 				UObject* BF = FindObject(("BP_Butterfly_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_Butterfly_4"));
 				UObject* Func = BF->Function(("LoadButterflySublevel"));
 				BF->ProcessEvent(Func);
+			}
+			if (Version == 5.30f) {
+				//Cube Spawn
+				UObject* AEC = FindObject(("BP_Athena_Event_Components_C /Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
+
+				UObject* Func = AEC->Function(("OnRep_CrackProgression"));
+				UObject* Func2 = AEC->Function(("OnRep_Corruption"));
+
+				*AEC->Member<float>(("CrackOpacity")) = 0.0f; // Hide the initial crack
+				AEC->ProcessEvent(Func);
+				*AEC->Member<float>(("Corruption")) = 1.0f; // Show the smaller purple crack
+				AEC->ProcessEvent(Func2);
+
+				//Hooked it here because it's not loaded in yet when hooking other functions in hooks.h
+				AddHook("Function /Game/Athena/Events/BP_Athena_Event_Components.BP_Athena_Event_Components_C.DisableFinalLightning", EventHelper::SpawnCube);
 			}
 		}
 	}
@@ -472,12 +505,19 @@ namespace Events { // made by GD
 				//(TODO) Fix screen going white when cube explodes
 
 				/*
-				
+
 					void ButterflyScriptingReady();
 					void ButterflyStart();
 					void CubeEvent();
 
-				*/			
+				*/
+			}
+			else if (Version == 5.30f) {
+				//Cube Spawn
+				UObject* AEC = FindObject(("BP_Athena_Event_Components_C /Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
+				UObject* Func = AEC->Function(("Final"));
+				AEC->ProcessEvent(Func);
+
 			}
 			else if (Version == 4.5f) {
 				//Rocket
