@@ -22,6 +22,9 @@ static bool bStarted = false;
 static bool bLogRpcs = false;
 static bool bLogProcessEvent = false;
 
+// Gav random ass goffy shit
+static bool bDemospeed = false;
+
 inline void initStuff()
 {
 	if (!bStarted && bTraveled && bIsReadyToRestart)
