@@ -730,6 +730,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 				static auto ClientNotifyWon = FindObject("Function /Script/FortniteGame.FortPlayerControllerAthena.ClientNotifyTeamWon");
 				static auto PlayWinEffects = FindObject("Function /Script/FortniteGame.FortPlayerControllerAthena.PlayWinEffects");
 
+				// Give Class FortniteGame.FortVictoryCrownAccountItemDefinition?
+
 				struct
 				{
 					UObject* FinisherPawn;          // APawn                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -2821,7 +2823,10 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), "Flash__UpdateFunc") &&
 					!strstr(FunctionName.c_str(), "SetCollisionEnabled") &&
 					!strstr(FunctionName.c_str(), "SetIntensity") &&
-					!strstr(FunctionName.c_str(), "Storm__UpdateFunc"))
+					!strstr(FunctionName.c_str(), "Storm__UpdateFunc") &&
+					!strstr(FunctionName.c_str(), "CloudsTimeline__UpdateFunc") &&
+					!strstr(FunctionName.c_str(), "SetRenderCustomDepth") &&
+					!strstr(FunctionName.c_str(), "K2_UpdateCustomMovement"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}
@@ -2996,7 +3001,7 @@ void InitializeHooks()
 		MH_EnableHook((PVOID)GetPlayerViewpointAddr);
 	}
 
-	if (LP_SpawnPlayActorAddr && false) // bad time but eh
+	if (LP_SpawnPlayActorAddr && !bSpawnAPC) // bad time but eh
 	{
 		MH_CreateHook((PVOID)LP_SpawnPlayActorAddr, LP_SpawnPlayActorDetour, (void**)&LP_SpawnPlayActor);
 		MH_EnableHook((PVOID)LP_SpawnPlayActorAddr);

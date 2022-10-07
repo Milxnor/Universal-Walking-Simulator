@@ -260,7 +260,7 @@ namespace LootingV2
 		return DefinitionInRow();
 	}
 	
-	int SpawnFloorLoot(UObject* Class)
+	int SpawnFloorLoot(UObject* Class, int SleepTimer = 0)
 	{
 		if (!Class)
 			return 0;
@@ -271,32 +271,34 @@ namespace LootingV2
 		{
 			auto ClassActor = ClassActors.At(i);
 
-			if (ClassActor && ClassActor->GetFullName().contains("Tiered_Athena_FloorLoot_"))
+			if (ClassActor)
 			{
 				constexpr bool bTossPickup = true;
-				bool ShouldSpawn = RandomBoolWithWeight(0.5f);
+				bool ShouldSpawn = RandomBoolWithWeight(0.3f);
 
 				if (ShouldSpawn)
 				{
 					auto CorrectLocation = Helper::GetActorLocation(ClassActor);
 					CorrectLocation.Z += 50;
 
+					UObject* MainPickup = nullptr;
+
 					if (RandomBoolWithWeight(0.85f))
 					{
 						auto Consumable = GetRandomItem(ItemType::Consumable);
 
-						Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+						MainPickup = Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
 							EFortPickupSpawnSource::Unset, Consumable.DropCount, bTossPickup);
 					}
 					else
 					{
 						auto Weapon = GetRandomItem(ItemType::Weapon);
 
-						auto WeaponPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, bTossPickup);
+						MainPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, bTossPickup);
 
 						static auto GetAmmoWorldItemDefinition_BP = Weapon.Definition->Function(("GetAmmoWorldItemDefinition_BP"));
 
-						if (GetAmmoWorldItemDefinition_BP && WeaponPickup)
+						if (GetAmmoWorldItemDefinition_BP && MainPickup)
 						{
 							struct { UObject* AmmoDefinition; }GetAmmoWorldItemDefinition_BP_Params{};
 							Weapon.Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
@@ -310,7 +312,12 @@ namespace LootingV2
 						}
 					}
 
-					// Sleep(17);
+					if (!MainPickup)
+						Sleep(SleepTimer * 10);
+
+					std::cout << "I: " << i << '\n';
+
+					Sleep(Engine_Version >= 422 ? SleepTimer : 0);
 				}
 			}
 		}
@@ -379,9 +386,9 @@ namespace LootingV2
 
 	DWORD WINAPI SummonFloorLoot(LPVOID)
 	{
-		constexpr bool dehh = true;
-
 		int amountSpawned = 0;
+
+		/* constexpr bool dehh = true;
 
 		if (!dehh)
 		{
@@ -455,10 +462,10 @@ namespace LootingV2
 				BuildingContainers.Free();
 			}
 		}
-		else
+		else */
 		{
-			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C"));
-			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"));
+			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C"), 13);
+			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"), 13); // we can take our time
 		}
 
 		std::cout << "Finished spawning " << amountSpawned << " floorloot!\n";
@@ -597,6 +604,11 @@ namespace LootingV2
 				}
 
 				else if (BuildingContainerName.contains("FactionChest")) // IO Chests
+				{
+
+				}
+				
+				else if (BuildingContainerName.contains("AthenaSupplyDrop_Vault"))
 				{
 
 				}

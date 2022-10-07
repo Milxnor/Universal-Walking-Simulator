@@ -167,7 +167,6 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 		LastResetNum = AmountOfRestarts;
 
 		InitializeHarvestingHooks();
-		InitializeEventHooks();
 
 		// AddHook("Function /Game/Abilities/Weapons/Ranged/GA_Ranged_GenericDamage.GA_Ranged_GenericDamage_C.K2_CommitExecute", commitExecuteWeapon);
 

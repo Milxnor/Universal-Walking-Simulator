@@ -883,6 +883,9 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (ImGui::Button(("Start Event")))
 						Events::StartEvent();
 
+					if (ImGui::Button("Initialize Event Hooks"))
+						InitializeEventHooks();
+
 					if (FnVerDouble == 8.51) {
 						ImGui::InputText("Item to Unvault (DrumGun, Bouncer, Sword, Grappler, Tac)", &EventHelper::UV_ItemName);
 

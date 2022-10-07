@@ -22,6 +22,16 @@ static int GetEntrySize()
 	return GetSizeOfStruct(FortItemEntryClass);
 }
 
+static float GetMaxStackSize(UObject* Definition)
+{
+	static auto MaxStackSizeOffset = GetOffset(Definition, "MaxStackSize");
+
+	bool bIsScalableFloat = Engine_Version >= 424; // probs wrong
+
+	return bIsScalableFloat ? ((FScalableFloat*)(__int64(Definition) + MaxStackSizeOffset))->Value :
+		*(int*)(__int64(Definition) + MaxStackSizeOffset);
+}
+
 template <typename EntryType = __int64>
 inline EntryType* GetItemEntryFromInstance(UObject* Instance)
 {
@@ -1230,8 +1240,7 @@ namespace Inventory
 
 		if (InstancesOfItem.size() > 0)
 		{
-			static auto MaxStackSizeOffset = GetOffset(Definition, "MaxStackSize");
-			auto MaxStackCount = *(int*)(__int64(Definition) + MaxStackSizeOffset);
+			auto MaxStackCount = GetMaxStackSize(Definition);
 
 			// We need this skunked thing because if they have 2 full stacks and half a stack then we want to find the lowest stack and stack to there.
 			for (auto InstanceOfItem : InstancesOfItem)
@@ -1290,8 +1299,7 @@ namespace Inventory
 							if (currentCount)
 							{
 								//			      3	      +   2   -      6       =   -1
-								static auto MaxStackSizeOffset = GetOffset(Definition, "MaxStackSize");
-								OverStack = *currentCount + Count - *(int*)(__int64(Definition) + MaxStackSizeOffset);
+								OverStack = *currentCount + Count - GetMaxStackSize(Definition);
 
 								// checks if it is going to overstack, if it is then we subtract the incoming count by the overstack, but its not then we just use the incoming count.
 								int AmountToStack = OverStack > 0 ? Count - OverStack : Count;
@@ -1567,8 +1575,6 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 				auto Count = (int*)(__int64(&*PrimaryPickupItemEntry) + CountOffset);
 
 				auto ItemInstances = Inventory::GetItemInstances(Controller);
-
-				// kms (TODO: Check GetNumQuickBarSlots)
 				
 				auto quickBarsToGoIn = QuickBars::WhatQuickBars(*Definition);
 				bool shouldGoInSecondaryBar = quickBarsToGoIn == EFortQuickBars::Secondary;
@@ -1728,8 +1734,7 @@ inline bool ServerCombineInventoryItemsHook(UObject* Controller, UFunction* Func
 		if (!TargetCount || !SourceCount)
 			return false;
 		
-		static auto MaxStackSizeOffset = GetOffset(TargetDefinition, "MaxStackSize");
-		auto MaxStackCount = *(int*)(__int64(TargetDefinition) + MaxStackSizeOffset);
+		auto MaxStackCount = GetMaxStackSize(TargetDefinition);
 
 		// dont ask how i made these bools up idfk
 
@@ -1806,11 +1811,6 @@ inline bool ServerHandlePickupWithSwapHook(UObject* Pawn, UFunction* Function, v
 	return false;
 }
 
-bool rettrue(void* a1)
-{
-	return true;
-}
-
 void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 {
 	std::cout << "wtf!\n";
@@ -1860,6 +1860,9 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 		auto WeaponGuid = WeaponGuidPtr;
 
 		auto WeaponItemEntry = GetItemEntryFromInstance(Inventory::FindItemInInventory(PlayerController, WeaponGuid));
+
+		if (!WeaponItemEntry)
+			return;
 
 		auto WeaponData = Helper::GetWeaponData(Weapon);
 

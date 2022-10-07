@@ -703,12 +703,6 @@ namespace Helper
 			WL->ProcessEvent(Func2);
 		}
 
-		if (FnVerDouble == 6.21)
-		{
-			auto buildingbylootlake = FindObject("BuildingFoundation3x3 /Temp/Game/Athena/Maps/POI/Athena_POI_Lake_002_5d9a86c8.Athena_POI_Lake_002.PersistentLevel.BuildingFoundation3x35");
-			ShowBuilding(buildingbylootlake);
-		}
-
 		//Loot Lake
 		if (Season == 6) {
 			if (FnVerDouble != 6.10)

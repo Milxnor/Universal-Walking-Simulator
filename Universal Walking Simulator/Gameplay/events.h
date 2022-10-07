@@ -11,7 +11,7 @@ bool POI1Hook(UObject* SequenceDirector, UFunction*, void* Parameters)
 {
 	auto SnowScripting = GetSnowScripting();
 
-	// SnowScripting->ProcessEvent("LoadFoundation1");
+	SnowScripting->ProcessEvent("LoadFoundation1");
 
 	return false;
 }
@@ -20,7 +20,7 @@ bool POI2Hook(UObject* SequenceDirector, UFunction*, void* Parameters)
 {
 	auto SnowScripting = GetSnowScripting();
 
-	// SnowScripting->ProcessEvent("LoadFoundation2");
+	SnowScripting->ProcessEvent("LoadFoundation2");
 
 	return false;
 }
@@ -29,9 +29,19 @@ bool POI3Hook(UObject* SequenceDirector, UFunction*, void* Parameters)
 {
 	auto SnowScripting = GetSnowScripting();
 
-	// SnowScripting->ProcessEvent("LoadFoundation3");
+	SnowScripting->ProcessEvent("LoadFoundation3");
 
 	return false;
+}
+
+void InitializeEventHooks()
+{
+	if (FnVerDouble == 8.51)
+	{
+		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI1", POI1Hook); // Retail
+		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI2", POI2Hook); // Polar
+		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI3", POI3Hook); // Tilted
+	}
 }
 
 namespace EventHelper
@@ -232,7 +242,9 @@ namespace Events { // made by GD
 				if (JL)
 				{
 					JerkyLoaderActual = JL;
-				}				
+				}
+				else
+					std::cout << "No loader!\n";
 			}
 
 			if (Version == 10.40f) {
@@ -374,7 +386,7 @@ namespace Events { // made by GD
 					if (Func)
 						NNScripting->ProcessEvent(Func);
 					else
-						std::cout << ("Unable to find Night Night Play function!\n");
+						std::cout << ("Unable to find Night Night startevetn function!\n");
 				}
 				else
 					std::cout << ("No NightNight scripting!\n");
@@ -437,19 +449,19 @@ namespace Events { // made by GD
 			}
 			else if (Version == 7.20f) {
 				//Ice King
-				UObject* MS = FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S7/MooneySequenceMap.MooneySequenceMap.PersistentLevel.MooneySequence.AnimationPlayer"));
+				/* UObject* MS = FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S7/MooneySequenceMap.MooneySequenceMap.PersistentLevel.MooneySequence.AnimationPlayer"));
 				UObject* Func = MS->Function(("Play"));
-				MS->ProcessEvent(Func);
+				MS->ProcessEvent(Func); */
 
-				auto Scripoting = FindObjectOld("BP_MooneyScripting_C_");
+				auto Scripoting = FindObject("BP_MooneyScripting_C /Game/Athena/Maps/Test/S7/MooneyMap.MooneyMap.PersistentLevel.BP_MooneyScripting_2");
 				std::cout << "BP_MooneyScripting_C: " << Scripoting << '\n';
 
 				if (Scripoting)
 				{
 					std::cout << "Scripoting Name: " << Scripoting->GetFullName() << '\n';
 
-					// Scripting->ProcessEvent("BeginIceKingEvent");
-					// Scripting->ProcessEvent("SetupCountdown");
+					Scripoting->ProcessEvent("BeginIceKingEvent");
+					// Scripoting->ProcessEvent("SetupCountdown");
 				}
 			}
 			else if (Version == 6.21f) {
@@ -474,17 +486,9 @@ namespace Events { // made by GD
 
 				if (Func)
 					LR->ProcessEvent(Func);
+
+				// BP_GeodeScripting_C /Game/Athena/Maps/Test/Events/Athena_Gameplay_Geode.Athena_Gameplay_Geode.PersistentLevel.BP_GeodeScripting_2
 			}
 		}
-	}
-}
-
-void InitializeEventHooks()
-{
-	if (FnVerDouble == 8.51)
-	{
-		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI1", POI1Hook); // Retail
-		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI2", POI2Hook); // Polar
-		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI3", POI3Hook); // Tilted
 	}
 }
