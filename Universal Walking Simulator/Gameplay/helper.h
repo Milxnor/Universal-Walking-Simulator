@@ -622,6 +622,24 @@ namespace Helper
 	void FixPOIs() {
 		float Version = std::stof(FN_Version);
 		int Season = (int)Version;
+		// Abducted POIs
+		if (Version == 17.50f) {
+			auto FarmAfter = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.farmbase_2"));
+			ShowBuilding(FarmAfter);
+
+			auto FarmPhase = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.Farm_Phase_03")); // Farm Phases (Farm_Phase_01, Farm_Phase_02 and Farm_Phase_03)
+			ShowBuilding(FarmPhase);
+		}
+
+		if (Version == 17.40f) {
+			auto AbductedCoral = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.CoralPhase_02")); // Coral Castle Phases (CoralPhase_01, CoralPhase_02 and CoralPhase_03)
+			ShowBuilding(AbductedCoral);
+		}
+
+		if (Version == 17.30f) {
+			auto AbductedSlurpy = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.Slurpy_Phase03")); // Slurpy Swamp Phases (Slurpy_Phase01, Slurpy_Phase02 and Slurpy_Phase03)
+			ShowBuilding(AbductedSlurpy);
+		}
 		//Volcano
 		if (Season == 13) {
 			static auto SpawnIsland = FindObject("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Lobby_Foundation");
