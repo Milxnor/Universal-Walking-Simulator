@@ -49,7 +49,7 @@ inline void initStuff()
 			std::cout << "AA: " << *AuthGameMode->Member<bool>("bStartPlayersAsSpectators") << '\n';
 
 			*AuthGameMode->Member<bool>("bStartPlayersAsSpectators") = false;
-			
+
 			if (bAutomaticPawnSpawning) // one of these make the battle bus start when soemone joins
 			{
 				*gameState->Member<bool>("bPlayerSpawningBlocked_Temporarily") = false;
@@ -225,7 +225,7 @@ inline void initStuff()
 			Events::LoadEvents();
 			Helper::FixPOIs();
 		}
-		
+
 		// if (FnVerDouble != 12.61)
 		LootingV2::InitializeWeapons(nullptr);
 
@@ -376,7 +376,7 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 					FVector                                     NewVel;                                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					bool                                        bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					FName                                       BoneName;
-				} SetPhysicsLinearVelocity_Params{*LinearVelocity, false, FName()};
+				} SetPhysicsLinearVelocity_Params{ *LinearVelocity, false, FName() };
 
 				if (SetPhysicsLinearVelocity)
 					RootComp->ProcessEvent(SetPhysicsLinearVelocity, &SetPhysicsLinearVelocity);
@@ -387,7 +387,7 @@ bool ServerUpdatePhysicsParamsHook(UObject* Vehicle, UFunction* Function, void* 
 					FVector                                     NewAngVel;                                                // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					bool                                               bAddToCurrent;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 					FName                                       BoneName;
-				} SetPhysicsAngularVelocity_Params{*AngularVelocity, false, FName()};
+				} SetPhysicsAngularVelocity_Params{ *AngularVelocity, false, FName() };
 
 				if (SetPhysicsLinearVelocity)
 					RootComp->ProcessEvent(SetPhysicsAngularVelocity, &SetPhysicsAngularVelocity_Params);
@@ -405,7 +405,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 	if (Engine_Version >= 424)
 		PlayerController = Helper::GetOwnerOfComponent(PlayerController); // CurrentAircraft
 
-	struct Param{
+	struct Param {
 		FRotator                                    ClientRotation;
 	};
 
@@ -467,7 +467,7 @@ bool ReadyToStartMatchHook(UObject* Object, UFunction* Function, void* Parameter
 
 void LoadInMatch()
 {
-	auto Engine = GetEngine(); 
+	auto Engine = GetEngine();
 	static auto GameInstanceOffset = GetOffset(Engine, "GameInstance");
 	auto GameInstance = *(UObject**)(__int64(Engine) + GameInstanceOffset);
 
@@ -666,8 +666,8 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 		if (KillerPawn)
 			KillerController = Helper::GetControllerFromPawn(KillerPawn);
-			
-		static auto DeathLocationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathLocation"));	
+
+		static auto DeathLocationOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.DeathInfo"), ("DeathLocation"));
 		auto DeathInfoOffset = GetOffset(DeadPlayerState, "DeathInfo");
 
 		if (DeathInfoOffset == -1) // iirc if u rejoin and die this is invalid idfk why
@@ -918,7 +918,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 					int AmountGiven = 0;
 
 					if ((MaxHealth - Health) > 0)
-					{ 
+					{
 						int AmountToGive = MaxHealth - Health >= 50 ? 50 : MaxHealth - Health;
 						Helper::SetHealth(KillerPawn, Health + AmountToGive);
 						AmountGiven += AmountToGive;
@@ -978,7 +978,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 			if (OnRep_Kills)
 				KillerPlayerState->ProcessEvent(OnRep_Kills);
 		}
-		
+
 		if (!Helper::IsRespawnEnabled())
 			ProcessEventO(DeadPC, Function, Parameters);
 
@@ -1104,7 +1104,7 @@ UObject* __fastcall CreateReplicationDriverDetour(__int64 NetDriver, __int64 URL
 	return Easy::SpawnObject(ReplicationDriverClass, Helper::GetTransientPackage());
 }
 
-void (__fastcall* LifeO)(_int64 a1, const void* a2, int a3);
+void(__fastcall* LifeO)(_int64 a1, const void* a2, int a3);
 
 void __fastcall LifeDetour(__int64 a1, const void* a2, int a3)
 {
@@ -1123,7 +1123,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 {
 	auto Pawn = Helper::GetPawnFromController(Controller);
 
-	struct SPEIParams  { UObject* EmoteAsset; }; // UFortMontageItemDefinitionBase
+	struct SPEIParams { UObject* EmoteAsset; }; // UFortMontageItemDefinitionBase
 	auto EmoteParams = (SPEIParams*)Parameters;
 
 	auto EmoteAsset = EmoteParams->EmoteAsset;
@@ -1136,7 +1136,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 			TEnumAsByte<EFortCustomBodyType> BodyType;
 			TEnumAsByte<EFortCustomGender> Gender;
 			UObject* AnimMontage; // UAnimMontage
-		} GAHRParams{EFortCustomBodyType::All, EFortCustomGender::Both}; // (CurrentPawn->CharacterBodyType, CurrentPawn->CharacterGender)
+		} GAHRParams{ EFortCustomBodyType::All, EFortCustomGender::Both }; // (CurrentPawn->CharacterBodyType, CurrentPawn->CharacterGender)
 		static auto fn = EmoteAsset->Function(("GetAnimationHardReference"));
 
 		auto EmoteAssetName = EmoteAsset->GetFullName();
@@ -1205,31 +1205,31 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				if (InitializeToyInstance)
 					Toy->ProcessEvent(InitializeToyInstance, &paafiq23); */
 
-				// bool idk = true;
-				// Toy->ProcessEvent("OnReplicatedVelocityStartOrStop", &idk);
+					// bool idk = true;
+					// Toy->ProcessEvent("OnReplicatedVelocityStartOrStop", &idk);
 
-				// ^ SEMI WORKING CODE (Removed because they never disappear), below desnt do anything
+					// ^ SEMI WORKING CODE (Removed because they never disappear), below desnt do anything
 
-				/* FTransform transform;
-				transform.Scale3D = { 1, 1, 1 };
-				transform.Translation = Helper::GetActorLocation(Pawn);
-				transform.Rotation = {};
+					/* FTransform transform;
+					transform.Scale3D = { 1, 1, 1 };
+					transform.Translation = Helper::GetActorLocation(Pawn);
+					transform.Rotation = {};
 
-				struct
-				{
-					UObject* ToyClass;      // UClass                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-					FTransform                                  SpawnPosition;                                            // (Parm, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
-					UObject* ReturnValue;   // AActor                                            // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				} AFortPlayerController_SpawnToyInstance_Params{ ToyClass, transform };
+					struct
+					{
+						UObject* ToyClass;      // UClass                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						FTransform                                  SpawnPosition;                                            // (Parm, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
+						UObject* ReturnValue;   // AActor                                            // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					} AFortPlayerController_SpawnToyInstance_Params{ ToyClass, transform };
 
-				static auto SpawnToyInstance = Controller->Function("SpawnToyInstance");
+					static auto SpawnToyInstance = Controller->Function("SpawnToyInstance");
 
-				// InitializeToyInstance
+					// InitializeToyInstance
 
-				if (SpawnToyInstance)
-					Controller->ProcessEvent(SpawnToyInstance, &AFortPlayerController_SpawnToyInstance_Params); */
+					if (SpawnToyInstance)
+						Controller->ProcessEvent(SpawnToyInstance, &AFortPlayerController_SpawnToyInstance_Params); */
 
-				// *AFortPlayerController_SpawnToyInstance_Params.ReturnValue->Member<UObject*>("OwningPawn") = Pawn;
+						// *AFortPlayerController_SpawnToyInstance_Params.ReturnValue->Member<UObject*>("OwningPawn") = Pawn;
 			}
 			else
 				std::cout << "Unable to find ToyClass!\n";
@@ -1486,7 +1486,7 @@ UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGa
 	return newiNstanceavg;
 }
 
-static __int64 (__fastcall* FWeakObjectPtr_GetO)(__int64 a1);
+static __int64(__fastcall* FWeakObjectPtr_GetO)(__int64 a1);
 
 __int64 __fastcall FWeakObjectPtr_GetDetour(__int64 a1)
 {
@@ -1504,7 +1504,7 @@ __int64 __fastcall FWeakObjectPtr_GetDetour(__int64 a1)
 	return FWeakObjectPtr_GetO(a1);
 }
 
-__int64 (__fastcall* FWeakObjectPtr_Get2O)(int* a1, char a2);
+__int64(__fastcall* FWeakObjectPtr_Get2O)(int* a1, char a2);
 
 __int64 __fastcall FWeakObjectPtr_Get2Detour(int* a1, char a2)
 {
@@ -1750,7 +1750,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 						Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(instnace));
 						std::cout << "vehicle weapon!\n";
 					}
-				}	
+				}
 			}
 
 			if (Engine_Version >= 424 && ReceivingActorName.contains("Wumba")) // Workbench/Upgrade Bench
@@ -1758,11 +1758,11 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
 				auto CurrentWeaponDefinition = Helper::GetWeaponData(CurrentWeapon);
 				auto CurrentRarity = CurrentWeaponDefinition->Member<EFortRarityC2>("Rarity");
-				 
+
 				// im stupid ok
 
 				std::pair<std::string, std::string> thingToReplace;
-				
+
 				switch (*CurrentRarity)
 				{
 				case EFortRarityC2::Common:
@@ -1833,7 +1833,7 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 	if (Pawn && Parameters)
 	{
 		std::cout << "mf!\n";
-		
+
 		struct FZiplinePawnState
 		{
 			UObject* Zipline;           // AFortAthenaZipline                                        // 0x0000(0x0008) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -1867,7 +1867,7 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 		if (Zipline && *Zipline)
 		{
 			// TWeakObjectPtr<class AFortPlayerPawn>  CurrentInteractingPawn
-			
+
 			TWeakObjectPtr<UObject>* CurrentInteractingPawn = nullptr; // (*Zipline)->Member<TWeakObjectPtr<UObject>>("CurrentInteractingPawn");
 
 			if (CurrentInteractingPawn)
@@ -1884,7 +1884,7 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 				UObject* SocketComponent;         // USceneComponent                                 // (Parm, ZeroConstructor, InstancedReference, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 				FName                                       SocketName;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 				FVector                                     SocketOffset;                                             // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-			} AFortPlayerPawn_BeginZiplining_Params{*Zipline, *(*Zipline)->Member<UObject*>("RootComponent"), FName(-1), *SocketOffset};
+			} AFortPlayerPawn_BeginZiplining_Params{ *Zipline, *(*Zipline)->Member<UObject*>("RootComponent"), FName(-1), *SocketOffset };
 
 			// ^^ they eventually remove the last 2 params
 
@@ -1898,14 +1898,14 @@ inline bool ServerSendZiplineStateHook(UObject* Pawn, UFunction* Function, void*
 			if (StartZipLining)
 				(*Zipline)->ProcessEvent(StartZipLining, &Pawn); */
 
-			/* Helper::GetAnimInstance(Pawn)->Member<FFortAnimInput_Zipline>("ZiplineInput")->bIsZiplining = true;
-			
-			*Pawn->Member<FZiplinePawnState>("ZiplineState") = Params->ZiplineState;
-			Pawn->ProcessEvent("OnRep_ZiplineState"); */
+				/* Helper::GetAnimInstance(Pawn)->Member<FFortAnimInput_Zipline>("ZiplineInput")->bIsZiplining = true;
 
-			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_AutonomousProxy);
-			// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_Authority); // UNTESTED
-			// Helper::SetRemoteRole(*Zipline, ENetRole::ROLE_Authority);
+				*Pawn->Member<FZiplinePawnState>("ZiplineState") = Params->ZiplineState;
+				Pawn->ProcessEvent("OnRep_ZiplineState"); */
+
+				// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_AutonomousProxy);
+				// Helper::SetLocalRole(*Zipline, ENetRole::ROLE_Authority); // UNTESTED
+				// Helper::SetRemoteRole(*Zipline, ENetRole::ROLE_Authority);
 		}
 		else
 		{
@@ -2052,7 +2052,7 @@ inline bool ServerClientPawnLoadedHook(UObject* Controller, UFunction* Function,
 
 inline bool pawnClassHook(UObject* GameModeBase, UFunction*, void* Parameters)
 {
-	struct parms{ UObject* InController; UObject* Class; };
+	struct parms { UObject* InController; UObject* Class; };
 	std::cout << "called!\n";
 
 	static auto PawnClass = FindObject(("BlueprintGeneratedClass /Game/Athena/PlayerPawn_Athena.PlayerPawn_Athena_C"));
@@ -2066,7 +2066,7 @@ inline bool pawnClassHook(UObject* GameModeBase, UFunction*, void* Parameters)
 inline bool AircraftExitedDropZoneHook(UObject* GameMode, UFunction* Function, void* Parameters)
 {
 	/*
-	
+
 	Function called: Function /Script/Engine.GameModeBase.FindPlayerStart
 	Function called: Function /Script/Engine.GameModeBase.ChoosePlayerStart
 	Function called: Function /Script/Engine.GameModeBase.MustSpectate
@@ -2178,13 +2178,13 @@ bool ServerUpdateVehicleInputStateReliableHook(UObject* Pawn, UFunction* Functio
 
 		static auto MulticastUpdateVehicleInputStateReliable = Pawn->Function("MulticastUpdateVehicleInputStateReliable");
 
-		struct { FFortAthenaVehicleInputStateReliable ReliableInput; } newParams{Params->ReliableInput};
+		struct { FFortAthenaVehicleInputStateReliable ReliableInput; } newParams{ Params->ReliableInput };
 
 		if (MulticastUpdateVehicleInputStateReliable)
 			Pawn->ProcessEvent(MulticastUpdateVehicleInputStateReliable, &newParams);
 		else
 			std::cout << "No MulticastUpdateVehicleInputStateReliable!\n";
-		
+
 		std::cout << "aa!\n";
 	}
 
@@ -2273,13 +2273,13 @@ bool Server_SpawnProjectileHook(UObject* something, UFunction* Function, void* P
 		else
 			std::cout << "No Proj!\n"; */
 
-		/*
-		
-		static void SpawnActorsInPlayset(class AActor* WorldContextObject, class UFortPlaysetItemDefinition* Playset);
-		struct FName GetPlaysetName();
-		static struct FVector AdjustToFinalLocation(class UObject* WorldContextObject, class UFortPlaysetItemDefinition* Playset, struct FVector BaseLocation, struct FRotator Rotation)
+			/*
 
-		*/
+			static void SpawnActorsInPlayset(class AActor* WorldContextObject, class UFortPlaysetItemDefinition* Playset);
+			struct FName GetPlaysetName();
+			static struct FVector AdjustToFinalLocation(class UObject* WorldContextObject, class UFortPlaysetItemDefinition* Playset, struct FVector BaseLocation, struct FRotator Rotation)
+
+			*/
 	}
 
 	return false;
@@ -2361,7 +2361,7 @@ bool throwableConsumablesHook(UObject* ability, UFunction*, void* Parameters)
 	{
 		// ability->Server_SpawnProjectile
 		// ability->ThrowConsumable
-		
+
 		auto memberNames = GetMemberNames(ability, true, false);
 
 		for (auto& MemberName : memberNames)
@@ -2412,7 +2412,7 @@ bool riftItemHook(UObject* ability, UFunction* Function, void* Parameters)
 	return false;
 }
 
-__int64 (__fastcall* FailedToSpawnPawnO)(__int64 a1);
+__int64(__fastcall* FailedToSpawnPawnO)(__int64 a1);
 
 __int64 __fastcall FailedToSpawnPawnDetour(__int64 a1)
 {
@@ -2444,15 +2444,15 @@ bool onpawnmotnageblendingoutHook(UObject* weapon, UFunction*, void*)
 	return false;
 }
 
-char (__fastcall* sutpidfucnO)(FFastArraySerializerSE::TFastArraySerializeHelper* a1, __int64 a2, int a3);
+char(__fastcall* sutpidfucnO)(FFastArraySerializerSE::TFastArraySerializeHelper* a1, __int64 a2, int a3);
 
 char __fastcall sutpidfucnDetour(FFastArraySerializerSE::TFastArraySerializeHelper* a1, __int64 a2, int a3)
 {
 	// oldmap size does not match blah blah
 	std::cout << "faastararai!\n";
 
-	std::cout << "AHH: " <<  a1->Struct->GetName() << '\n';// GetOwnerStruct()->GetName();
-	
+	std::cout << "AHH: " << a1->Struct->GetName() << '\n';// GetOwnerStruct()->GetName();
+
 	// a1->ArraySerializer.MarkArrayDirty();
 
 	return sutpidfucnO(a1, a2, a3);
@@ -2625,7 +2625,7 @@ bool SpawnDefaultPawnForHook(UObject* GameMode, UFunction*, void* Parameters)
 		UObject* NewController;
 		FTransform SpawnTransform;
 		UObject* NewPawn;
-	} SpawnDefaultPawnAtTransform_Params{Params->NewPlayer, Transform};
+	} SpawnDefaultPawnAtTransform_Params{ Params->NewPlayer, Transform };
 
 	static auto SpawnDefaultPawnAtTransform = GameMode->Function("SpawnDefaultPawnAtTransform");
 
@@ -2709,7 +2709,7 @@ bool ServerRequestSeatChangeHook(UObject* Controller, UFunction*, void* Paramete
 					}
 				}
 			}
-			
+
 			std::cout << "TargetSeatIndex: " << TargetSeatIndex << '\n';
 		}
 	}
@@ -2764,7 +2764,7 @@ void FinishInitializeUHooks()
 	{
 		// AddHook(("Function /Game/Athena/Items/Consumables/Parents/GA_Athena_Consumable_ThrowWithTrajectory_Parent.GA_Athena_Consumable_ThrowWithTrajectory_Parent_C.Server_SpawnProjectile"), throwableConsumablesHook); // wrong func
 	}
-	
+
 	// AddHook("Function /Game/Athena/Items/Consumables/Grenade/GA_Athena_Grenade_WithTrajectory.GA_Athena_Grenade_WithTrajectory_C.Server_SpawnProjectile", boomboxHook);
 	// AddHook("Function /Game/Athena/Items/Consumables/TowerGrenade/GA_Athena_TowerGrenadeWithTrajectory.GA_Athena_TowerGrenadeWithTrajectory_C.Server_SpawnProjectile", Server_SpawnProjectileHook);
 	// AddHook("Function /Game/Athena/Items/Consumables/Balloons/GA_Athena_Balloons_Consumable_Passive.GA_Athena_Balloons_Consumable_Passive_C.K2_ActivateAbility", balloonFunHook);
@@ -2867,13 +2867,13 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), ("ExecuteUbergraph_ThreatPostProcessManagerAndParticleBlueprint")) &&
 					!strstr(FunctionName.c_str(), ("UpdateCamera")) &&
 					!strstr(FunctionName.c_str(), ("GetMutatorContext")) &&
-					!strstr(FunctionName.c_str(), ("CanJumpInternal")) && 
+					!strstr(FunctionName.c_str(), ("CanJumpInternal")) &&
 					!strstr(FunctionName.c_str(), ("OnDayPhaseChanged")) &&
-					!strstr(FunctionName.c_str(), ("Chime")) && 
+					!strstr(FunctionName.c_str(), ("Chime")) &&
 					!strstr(FunctionName.c_str(), ("ServerMove")) &&
 					!strstr(FunctionName.c_str(), ("OnVisibilitySetEvent")) &&
 					!strstr(FunctionName.c_str(), "ReceiveHit") &&
-					!strstr(FunctionName.c_str(), "ReadyToStartMatch") && 
+					!strstr(FunctionName.c_str(), "ReadyToStartMatch") &&
 					!strstr(FunctionName.c_str(), "ClientAckGoodMove") &&
 					!strstr(FunctionName.c_str(), "Prop_WildWest_WoodenWindmill_01") &&
 					!strstr(FunctionName.c_str(), "ContrailCheck") &&
@@ -2969,7 +2969,7 @@ void __fastcall GetPlayerViewPointDetour(UObject* pc, FVector* a2, FRotator* a3)
 
 __int64(__fastcall* idkbroke)(UObject* a1);
 
-__int64 (__fastcall* ehehheO)(__int64 a1, __int64* a2);
+__int64(__fastcall* ehehheO)(__int64 a1, __int64* a2);
 
 __int64 __fastcall ehehheDetour(__int64 NetViewer, UObject* Connection)
 {

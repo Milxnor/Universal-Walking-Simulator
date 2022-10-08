@@ -155,7 +155,7 @@ namespace Teams
 
 		static auto OnRep_SquadId = PlayerState->Function("OnRep_SquadId");
 		PlayerState->ProcessEvent(OnRep_SquadId);
-		
+
 		/* auto FriendsInSquad = PlayerState->Member<TArray<UObject*>>("FriendsInSquad");
 		auto SquadPlayerStates = PlayerState->Member<TArray<UObject*>>("SquadPlayerStates");
 

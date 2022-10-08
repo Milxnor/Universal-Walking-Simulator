@@ -385,7 +385,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem(("Settings")))
+				if (ImGui::BeginTabItem(("Starter Items")))
 				{
 					Tab = SETTINGS_TAB;
 					PlayerTab = -1;
@@ -418,7 +418,6 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
 					ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
 					ImGui::Checkbox(std::format("Restart {} seconds after someone wins", RestartSeconds).c_str(), &bAutoRestart);
-					ImGui::Checkbox("Siphon", &bSiphonEnabled);
 
 					if (FnVerDouble < 19.00)
 						ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
@@ -452,9 +451,9 @@ DWORD WINAPI GuiThread(LPVOID)
 						}
 					}
 
-					ImGui::InputText("Console command", &ConsoleCommand);
+					serverStatus == EServerStatus::Up && ImGui::InputText("Console command", &ConsoleCommand);
 
-					if (ImGui::Button("Execute console command"))
+					if (serverStatus == EServerStatus::Up && ImGui::Button("Execute console command"))
 					{
 						auto wstr = std::wstring(ConsoleCommand.begin(), ConsoleCommand.end());
 
@@ -477,18 +476,62 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (serverStatus == EServerStatus::Down && !bTraveled)
 					{
 						// TODO: Map name
-
-						if (ImGui::Button(("Load in Battle Royale")))
+						ImGui::Text("SELECT GAMEMODE PRESET:");
+						ImGui::Text("Mode: From Gamemode tab");
+						ImGui::Text("Starter Items: From Starter Items tab");
+						if (ImGui::Button(("Start Battle Royale Server")))
 						{
 							bIsCreative = false;
 							LoadInMatch();
 						}
-
-						if (FnVerDouble == 7.40 && ImGui::Button(("Load in Creative")))
+						ImGui::Text("Mode: Solo");
+						ImGui::Text("Starter Items: Assault Riffle [Legendary], Pump Shotgun [Rare], Small Shield Potion [x3], Slurp Juice");
+						if (ImGui::Button(("Start Battle Royale Server [Solo]")))
 						{
-							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2";
-							bIsCreative = true;
+							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
+							StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
+							StartingSlot2 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03", 1 };
+							StartingSlot3 = { "", 0 };
+							StartingSlot4 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall", 3 };
+							StartingSlot5 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff", 1 };
+							bIsCreative = false;
 							LoadInMatch();
+						}
+						ImGui::Text("Mode: Floor Is Lava");
+						ImGui::Text("Starter Items: Assault Riffle [Legendary], Pump Shotgun [Rare], Small Shield Potion [x3], Ballons [x9], Rift to Go [x2],  Materials [x50]");
+						if (ImGui::Button(("Start Battle Royale Server [Floor Is Lava]")))
+						{
+							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo";
+							StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
+							StartingSlot2 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03", 1 };
+							StartingSlot3 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/Balloons/Athena_Balloons_Consumable.Athena_Balloons_Consumable", 9 };
+							StartingSlot4 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall", 3 };
+							StartingSlot5 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/RiftItem/Athena_Rift_Item.Athena_Rift_Item", 2 };
+							bIsCreative = false;
+							bIsFloorIsLava = true;
+							LoadInMatch();
+						}
+						ImGui::Text("Mode: Playground");
+						ImGui::Text("Starter Items: From Starter Items tab");
+						if (ImGui::Button(("Start Battle Royale Server [Playground]")))
+						{
+							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
+							bIsCreative = false;
+							bIsPlayground = true;
+							bIs999Ammo = true;
+							bIs999Mats = true;
+							LoadInMatch();
+						}
+						if (FnVerDouble == 7.40)
+						{
+							ImGui::Text("Mode: Creative");
+							ImGui::Text("Starter Items: From Starter Items tab");
+							if (FnVerDouble == 7.40 && ImGui::Button(("Start Creative Server")))
+							{
+								PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Creative/Playlist_PlaygroundV2.Playlist_PlaygroundV2";
+								bIsCreative = true;
+								LoadInMatch();
+							}
 						}
 					}
 
@@ -522,7 +565,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						std::cout << "Setup AI!\n";
 					}
 
-					if (/* Engine_Version == 420 && */ ImGui::Button("Summon Floorloot"))
+					if (/* Engine_Version == 420 && */serverStatus == EServerStatus::Up && ImGui::Button("Summon Floorloot"))
 					{
 						LootingV2::SummonFloorLoot(nullptr);
 					}
@@ -599,7 +642,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 												if (RandomFoundation)
 												{
-													AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{0, 0, 10000};
+													AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{ 0, 0, 10000 };
 
 													*FlightStartLocation = AircraftLocationToUse;
 													Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
@@ -642,12 +685,12 @@ DWORD WINAPI GuiThread(LPVOID)
 						{
 						}
 
-						if (ImGui::Button(("Summon Llamas")))
+						if (serverStatus == EServerStatus::Up && ImGui::Button(("Summon Llamas")))
 						{
 							// CreateThread(0, 0, Looting::Tables::SpawnLlamas, 0, 0, 0);
 						}
 
-						if (ImGui::Button("Fill Vending Machines"))
+						if (serverStatus == EServerStatus::Up && ImGui::Button("Fill Vending Machines"))
 						{
 							CreateThread(0, 0, LootingV2::FillVendingMachines, 0, 0, 0);
 						}
@@ -700,7 +743,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					*/
 
-					if (/* bStarted && */ ImGui::Button("Restart"))
+					if (/* bStarted && */serverStatus == EServerStatus::Up && ImGui::Button("Restart"))
 					{
 						Restart();
 					}
@@ -763,10 +806,12 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (!bStarted && !bIsCreative)
 						ImGui::InputText(("Playlist"), &PlaylistToUse);
 		
-					if (ImGui::Checkbox(("Playground"), &bIsPlayground))
+					if (ImGui::Checkbox(("Playground (Unlimited items uses and Respawning)"), &bIsPlayground))
 					{
 
 					}
+
+					ImGui::Checkbox("Siphon (Free shield per elemination)", &bSiphonEnabled);
 
 					// if (!bStarted) // couldnt we wqait till aircraft start
 
@@ -1054,6 +1099,8 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 				case SETTINGS_TAB:
 
+					ImGui::Checkbox("x999 Ammo", &bIs999Ammo);
+					ImGui::Checkbox("x999 Materials", &bIs999Mats);
 					{
 						ImGui::InputText("CID", &CIDToUse);
 						ImGui::NewLine();
