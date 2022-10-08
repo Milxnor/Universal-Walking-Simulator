@@ -485,6 +485,7 @@ static UObject* GlobalPickaxeDefObject = nullptr;
 constexpr bool bEmotingEnabled = false;
 static bool bPrintFUnny = false;
 static constexpr double AboveVersionDisableAbilities = 19.00; // Any version Above this abilities will be disabled
+static bool zoneRet = false;
 
 // highly experimental
 

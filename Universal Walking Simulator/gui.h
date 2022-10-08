@@ -420,6 +420,9 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::Checkbox(std::format("Restart {} seconds after someone wins", RestartSeconds).c_str(), &bAutoRestart);
 					ImGui::Checkbox("Siphon", &bSiphonEnabled);
 
+					if (FnVerDouble == 19.10)
+						ImGui::Checkbox("zoneRet", &zoneRet);
+
 					if (FnVerDouble < 19.00)
 						ImGui::Checkbox("Clear Inventory on Aircraft", &bClearInventoryOnAircraftJump);
 	

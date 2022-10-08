@@ -178,6 +178,14 @@ inline void initStuff()
 				std::cout << dye::yellow(("[WARNING] ")) << ("Failed to find AuthorityGameMode!\n");
 			}
 
+			if (FnVerDouble >= 13)
+			{
+				static auto LastSafeZoneIndexOffset = GetOffset(Playlist, "LastSafeZoneIndex");
+
+				if (LastSafeZoneIndexOffset != -1)
+					 *(int*)(__int64(Playlist) + LastSafeZoneIndexOffset) = 0;
+			}
+
 			static auto Playlist_MaxPlayersOffset = GetOffset(Playlist, "MaxPlayers");
 
 			if (Playlist_MaxPlayersOffset != -1)
@@ -198,18 +206,21 @@ inline void initStuff()
 					gameState->ProcessEvent(OnRep_PlayersLeft);
 			}
 
-			auto AircraftStartTime = gameState->Member<float>(("AircraftStartTime"));
+			static auto AircraftStartTimeOffset = GetOffset(gameState, "AircraftStartTime");
 
-			if (AircraftStartTime)
+			if (AircraftStartTimeOffset != -1)
 			{
-				*AircraftStartTime = 99999.0f;
-				*gameState->Member<float>(("WarmupCountdownEndTime")) = 99999.0f;
+				auto AircraftStartTime = (float*)(__int64(gameState) + AircraftStartTimeOffset);
+
+				if (AircraftStartTime)
+				{
+					*AircraftStartTime = 99999.0f;
+					*gameState->Member<float>(("WarmupCountdownEndTime")) = 99999.0f;
+				}
 			}
 		}
 
-		auto GameInstance = *GetEngine()->Member<UObject*>(("GameInstance"));
-		auto& LocalPlayers = *GameInstance->Member<TArray<UObject*>>(("LocalPlayers"));
-		auto PlayerController = *LocalPlayers.At(0)->Member<UObject*>(("PlayerController"));
+		auto PlayerController = Helper::GetOurPlayerController();
 
 		if (PlayerController)
 			*PlayerController->Member<UObject*>("CheatManager") = Easy::SpawnObject(FindObject("Class /Script/Engine.CheatManager"), PlayerController);
@@ -317,6 +328,25 @@ bool ServerLoadingScreenDroppedHook(UObject* PlayerController, UFunction* Functi
 {
 	// auto PlayerState = *PlayerController->Member<UObject*>(("PlayerState"));
 	// auto Pawn = *PlayerController->Member<UObject*>(("Pawn"));
+
+	return false;
+}
+
+char (__fastcall* ShouldStartZoneOrSomethingO)(__int64 Unused, char Phase, char SafeZoneStartup);
+
+char __fastcall ShouldStartZoneOrSomethingDetour(__int64 Unused, char Phase, char SafeZoneStartup)
+{
+	std::cout << "ShouldStartZoneOrSomethingDetour!\n";
+	std::cout << "Phase: " << (int)Phase << '\n';
+	std::cout << "SafeZoneStartup: " << (int)SafeZoneStartup << '\n';
+
+	std::cout << "Returning " << zoneRet << '\n';
+	
+	if (zoneRet)
+	{
+		zoneRet = false;
+		return true;
+	}
 
 	return false;
 }
@@ -467,21 +497,7 @@ bool ReadyToStartMatchHook(UObject* Object, UFunction* Function, void* Parameter
 
 void LoadInMatch()
 {
-	auto Engine = GetEngine(); 
-	static auto GameInstanceOffset = GetOffset(Engine, "GameInstance");
-	auto GameInstance = *(UObject**)(__int64(Engine) + GameInstanceOffset);
-
-	static auto LocalPlayersOffset = GetOffset(GameInstance, "LocalPlayers");
-	auto& LocalPlayers = *(TArray<UObject*>*)(__int64(GameInstance) + LocalPlayersOffset);
-
-	if (LocalPlayers.Num() == 0)
-	{
-		std::cout << "No LocalPlayer!\n";
-		return;
-	}
-
-	static auto LocalPlayer_PlayerControllerOffset = GetOffset(LocalPlayers.At(0), "PlayerController");
-	auto PlayerController = *(UObject**)(__int64(LocalPlayers.At(0)) + LocalPlayer_PlayerControllerOffset);
+	auto PlayerController = Helper::GetOurPlayerController();
 
 	if (PlayerController)
 	{

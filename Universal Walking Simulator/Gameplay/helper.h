@@ -791,6 +791,27 @@ namespace Helper
 		}
 	}
 
+	UObject* GetOurPlayerController()
+	{
+		auto Engine = GetEngine();
+		static auto GameInstanceOffset = GetOffset(Engine, "GameInstance");
+		auto GameInstance = *(UObject**)(__int64(Engine) + GameInstanceOffset);
+
+		static auto LocalPlayersOffset = GetOffset(GameInstance, "LocalPlayers");
+		auto& LocalPlayers = *(TArray<UObject*>*)(__int64(GameInstance) + LocalPlayersOffset);
+
+		if (LocalPlayers.Num() == 0)
+		{
+			std::cout << "No LocalPlayer!\n";
+			return nullptr;
+		}
+
+		static auto LocalPlayer_PlayerControllerOffset = GetOffset(LocalPlayers.At(0), "PlayerController");
+		auto PlayerController = *(UObject**)(__int64(LocalPlayers.At(0)) + LocalPlayer_PlayerControllerOffset);
+
+		return PlayerController;
+	}
+
 	void ForceNetUpdate(UObject* Actor)
 	{
 		static auto ForceNetUpdate = Actor->Function("ForceNetUpdate");
@@ -1757,7 +1778,7 @@ namespace Helper
 
 	static bool IsSmallZoneEnabled()
 	{
-		return bIsLateGame || FnVerDouble >= 13.00;
+		return bIsLateGame; // || FnVerDouble >= 13.00;
 	}
 
 	UObject* GetWeaponForVehicle(UObject* Vehicle, EVehicleType* outType = nullptr)

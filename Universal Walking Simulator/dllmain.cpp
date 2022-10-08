@@ -482,7 +482,20 @@ DWORD WINAPI Main(LPVOID)
         MH_EnableHook((PVOID)getewaoe2);
     }
 
-    GlobalPickaxeDefObject = FindObject(PickaxeDef);
+    if (false)
+    {
+        if (FnVerDouble == 19.10)
+        {
+            auto sigafinn = FindPattern("0F B6 CA B0 01");
+
+            std::cout << "sigafinn: " << sigafinn << '\n';
+
+            MH_CreateHook((PVOID)sigafinn, ShouldStartZoneOrSomethingDetour, (PVOID*)&ShouldStartZoneOrSomethingO);
+            MH_EnableHook((PVOID)sigafinn);
+
+            GlobalPickaxeDefObject = FindObject(PickaxeDef);
+        }
+    }
 
     return 0;
 }
