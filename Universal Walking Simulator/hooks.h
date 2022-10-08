@@ -681,6 +681,9 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 		FGameplayTagContainer* Tags = (FGameplayTagContainer*)(__int64(&Params->DeathReport) + TagsOffset);
 		auto DeathCause = Tags ? GetDeathCause(DeadPlayerState, *Tags) : 0;
 
+		// std::cout << "bIsDBNO: " << DeadPawn->Member< bitfield>("bIsDBNO")->idk1 << '\n';
+		// std::cout << "bWasDBNOOnDeath: " << DeadPawn->Member< bitfield>("bWasDBNOOnDeath")->idk2 << '\n';
+		
 		if (Helper::IsRespawnEnabled()) // || bIsTrickshotting ? !KillerController : false) // basically, if trickshotting, respawn player if they dont die to a player
 		{
 			if (bExperimentalRespawning)
@@ -827,7 +830,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			if (Engine_Version >= 423) // wrong
 			{
-				auto Chip = Helper::SpawnChip(DeadPC, DeathLocation);
+				auto Chip = nullptr; // Helper::SpawnChip(DeadPC, DeathLocation);
 
 				if (Chip)
 				{

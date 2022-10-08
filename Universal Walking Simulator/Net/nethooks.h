@@ -382,7 +382,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	std::cout << ("Spawned Player!\n");
 
-	/* if (FnVerDouble >= 8) // just make the color blue // bruh it sets it to 2 after ??
+	/* if (FnVerDouble >= 8) // just make the color blue // bruh it sets it to team idx 2 after ??
 	{
 		auto CurrentTeamIdx = Teams::StartingTeamIndex;
 		*Teams::GetTeamIndex(PlayerState) = CurrentTeamIdx;

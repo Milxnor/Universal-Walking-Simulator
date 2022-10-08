@@ -738,6 +738,19 @@ struct TEnumAsByte // https://github.com/EpicGames/UnrealEngine/blob/4.21/Engine
 	}
 };
 
+struct bitfield
+{
+	uint8_t idk1;
+	uint8_t idk2;
+	uint8_t idk3;
+	uint8_t idk4;
+	uint8_t idk5;
+	uint8_t idk6;
+	uint8_t idk7;
+	uint8_t idk8;
+
+};
+
 enum class EVehicleType
 {
 	Biplane,

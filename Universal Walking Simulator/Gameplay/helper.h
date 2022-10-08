@@ -721,6 +721,14 @@ namespace Helper
 			*/
 		}
 
+		if (Version >= 10.20 && Version <= 10.40)
+		{
+			// TODO: Island
+
+			auto Island = FindObject("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest16");
+			ShowBuilding(Island);
+		}
+
 		//Marshamello
 		if (Version == 7.30f) {
 			auto PleasantParkIdk = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.PleasentParkFestivus"));
