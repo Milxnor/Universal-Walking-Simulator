@@ -1906,6 +1906,20 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 
 				Inventory::Update(PlayerController, -1, true, (FFastArraySerializerItem*)WeaponItemEntry);
 
+				/* auto ReplicatedEntries = Inventory::GetReplicatedEntries<__int64>(PlayerController);
+
+				for (int i = 0; i < ReplicatedEntries->Num(); i++)
+				{
+					auto ReplicatedEntry = (__int64*)(__int64(ReplicatedEntries->GetData()) + (GetEntrySize() * i));
+
+					if (*FFortItemEntry::GetGuid(ReplicatedEntry) == WeaponGuid)
+					{
+						std::cout << "Found at: " << i << '\n';
+
+						Inventory::Update(PlayerController, -1, true, (FFastArraySerializerItem*)ReplicatedEntry);
+					}
+				} */
+
 				Inventory::GetWorldInventory(PlayerController)->ProcessEvent("ForceNetUpdate");
 
 				if (bIsPlayground)

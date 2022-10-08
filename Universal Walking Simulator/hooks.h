@@ -1572,24 +1572,55 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 				auto Prop = GetProperty(ReceivingActor, "bAlreadySearched");
 
-				auto offset = GetOffsetFromProp(Prop);
+				static auto offset = GetOffsetFromProp(Prop);
 
 				if (offset == -1)
 					return false;
 
-				auto Actual = (__int64*)(__int64(ReceivingActor) + offset);
-
-				static auto FieldMask = GetFieldMask(Prop);
-				static auto BitIndex = GetBitIndex(Prop, FieldMask);
-
-				if (!(bool)(*(uint8_t*)Actual & BitIndex))
-					return false;
-
-				uint8_t* Byte = (uint8_t*)Actual;
-
-				if (((bool(1) << BitIndex) & *(bool*)(Actual)) != true)
+				if (FnVerDouble != 10.40)
 				{
-					*Byte = (*Byte & ~FieldMask) | (FieldMask);
+					auto Actual = (__int64*)(__int64(ReceivingActor) + offset);
+
+					static auto FieldMask = GetFieldMask(Prop);
+					static auto BitIndex = GetBitIndex(Prop, FieldMask);
+
+					std::cout << "BitIndex: " << (int)BitIndex << '\n';
+
+					if (!(bool)(*(uint8_t*)Actual & BitIndex))
+						return false;
+
+					uint8_t* Byte = (uint8_t*)Actual;
+
+					if (((bool(1) << BitIndex) & *(bool*)(Actual)) != true)
+					{
+						*Byte = (*Byte & ~FieldMask) | (FieldMask);
+					}
+				}
+				else
+				{
+					struct ee {
+						uint8_t                                        bUseLootProperties_Athena : 1;                     // Mask : 0x1 0xC41(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						uint8_t                                        bAlwaysShowContainer : 1;                          // Mask : 0x2 0xC41(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						uint8_t                                        bAlwaysMaintainLoot : 1;                           // Mask : 0x4 0xC41(0x1)(Edit, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						uint8_t                                        bDestroyContainerOnSearch : 1;                     // Mask : 0x8 0xC41(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						uint8_t                                        bForceHidePickupMinimapIndicator : 1;              // Mask : 0x10 0xC41(0x1)(Edit, BlueprintVisible, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						uint8_t                                        bAlreadySearched : 1;
+					};
+
+					auto barleadysear = (ee*)(__int64(ReceivingActor) + offset);
+
+					if (barleadysear->bAlreadySearched)
+						return false;
+
+					barleadysear->bAlreadySearched = true;
+				}
+
+				if (Engine_Version >= 424)
+				{
+					/* static auto StaticMeshOffset = GetOffset(ReceivingActor, "StaticMesh");
+					static auto SearchedMeshOffset = GetOffset(ReceivingActor, "SearchedMesh");
+
+					*(UObject**)(__int64(ReceivingActor) + StaticMeshOffset) = *(UObject**)(__int64(ReceivingActor) + SearchedMeshOffset); */
 				}
 
 				/* static auto bAlreadySearchedOffset = GetOffset(ReceivingActor, "bAlreadySearched");
