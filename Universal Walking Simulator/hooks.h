@@ -695,7 +695,6 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			(*PlayersLeft)--;
 
-			std::cout << "Teams::GetMaxPlayersPerTeam(): " << Teams::GetMaxPlayersPerTeam() << '\n';
 			std::cout << "PlayersLeft: " << *PlayersLeft << '\n';
 			std::cout << "KillerController: " << KillerController << '\n';
 			//std::cout << "TeamAlivePlayers: " << *Helper::GetGameMode()->Member<int>("TeamAlivePlayers") << '\n';
@@ -2900,7 +2899,8 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), "Storm__UpdateFunc") &&
 					!strstr(FunctionName.c_str(), "CloudsTimeline__UpdateFunc") &&
 					!strstr(FunctionName.c_str(), "SetRenderCustomDepth") &&
-					!strstr(FunctionName.c_str(), "K2_UpdateCustomMovement"))
+					!strstr(FunctionName.c_str(), "K2_UpdateCustomMovement") &&
+					!strstr(FunctionName.c_str(), "AthenaHitPointBar_C.Update"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}

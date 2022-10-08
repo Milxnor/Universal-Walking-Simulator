@@ -33,18 +33,6 @@ namespace Teams
 		return (uint8_t*)(__int64(PlayerState) + TeamIndexOffset);
 	}
 
-	int GetMaxPlayersPerTeam()
-	{
-		if (Engine_Version <= 419)
-			return 1;
-
-		auto Playlist = Helper::GetPlaylist();
-
-		static auto MaxTeamSizeOffset = GetOffset(Playlist, "MaxTeamSize");
-
-		return *(int*)(__int64(Playlist) + MaxTeamSizeOffset);
-	}
-
 	void AssignTeam(UObject* Controller)
 	{
 		auto World = Helper::GetWorld();
@@ -52,14 +40,20 @@ namespace Teams
 		auto GameMode = Helper::GetGameMode();
 		auto Playlist = Helper::GetPlaylist();
 
+		int MaxPlayersPerTeam = 1;
+
+		if (Playlist)
+		{
+			static auto MaxPlayersPerTeamOffset = GetOffset(Playlist, "MaxTeamSize");
+			MaxPlayersPerTeam = *(int*)(__int64(Playlist) + MaxPlayersPerTeamOffset);
+		}
+		else
+			MaxPlayersPerTeam = maxAmountOfPlayersPerTeam;
+
 		// we really shouldn't cache any of these as they aren't used anywhere else.
 
 		auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-		static auto MaxPlayersPerTeamOffset = GetOffset(Playlist, "MaxTeamSize");
-
-		int MaxPlayersPerTeam = *(int*)(__int64(Playlist) + MaxPlayersPerTeamOffset);
-		int MaxTeams = GetMaxPlayersPerTeam();
 		// bool bAllowJoinInProgress = *Playlist->CachedMember<bool>("bAllowJoinInProgress");
 
 		static auto TeamsOffset = GetOffset(GameState, "Teams");
@@ -121,11 +115,17 @@ namespace Teams
 
 		auto PlayerStateTeamIDX = Teams::GetTeamIndex(PlayerState);
 		auto OldTeamIdx = *PlayerStateTeamIDX;
-		static auto SquadIdOffset = GetOffset(PlayerState, "SquadId");
-		auto PlayerStateSquadId = (uint8_t*)(__int64(PlayerState) + SquadIdOffset);
 
 		*PlayerStateTeamIDX = TeamIndex;
-		*PlayerStateSquadId = SquadId;
+
+		static auto SquadIdOffset = GetOffset(PlayerState, "SquadId");
+
+		auto PlayerStateSquadId = (uint8_t*)(__int64(PlayerState) + SquadIdOffset);
+
+		if (SquadIdOffset != -1 && PlayerStateSquadId)
+		{
+			*PlayerStateSquadId = SquadId;
+		}
 
 		// if (false)
 		{
@@ -137,7 +137,10 @@ namespace Teams
 			static auto PlayerTeamPrivateOffset = GetOffset(PlayerState, "PlayerTeamPrivate");
 			static auto PrivateInfoOffset = GetOffset(CurrentTeam, "PrivateInfo");
 
-			*(AFortTeamPrivateInfo**)(__int64(PlayerState) + PlayerTeamPrivateOffset) = *(AFortTeamPrivateInfo**)(__int64(CurrentTeam) + PrivateInfoOffset);
+			if (PlayerTeamPrivateOffset != -1 && PrivateInfoOffset != -1)
+			{
+				*(AFortTeamPrivateInfo**)(__int64(PlayerState) + PlayerTeamPrivateOffset) = *(AFortTeamPrivateInfo**)(__int64(CurrentTeam) + PrivateInfoOffset);
+			}
 
 			static auto OnRep_PlayerTeam = PlayerState->Function("OnRep_PlayerTeam");
 			PlayerState->ProcessEvent(OnRep_PlayerTeam);
@@ -154,7 +157,9 @@ namespace Teams
 			PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIdx);
 
 		static auto OnRep_SquadId = PlayerState->Function("OnRep_SquadId");
-		PlayerState->ProcessEvent(OnRep_SquadId);
+
+		if (OnRep_SquadId)
+			PlayerState->ProcessEvent(OnRep_SquadId);
 		
 		/* auto FriendsInSquad = PlayerState->Member<TArray<UObject*>>("FriendsInSquad");
 		auto SquadPlayerStates = PlayerState->Member<TArray<UObject*>>("SquadPlayerStates");

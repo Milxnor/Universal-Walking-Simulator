@@ -461,6 +461,7 @@ static std::string PickaxeDef = "FortWeaponMeleeItemDefinition /Game/Athena/Item
 static bool bAutoRestart = false;
 static int RestartSeconds = 10; // give them time to get slomo n stuff
 static bool bSiphonEnabled = false;
+static int maxAmountOfPlayersPerTeam = 1; // >S2
 
 static std::string CIDToUse = "None";
 
@@ -493,6 +494,7 @@ static constexpr bool bAutomaticPawnSpawning = false;
 static constexpr bool bExperimentalRespawning = false;
 static constexpr bool bAISpawningEnabled = false;
 static constexpr bool bSpawnAPC = true;
+static constexpr bool bTeamsEnabled = false;
 
 const wchar_t* GetMapName()
 {

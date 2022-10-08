@@ -345,8 +345,8 @@ namespace LootingV2
 		// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_CartSpawner.Athena_CartSpawner_C
 		// World /Game/Athena/Maps/Athena_DroneSpawners.Athena_DroneSpawners
 
-		static auto FortVehicleSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_QuadSpawner.Athena_QuadSpawner_C"); // FindObject("Class /Script/FortniteGame.FortAthenaVehicleSpawner");
-		static auto BoatSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Meatball/Athena_Meatball_L_Spawner.Athena_Meatball_L_Spawner_C");
+		static auto FortVehicleSpawnerClass = FindObject("Class /Script/FortniteGame.FortAthenaVehicleSpawner");
+		static auto BoatSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Meatball/Athena_Meatball_L_Spawner.Athena_Meatball_L_Spawner_C"); // Boat
 
 		auto spawnerClass = BoatSpawnerClass;
 
@@ -365,7 +365,9 @@ namespace LootingV2
 				{
 					auto SpawnerLoc = Helper::GetActorLocation(Spawner);
 					// std::cout << std::format("Spawning {} at {} {} {}", VehicleName, SpawnerLoc.X, SpawnerLoc.Y, SpawnerLoc.Z);
+					std::cout << "Loading!\n";
 					UObject* VehicleClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/DrivableVehicles/Meatball/Meatball_Large/MeatballVehicle_L.MeatballVehicle_L_C");
+					std::cout << "Loaded: " << VehicleClass << '\n';
 
 					if (VehicleClass)
 					{

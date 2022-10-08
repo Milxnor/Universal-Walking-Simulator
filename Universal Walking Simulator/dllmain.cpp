@@ -330,10 +330,12 @@ DWORD WINAPI Main(LPVOID)
         MH_EnableHook((PVOID)heloaddr);
     }
 
-    if (FnVerDouble == 6.21)
-    {
-        static auto dupciateplayetraddy = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 70 48 8B 01 48 8B DA 48 8B F9 FF 90 ? ? ? ? 48 8B 53 08 48 8B C8 E8");
+    static auto dupciateplayetraddy = FindPattern("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC 70 48 8B 01 48 8B DA 48 8B F9 FF 90 ? ? ? ? 48 8B 53 08 48 8B C8 E8");
 
+    std::cout << "dupciateplayetraddy: " << dupciateplayetraddy << '\n';
+
+    if (FnVerDouble == 6.21 || Engine_Version <= 419)
+    {
         MH_CreateHook((PVOID)dupciateplayetraddy, duplicateplayerdetour, nullptr); // stupid
         MH_EnableHook((PVOID)dupciateplayetraddy);
     }

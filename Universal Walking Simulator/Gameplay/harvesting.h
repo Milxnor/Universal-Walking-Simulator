@@ -13,6 +13,8 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 	bool bIsCar = BuildingActor->IsA(CarClass);
 
+	std::cout << "pock rtock!\n";
+
 	// HasDestructionLoot
 
 	// int amoutnagug = 5;
@@ -162,6 +164,8 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 			Inventory::GiveItem(Controller, ItemDef, EFortQuickBars::Secondary, -1, AmountToGive);
 		}
+		else
+			std::cout << "ky!\n";
 	}
 }
 
@@ -193,14 +197,15 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 		static auto MeleeClass = FnVerDouble < 10.00 ? FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_Melee/Blueprints/B_Melee_Generic.B_Melee_Generic_C") :
 			FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C");
 		
-		// std::cout << "AA!\n";
+		std::cout << "AA!\n";
 
 		if (DamageCauser && InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass))
 		{
-			// std::cout << "DamageCauser name: " << DamageCauser->GetFullName() << '\n';
+			std::cout << "DamageCauser name: " << DamageCauser->GetFullName() << '\n';
 
 			if (DamageCauser->IsA(MeleeClass))
 			{
+				std::cout << "mann!\n";
 				static auto PickaxeDef = Helper::GetPickaxeDef(InstigatedBy);
 
 				auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(InstigatedBy));

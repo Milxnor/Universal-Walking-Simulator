@@ -426,6 +426,9 @@ DWORD WINAPI GuiThread(LPVOID)
 					if (bEmotingEnabled)
 						ImGui::Checkbox("bPrintFUnny", &bPrintFUnny);
 
+					if (FnVerDouble < 3)
+						ImGui::InputInt("Amount Of Players Per Team", &maxAmountOfPlayersPerTeam);
+
 					if (false)
 					{
 						auto GameState = Helper::GetGameState();

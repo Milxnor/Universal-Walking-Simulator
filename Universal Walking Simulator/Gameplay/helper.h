@@ -2185,12 +2185,16 @@ namespace Helper
 		else
 		{
 			static auto CurrentPlaylistDataOffset = GetOffset(gameState, "CurrentPlaylistData");
-			auto PlaylistData = (UObject**)(__int64(gameState) + CurrentPlaylistDataOffset);
 
-			if (outAddr)
-				*outAddr = PlaylistData;
+			if (CurrentPlaylistDataOffset != -1)
+			{
+				auto PlaylistData = (UObject**)(__int64(gameState) + CurrentPlaylistDataOffset);
 
-			return *PlaylistData;
+				if (outAddr)
+					*outAddr = PlaylistData;
+
+				return PlaylistData ? *PlaylistData : nullptr;
+			}
 		}
 
 		return nullptr;

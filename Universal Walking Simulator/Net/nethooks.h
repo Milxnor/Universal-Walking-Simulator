@@ -302,7 +302,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	// todo: not do this for invicibility
 
-	if (Engine_Version <= 421 || NoMcpAddr)
+	// if (Engine_Version <= 421 || NoMcpAddr)
 	{
 		static auto CheatManagerOffset = GetOffset(PlayerController, "CheatManager");
 		auto CheatManager = (UObject**)(__int64(PlayerController) + CheatManagerOffset);
@@ -316,7 +316,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			(*CheatManager)->ProcessEvent(God);
 	}
 
-	if (false)
+	if (bTeamsEnabled)
 	{
 		// if (FnVerDouble >= 8 && FnVerDouble < 13)
 		{
