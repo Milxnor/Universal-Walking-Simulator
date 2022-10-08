@@ -467,8 +467,8 @@ static bool bSiphonEnabled = false;
 
 static std::string CIDToUse = "None";
 
-std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
-// std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";
+std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSquad.Playlist_DefaultSquad";
+// std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
 // "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
 // "FortPlaylistAthena /Game/Athena/Playlists/Low/Playlist_Low_Solo.Playlist_Low_Solo";
 
