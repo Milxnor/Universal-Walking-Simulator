@@ -318,7 +318,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	if (false)
 	{
-		if (FnVerDouble >= 8 && FnVerDouble < 13)
+		// if (FnVerDouble >= 8 && FnVerDouble < 13)
 		{
 			Teams::AssignTeam(PlayerController);
 		}

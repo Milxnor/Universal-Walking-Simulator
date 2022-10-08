@@ -901,14 +901,14 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 						*(float*)(__int64(&*DeathInfo) + DistanceOffset) = *(float*)(__int64(DeadPawn) + LastFallDistanceOffset);
 				}
 
-				std::cout << "DeathCause: " << (int)*(uint8_t*)(__int64(&*DeathInfo) + DeathCauseOffset) << '\n';
+				std::cout << "DeathCause: " << (int)DeathCause << '\n';
 
 				static auto OnRep_DeathInfo = DeadPlayerState->Function(("OnRep_DeathInfo"));
 
 				if (OnRep_DeathInfo)
 					DeadPlayerState->ProcessEvent(OnRep_DeathInfo); // sopmetimes crashes
 
-				if (bSiphonEnabled && KillerPawn)
+				if (bSiphonEnabled && KillerPawn && KillerPawn != DeadPawn)
 				{
 					float Health = Helper::GetHealth(KillerPawn);
 					float Shield = Helper::GetShield(KillerPawn);

@@ -295,12 +295,9 @@ namespace Inventory
 			return nullptr;
 	}
 
-	inline UObject* EquipWeapon(UObject* Pawn, UObject* FortWeapon, const FGuid& Guid, int Ammo = 0)
+	static UObject* EquipWeapon(UObject* Pawn, UObject* FortWeapon)
 	{
-		static auto PickaxeDef = Helper::GetPickaxeDef(Helper::GetControllerFromPawn(Pawn));
-		auto CurrentWeapon = Helper::GetCurrentWeapon(Pawn);
-
-		if (FortWeapon && CurrentWeapon && Pawn)
+		if (FortWeapon && Pawn)
 		{
 			static auto OnRep_ReplicatedWeaponData = FortWeapon->Function("OnRep_ReplicatedWeaponData");
 
@@ -333,6 +330,8 @@ namespace Inventory
 		}
 		else
 			std::cout << ("No weapon!\n");
+
+		return nullptr;
 	}
 
 	inline UObject* EquipWeaponDefinition(UObject* Pawn, UObject* Definition, const FGuid& Guid, int Ammo = -1, const FGuid& TrackerGuid = FGuid(), bool ahhh = false)
@@ -344,17 +343,23 @@ namespace Inventory
 			bool IsAGID = Definition->IsA(AthenaGadgetItemDefinitionClass);
 
 			static auto FortTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortTrapItemDefinition");
-			static auto FortContextTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortContextTrapItemDefinition");
+			// static auto FortContextTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortContextTrapItemDefinition");
 			static auto FortDecoItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortDecoItemDefinition");
 
-			if (Definition->IsA(FortContextTrapItemDefinitionClass))
-			{
+			// std::cout << "Definition: " << Definition->GetFullName() << '\n';
 
-			}
+			/*
+			std::cout << "ADD: " << WeaponClass << '\n';
+			std::cout << "WeapojnClass: " << (WeaponClass ? WeaponClass->GetFullName() : std::string("00000")) << '\n';
+			*/
 
-			else if (Definition->IsA(FortTrapItemDefinitionClass)) // wrong? probs
+			if (Definition->IsA(FortTrapItemDefinitionClass)) // wrong? probs
 			{
-				static auto TrapToolClass = FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_BuildingTools/TrapTool.TrapTool_C");
+				UObject* WeaponClass = nullptr;
+				static auto GetWeaponActorClass = Definition->Function("GetWeaponActorClass");
+				Definition->ProcessEvent(GetWeaponActorClass, &WeaponClass);
+
+				auto TrapToolClass = WeaponClass; // FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_BuildingTools/TrapTool.TrapTool_C");
 				auto newTrapTool = Easy::SpawnActor(TrapToolClass, Helper::GetActorLocation(Pawn));
 				
 				static auto PickUpActor = Pawn->Function("PickUpActor");
