@@ -497,9 +497,9 @@ DWORD WINAPI GuiThread(LPVOID)
 							bIsCreative = false;
 							LoadInMatch();
 						}
-						ImGui::Text("Mode: Floor Is Lava");
+						ImGui::Text("Mode: Floor Is Lava [Solo]");
 						ImGui::Text("Starter Items: Assault Riffle [Legendary], Pump Shotgun [Rare], Small Shield Potion [x3], Ballons [x9], Rift to Go [x2] and Materials [x50]");
-						if (ImGui::Button(("Start Battle Royale Server [Floor Is Lava]")))
+						if (ImGui::Button(("Start Battle Royale Server [Floor Is Lava (Solo)]")))
 						{
 							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo";
 							StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
