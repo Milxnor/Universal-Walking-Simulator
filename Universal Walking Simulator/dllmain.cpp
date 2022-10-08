@@ -482,6 +482,8 @@ DWORD WINAPI Main(LPVOID)
         MH_EnableHook((PVOID)getewaoe2);
     }
 
+    GlobalPickaxeDefObject = FindObject(PickaxeDef);
+
     if (false)
     {
         if (FnVerDouble == 19.10)
@@ -492,8 +494,6 @@ DWORD WINAPI Main(LPVOID)
 
             MH_CreateHook((PVOID)sigafinn, ShouldStartZoneOrSomethingDetour, (PVOID*)&ShouldStartZoneOrSomethingO);
             MH_EnableHook((PVOID)sigafinn);
-
-            GlobalPickaxeDefObject = FindObject(PickaxeDef);
         }
     }
 
