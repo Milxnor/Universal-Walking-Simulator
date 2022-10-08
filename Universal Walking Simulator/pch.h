@@ -1,0 +1,1 @@
+// TODO: Use this, put like patterns.h and loot.h in here.
