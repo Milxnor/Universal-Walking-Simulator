@@ -485,7 +485,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							LoadInMatch();
 						}
 						ImGui::Text("Mode: Solo");
-						ImGui::Text("Starter Items: Assault Riffle [Legendary], Pump Shotgun [Rare], Small Shield Potion [x3], Slurp Juice");
+						ImGui::Text("Starter Items: Assault Riffle [Legendary], Pump Shotgun [Rare], Small Shield Potion [x3] and Slurp Juice");
 						if (ImGui::Button(("Start Battle Royale Server [Solo]")))
 						{
 							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_DefaultSolo.Playlist_DefaultSolo";
@@ -498,7 +498,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							LoadInMatch();
 						}
 						ImGui::Text("Mode: Floor Is Lava");
-						ImGui::Text("Starter Items: Assault Riffle [Legendary], Pump Shotgun [Rare], Small Shield Potion [x3], Ballons [x9], Rift to Go [x2],  Materials [x50]");
+						ImGui::Text("Starter Items: Assault Riffle [Legendary], Pump Shotgun [Rare], Small Shield Potion [x3], Ballons [x9], Rift to Go [x2] and Materials [x50]");
 						if (ImGui::Button(("Start Battle Royale Server [Floor Is Lava]")))
 						{
 							PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Fill/Playlist_Fill_Solo.Playlist_Fill_Solo";
