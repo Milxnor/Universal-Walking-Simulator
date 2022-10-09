@@ -747,6 +747,7 @@ DWORD WINAPI GuiThread(LPVOID)
 				case PLAYERS_TAB:
 					// ImGui::Text("Players Connected: ")
 					InitializePlayers();
+
 					for (int i = 0; i < Players.size(); i++)
 					{
 						auto& Player = Players[i];
@@ -763,6 +764,7 @@ DWORD WINAPI GuiThread(LPVOID)
 							PlayerTab = i;
 						}
 					}
+
 					break;
 				case GAMEMODE_TAB:
 				{

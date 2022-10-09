@@ -476,7 +476,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 					if (Pawn)
 					{
-						Helper::SetShield(Pawn, 0.f);
+						Helper::SetShield(Pawn, bIsLateGame ? 100.f : 0.f);
 					}
 
 					if (bIsLateGame && LootingV2::bInitialized) // give random loot
@@ -500,8 +500,8 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 							Shotgun = LootingV2::GetRandomItem(ItemType::Weapon);
 						}
 
-						Inventory::GiveItem(PlayerController, AR.Definition, EFortQuickBars::Primary, 1);
-						Inventory::GiveItem(PlayerController, Shotgun.Definition, EFortQuickBars::Primary, 2);
+						Inventory::CreateAndAddItem(PlayerController, AR.Definition, EFortQuickBars::Primary, 1, 1, true);
+						Inventory::CreateAndAddItem(PlayerController, Shotgun.Definition, EFortQuickBars::Primary, 2, 1, true);
 
 						std::random_device rd; // obtain a random number from hardware
 						std::mt19937 gen(rd()); // seed the generator
@@ -523,7 +523,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 									SMG = LootingV2::GetRandomItem(ItemType::Weapon);
 								}
 
-								Inventory::GiveItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3);
+								Inventory::CreateAndAddItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
 							}
 							else
 							{
@@ -534,7 +534,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 									Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
 								}
 
-								Inventory::GiveItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 3);
+								Inventory::CreateAndAddItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 3, 1, true);
 							}
 
 							slotForFirstConsumable = 4;
@@ -551,7 +551,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 									SMG = LootingV2::GetRandomItem(ItemType::Weapon);
 								}
 
-								Inventory::GiveItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3);
+								Inventory::CreateAndAddItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
 							}
 							
 							{
@@ -562,7 +562,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 									Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
 								}
 
-								Inventory::GiveItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 4);
+								Inventory::CreateAndAddItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 4, 1, true);
 							}
 
 							slotForFirstConsumable = 5;
