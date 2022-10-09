@@ -1,6 +1,7 @@
 #pragma once
 
 #include <UE/structs.h>
+#include <Gameplay/carmine.h>
 #include <Gameplay/helper.h>
 #include <Gameplay/abilities.h>
 
@@ -1635,7 +1636,10 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 					auto quickBarsItemShouldGoIn = QuickBars::WhatQuickBars(*Definition);
 
 					newInstance = Inventory::GiveItem(Controller, *Definition, quickBarsItemShouldGoIn, slotToGoInto, *Count, &bDidStack, nullptr, ItemToStackInto);
-
+					if ((*Definition)->GetName().contains("CarminePack") || (*Definition)->GetName().contains("AshtonPack")) {
+						Carmine::HandleCarmine(Controller);
+						Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(newInstance));
+					}
 					// Inventory::GetWorldInventory(Controller)->Member<TArray<UObject*>>("PendingInstances")->Add(newInstance);
 
 					if (newInstance)
