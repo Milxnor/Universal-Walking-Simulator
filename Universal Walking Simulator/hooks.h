@@ -479,6 +479,134 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 						Helper::SetShield(Pawn, 0.f);
 					}
 
+					if (bIsLateGame && LootingV2::bInitialized) // give random loot
+					{
+						ClearInventory(PlayerController);
+
+						Inventory::GiveAllAmmo(PlayerController, 15, 50, 350, 300, 50);
+						Inventory::GiveMats(PlayerController, 500, 500, 500);
+
+						auto AR = LootingV2::GetRandomItem(ItemType::Weapon);
+
+						while (!AR.Definition || (!AR.Definition->GetFullName().contains("Assault") && !AR.Definition->GetFullName().contains("LMG")))
+						{
+							AR = LootingV2::GetRandomItem(ItemType::Weapon);
+						}
+
+						auto Shotgun = LootingV2::GetRandomItem(ItemType::Weapon);
+
+						while (!Shotgun.Definition || !Shotgun.Definition->GetFullName().contains("Shotgun"))
+						{
+							Shotgun = LootingV2::GetRandomItem(ItemType::Weapon);
+						}
+
+						Inventory::GiveItem(PlayerController, AR.Definition, EFortQuickBars::Primary, 1);
+						Inventory::GiveItem(PlayerController, Shotgun.Definition, EFortQuickBars::Primary, 2);
+
+						std::random_device rd; // obtain a random number from hardware
+						std::mt19937 gen(rd()); // seed the generator
+
+						std::uniform_int_distribution<> distr(0, 10);
+
+						int slotForFirstConsumable = 3;
+						int slotForSecondConsumable = 4;
+						int slotForThirdConsumable = 5;
+
+						if (distr(gen) > 6) // 2 heals
+						{
+							if (distr(gen) >= 4) // 40/60 sniper or smg
+							{
+								auto SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+
+								while (!SMG.Definition || !SMG.Definition->GetFullName().contains("PDW")) // bad
+								{
+									SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+								}
+
+								Inventory::GiveItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3);
+							}
+							else
+							{
+								auto Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+
+								while (!Sniper.Definition || !Sniper.Definition->GetFullName().contains("Sniper"))
+								{
+									Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+								}
+
+								Inventory::GiveItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 3);
+							}
+
+							slotForFirstConsumable = 4;
+							slotForSecondConsumable = 5;
+							slotForThirdConsumable = -1;
+						}
+						else // 1 heal
+						{
+							{
+								auto SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+
+								while (!SMG.Definition || !SMG.Definition->GetFullName().contains("PDW")) // bad
+								{
+									SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+								}
+
+								Inventory::GiveItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3);
+							}
+							
+							{
+								auto Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+
+								while (!Sniper.Definition || !Sniper.Definition->GetFullName().contains("Sniper"))
+								{
+									Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+								}
+
+								Inventory::GiveItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 4);
+							}
+
+							slotForFirstConsumable = 5;
+							slotForSecondConsumable = -1;
+							slotForThirdConsumable = -1;
+						}
+
+						if (slotForFirstConsumable != -1)
+						{
+							auto Consumable1 = LootingV2::GetRandomItem(ItemType::Consumable);
+
+							/* while (!Consumable1.Definition || !Consumable1.Definition->GetFullName().contains("Shield") || !Consumable1.Definition->GetFullName().contains("Med"))
+							{
+								Consumable1 = LootingV2::GetRandomItem(ItemType::Consumable);
+							} */
+
+							Inventory::GiveItem(PlayerController, Consumable1.Definition, EFortQuickBars::Primary, slotForFirstConsumable, Consumable1.DropCount);
+						}
+
+						if (slotForSecondConsumable != -1)
+						{
+							auto Consumable2 = LootingV2::GetRandomItem(ItemType::Consumable);
+
+							/* while (!Consumable2.Definition || !Consumable2.Definition->GetFullName().contains("Shield") || !Consumable2.Definition->GetFullName().contains("Med"))
+							{
+								Consumable2 = LootingV2::GetRandomItem(ItemType::Consumable);
+							} */
+
+							Inventory::GiveItem(PlayerController, Consumable2.Definition, EFortQuickBars::Primary, slotForSecondConsumable, Consumable2.DropCount);
+						}
+
+						if (slotForThirdConsumable != -1)
+						{
+							auto Consumable3 = LootingV2::GetRandomItem(ItemType::Consumable);
+
+							/* while (!Consumable3.Definition || !Consumable3.Definition->GetFullName().contains("Shield") || !Consumable3.Definition->GetFullName().contains("Med"))
+							{
+								Consumable3 = LootingV2::GetRandomItem(ItemType::Consumable);
+							} */
+
+							Inventory::GiveItem(PlayerController, Consumable3.Definition, EFortQuickBars::Primary, slotForThirdConsumable, Consumable3.DropCount);
+						}
+					}
+
 					// ASC->RemoveActiveGameplayEffectBySourceEffect(SlurpEffect);
 				}
 			}

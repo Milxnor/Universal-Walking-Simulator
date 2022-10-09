@@ -1352,54 +1352,35 @@ namespace Inventory
 		return FFortItemEntry::GetCount(GetItemEntryFromInstance(Instance));
 	}
 
-	void GiveAllAmmo(UObject* Controller)
+	void GiveAllAmmo(UObject* Controller, int RocketCount = 999, int ShellCount = 999, int MediumCount = 999, int LightCount = 999, int HeavyCount = 999)
 	{
-		// omfg
-
-		/* if (Engine_Version < 420) // wrong I think // i think im stupid idk wtf this is for
-		{
-			static UObject* AthenaAmmoDataRockets = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataRockets.AthenaAmmoDataRockets"));
-			static UObject* AthenaAmmoDataShells = FindObject(("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
-			static UObject* AthenaAmmoDataBulletsMedium = FindObject(("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
-			static UObject* AthenaAmmoDataBulletsLight = FindObject(("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
-			static UObject* AthenaAmmoDataBulletsHeavy = FindObject(("FortAmmoItemDefinition /Game/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
-
-			CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 999);
-			CreateAndAddItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, 999);
-			CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 999);
-			CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 999);
-			CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 999);
-		}
-		else */
 		{
 			static UObject* AthenaAmmoDataRockets = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AmmoDataRockets.AmmoDataRockets"));
 			static UObject* AthenaAmmoDataShells = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataShells.AthenaAmmoDataShells"));
 			static UObject* AthenaAmmoDataBulletsMedium = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsMedium.AthenaAmmoDataBulletsMedium"));
 			static UObject* AthenaAmmoDataBulletsLight = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsLight.AthenaAmmoDataBulletsLight"));
 			static UObject* AthenaAmmoDataBulletsHeavy = FindObject(("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataBulletsHeavy.AthenaAmmoDataBulletsHeavy"));
-			static UObject* GrapplerAmmo = FindObject("FortAmmoItemDefinition /Game/Athena/Items/Ammo/AthenaAmmoDataHooks.AthenaAmmoDataHooks");
 
-			if (!AthenaAmmoDataRockets || !AthenaAmmoDataShells || !AthenaAmmoDataBulletsMedium || !AthenaAmmoDataBulletsLight || !AthenaAmmoDataBulletsHeavy || !GrapplerAmmo)
+			if (!AthenaAmmoDataRockets || !AthenaAmmoDataShells || !AthenaAmmoDataBulletsMedium || !AthenaAmmoDataBulletsLight || !AthenaAmmoDataBulletsHeavy)
 				std::cout << "Some ammo is invalid!\n";
 
-			CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, 999);
-			CreateAndAddItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, 999);
-			CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, 999);
-			CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, 999);
-			CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, 999);
-			// CreateAndAddItem(Controller, GrapplerAmmo, EFortQuickBars::Secondary, 0, 999);
+			CreateAndAddItem(Controller, AthenaAmmoDataRockets, EFortQuickBars::Secondary, 0, RocketCount);
+			CreateAndAddItem(Controller, AthenaAmmoDataShells, EFortQuickBars::Secondary, 0, ShellCount);
+			CreateAndAddItem(Controller, AthenaAmmoDataBulletsMedium, EFortQuickBars::Secondary, 0, MediumCount);
+			CreateAndAddItem(Controller, AthenaAmmoDataBulletsLight, EFortQuickBars::Secondary, 0, LightCount);
+			CreateAndAddItem(Controller, AthenaAmmoDataBulletsHeavy, EFortQuickBars::Secondary, 0, HeavyCount);
 		}
 	}
 
-	void GiveMats(UObject* Controller)
+	void GiveMats(UObject* Controller, int WoodCount = 999, int StoneCount = 999, int MetalCount = 999)
 	{
 		static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
 		static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));
 		static auto MetalItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/MetalItemData.MetalItemData"));
 
-		CreateAndAddItem(Controller, WoodItemData, EFortQuickBars::Secondary, 0, 999);
-		CreateAndAddItem(Controller, StoneItemData, EFortQuickBars::Secondary, 0, 999);
-		CreateAndAddItem(Controller, MetalItemData, EFortQuickBars::Secondary, 0, 999);
+		CreateAndAddItem(Controller, WoodItemData, EFortQuickBars::Secondary, 0, WoodCount);
+		CreateAndAddItem(Controller, StoneItemData, EFortQuickBars::Secondary, 0, StoneCount);
+		CreateAndAddItem(Controller, MetalItemData, EFortQuickBars::Secondary, 0, MetalCount);
 	}
 
 	void GiveBuildings(UObject* Controller)
@@ -1877,7 +1858,9 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 		if (GetAmmoWorldItemDefinition_BP)
 			WeaponData->ProcessEvent(GetAmmoWorldItemDefinition_BP, &AmmoDef);
 
-		if (!AmmoDef || WeaponData->GetName().contains("TID"))
+		static auto FortTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortTrapItemDefinition");
+
+		if (!AmmoDef || WeaponData->IsA(FortTrapItemDefinitionClass))
 			AmmoDef = WeaponData;
 
 		__int64* AmmoEntry = nullptr;
@@ -1894,7 +1877,9 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 			HandleReloadCost(Weapon, AmountToRemove);
 
 			auto WeaponLoadedAmmo = FFortItemEntry::GetLoadedAmmo(WeaponItemEntry);
-			auto WeaponAmmoCount = Weapon->Member<int>("AmmoCount");
+
+			static auto AmmoCountOffset = GetOffset(Weapon, "AmmoCount");
+			auto WeaponAmmoCount = (int*)(__int64(Weapon) + AmmoCountOffset);
 
 			if (WeaponLoadedAmmo && WeaponAmmoCount)
 			{
@@ -1920,7 +1905,7 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 					}
 				} */
 
-				Inventory::GetWorldInventory(PlayerController)->ProcessEvent("ForceNetUpdate");
+				// Inventory::GetWorldInventory(PlayerController)->ProcessEvent("ForceNetUpdate");
 
 				if (bIsPlayground)
 					return;

@@ -237,8 +237,8 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 			{
 				auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-				*GetEditingPlayer(BuildingToEdit) = PlayerState;
 				*GetEditActor(EditTool) = BuildingToEdit;
+				*GetEditingPlayer(BuildingToEdit) = PlayerState;
 			}
 			else
 				std::cout << "Failed to equip edittool??\n";

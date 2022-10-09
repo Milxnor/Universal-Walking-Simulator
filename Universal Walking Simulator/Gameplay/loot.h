@@ -84,7 +84,6 @@ bool RandomBoolWithWeight(float Weight)
 		std::uniform_int_distribution<> distr(0.0f, 1.0f);
 		return Weight >= distr(gen);
 	}
-
 }
 
 namespace LootingV2

@@ -470,11 +470,11 @@ std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_
 // "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
 // "FortPlaylistAthena /Game/Athena/Playlists/Low/Playlist_Low_Solo.Playlist_Low_Solo";
 
-static std::pair<std::string, int> StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
-static std::pair<std::string, int> StartingSlot2 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03", 1 };
-static std::pair<std::string, int> StartingSlot3 = { "", 0 };
-static std::pair<std::string, int> StartingSlot4 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall", 3 };
-static std::pair<std::string, int> StartingSlot5 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff", 1 };
+static std::pair<std::string, int> StartingSlot1 = { "", 0 }; // { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
+static std::pair<std::string, int> StartingSlot2 = { "", 0 }; // { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03", 1 };
+static std::pair<std::string, int> StartingSlot3 = { "", 0 }; // { "", 0 };
+static std::pair<std::string, int> StartingSlot4 = { "", 0 }; // { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall", 3 };
+static std::pair<std::string, int> StartingSlot5 = { "", 0 }; // { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff", 1 };
 
 // dont change these thanks
 
