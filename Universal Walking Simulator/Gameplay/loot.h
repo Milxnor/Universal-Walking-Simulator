@@ -11,7 +11,8 @@ enum class ItemType
 	Weapon,
 	Consumable,
 	Ammo,
-	Resource
+	Resource,
+	Trap
 };
 
 std::string ItemTypeToString(ItemType type)
@@ -27,6 +28,8 @@ std::string ItemTypeToString(ItemType type)
 		return "Ammo";
 	case Resource:
 		return "Resource";
+	case Trap:
+		return "Trap";
 	default:
 		return "NULL ItemType";
 	}
@@ -68,7 +71,7 @@ const DefinitionInRow* cumulative_weighted_choice(const std::vector<float>& weig
 	return &values[result_idx];
 }
 
-bool RandomBoolWithWeight(float Weight)
+bool RandomBoolWithWeight(float Weight, float Min = 0.f, float Max = 1.f)
 {
 	//If the Weight equals to 0.0f then always return false
 	if (Weight <= 0.0f)
@@ -81,7 +84,7 @@ bool RandomBoolWithWeight(float Weight)
 		std::random_device rd; // obtain a random number from hardware
 		std::mt19937 gen(rd()); // seed the generator
 
-		std::uniform_int_distribution<> distr(0.0f, 1.0f);
+		std::uniform_int_distribution<> distr(Min, Max);
 		return Weight >= distr(gen);
 	}
 }
@@ -212,6 +215,8 @@ namespace LootingV2
 
 					// brain damage
 
+					constexpr bool bAllowContextTraps = false;
+
 					if (DefinitionString.contains("Weapon"))
 						currentItem.Type = ItemType::Weapon;
 					else if (DefinitionString.contains("Consumable"))
@@ -220,6 +225,8 @@ namespace LootingV2
 						currentItem.Type = ItemType::Ammo;
 					else if (DefinitionString.contains("ResourcePickups"))
 						currentItem.Type = ItemType::Resource;
+					else if (DefinitionString.contains("TID") && bAllowContextTraps ? true : !DefinitionString.contains("Context"))
+						currentItem.Type = ItemType::Trap;
 
 					if (Weight)
 						AddItemAndWeight(Index, currentItem, *Weight);
@@ -282,33 +289,40 @@ namespace LootingV2
 
 					UObject* MainPickup = nullptr;
 
-					if (RandomBoolWithWeight(0.85f))
+					if (RandomBoolWithWeight(6, 1, 100))
+					{
+						auto Ammo = GetRandomItem(ItemType::Ammo);
+
+						MainPickup = Helper::SummonPickup(nullptr, Ammo.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+							EFortPickupSpawnSource::Unset, Ammo.DropCount, bTossPickup, false);
+					}
+
+					else if (RandomBoolWithWeight(5, 1, 100))
+					{
+						auto Trap = GetRandomItem(ItemType::Trap);
+
+						MainPickup = Helper::SummonPickup(nullptr, Trap.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+							EFortPickupSpawnSource::Unset, Trap.DropCount, bTossPickup, false);
+					}
+
+					else if (RandomBoolWithWeight(0.15f))
 					{
 						auto Consumable = GetRandomItem(ItemType::Consumable);
 
 						MainPickup = Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
-							EFortPickupSpawnSource::Unset, Consumable.DropCount, bTossPickup);
+							EFortPickupSpawnSource::Unset, Consumable.DropCount, bTossPickup, true);
 					}
+
 					else
 					{
 						auto Weapon = GetRandomItem(ItemType::Weapon);
 
 						MainPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, bTossPickup);
 
-						static auto GetAmmoWorldItemDefinition_BP = Weapon.Definition->Function(("GetAmmoWorldItemDefinition_BP"));
+						auto AmmoDef = GetAmmoForDefinition(Weapon.Definition);
 
-						if (GetAmmoWorldItemDefinition_BP && MainPickup)
-						{
-							struct { UObject* AmmoDefinition; }GetAmmoWorldItemDefinition_BP_Params{};
-							Weapon.Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
-							auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
-							static auto DropCountOffset = GetOffset(AmmoDef, "DropCount");
-
-							auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
-
-							Helper::SummonPickup(nullptr, AmmoDef, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
-								EFortPickupSpawnSource::Unset, DropCount, bTossPickup, false);
-						}
+						Helper::SummonPickup(nullptr, AmmoDef.first, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+							EFortPickupSpawnSource::Unset, AmmoDef.second, bTossPickup, false);
 					}
 
 					if (!MainPickup)
@@ -316,7 +330,7 @@ namespace LootingV2
 
 					std::cout << "I: " << i << '\n';
 
-					Sleep(Engine_Version >= 422 ? SleepTimer : 0);
+					Sleep(Engine_Version >= 422 ? SleepTimer : 1);
 				}
 			}
 		}
@@ -495,12 +509,9 @@ namespace LootingV2
 				{
 					auto WeaponDef = DefInRow.Definition;
 
-					static auto GetAmmoWorldItemDefinition_BP = WeaponDef->Function(("GetAmmoWorldItemDefinition_BP"));
-					if (GetAmmoWorldItemDefinition_BP)
+					auto Ammo = GetAmmoForDefinition(WeaponDef);
+
 					{
-						struct { UObject* AmmoDefinition; }GetAmmoWorldItemDefinition_BP_Params{};
-						WeaponDef->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
-						auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
 
 						{
 							auto Location = Helper::GetCorrectLocation(BuildingContainer);
@@ -508,14 +519,11 @@ namespace LootingV2
 							if (WeaponDef)
 								Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DefInRow.DropCount);
 
-							if (AmmoDef)
 							{
-								static auto DropCountOffset = GetOffset(AmmoDef, "DropCount");
-								auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
-								Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DropCount, true, false);
+								Helper::SummonPickup(nullptr, Ammo.first, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, Ammo.second, true, false);
 							}
 
-							auto ConsumableInRow = GetRandomItem(ItemType::Consumable);
+							auto ConsumableInRow = RandomBoolWithWeight(5, 1, 100) ? GetRandomItem(ItemType::Trap) : GetRandomItem(ItemType::Consumable);
 
 							if (ConsumableInRow.Definition)
 							{

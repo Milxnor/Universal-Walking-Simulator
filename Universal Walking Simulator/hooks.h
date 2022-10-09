@@ -1498,7 +1498,20 @@ UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGa
 		// newiNstanceavg->ProcessEvent("OnMontageStartedPlaying");
 		// newiNstanceavg->ProcessEvent("PlayInitialEmoteMontage");
 
-		// if (false)
+		struct FGameplayAbilityTargetDataHandle
+		{
+			unsigned char                                      UnknownData00[0x20];                                      // 0x0000(0x0020) MISSED OFFSET
+		};
+
+		struct {
+			FGameplayAbilityTargetDataHandle aa;
+			FGameplayTag aplai;
+		} afhfw8u{ FGameplayAbilityTargetDataHandle (), FGameplayTag()};
+
+		newiNstanceavg->ProcessEvent("Triggered_DE7019AA4E006879EDD264899869FEE2", &afhfw8u);
+		newiNstanceavg->ProcessEvent("K2_ActivateAbility");
+
+		if (false)
 		{
 			auto PlayerState = Helper::GetOwner(ASC);
 			auto Pawn = *PlayerState->Member<UObject*>("PawnPrivate");
@@ -1782,6 +1795,8 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 				if (AlreadySearchedFn)
 					ReceivingActor->ProcessEvent(AlreadySearchedFn);
+
+				std::cout << "LootSpawnLocation: " << ReceivingActor->Member<FVector>("LootSpawnLocation")->Describe() << '\n';
 			}
 
 			static auto VendingMachineClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/VendingMachine/B_Athena_VendingMachine.B_Athena_VendingMachine_C");

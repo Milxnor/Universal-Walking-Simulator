@@ -18,6 +18,35 @@ static UObject* GetIslandScripting()
 	return FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3");
 }
 
+std::pair<UObject*, int> GetAmmoForDefinition(UObject* Definition)
+{
+	static auto GetAmmoWorldItemDefinition_BP = Definition->Function(("GetAmmoWorldItemDefinition_BP"));
+	UObject* AmmoDef;
+	Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &AmmoDef);
+
+	static auto DropCountOffset = GetOffset(AmmoDef, "DropCount");
+
+	auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
+
+	return std::make_pair(AmmoDef, DropCount);
+
+	static std::unordered_map<UObject*, int> mapofammo;
+
+	auto it = mapofammo.find(AmmoDef);
+
+	if (it != mapofammo.end())
+		return std::make_pair(it->first, it->second);
+
+	/* for (auto& Def : LootingV2::Items[LootingV2::LootItems])
+	{
+		if (Def.Definition == AmmoDef)
+		{
+			mapofammo.emplace(AmmoDef, Def.DropCount);
+			return std::make_pair(AmmoDef, Def.DropCount);
+		}
+	} */
+}
+
 int GetMaxBullets(UObject* Definition)
 {
 	if (!Definition)
@@ -37,6 +66,9 @@ int GetMaxBullets(UObject* Definition)
 		return 0;
 
 	auto RangedWeaponsTable = statHandle->DataTable;
+
+	if (!RangedWeaponsTable)
+		return 0;
 
 	// auto RangedWeaponRows = GetRowMap(RangedWeaponsTable);
 

@@ -1115,7 +1115,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 								if (wID)
 								{
-									auto instance = Inventory::GiveItem(Controller, wID, EFortQuickBars::Primary, 1, Count);
+									auto instance = Inventory::GiveItem(Controller, wID, QuickBars::WhatQuickBars(wID), 1, Count);
 									*FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(instance)) = LoadedAmmo;
 								}
 								else

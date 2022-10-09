@@ -231,8 +231,9 @@ namespace QuickBars
 	EFortQuickBars WhatQuickBars(UObject* Definition) // returns the quickbar the item should go in
 	{
 		static auto FortWeaponItemDefinitionClass = FindObject(("Class /Script/FortniteGame.FortWeaponItemDefinition"));
+		static auto FortDecoItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortDecoItemDefinition");
 
-		if (Definition->IsA(FortWeaponItemDefinitionClass))
+		if (Definition->IsA(FortWeaponItemDefinitionClass) && !Definition->IsA(FortDecoItemDefinitionClass))
 			return EFortQuickBars::Primary;
 		else
 			return EFortQuickBars::Secondary;
@@ -1614,7 +1615,7 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 				bool bSucceededSwap = true;
 
-				Helper::EnablePickupAnimation(Pawn, Params->Pickup, InFlyTime, InStartDirection);
+				Helper::EnablePickupAnimation(Pawn, Params->Pickup, 0.40f /* InFlyTime */, InStartDirection);
 
 				if (bSucceededSwap)
 				{
@@ -1636,10 +1637,16 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 					auto quickBarsItemShouldGoIn = QuickBars::WhatQuickBars(*Definition);
 
 					newInstance = Inventory::GiveItem(Controller, *Definition, quickBarsItemShouldGoIn, slotToGoInto, *Count, &bDidStack, nullptr, ItemToStackInto);
-					if ((*Definition)->GetName().contains("CarminePack") || (*Definition)->GetName().contains("AshtonPack")) {
+
+					bool bIsCarmine = (*Definition)->GetName().contains("CarminePack") || (*Definition)->GetName().contains("AshtonPack");
+
+					if (bIsCarmine) {
 						Carmine::HandleCarmine(Controller);
-						Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(newInstance));
 					}
+
+					if (/* bShouldSwap || */ bIsCarmine)
+						Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(newInstance));
+
 					// Inventory::GetWorldInventory(Controller)->Member<TArray<UObject*>>("PendingInstances")->Add(newInstance);
 
 					if (newInstance)
@@ -1686,7 +1693,6 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 						if (bShouldSwap && Definition)
 						{
-							Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(newInstance));
 							// Inventory::EquipWeaponDefinition(Pawn, *Definition, Inventory::GetItemGuid(newInstance));
 						}
 					}
@@ -2115,7 +2121,7 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 
 				if (bShouldSwap && Definition)
 				{
-					Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(newInstance));
+					// Inventory::EquipInventoryItem(Controller, Inventory::GetItemGuid(newInstance));
 					// Inventory::EquipWeaponDefinition(Pawn, *Definition, Inventory::GetItemGuid(newInstance));
 				}
 			}

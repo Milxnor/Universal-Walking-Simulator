@@ -6,6 +6,17 @@
 
 void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.f)
 {
+	static auto ResourceTypeOffset = GetOffset(BuildingActor, "ResourceType");
+	auto ResourceType = *(TEnumAsByte<EFortResourceType>*)(__int64(BuildingActor) + ResourceTypeOffset);
+
+	// static auto bDestroyedOffset = GetOffset(BuildingActor, "bDestroyed");
+	// static auto bDestroyedBI = GetBitIndex(GetProperty(BuildingActor, "bDestroyed"));
+
+	auto bDestroyed = false; // readd((uint8_t*)(__int64(BuildingActor) + bDestroyedOffset), bDestroyedBI);
+
+	if (bDestroyed)
+		return;
+
 	static auto CarClass = FindObject("BlueprintGeneratedClass /Game/Building/ActorBlueprints/Prop/Car_DEFAULT.Car_DEFAULT_C");
 
 	if (!CarClass)
@@ -103,9 +114,6 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 	// std::cout << "StaticGameplayTags: " << BuildingActor->Member<FGameplayTagContainer>("StaticGameplayTags")->ToStringSimple(true) << '\n';
 
-	static auto ResourceTypeOffset = GetOffset(BuildingActor, "ResourceType");
-	auto ResourceType = *(TEnumAsByte<EFortResourceType>*)(__int64(BuildingActor) + ResourceTypeOffset);
-
 	struct
 	{
 		UObject* BuildingSMActor;                                          // (Parm, ZeroConstructor, IsPlainOldData)
@@ -115,7 +123,7 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		bool                                               bJustHitWeakspot;                                         // (Parm, ZeroConstructor, IsPlainOldData)
 	} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, 
 		bIsCar ? EFortResourceType::Metal : ResourceType,
-		 funne, false, HitWeakspot }; // ender weakspotrs
+		 funne, bDestroyed, HitWeakspot }; // ender weakspotrs
 
 	static auto ClientReportDamagedResourceBuilding = Controller->Function(("ClientReportDamagedResourceBuilding"));
 
