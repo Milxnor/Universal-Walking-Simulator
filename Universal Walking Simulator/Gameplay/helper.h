@@ -101,7 +101,7 @@ std::pair<UObject*, int> GetAmmoForDefinition(UObject* Definition)
 
 int GetMaxBullets(UObject* Definition)
 {
-	if (!Definition)
+	if (!Definition || Definition->IsA(FindObject("Class /Script/FortniteGame.FortGadgetItemDefinition")))
 		return 0;
 
 	struct FDataTableRowHandle
