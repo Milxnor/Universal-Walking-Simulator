@@ -50,7 +50,8 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 		else {
 			*NextCenter += FVector{ (float)distr(gen), (float)distr1(gen1), (float)distr2(gen2) };
 		}*/
-		static auto GameState = *world->Member<UObject*>(("GameState"));
+
+		auto GameState = Helper::GetGameState();
 		auto Aircraft = GameState->Member<TArray<UObject*>>(("Aircrafts"))->At(0);
 		static FVector AircraftLocationStatic = Helper::GetActorLocation(Aircraft);
 
