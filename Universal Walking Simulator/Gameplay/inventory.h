@@ -1085,7 +1085,22 @@ namespace Inventory
 		*/
 
 		if (bFortnite)
+		{
+			auto ItemInstances = Inventory::GetItemInstances(Controller);
+
+			if (ItemInstances)
+			{
+				for (int i = 0; i < ItemInstances->Num(); i++)
+				{
+					auto ItemInstance = ItemInstances->At(i);
+
+					if (Inventory::GetItemGuid(ItemInstance) == Guid)
+						ItemInstances->RemoveAt(i);
+				}
+			}
+
 			Update(Controller, -1, true);
+		}
 	}
 
 	bool IncreaseItemCount(UObject* Controller, UObject* Instance, int Count) // stack
@@ -2191,34 +2206,52 @@ bool IsDroppable(UObject* CurrentItemDefinition, bool bTakePickaxe = true)
 
 void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 {
-	static auto BuildingItemData_Wall = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Wall.BuildingItemData_Wall"));
-	static auto BuildingItemData_Floor = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Floor.BuildingItemData_Floor"));
-	static auto BuildingItemData_Stair_W = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
-	static auto BuildingItemData_RoofS = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
-	static auto EditTool = FindObject(("FortEditToolItemDefinition /Game/Items/Weapons/BuildingTools/EditTool.EditTool"));
+	if (Engine_Version >= 424)
+		return;
+
 	static auto PickaxeDef = Helper::GetPickaxeDef(Controller);
 
 	auto ItemInstances = Inventory::GetItemInstances(Controller);
 
 	if (ItemInstances)
 	{
-		for (int i = 0; i < ItemInstances->Num(); i++)
+		auto NumItemInstances = ItemInstances->Num();
+		std::cout << "ItemInstances->Num(): " << NumItemInstances << '\n';
+
+		int Start = 5; // 0
+		int loopedThrough = Start;
+
+		// while (loopedThrough <= NumItemInstances)
 		{
-			auto CurrentItemInstance = ItemInstances->At(i);
+			for (int i = loopedThrough; i < NumItemInstances; i++)
+			{
+				auto CurrentItemInstance = ItemInstances->At(i);
 
-			auto CurrentItemDefinition = Inventory::GetItemDefinition(CurrentItemInstance);
+				if (!CurrentItemInstance || IsBadReadPtr(CurrentItemInstance))
+					continue;
 
-			// if (!CurrentItemInstance || !CurrentItemDefinition || readBitfield(CurrentItemDefinition, "bCanBeDropped")) // dont ask
-				// continue;
+				auto CurrentItemDefinition = Inventory::GetItemDefinition(CurrentItemInstance);
 
-			if (!CurrentItemInstance || !CurrentItemDefinition || CurrentItemDefinition == BuildingItemData_Wall || CurrentItemDefinition == BuildingItemData_Floor
-				|| CurrentItemDefinition == (BuildingItemData_Stair_W) || CurrentItemDefinition == (BuildingItemData_RoofS) || CurrentItemDefinition == EditTool 
-				|| (bTakePickaxe ? false : CurrentItemDefinition == PickaxeDef))
-				continue;
+				if (!CurrentItemDefinition || IsBadReadPtr(CurrentItemDefinition))
+					continue;
 
-			Inventory::TakeItem(Controller, Inventory::GetItemGuid(CurrentItemInstance), *FFortItemEntry::GetCount(GetItemEntryFromInstance(CurrentItemInstance)), true);
+				// if (!CurrentItemInstance || !CurrentItemDefinition || readBitfield(CurrentItemDefinition, "bCanBeDropped")) // dont ask
+					// continue;
+
+				// std::cout << "CurrentItemDefinition: " << CurrentItemDefinition->GetFullName() << '\n';
+
+				if (bTakePickaxe ? false : CurrentItemDefinition == PickaxeDef)
+					continue;
+
+				Inventory::RemoveItem(Controller, Inventory::GetItemGuid(CurrentItemInstance));
+				// loopedThrough++;
+			}
 		}
+
+		std::cout << "loopedThrough: " << loopedThrough << '\n';
 	}
+
+	std::cout << "bro!\n";
 
 	static auto WoodItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/WoodItemData.WoodItemData"));
 	static auto StoneItemData = FindObject(("FortResourceItemDefinition /Game/Items/ResourcePickups/StoneItemData.StoneItemData"));

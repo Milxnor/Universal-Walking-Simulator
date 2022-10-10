@@ -305,7 +305,7 @@ namespace LootingV2
 							EFortPickupSpawnSource::Unset, Trap.DropCount, bTossPickup, false);
 					}
 
-					else if (RandomBoolWithWeight(0.15f))
+					else if (RandomBoolWithWeight(20, 1, 100))
 					{
 						auto Consumable = GetRandomItem(ItemType::Consumable);
 
@@ -493,6 +493,10 @@ namespace LootingV2
 		auto GetCorrectLocation = [BuildingContainer]() -> FVector {
 			auto Location = Helper::GetActorLocation(BuildingContainer);
 			auto RightVector = Helper::GetActorRightVector(BuildingContainer);
+
+			// static auto LootSpawnLocationOffset = GetOffset(BuildingContainer, "LootSpawnLocation");
+
+			// return Location + RightVector * 70.0f + *(FVector*)(__int64(BuildingContainer) + LootSpawnLocationOffset);
 
 			return Location + RightVector * 70.0f + FVector{0, 0, 50};
 		};

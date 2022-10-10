@@ -1795,8 +1795,6 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 
 				if (AlreadySearchedFn)
 					ReceivingActor->ProcessEvent(AlreadySearchedFn);
-
-				std::cout << "LootSpawnLocation: " << ReceivingActor->Member<FVector>("LootSpawnLocation")->Describe() << '\n';
 			}
 
 			static auto VendingMachineClass = FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/VendingMachine/B_Athena_VendingMachine.B_Athena_VendingMachine_C");
@@ -2891,7 +2889,9 @@ void FinishInitializeUHooks()
 	if (bExperimentalRespawning)
 		AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawnHook);
 
-	if (FnVerDouble < 19.00)
+	static auto func1 = FindObject("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange");
+
+	if (func1)
 		AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 	else
 		AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
