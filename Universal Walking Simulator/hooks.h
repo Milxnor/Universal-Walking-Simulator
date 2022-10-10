@@ -1272,7 +1272,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 {
 	auto Pawn = Helper::GetPawnFromController(Controller);
 
-	struct SPEIParams  { UObject* EmoteAsset; }; // UFortMontageItemDefinitionBase
+	struct SPEIParams { UObject* EmoteAsset; }; // UFortMontageItemDefinitionBase
 	auto EmoteParams = (SPEIParams*)Parameters;
 
 	auto EmoteAsset = EmoteParams->EmoteAsset;
@@ -1284,13 +1284,8 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 		struct {
 			TEnumAsByte<EFortCustomBodyType> BodyType;
 			TEnumAsByte<EFortCustomGender> Gender;
-			UObject* PawnContext; // on some c2+ versions
-			UObject* ret;
-		} GAHRParams{EFortCustomBodyType::All, EFortCustomGender::Both, Pawn}; // (CurrentPawn->CharacterBodyType, CurrentPawn->CharacterGender)
-
-		static auto AnimMontageOffset = FindOffsetStruct("Function /Script/FortniteGame.FortMontageItemDefinitionBase.GetAnimationHardReference", "ReturnValue");
-		std::cout << "AnimMontageOffset: " << AnimMontageOffset << '\n';
-
+			UObject* AnimMontage; // UAnimMontage
+		} GAHRParams{ EFortCustomBodyType::All, EFortCustomGender::Both }; // (CurrentPawn->CharacterBodyType, CurrentPawn->CharacterGender)
 		static auto fn = EmoteAsset->Function(("GetAnimationHardReference"));
 
 		auto EmoteAssetName = EmoteAsset->GetFullName();
@@ -1304,7 +1299,6 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				UObject* SpawningPC;      // AFortPlayerController                                          // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 				UObject* InSprayAsset;            // UAthenaSprayItemDefinition                                  // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 			}AFortSprayDecalInstance_SetSprayParameters_Params{ Controller, EmoteAsset };
-
 			struct FFortSprayDecalRepPayload
 			{
 				UObject* SprayAsset;             // UAthenaSprayItemDefinition                                   // 0x0000(0x0008) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -1313,15 +1307,10 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				int                                                SavedStatValue;                                           // 0x0018(0x0004) (BlueprintVisible, BlueprintReadOnly, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 				unsigned char                                      UnknownData00[0x4];                                       // 0x001C(0x0004) MISSED OFFSET
 			};
-
 			static auto SprayDecalInstanceClass = FindObject("BlueprintGeneratedClass /Game/Athena/Cosmetics/Sprays/BP_SprayDecal.BP_SprayDecal_C");
-
 			auto DecalInstance = Easy::SpawnActor(SprayDecalInstanceClass, Helper::GetActorLocation(Pawn), FRotator());
-
 			std::cout << "Instance: " << DecalInstance << '\n';
-
 			static auto SetSprayParameters = DecalInstance->Function("SetSprayParameters");
-
 			if (SetSprayParameters)
 			{
 				DecalInstance->ProcessEvent(SetSprayParameters, &AFortSprayDecalInstance_SetSprayParameters_Params);
@@ -1331,13 +1320,10 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 			}
 			else
 				std::cout << "No SetSprayParameters!\n";
-
 			return false;
 		}
-
 		// 	class AActor* SpawnToyInstance(class UClass* ToyClass, struct FTransform SpawnPosition);
 		//  SoftClassProperty FortniteGame.AthenaToyItemDefinition.ToyActorClass
-
 		else */ if (EmoteAssetName.contains("Toy"))
 		{
 			auto ToyActorClass = EmoteAsset->Member<TSoftClassPtr>("ToyActorClass");
@@ -1353,37 +1339,31 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				/* auto Toy = Easy::SpawnActor(ToyClass, Helper::GetActorLocation(Pawn));
 				std::cout << "Toy: " << Toy->GetFullName() << '\n';
 				static auto InitializeToyInstance = Toy->Function("InitializeToyInstance");
-
 				struct { UObject* OwningPC; int32_t NumTimesSummoned; } paafiq23{ Controller, 1 };
-
 				if (InitializeToyInstance)
 					Toy->ProcessEvent(InitializeToyInstance, &paafiq23); */
 
-				// bool idk = true;
-				// Toy->ProcessEvent("OnReplicatedVelocityStartOrStop", &idk);
+					// bool idk = true;
+					// Toy->ProcessEvent("OnReplicatedVelocityStartOrStop", &idk);
 
-				// ^ SEMI WORKING CODE (Removed because they never disappear), below desnt do anything
+					// ^ SEMI WORKING CODE (Removed because they never disappear), below desnt do anything
 
-				/* FTransform transform;
-				transform.Scale3D = { 1, 1, 1 };
-				transform.Translation = Helper::GetActorLocation(Pawn);
-				transform.Rotation = {};
+					/* FTransform transform;
+					transform.Scale3D = { 1, 1, 1 };
+					transform.Translation = Helper::GetActorLocation(Pawn);
+					transform.Rotation = {};
+					struct
+					{
+						UObject* ToyClass;      // UClass                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+						FTransform                                  SpawnPosition;                                            // (Parm, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
+						UObject* ReturnValue;   // AActor                                            // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+					} AFortPlayerController_SpawnToyInstance_Params{ ToyClass, transform };
+					static auto SpawnToyInstance = Controller->Function("SpawnToyInstance");
+					// InitializeToyInstance
+					if (SpawnToyInstance)
+						Controller->ProcessEvent(SpawnToyInstance, &AFortPlayerController_SpawnToyInstance_Params); */
 
-				struct
-				{
-					UObject* ToyClass;      // UClass                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-					FTransform                                  SpawnPosition;                                            // (Parm, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
-					UObject* ReturnValue;   // AActor                                            // (Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-				} AFortPlayerController_SpawnToyInstance_Params{ ToyClass, transform };
-
-				static auto SpawnToyInstance = Controller->Function("SpawnToyInstance");
-
-				// InitializeToyInstance
-
-				if (SpawnToyInstance)
-					Controller->ProcessEvent(SpawnToyInstance, &AFortPlayerController_SpawnToyInstance_Params); */
-
-				// *AFortPlayerController_SpawnToyInstance_Params.ReturnValue->Member<UObject*>("OwningPawn") = Pawn;
+						// *AFortPlayerController_SpawnToyInstance_Params.ReturnValue->Member<UObject*>("OwningPawn") = Pawn;
 			}
 			else
 				std::cout << "Unable to find ToyClass!\n";
@@ -1392,14 +1372,12 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 		if (fn && true)
 		{
 			EmoteAsset->ProcessEvent(fn, &GAHRParams);
-			auto Montage = *(UObject**)(__int64(&GAHRParams) + AnimMontageOffset);
+			auto Montage = GAHRParams.AnimMontage;
 
 			std::cout << ("Playing Montage: ") << Montage->GetFullName() << '\n';
 
 			/* static float (*PlayMontageReplicated)(UObject * FortPawn, UObject * Montage, float idk, __int64 idkagain);
-
 			PlayMontageReplicated = decltype(PlayMontageReplicated)(Pawn->VFTable[0xF0]);
-
 			std::cout << "ugh: " << PlayMontageReplicated(Pawn, Montage, 0, 0) << '\n'; */
 
 			using SpecType = TArray<FGameplayAbilitySpec<FGameplayAbilityActivationInfo, 0x50>>; // 7.40
@@ -1419,40 +1397,53 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				float                                              InTimeToStartMontageAt;                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 				bool                                               bStopAllMontages;                                         // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 				float                                              ReturnValue;
-			} Montage_Play_Params{Montage, 1.0f, EMontagePlayReturnType::Duration, 0.f, true};
+			} Montage_Play_Params{ Montage, 1.0f, EMontagePlayReturnType::Duration, 0.f, true };
 
 			if (Montage_Play)
 				AnimInstance->ProcessEvent(Montage_Play, &Montage_Play_Params);
 
 			float Dura = Montage_Play_Params.ReturnValue;
 
-			std::cout << "Played for: " << Dura << '\n';
-
 			auto ASC = Helper::GetAbilitySystemComponent(Pawn);
+
+			struct FFortCharacterPartsRepMontageInfo
+			{
+				TArray<__int64>       CharPartMontages;                                         // 0x0000(0x0010) (ZeroConstructor, NativeAccessSpecifierPublic)
+				UObject* PawnMontage;
+			};
+
+			static auto RepCharPartAnimMontageInfoOffset = GetOffset(Pawn, "RepCharPartAnimMontageInfo");
+
+			if (RepCharPartAnimMontageInfoOffset != -1)
+				((FFortCharacterPartsRepMontageInfo*)(__int64(Pawn) + RepCharPartAnimMontageInfoOffset))->PawnMontage = Montage;
 
 			static auto LocalAnimMontageInfoOffset = GetOffset(ASC, "LocalAnimMontageInfo");
 			*(UObject**)(__int64(ASC) + LocalAnimMontageInfoOffset) = Montage;
+
+			static auto OnRep_CharPartAnimMontageInfo = Pawn->Function("OnRep_CharPartAnimMontageInfo");
+
+			if (OnRep_CharPartAnimMontageInfo)
+				Pawn->ProcessEvent(OnRep_CharPartAnimMontageInfo);
 
 			static auto OnRep_ReplicatedAnimMontage = Pawn->Function("OnRep_ReplicatedAnimMontage");
 
 			if (OnRep_ReplicatedAnimMontage)
 				Pawn->ProcessEvent(OnRep_ReplicatedAnimMontage);
 
+			static auto OnRep_RepAnimMontageStartSection = Pawn->Function("OnRep_RepAnimMontageStartSection");
+
+			if (OnRep_RepAnimMontageStartSection)
+				Pawn->ProcessEvent(OnRep_RepAnimMontageStartSection);
+
 			/*
 			auto AbilitySystemComponent = *Pawn->CachedMember<UObject*>(("AbilitySystemComponent"));
-
 			auto sog = FindPattern("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 70 49 8B 40 10 49 8B D8 48 8B FA 48 8B F1 80 B8 ? ? ? ? ? 0F 84 ? ? ? ? 80 B8 ? ? ? ? ? 0F");
-
 			// unsigned int* (__fastcall* GiveAbilityAndActivateOnce)(UObject* ASC, SpecType* Spec, void* GameplayEventData) = decltype(GiveAbilityAndActivateOnce)(sog);
 			unsigned int* (__fastcall * GiveAbilityAndActivateOnce)(UObject * ASC, int* outHandle, SpecType * Spec) = decltype(GiveAbilityAndActivateOnce)(sog);
-
 			// Pawn->ProcessEvent("PlayEmoteItem", EmoteAsset);
-
 			int out;
 			GiveAbilityAndActivateOnce(AbilitySystemComponent, &out, (SpecType*)GenerateNewSpec(GetDefaultObject(EmoteClass)));
-
 			Pawn->ProcessEvent("EmoteStarted", &EmoteParams->EmoteAsset);
-
 			*/
 		}
 	}

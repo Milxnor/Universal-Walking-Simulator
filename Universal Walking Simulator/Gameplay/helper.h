@@ -2196,7 +2196,7 @@ namespace Helper
 
 		UObject* skin = nullptr; // AllObjects.at(random);
 
-		while (!skin || skin->GetFullName().contains("Default"))
+		while (!skin || skin->GetFullName().contains("Default") || skin->GetFullName().contains("Test"))
 		{
 			auto random = rand() % (AllObjects.size());
 			random = random <= 0 ? 1 : random; // we love default objects

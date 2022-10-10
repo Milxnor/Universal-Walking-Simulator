@@ -98,7 +98,7 @@ bool OnSafeZoneStateChangeHook(UObject* Indicator, UFunction* Function, void* Pa
 		if (SafeZonePhase == 4) {
 			Helper::Console::ExecuteConsoleCommand(StartShrinkSafeZone);
 			*NextRadius = 9500;
-			*NextCenter = AircraftLocationToUse + FVector{ distr(gen), distr1(gen1), distr2(gen2) };
+			*NextCenter = AircraftLocationToUse; // + FVector{ distr(gen), distr1(gen1), distr2(gen2) };
 
 			// *NextCenter += FVector{ distr(gen), distr1(gen1), distr2(gen2) };
 		}

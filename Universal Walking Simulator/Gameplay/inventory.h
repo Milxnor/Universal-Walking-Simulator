@@ -2312,7 +2312,7 @@ void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 		auto NumItemInstances = ItemInstances->Num();
 		std::cout << "ItemInstances->Num(): " << NumItemInstances << '\n';
 
-		int Start = 5; // 0
+		int Start = bTakePickaxe ? 5 : 6; // 0
 		int loopedThrough = Start;
 
 		// while (loopedThrough <= NumItemInstances)
@@ -2333,9 +2333,6 @@ void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 					// continue;
 
 				// std::cout << "CurrentItemDefinition: " << CurrentItemDefinition->GetFullName() << '\n';
-
-				if (bTakePickaxe ? false : CurrentItemDefinition == PickaxeDef)
-					continue;
 
 				Inventory::RemoveItem(Controller, Inventory::GetItemGuid(CurrentItemInstance));
 				// loopedThrough++;

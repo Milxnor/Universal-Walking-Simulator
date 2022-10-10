@@ -154,9 +154,8 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		// IMPROPER, we should account weakspot here.
 
 		auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Controller));
-		static auto PickaxeDef = Helper::GetPickaxeDef(Controller);
 
-		if (CurrentWeapon && Helper::GetWeaponData(CurrentWeapon) == PickaxeDef)
+		if (CurrentWeapon)
 		{
 			if (MaterialInstance && Pawn)
 			{
