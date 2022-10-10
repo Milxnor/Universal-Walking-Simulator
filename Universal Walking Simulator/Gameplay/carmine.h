@@ -21,11 +21,12 @@ namespace Carmine {
 			GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
 		}
 		
-		ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Speed.GE_Carmine_Speed_C"));
+		auto ASC = Helper::GetAbilitySystemComponent(Pawn);
+		ApplyGameplayEffect(ASC, FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Speed.GE_Carmine_Speed_C"));
 		//Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Health.GE_Carmine_Health_C"));
-		ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_FallDamageImmune.GE_Carmine_FallDamageImmune_C"));
-		ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_DisableCrouch.GE_Carmine_DisableCrouch_C"));
-		ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Equipped.GE_Carmine_Equipped_C"));
+		ApplyGameplayEffect(ASC, FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_FallDamageImmune.GE_Carmine_FallDamageImmune_C"));
+		ApplyGameplayEffect(ASC, FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_DisableCrouch.GE_Carmine_DisableCrouch_C"));
+		ApplyGameplayEffect(ASC, FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Equipped.GE_Carmine_Equipped_C"));
 		//UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
 	}
 

@@ -305,7 +305,7 @@ namespace LootingV2
 							EFortPickupSpawnSource::Unset, Trap.DropCount, bTossPickup, false);
 					}
 
-					else if (RandomBoolWithWeight(20, 1, 100))
+					else if (RandomBoolWithWeight(26, 1, 100))
 					{
 						auto Consumable = GetRandomItem(ItemType::Consumable);
 
@@ -379,7 +379,7 @@ namespace LootingV2
 					auto SpawnerLoc = Helper::GetActorLocation(Spawner);
 					// std::cout << std::format("Spawning {} at {} {} {}", VehicleName, SpawnerLoc.X, SpawnerLoc.Y, SpawnerLoc.Z);
 					std::cout << "Loading!\n";
-					UObject* VehicleClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/DrivableVehicles/Meatball/Meatball_Large/MeatballVehicle_L.MeatballVehicle_L_C");
+					UObject* VehicleClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/DrivableVehicles/Meatball/Meatball_Large/MeatballVehicle_L.MeatballVehicle_L");
 					std::cout << "Loaded: " << VehicleClass << '\n';
 
 					if (VehicleClass)
@@ -480,7 +480,7 @@ namespace LootingV2
 		else */
 		{
 			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C"), 13);
-			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"), 15); // we can take our time
+			// amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"), 15); // we can take our time
 		}
 
 		std::cout << "Finished spawning " << amountSpawned << " floorloot!\n";

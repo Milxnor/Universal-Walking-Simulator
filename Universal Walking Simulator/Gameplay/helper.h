@@ -699,7 +699,19 @@ namespace Helper
 			auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
 			ShowBuilding(Volcano);
 		}
-		//Pleasant
+
+		if (false) // tbh these might be enabled by default
+		{
+			if (FnVerDouble >= 8 && FnVerDouble <= 10.40) // pirate camps
+			{
+				auto pirateCamp = FnVerDouble == 8.51 ? FindObject("BuildingFoundation3x3 /Temp/Game/Athena/Maps/Streaming/Sublevel_X3Y4_e07a0439.Sublevel_X3Y4.PersistentLevel.BuildingFoundation3x51_2") : nullptr;
+
+				std::cout << "pirateCamp: " << pirateCamp << '\n';
+
+				ShowBuilding(pirateCamp);
+			}
+		}
+
 		if (Season == 7) {
 			auto idfk = FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")); // polar peak?
 			ShowBuilding(idfk);
@@ -1069,6 +1081,32 @@ namespace Helper
 
 	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true, bool bMaxAmmo = true, int ammo = 0)
 	{
+		static auto ConsumableWrapperClass = FindObject("Class /Script/FortniteGame.BGAConsumableWrapperItemDefinition");
+
+		if (false && Definition->ClassPrivate == ConsumableWrapperClass)
+		{
+			if (false) // wtff it doesnt work
+			{
+				TSoftClassPtr* ConsumableClassSoft = Definition->Member<TSoftClassPtr>("ConsumableClass");
+
+				if (!ConsumableClassSoft->ObjectID.AssetPathName.ComparisonIndex)
+					return nullptr;
+
+				std::cout << "ConsumableClassSoft->ObjectID.AssetPathName.ToString(): " << ConsumableClassSoft->ObjectID.AssetPathName.ToString() << '\n';
+
+				auto ConsumableClass = LoadObject(Helper::GetBGAClass(), nullptr, ConsumableClassSoft->ObjectID.AssetPathName.ToString());
+			}
+
+			auto ConsumableClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/Items/ForagedItems/SpookyMist/CBGA_SpookyMist.CBGA_SpookyMist");
+
+			std::cout << "ConsumableClass: " << ConsumableClass << '\n';
+
+			if (ConsumableClass)
+				std::cout << "ConsumableClass Name: " << ConsumableClass->GetFullName() << '\n';
+
+			return Easy::SpawnActor(ConsumableClass, Location);
+		}
+
 		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena")); // Class FortniteGame.FortGameModePickup
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location, FRotator());  //, false && FnVerDouble < 19.00);

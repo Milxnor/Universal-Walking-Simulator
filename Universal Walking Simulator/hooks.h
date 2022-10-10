@@ -188,10 +188,10 @@ inline void initStuff()
 
 			static auto Playlist_MaxPlayersOffset = GetOffset(Playlist, "MaxPlayers");
 
-			if (Playlist_MaxPlayersOffset != -1)
-				*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = *(int*)(__int64(Playlist) + Playlist_MaxPlayersOffset); // GameState->GetMaxPlaylistPlayers()
-			else
-				*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = 100;
+			// if (Playlist_MaxPlayersOffset != -1)
+				// *(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = *(int*)(__int64(Playlist) + Playlist_MaxPlayersOffset); // GameState->GetMaxPlaylistPlayers()
+			// else
+			*(*AuthGameMode->Member<UObject*>(("GameSession")))->Member<int>(("MaxPlayers")) = 100;
 
 			if (Engine_Version != 421)
 			{
@@ -629,9 +629,10 @@ void LoadInMatch()
 
 	if (PlayerController)
 	{
-		static auto SwitchLevelFn = PlayerController->Function(("SwitchLevel"));
 		FString Map;
 		Map.Set(GetMapName());
+
+		static auto SwitchLevelFn = PlayerController->Function(("SwitchLevel"));
 		PlayerController->ProcessEvent(SwitchLevelFn, &Map);
 		// Map.FreeString();
 		bTraveled = true;
@@ -640,6 +641,12 @@ void LoadInMatch()
 	{
 		std::cout << dye::red(("[ERROR] ")) << ("Unable to find PlayerController!\n");
 	}
+
+	/* FString Open;
+	Open.Set((L"open " + std::wstring(GetMapName())).c_str());
+
+	Helper::Console::ExecuteConsoleCommand(Open);
+	bTraveled = true; */
 }
 
 uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, int* OutWasDBNO = nullptr)
@@ -671,8 +678,6 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, int* Out
 	}
 	else
 	{
-		// todo: loop through tags n stuff
-
 		static auto DeathCauseEnum = FindObject("Enum /Script/FortniteGame.EDeathCause");
 
 		for (int i = 0; i < Tags.GameplayTags.Num(); i++) // SKUNK
@@ -731,8 +736,6 @@ uint8_t GetDeathCause(UObject* PlayerState, FGameplayTagContainer Tags, int* Out
 	}
 
 	return DeathCause;
-
-	return 1;
 }
 
 void RequestExitWithStatusHook(bool Force, uint8_t ReturnCode)
@@ -1381,7 +1384,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				std::cout << "Unable to find ToyClass!\n";
 		}
 
-		if (fn && bEmotingEnabled)
+		if (fn && true)
 		{
 			EmoteAsset->ProcessEvent(fn, &GAHRParams);
 			auto Montage = GAHRParams.AnimMontage;
@@ -1400,6 +1403,25 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 			static auto Def = FindObject("FortAbilityTask_PlayMontageWaitTarget /Script/FortniteGame.Default__FortAbilityTask_PlayMontageWaitTarget");
 			static auto EmoteClass = FindObject(("BlueprintGeneratedClass /Game/Abilities/Emotes/GAB_Emote_Generic.GAB_Emote_Generic_C"));
 
+			auto AnimInstance = Helper::GetAnimInstance(Pawn);
+
+			static auto Montage_Play = AnimInstance->Function("Montage_Play");
+
+			struct {
+				UObject* MontageToPlay;                                            // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				float                                              InPlayRate;                                               // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				EMontagePlayReturnType                             ReturnValueType;                                          // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				float                                              InTimeToStartMontageAt;                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				bool                                               bStopAllMontages;                                         // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+				float                                              ReturnValue;
+			} Montage_Play_Params{Montage, 1.0f, EMontagePlayReturnType::Duration, 0.f, true};
+
+			if (Montage_Play)
+				AnimInstance->ProcessEvent(Montage_Play, &Montage_Play_Params);
+
+			float Dura = Montage_Play_Params.ReturnValue;
+
+			/*
 			auto AbilitySystemComponent = *Pawn->CachedMember<UObject*>(("AbilitySystemComponent"));
 
 			auto sog = FindPattern("48 89 5C 24 ? 55 56 57 48 8B EC 48 83 EC 70 49 8B 40 10 49 8B D8 48 8B FA 48 8B F1 80 B8 ? ? ? ? ? 0F 84 ? ? ? ? 80 B8 ? ? ? ? ? 0F");
@@ -1414,58 +1436,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 
 			Pawn->ProcessEvent("EmoteStarted", &EmoteParams->EmoteAsset);
 
-			if (false && Montage && Engine_Version < 426 && Engine_Version >= 420)
-			{
-				SpecType Specs;
-
-				if (Engine_Version <= 422)
-					Specs = (*AbilitySystemComponent->CachedMember<FGameplayAbilitySpecContainerOL>(("ActivatableAbilities"))).Items;
-				else
-					Specs = (*AbilitySystemComponent->CachedMember<FGameplayAbilitySpecContainerSE>(("ActivatableAbilities"))).Items;
-
-				UObject* DefaultObject = EmoteClass->CreateDefaultObject();
-
-				auto GameData = Helper::GetGameData();
-				auto EmoteGameplayAbilityClass = EmoteClass; //  GameData->Member<UObject*>("EmoteGameplayAbility"); // its a tassetptr
-
-				// if (false)
-				{
-					for (int i = 0; i < Specs.Num(); i++)
-					{
-						auto& CurrentSpec = Specs[i];
-
-						if (CurrentSpec.Ability == DefaultObject)
-						{
-							auto EmoteAbility = CurrentSpec.Ability;
-
-							*EmoteAbility->Member<UObject*>("PlayerPawn") = Pawn;
-
-							auto ActivationInfo = EmoteAbility->Member<FGameplayAbilityActivationInfo>(("CurrentActivationInfo"));
-
-							struct FGameplayAbilityRepAnimMontage
-							{
-							public:
-								UObject* AnimMontage;
-							};
-
-							auto RepAnimMontageInfo = Pawn->Member<FGameplayAbilityRepAnimMontage>("RepAnimMontageInfo");
-							RepAnimMontageInfo->AnimMontage = Montage;
-
-							*EmoteAbility->Member<UObject*>("CurrentMontage") = Montage;
-
-							EmoteAbility->ProcessEvent("K2_ActivateAbility");
-
-							// EmoteAbility->ProcessEvent("PlayInitialEmoteMontage");
-
-							// Helper::SetLocalRole(Pawn, ENetRole::ROLE_SimulatedProxy);
-							if (PlayMontage)
-							{
-
-							}
-						}
-					}
-				}
-			}
+			*/
 		}
 	}
 	else
@@ -2876,6 +2847,21 @@ bool ServerRequestSeatChangeHook(UObject* Controller, UFunction*, void* Paramete
 	return false;
 }
 
+bool OnAircraftExitedDropZoneHook(UObject* GameMode, UFunction*, void* Parameters)
+{
+	auto aa = [](UObject* Controller) {
+		if (Helper::IsInAircraft(Controller))
+		{
+			FRotator rot{ 0, 0, 0 };
+			ServerAttemptAircraftJumpHook(Controller, nullptr, &rot);
+		}
+	};
+
+	Helper::LoopConnections(aa, true);
+
+	return false;
+}
+
 void FinishInitializeUHooks()
 {
 	AddHook("Function /Script/FortniteGame.FortPlayerControllerZone.ServerRequestSeatChange", ServerRequestSeatChangeHook);
@@ -2903,6 +2889,7 @@ void FinishInitializeUHooks()
 
 	// LoadObject<UObject>(FindObject("Class /Script/Engine.BlueprintGeneratedClass"), nullptr, "/Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C"); // i think im slow
 
+	AddHook("Function /Script/FortniteGame.FortGameModeAthena.OnAircraftExitedDropZone", OnAircraftExitedDropZoneHook);
 	AddHook(("Function /Script/FortniteGame.BuildingActor.OnDeathServer"), OnDeathServerHook);
 	AddHook(("Function /Script/Engine.GameMode.ReadyToStartMatch"), ReadyToStartMatchHook);
 
@@ -2987,9 +2974,9 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 
 			if (bLogRpcs && (FunctionName.starts_with(("Server")) || FunctionName.starts_with(("Client")) || FunctionName.starts_with(("OnRep_"))))
 			{
-				if (!FunctionName.contains("ServerUpdateCamera") && !FunctionName.contains("ServerMove")
+				/* if (!FunctionName.contains("ServerUpdateCamera") && !FunctionName.contains("ServerMove")
 					&& !FunctionName.contains(("ServerUpdateLevelVisibility"))
-					&& !FunctionName.contains(("AckGoodMove")))
+					&& !FunctionName.contains(("AckGoodMove"))) */
 				{
 					std::cout << ("RPC Called: ") << FunctionName << '\n';
 				}
@@ -3062,7 +3049,8 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), "CloudsTimeline__UpdateFunc") &&
 					!strstr(FunctionName.c_str(), "SetRenderCustomDepth") &&
 					!strstr(FunctionName.c_str(), "K2_UpdateCustomMovement") &&
-					!strstr(FunctionName.c_str(), "AthenaHitPointBar_C.Update"))
+					!strstr(FunctionName.c_str(), "AthenaHitPointBar_C.Update") &&
+					!strstr(FunctionName.c_str(), "ExecuteUbergraph_Farm_WeatherVane_01"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}

@@ -119,6 +119,17 @@ namespace FFortItemEntry
 		return Count;
 	}
 
+	bool* GetbIsDirty(__int64* Entry)
+	{
+		if (!Entry)
+			return nullptr;
+
+		static auto bIsDirtyOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("bIsDirty"));
+		auto bIsDirty = (bool*)(__int64(&*Entry) + bIsDirtyOffset);
+
+		return bIsDirty;
+	}
+
 	FGuid* GetGuid(__int64* Entry)
 	{
 		static auto GuidOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), ("ItemGuid"));
@@ -279,6 +290,71 @@ namespace Inventory
 		}
 
 		return nullptr;
+	}
+
+	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false, FFastArraySerializerItem* ModifiedItem = nullptr)
+	{
+		auto WorldInventory = GetWorldInventory(Controller);
+		auto Inventory = GetInventory(Controller);
+
+		// *WorldInventory->Member<bool>("bRequiresLocalUpdate") = true;
+
+		static auto WorldHandleInvUpdate = WorldInventory->Function(("HandleInventoryLocalUpdate"));
+
+		if (WorldHandleInvUpdate)
+			WorldInventory->ProcessEvent(WorldHandleInvUpdate);
+
+		if (std::floor(FnVerDouble) < 10) // idk crashes // TODO: Test this again
+		{
+			static auto PCHandleInvUpdate = Controller->Function(("HandleWorldInventoryLocalUpdate"));
+
+			if (PCHandleInvUpdate)
+				Controller->ProcessEvent(PCHandleInvUpdate);
+		}
+
+		if (FnVerDouble < 7.4)
+		{
+			const auto QuickBars = Inventory::GetQuickBars(Controller);
+
+			if (QuickBars)
+			{
+				static auto OnRep_PrimaryQuickBar = QuickBars->Function(("OnRep_PrimaryQuickBar"));
+				QuickBars->ProcessEvent(OnRep_PrimaryQuickBar);
+
+				static auto OnRep_SecondaryQuickBar = QuickBars->Function(("OnRep_SecondaryQuickBar"));
+				QuickBars->ProcessEvent(OnRep_SecondaryQuickBar);
+
+				static auto OnRep_QuickBar = Controller->Function(("OnRep_QuickBar"));
+				Controller->ProcessEvent(OnRep_QuickBar, nullptr);
+			}
+		}
+		else
+		{
+			static auto ClientForceUpdateQuickbar = Controller->Function(("ClientForceUpdateQuickbar"));
+			auto PrimaryQuickbar = EFortQuickBars::Primary;
+			Controller->ProcessEvent(ClientForceUpdateQuickbar, &PrimaryQuickbar);
+			auto SecondaryQuickbar = EFortQuickBars::Secondary;
+			Controller->ProcessEvent(ClientForceUpdateQuickbar, &SecondaryQuickbar);
+
+			if (FnVerDouble < 8)
+			{
+				static auto UpdateQuickBars = Controller->Function(("UpdateQuickBars"));
+
+				if (UpdateQuickBars)
+					Controller->ProcessEvent(UpdateQuickBars);
+			}
+		}
+
+		if ((bRemovedItem || Idx != -1) && Inventory)
+			MarkArrayDirty(Inventory);
+
+		// if (Idx != -1)
+		if (ModifiedItem)
+		{
+			*FFortItemEntry::GetbIsDirty((__int64*)ModifiedItem) = true;
+			MarkItemDirty(Inventory, ModifiedItem);
+
+		}
 	}
 
 	TArray<UObject*>* GetItemInstances(UObject* Controller)
@@ -625,7 +701,11 @@ namespace Inventory
 					// std::cout << "LoadedAmmo: " << *LoadedAmmo << '\n';
 
 					if (LoadedAmmo)
+					{
 						*LoadedAmmo = currentAmmoCount;
+						Inventory::Update(Controller, -1, true, (FFastArraySerializerItem*)currentItemEntry);
+						// MarkItemDirty(Inventory::GetInventory(Controller), (FFastArraySerializerItem*)currentItemEntry);
+					}
 				}
 				else
 					std::cout << "No ItemEntry!\n";
@@ -664,67 +744,6 @@ namespace Inventory
 		return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
 
 		// return (TArray<EntryStruct>*)(__int64(Inventory) + ReplicatedEntriesOffset);
-	}
-
-	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false, FFastArraySerializerItem* ModifiedItem = nullptr)
-	{
-		auto WorldInventory = GetWorldInventory(Controller);
-		auto Inventory = GetInventory(Controller);
-
-		// *WorldInventory->Member<bool>("bRequiresLocalUpdate") = true;
-
-		static auto WorldHandleInvUpdate = WorldInventory->Function(("HandleInventoryLocalUpdate"));
-
-		if (WorldHandleInvUpdate)
-			WorldInventory->ProcessEvent(WorldHandleInvUpdate);
-
-		if (std::floor(FnVerDouble) < 10) // idk crashes // TODO: Test this again
-		{
-			static auto PCHandleInvUpdate = Controller->Function(("HandleWorldInventoryLocalUpdate"));
-
-			if (PCHandleInvUpdate)
-				Controller->ProcessEvent(PCHandleInvUpdate);
-		}
-
-		if (FnVerDouble < 7.4)
-		{
-			const auto QuickBars = Inventory::GetQuickBars(Controller);
-
-			if (QuickBars)
-			{
-				static auto OnRep_PrimaryQuickBar = QuickBars->Function(("OnRep_PrimaryQuickBar"));
-				QuickBars->ProcessEvent(OnRep_PrimaryQuickBar);
-
-				static auto OnRep_SecondaryQuickBar = QuickBars->Function(("OnRep_SecondaryQuickBar"));
-				QuickBars->ProcessEvent(OnRep_SecondaryQuickBar);
-
-				static auto OnRep_QuickBar = Controller->Function(("OnRep_QuickBar"));
-				Controller->ProcessEvent(OnRep_QuickBar, nullptr);
-			} 
-		}
-		else
-		{
-			static auto ClientForceUpdateQuickbar = Controller->Function(("ClientForceUpdateQuickbar"));
-			auto PrimaryQuickbar = EFortQuickBars::Primary;
-			Controller->ProcessEvent(ClientForceUpdateQuickbar, &PrimaryQuickbar);
-			auto SecondaryQuickbar = EFortQuickBars::Secondary;
-			Controller->ProcessEvent(ClientForceUpdateQuickbar, &SecondaryQuickbar);
-
-			if (FnVerDouble < 8)
-			{
-				static auto UpdateQuickBars = Controller->Function(("UpdateQuickBars"));
-
-				if (UpdateQuickBars)
-					Controller->ProcessEvent(UpdateQuickBars);
-			}
-		}
-
-		if ((bRemovedItem || Idx != -1) && Inventory)
-			MarkArrayDirty(Inventory);
-
-		// if (Idx != -1)
-		if (ModifiedItem)
-			MarkItemDirty(Inventory, ModifiedItem);
 	}
 
 	UObject* CreateItemInstance(UObject* Controller, UObject* Definition, int Count = 1)
@@ -970,7 +989,11 @@ namespace Inventory
 					auto LoadedAmmo = FFortItemEntry::GetLoadedAmmo(entry);
 
 					if (LoadedAmmo)
+					{
 						*LoadedAmmo = GetMaxBullets(Definition);
+						Inventory::Update(Controller, -1, true, (FFastArraySerializerItem*)entry);
+						// MarkItemDirty(Inventory::GetInventory(Controller), (FFastArraySerializerItem*)entry);
+					}
 				}
 			}
 			else
@@ -1086,6 +1109,7 @@ namespace Inventory
 
 		if (bFortnite)
 		{
+			UObject* Def = nullptr;
 			auto ItemInstances = Inventory::GetItemInstances(Controller);
 
 			if (ItemInstances)
@@ -1095,7 +1119,64 @@ namespace Inventory
 					auto ItemInstance = ItemInstances->At(i);
 
 					if (Inventory::GetItemGuid(ItemInstance) == Guid)
+					{
+						Def = Inventory::GetItemDefinition(ItemInstance);
 						ItemInstances->RemoveAt(i);
+					}
+				}
+			}
+
+			if (false)
+			{
+				if (FnVerDouble < 7.40 && Def)
+				{
+					auto QuickBars = GetQuickBars(Controller);
+
+					static auto PrimaryQuickBarOffset = GetOffset(QuickBars, "PrimaryQuickBar");
+					auto PrimaryQuickBar = (__int64*)(__int64(QuickBars) + PrimaryQuickBarOffset);
+
+					static auto SecondaryQuickBarOffset = GetOffset(QuickBars, "SecondaryQuickBar");
+					auto SecondaryQuickBar = (__int64*)(__int64(QuickBars) + SecondaryQuickBarOffset);
+
+					auto QuickBarsToGoIn = QuickBars::WhatQuickBars(Def);
+					auto QuickBar = QuickBarsToGoIn == EFortQuickBars::Primary ? PrimaryQuickBar : SecondaryQuickBar;
+
+					auto getSlot = [](TArray<__int64>* Slots, int i) -> __int64* {
+						static auto SizeOfQuickBarSlot = GetSizeOfStruct(FindObject("ScriptStruct /Script/FortniteGame.QuickBarSlot"));
+
+						return (__int64*)(__int64(Slots) + (static_cast<__int64>(SizeOfQuickBarSlot) * i));
+					};
+
+					static auto SlotsOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.QuickBar", "Slots");
+
+					auto QuickBarSlots = (TArray<__int64>*)(__int64(QuickBar) + SlotsOffset);
+
+					bool bFoundInQuickBar = false;
+
+					for (int i = 0; i < QuickBarSlots->Num(); i++)
+					{
+						auto Slot = getSlot(QuickBarSlots, i);
+
+						auto Items = (TArray<FGuid>*)(Slot);
+
+						if (Items)
+						{
+							for (int j = 0; j < Items->Num(); j++)
+							{
+								if (Items->At(j) == Guid)
+								{
+									bFoundInQuickBar = true;
+
+									static auto EmptySlot = QuickBars->Function("EmptySlot");
+
+									struct { EFortQuickBars Bars; int SlotIndex; } EmptySlot_Params{ QuickBarsToGoIn, i };
+
+									QuickBars->ProcessEvent(EmptySlot, &EmptySlot_Params);
+									break;
+								}
+							}
+						}
+					}
 				}
 			}
 
@@ -1153,7 +1234,7 @@ namespace Inventory
 
 					*CurrentCount = NewCount;
 
-					ChangeItemInReplicatedEntries<int>(Controller, Instance, ("Count"), NewCount);
+					ChangeItemInReplicatedEntries<int>(Controller, Instance, "Count", NewCount);
 
 					Update(Controller, -1, false, (FFastArraySerializerItem*)ItemEntry);
 
@@ -1585,11 +1666,9 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 				bool bShouldSwap = false;
 				int slotToGoInto = -1;
 
-				// TODO: For >7.40 check all quickbar slots until we find a empty one.
-
 				if (!shouldGoInSecondaryBar)
 				{
-					if (true) // (FnVerDouble >= 7.40)
+					if (true) // FnVerDouble >= 7.40)
 					{
 						int PrimaryQuickBarSlotsFilled = 0;
 
@@ -1653,7 +1732,10 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 
 					newInstance = Inventory::GiveItem(Controller, *Definition, quickBarsItemShouldGoIn, slotToGoInto, *Count, &bDidStack, nullptr, ItemToStackInto);
 
-					bool bIsCarmine = (*Definition)->GetName().contains("CarminePack") || (*Definition)->GetName().contains("AshtonPack");
+					static auto ThanosID = FnVerDouble >= 8 ? FindObject("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/Ashton/AGID_AshtonPack.AGID_AshtonPack") :
+						FindObject("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack");
+
+					bool bIsCarmine = *Definition == ThanosID;
 
 					if (bIsCarmine) {
 						Carmine::HandleCarmine(Controller);
@@ -1668,14 +1750,19 @@ inline bool ServerHandlePickupHook(UObject* Pawn, UFunction* Function, void* Par
 					{
 						// the below crashes sometimes
 
-						auto newItemLoadedAmmo = FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(newInstance));
+						auto newEntry = GetItemEntryFromInstance(newInstance);
+						auto newItemLoadedAmmo = FFortItemEntry::GetLoadedAmmo(newEntry);
 
 						if (newItemLoadedAmmo)
 						{
 							auto pickupLoadedAmmo = FFortItemEntry::GetLoadedAmmo(PrimaryPickupItemEntry);
 
 							if (pickupLoadedAmmo)
+							{
 								*newItemLoadedAmmo = *pickupLoadedAmmo;
+								Inventory::Update(Controller, -1, true, (FFastArraySerializerItem*)newEntry);
+								// MarkItemDirty(Inventory::GetInventory(Controller), (FFastArraySerializerItem*)newEntry);
+							}
 						}
 					}
 
@@ -1885,6 +1972,8 @@ void __fastcall HandleReloadCostDetour(UObject* Weapon, int AmountToRemove)
 
 		static auto FortTrapItemDefinitionClass = FindObject("Class /Script/FortniteGame.FortTrapItemDefinition");
 
+		std::cout << "WeaponData Name: " << WeaponData->GetFullName() << '\n';
+		
 		if (!AmmoDef || WeaponData->IsA(FortTrapItemDefinitionClass))
 			AmmoDef = WeaponData;
 
@@ -2106,7 +2195,11 @@ inline bool OnAboutToEnterBackpackHook(UObject* PickupEffect, UFunction* func, v
 					auto pickupLoadedAmmo = FFortItemEntry::GetLoadedAmmo(PrimaryPickupItemEntry);
 
 					if (pickupLoadedAmmo)
+					{
 						*newItemLoadedAmmo = *pickupLoadedAmmo;
+						Inventory::Update(Controller, -1, true, (FFastArraySerializerItem*)PrimaryPickupItemEntry);
+						// MarkItemDirty(Inventory::GetInventory(Controller), (FFastArraySerializerItem*)PrimaryPickupItemEntry);
+					}
 				}
 			}
 

@@ -268,7 +268,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 		if (!ImGui::IsWindowCollapsed())
 		{
-			ImGui::Begin(("Project Reboot"), nullptr, /* ImGuiWindowFlags_NoResize | */ ImGuiWindowFlags_NoTitleBar);
+			ImGui::Begin(("Project Reboot"), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
 
 			std::vector<std::pair<UObject*, UObject*>> Players; // Pawn, PlayerState
 
@@ -534,7 +534,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						LootingV2::SummonFloorLoot(nullptr);
 					}
 
-					if (false && ImGui::Button("Spawn Vehicles"))
+					if (ImGui::Button("Spawn Vehicles"))
 					{
 						LootingV2::SpawnVehicles(nullptr);
 					}
@@ -711,12 +711,11 @@ DWORD WINAPI GuiThread(LPVOID)
 					{
 						Restart();
 					}
-					/*if (ImGui::Button(("SetupTurrets"))) {
-						Henchmans::SpawnHenchmans();
+
+					if (bAISpawningEnabled && ImGui::Button(("SpawnHenchmans"))) {
+						FortAI::SpawnHenchmans();
 					}
-					if (ImGui::Button(("OpenVaults"))) {
-						Henchmans::OpenVaults();
-					}*/
+
 					if (false && Engine_Version >= 422 && Engine_Version < 424) 
 					{
 						if (ImGui::Button("Spawn Volume (stay in 1 place to get creative inventory)"))
@@ -1116,7 +1115,28 @@ DWORD WINAPI GuiThread(LPVOID)
 								if (wID)
 								{
 									auto instance = Inventory::GiveItem(Controller, wID, QuickBars::WhatQuickBars(wID), 1, Count);
-									*FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(instance)) = LoadedAmmo;
+
+									if (instance)
+									{
+										auto entry = GetItemEntryFromInstance(instance);
+										*FFortItemEntry::GetLoadedAmmo(entry) = LoadedAmmo;
+										Inventory::Update(Controller, -1, true, (FFastArraySerializerItem*)entry);
+										// MarkItemDirty(Inventory::GetInventory(Controller), (FFastArraySerializerItem*)entry);
+									}
+								}
+								else
+									std::cout << ("Invalid WID! Please make sure it's a valid object.\n");
+							}
+
+							if (ImGui::Button("Summon Pickup"))
+							{
+								auto wID = FindObject(WID);
+
+								if (wID)
+								{
+									auto pickup = Helper::SummonPickup(nullptr, wID, Helper::GetActorLocation(Pawn), EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Unset
+									, 1, true, false);
+									// *FFortItemEntry::GetLoadedAmmo(GetItemEntryFromInstance(instance)) = LoadedAmmo;
 								}
 								else
 									std::cout << ("Invalid WID! Please make sure it's a valid object.\n");

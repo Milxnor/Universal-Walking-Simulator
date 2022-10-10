@@ -631,6 +631,8 @@ static UObject* (*StaticLoadObjectO)(
 template <typename T = UObject>
 static T* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name)
 {
+	std::cout << "Name: " << name << '\n';
+
 	if (!StaticLoadObjectO)
 		return nullptr;
 
