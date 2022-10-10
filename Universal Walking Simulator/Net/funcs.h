@@ -494,7 +494,7 @@ static bool bIsCreative = false;
 static constexpr bool bAutomaticPawnSpawning = false;
 static constexpr bool bExperimentalRespawning = false;
 static constexpr bool bAISpawningEnabled = false;
-static constexpr bool bSpawnAPC = false;
+static constexpr bool bSpawnAPC = true;
 static constexpr bool bTeamsEnabled = false;
 
 const wchar_t* GetMapName()

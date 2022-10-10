@@ -534,7 +534,7 @@ DWORD WINAPI GuiThread(LPVOID)
 						LootingV2::SummonFloorLoot(nullptr);
 					}
 
-					if (ImGui::Button("Spawn Vehicles"))
+					if (false && ImGui::Button("Spawn Vehicles"))
 					{
 						LootingV2::SpawnVehicles(nullptr);
 					}
