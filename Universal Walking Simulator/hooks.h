@@ -936,7 +936,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 			if (ItemInstances)
 			{
-				for (int i = 1; i < ItemInstances->Num(); i++)
+				for (int i = 6; i < ItemInstances->Num(); i++)
 				{
 					auto ItemInstance = ItemInstances->At(i);
 
@@ -961,7 +961,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 						int LoadedAmmo = 0;
 
 						// if (readd((uint8_t*)(__int64(Actor) + bDropOnDeathOffset), bDropOnDeathBI)) // TODO: Test
-						if (IsDroppable(Definition))
+						// if (IsDroppable(DeadController, Definition))
 						{
 							if (Pawn && Definition)
 							{
@@ -1284,8 +1284,13 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 		struct {
 			TEnumAsByte<EFortCustomBodyType> BodyType;
 			TEnumAsByte<EFortCustomGender> Gender;
-			UObject* AnimMontage; // UAnimMontage
-		} GAHRParams{EFortCustomBodyType::All, EFortCustomGender::Both}; // (CurrentPawn->CharacterBodyType, CurrentPawn->CharacterGender)
+			UObject* PawnContext; // on some c2+ versions
+			UObject* ret;
+		} GAHRParams{EFortCustomBodyType::All, EFortCustomGender::Both, Pawn}; // (CurrentPawn->CharacterBodyType, CurrentPawn->CharacterGender)
+
+		static auto AnimMontageOffset = FindOffsetStruct("Function /Script/FortniteGame.FortMontageItemDefinitionBase.GetAnimationHardReference", "ReturnValue");
+		std::cout << "AnimMontageOffset: " << AnimMontageOffset << '\n';
+
 		static auto fn = EmoteAsset->Function(("GetAnimationHardReference"));
 
 		auto EmoteAssetName = EmoteAsset->GetFullName();
@@ -1387,7 +1392,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 		if (fn && true)
 		{
 			EmoteAsset->ProcessEvent(fn, &GAHRParams);
-			auto Montage = GAHRParams.AnimMontage;
+			auto Montage = *(UObject**)(__int64(&GAHRParams) + AnimMontageOffset);
 
 			std::cout << ("Playing Montage: ") << Montage->GetFullName() << '\n';
 
@@ -1420,6 +1425,18 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* Function, vo
 				AnimInstance->ProcessEvent(Montage_Play, &Montage_Play_Params);
 
 			float Dura = Montage_Play_Params.ReturnValue;
+
+			std::cout << "Played for: " << Dura << '\n';
+
+			auto ASC = Helper::GetAbilitySystemComponent(Pawn);
+
+			static auto LocalAnimMontageInfoOffset = GetOffset(ASC, "LocalAnimMontageInfo");
+			*(UObject**)(__int64(ASC) + LocalAnimMontageInfoOffset) = Montage;
+
+			static auto OnRep_ReplicatedAnimMontage = Pawn->Function("OnRep_ReplicatedAnimMontage");
+
+			if (OnRep_ReplicatedAnimMontage)
+				Pawn->ProcessEvent(OnRep_ReplicatedAnimMontage);
 
 			/*
 			auto AbilitySystemComponent = *Pawn->CachedMember<UObject*>(("AbilitySystemComponent"));
@@ -2939,8 +2956,8 @@ void FinishInitializeUHooks()
 	}
 
 	// if (PlayMontage)
-	if (bEmotingEnabled)
-		AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
+	// if (bEmotingEnabled)
+	AddHook(("Function /Script/FortniteGame.FortPlayerController.ServerPlayEmoteItem"), ServerPlayEmoteItemHook);
 
 	if (Engine_Version < 423)
 	{ // ??? Idk why we need the brackets

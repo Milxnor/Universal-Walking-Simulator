@@ -778,7 +778,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 					// if (!bStarted) // couldnt we wqait till aircraft start
 
-					if (!bIsPlayground)
+					if (!bIsPlayground && Engine_Version < 424)
 						ImGui::Checkbox(("Lategame"), &bIsLateGame);
 
 					break;
@@ -986,6 +986,8 @@ DWORD WINAPI GuiThread(LPVOID)
 						GlobalPickaxeDefObject = FindObject(PickaxeDef);
 						std::cout << "New pickaxedef is " << GlobalPickaxeDefObject ? "valid\n" : "invalid\n";
 					}
+
+					ImGui::Checkbox("Random Cosmetics", &bRandomCosmetics);
 
 					ImGui::NewLine();
 

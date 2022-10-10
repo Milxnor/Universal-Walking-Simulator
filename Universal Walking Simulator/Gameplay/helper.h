@@ -18,6 +18,58 @@ static UObject* GetIslandScripting()
 	return FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3");
 }
 
+UObject* GetItemDefinitionw(UObject* ItemInstance)
+{
+	static UObject* GetDefFn = FindObject(("Function /Script/FortniteGame.FortItem.GetItemDefinitionBP"));
+	UObject* Def;
+
+	ItemInstance->ProcessEvent(GetDefFn, &Def);
+
+	return Def;
+}
+
+UObject* GetWorldInventwory(UObject* Controller)
+{
+	static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
+	auto WorldInventoryP = (UObject**)(__int64(Controller) + WorldInventoryOffset);
+
+	// return *Controller->Member<UObject*>(("WorldInventory"));
+	return !IsBadReadPtr(WorldInventoryP) ? *WorldInventoryP : nullptr;
+}
+
+__int64* GetInventorwy(UObject* Controller)
+{
+	auto WorldInventory = GetWorldInventwory(Controller);
+
+	if (WorldInventory)
+	{
+		static auto InventoryOffset = GetOffset(WorldInventory, "Inventory");
+		auto Inventorya = (__int64*)(__int64(WorldInventory) + InventoryOffset);
+		// auto Inventorya = WorldInventory->Member<__int64>(("Inventory"));
+
+		return Inventorya;
+	}
+
+	return nullptr;
+}
+
+
+TArray<UObject*>* GetItemInstancews(UObject* Controller)
+{
+	static __int64 ItemInstancesOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances"));
+
+	auto Inventory = GetInventorwy(Controller);
+
+	// std::cout << ("ItemInstances Offset: ") << ItemInstancesOffset << '\n';
+
+	// ItemInstancesOffset = 0x110;
+
+	if (Inventory)
+		return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
+	else
+		return nullptr;
+}
+
 std::pair<UObject*, int> GetAmmoForDefinition(UObject* Definition)
 {
 	static auto GetAmmoWorldItemDefinition_BP = Definition->Function(("GetAmmoWorldItemDefinition_BP"));
@@ -1988,11 +2040,6 @@ namespace Helper
 		return 0;
 	}
 
-	static UObject* GetPickaxeDef(UObject* Controller)
-	{
-		return GlobalPickaxeDefObject;
-	}
-
 	void SetHealth(UObject* Pawn, float Health)
 	{
 		static auto SetHealth = Pawn->Function("SetHealth");
@@ -2141,6 +2188,59 @@ namespace Helper
 		}
 	}
 
+	UObject* GetRandomSkin()
+	{
+		static auto CIDClass = FindObject("Class /Script/FortniteGame.AthenaCharacterItemDefinition");
+
+		auto AllObjects = Helper::GetAllObjectsOfClass(CIDClass);
+
+		UObject* skin = nullptr; // AllObjects.at(random);
+
+		while (!skin || skin->GetFullName().contains("Default"))
+		{
+			auto random = rand() % (AllObjects.size());
+			random = random <= 0 ? 1 : random; // we love default objects
+			skin = AllObjects.at(random);
+		}
+
+		return skin;
+	}
+
+	UObject* GetRandomPickaxe()
+	{
+		static auto PIDClass = FindObject("Class /Script/FortniteGame.AthenaPickaxeItemDefinition");
+
+		auto AllObjects = Helper::GetAllObjectsOfClass(PIDClass);
+
+		auto random = rand() % (AllObjects.size());
+		random = random <= 0 ? 1 : random;
+
+		auto pick = AllObjects.at(random);
+		static auto WeaponDefinitionOffset = GetOffset(pick, "WeaponDefinition");
+
+		auto Pickaxe = *(UObject**)(__int64(pick) + WeaponDefinitionOffset);
+
+		// std::cout << "Pcikaxe: " << Pickaxe->GetFullName() << '\n';
+
+		return Pickaxe;
+	}
+
+	static UObject* GetPickaxeDef(UObject* Controller, bool bGetNew = false)
+	{
+		if (!bGetNew)
+		{
+			auto ItemInstances = GetItemInstancews(Controller);
+
+			if (ItemInstances->Num() >= 6)
+			{
+				auto PickaxeInstance = ItemInstances->At(5); // cursed probs
+				return GetItemDefinitionw(PickaxeInstance);
+			}
+		}
+
+		return bRandomCosmetics ? GetRandomPickaxe() : GlobalPickaxeDefObject;
+	}
+
 	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart(), bool bResetTeams = false)
 	{
 		UObject* PlayerState = GetPlayerStateFromController(PC);
@@ -2176,7 +2276,7 @@ namespace Helper
 		// SetHealth(Pawn, 100);
 		// SetShield(Pawn, 0);
 
-		auto CIDObject = CIDToUse == "None" ? nullptr : FindObject(CIDToUse); // we need the check cuz if we dont have staticfindobject then it finds it
+		auto CIDObject = bRandomCosmetics ? GetRandomSkin() : (CIDToUse == "None" ? nullptr : FindObject(CIDToUse)); // we need the check cuz if we dont have staticfindobject then it finds it
 
 		// if (FnVerDouble < 4)
 		{

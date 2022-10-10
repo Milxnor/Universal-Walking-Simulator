@@ -214,11 +214,10 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 			if (DamageCauser->IsA(MeleeClass))
 			{
 				std::cout << "mann!\n";
-				static auto PickaxeDef = Helper::GetPickaxeDef(InstigatedBy);
 
 				auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(InstigatedBy));
 
-				if (CurrentWeapon && Helper::GetWeaponData(CurrentWeapon) == PickaxeDef)
+				if (CurrentWeapon)
 				{
 					DoHarvesting(InstigatedBy, BuildingActor, *Damage);
 				}
@@ -248,7 +247,7 @@ inline bool BlueprintCanAttemptGenerateResourcesHook(UObject* BuildingActor, UFu
 	if (!Params || !Params->InstigatorController || !Params->InstigatorController->IsA(PlayerControllerClass)) // thanks s18
 		return true;
 
-	static auto PickaxeDef = Helper::GetPickaxeDef(Params->InstigatorController);
+	auto PickaxeDef = Helper::GetPickaxeDef(Params->InstigatorController);
 	auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Params->InstigatorController));
 
 	if (CurrentWeapon && Helper::GetWeaponData(CurrentWeapon) == PickaxeDef)

@@ -292,6 +292,23 @@ namespace Inventory
 		return nullptr;
 	}
 
+
+	TArray<UObject*>* GetItemInstances(UObject* Controller)
+	{
+		static __int64 ItemInstancesOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances"));
+
+		auto Inventory = GetInventory(Controller);
+
+		// std::cout << ("ItemInstances Offset: ") << ItemInstancesOffset << '\n';
+
+		// ItemInstancesOffset = 0x110;
+
+		if (Inventory)
+			return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
+		else
+			return nullptr;
+	}
+
 	void Update(UObject* Controller, int Idx = -1, bool bRemovedItem = false, FFastArraySerializerItem* ModifiedItem = nullptr)
 	{
 		auto WorldInventory = GetWorldInventory(Controller);
@@ -355,22 +372,6 @@ namespace Inventory
 			MarkItemDirty(Inventory, ModifiedItem);
 
 		}
-	}
-
-	TArray<UObject*>* GetItemInstances(UObject* Controller)
-	{
-		static __int64 ItemInstancesOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances"));
-
-		auto Inventory = GetInventory(Controller);
-
-		// std::cout << ("ItemInstances Offset: ") << ItemInstancesOffset << '\n';
-
-		// ItemInstancesOffset = 0x110;
-
-		if (Inventory)
-			return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
-		else
-			return nullptr;
 	}
 
 	static UObject* EquipWeapon(UObject* Pawn, UObject* FortWeapon)
@@ -2282,13 +2283,13 @@ void InitializeInventoryHooks()
 	}
 }
 
-bool IsDroppable(UObject* CurrentItemDefinition, bool bTakePickaxe = true)
+bool IsDroppable(UObject* Controller, UObject* CurrentItemDefinition, bool bTakePickaxe = true)
 {
 	static auto BuildingItemData_Wall = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Wall.BuildingItemData_Wall"));
 	static auto BuildingItemData_Floor = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Floor.BuildingItemData_Floor"));
 	static auto BuildingItemData_Stair_W = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_Stair_W.BuildingItemData_Stair_W"));
 	static auto BuildingItemData_RoofS = FindObject(("FortBuildingItemDefinition /Game/Items/Weapons/BuildingTools/BuildingItemData_RoofS.BuildingItemData_RoofS"));
-	static auto PickaxeDef = Helper::GetPickaxeDef(nullptr);
+	static auto PickaxeDef = Helper::GetPickaxeDef(Controller);
 
 	if (CurrentItemDefinition == BuildingItemData_Wall || CurrentItemDefinition == BuildingItemData_Floor
 		|| CurrentItemDefinition == (BuildingItemData_Stair_W) || CurrentItemDefinition == (BuildingItemData_RoofS) || CurrentItemDefinition == PickaxeDef)
