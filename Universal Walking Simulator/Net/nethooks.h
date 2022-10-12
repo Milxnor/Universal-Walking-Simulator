@@ -174,6 +174,13 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 		// Helper::SetGamePhase(EAthenaGamePhase::Warmup); // i hate u nomcp
 
+		static auto func1 = FindObject("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange");
+
+		if (func1)
+			AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
+		else
+			AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
+
 		if (Engine_Version >= 423)
 		{
 			Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol

@@ -629,15 +629,13 @@ static UObject* (*StaticLoadObjectO)(
 
 // Class and name are required
 template <typename T = UObject>
-static T* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name)
+static T* StaticLoadObject(UObject* Class, UObject* Outer, const std::string& name, int LoadFlags = 0)
 {
-	std::cout << "Name: " << name << '\n';
-
 	if (!StaticLoadObjectO)
 		return nullptr;
 
 	auto Name = std::wstring(name.begin(), name.end()).c_str();
-	return (T*)StaticLoadObjectO(Class, Outer, Name, nullptr, 0, nullptr, false, nullptr);
+	return (T*)StaticLoadObjectO(Class, Outer, Name, nullptr, LoadFlags, nullptr, false, nullptr);
 }
 
 template <typename ReturnType = UObject>

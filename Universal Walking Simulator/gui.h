@@ -665,6 +665,22 @@ DWORD WINAPI GuiThread(LPVOID)
 						Helper::DestroyActor(FindObjectOld("B_BaseGlider_C /Game/Athena/Maps/Athena_Terrain.Athena_Terrain.PersistentLevel.B_BaseGlider_C_"));
 					} */
 
+					if (ImGui::Button("SKid"))
+					{
+						static auto BGAConsumableSpawnerClass = FindObject("Class /Script/FortniteGame.BGAConsumableSpawner");
+						auto ConsumableClass = StaticLoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
+
+						std::cout << "ConsumableClass: " << ConsumableClass << '\n';
+
+						if (ConsumableClass)
+							std::cout << "ConsumableClass Name: " << ConsumableClass->GetFullName() << '\n';
+					}
+
+					if (ImGui::Button("bbb"))
+					{
+						LootingV2::SpawnForagedItems();
+					}
+
 					if (false && ImGui::Button("ee"))
 					{
 						InitializeHarvestingHooks();
@@ -987,7 +1003,8 @@ DWORD WINAPI GuiThread(LPVOID)
 						std::cout << "New pickaxedef is " << GlobalPickaxeDefObject ? "valid\n" : "invalid\n";
 					}
 
-					ImGui::Checkbox("Random Cosmetics", &bRandomCosmetics);
+					if (std::floor(FnVerDouble) > 4)
+						ImGui::Checkbox("Random Cosmetics", &bRandomCosmetics);
 
 					ImGui::NewLine();
 

@@ -942,6 +942,16 @@ namespace Helper
 
 			*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
 			*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
+
+			static auto OnRep_Shield = HealthSet->Function("OnRep_Shield");
+
+			if (OnRep_Shield)
+				HealthSet->ProcessEvent(OnRep_Shield);
+
+			static auto OnRep_CurrentShield = HealthSet->Function("OnRep_CurrentShield");
+
+			if (OnRep_CurrentShield)
+				HealthSet->ProcessEvent(OnRep_CurrentShield);
 		}
 	}
 
@@ -1131,32 +1141,52 @@ namespace Helper
 		return params.ReturnValue;
 	}
 
+	UObject* SpawnBGAConsumable(UObject* WrapperDefinition, FVector Location, std::string ClassOverride = "")
+	{
+		UObject* Item = nullptr;
+		
+		std::string ClassName = ClassOverride;
+
+		if (ClassOverride.empty())
+		{
+			auto ConsumableClassSoft = WrapperDefinition->Member<TSoftClassPtr>("ConsumableClass");
+
+			std::cout << "ConsumableClassSoft: " << ConsumableClassSoft << '\n';
+
+			if (!ConsumableClassSoft)
+				return Item;
+
+			auto AssetPathNameName = ConsumableClassSoft->ObjectID.AssetPathName;
+
+			std::cout << "AssetPathNameName: " << AssetPathNameName.ComparisonIndex << '\n';
+
+			if (AssetPathNameName.ComparisonIndex <= 0)
+				return Item;
+
+			auto ClassName = AssetPathNameName.ToString();
+		}
+
+		std::cout << "ClassName: " << ClassName << '\n';
+		UObject* ConsumableClass = StaticLoadObject(Helper::GetBGAClass(), nullptr, ClassName);
+		std::cout << "Class: " << ConsumableClass << '\n';
+
+		static auto RiftBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/Rift/ConsumableVersion/Athena_Foraged_Rift.Athena_Foraged_Rift");
+
+		if (ConsumableClass)
+		{
+			Item = Easy::SpawnActor(RiftBCWID == WrapperDefinition && ClassOverride.empty() ? nullptr : ConsumableClass, Location);
+		}
+
+		return Item;
+	}
+
 	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true, bool bMaxAmmo = true, int ammo = 0)
 	{
 		static auto ConsumableWrapperClass = FindObject("Class /Script/FortniteGame.BGAConsumableWrapperItemDefinition");
 
-		if (false && Definition->ClassPrivate == ConsumableWrapperClass)
+		if (Definition->ClassPrivate == ConsumableWrapperClass)
 		{
-			if (false) // wtff it doesnt work
-			{
-				TSoftClassPtr* ConsumableClassSoft = Definition->Member<TSoftClassPtr>("ConsumableClass");
-
-				if (!ConsumableClassSoft->ObjectID.AssetPathName.ComparisonIndex)
-					return nullptr;
-
-				std::cout << "ConsumableClassSoft->ObjectID.AssetPathName.ToString(): " << ConsumableClassSoft->ObjectID.AssetPathName.ToString() << '\n';
-
-				auto ConsumableClass = LoadObject(Helper::GetBGAClass(), nullptr, ConsumableClassSoft->ObjectID.AssetPathName.ToString());
-			}
-
-			auto ConsumableClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/Items/ForagedItems/SpookyMist/CBGA_SpookyMist.CBGA_SpookyMist");
-
-			std::cout << "ConsumableClass: " << ConsumableClass << '\n';
-
-			if (ConsumableClass)
-				std::cout << "ConsumableClass Name: " << ConsumableClass->GetFullName() << '\n';
-
-			return Easy::SpawnActor(ConsumableClass, Location);
+			return SpawnBGAConsumable(Definition, Location);
 		}
 
 		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena")); // Class FortniteGame.FortGameModePickup
@@ -2042,6 +2072,8 @@ namespace Helper
 
 	void SetHealth(UObject* Pawn, float Health)
 	{
+		auto HealthSet = GetHealthSet(Pawn);
+
 		static auto SetHealth = Pawn->Function("SetHealth");
 
 		if (SetHealth)
@@ -2050,14 +2082,17 @@ namespace Helper
 		{
 			static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
 
-			auto HealthSet = GetHealthSet(Pawn);
-
 			static auto HealthOffset = GetOffset(HealthSet, "Health");
 
 			auto HealthData = (__int64*)(__int64(HealthSet) + HealthOffset);
 
 			*(float*)(__int64(HealthData) + CurrentValueOffset) = Health;
 		}
+
+		static auto OnRep_Health = HealthSet->Function("OnRep_Health");
+
+		if (OnRep_Health)
+			HealthSet->ProcessEvent(OnRep_Health);
 	}
 
 	float GetHealth(UObject* Pawn)
@@ -2273,8 +2308,12 @@ namespace Helper
 
 		SetMaxShield(Pawn, 100, PlayerState);
 		SetMaxHealth(Pawn, 100);
-		// SetHealth(Pawn, 100);
-		// SetShield(Pawn, 0);
+
+		if (Engine_Version < 5)
+		{
+			SetHealth(Pawn, 100);
+			SetShield(Pawn, 0);
+		}
 
 		auto CIDObject = bRandomCosmetics ? GetRandomSkin() : (CIDToUse == "None" ? nullptr : FindObject(CIDToUse)); // we need the check cuz if we dont have staticfindobject then it finds it
 

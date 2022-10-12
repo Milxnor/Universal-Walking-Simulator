@@ -214,11 +214,18 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 			{
 				std::cout << "mann!\n";
 
-				auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(InstigatedBy));
+				// auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(InstigatedBy));
 
-				if (CurrentWeapon)
+				// if (CurrentWeapon)
 				{
 					DoHarvesting(InstigatedBy, BuildingActor, *Damage);
+				}
+			}
+			else
+			{
+				for (auto SuperStruct = GetSuperStructOfClass(DamageCauser->ClassPrivate); SuperStruct; SuperStruct = GetSuperStructOfClass(SuperStruct))
+				{
+					std::cout << "SuperStruct: " << SuperStruct->GetFullName() << '\n';
 				}
 			}
 		}

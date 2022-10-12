@@ -696,4 +696,98 @@ namespace LootingV2
 		return 0;
 	}
 
+	void SpawnForagedItems()
+	{
+		static auto BGAConsumableSpawnerClass = FindObject("Class /Script/FortniteGame.BGAConsumableSpawner");
+
+		auto AllActors = Helper::GetAllActorsOfClass(BGAConsumableSpawnerClass);
+
+		for (int i = 0; i < AllActors.Num(); i++)
+		{
+			auto AllActor = AllActors.At(i);
+
+			if (AllActor)
+			{
+				auto SpawnLootTierGroupFName = AllActor->Member<FName>("SpawnLootTierGroup");
+
+				auto SpawnLootTierGroup = SpawnLootTierGroupFName->ToString();
+
+				std::cout << "SpawnLootTierGroup: " << SpawnLootTierGroup << '\n';
+
+				auto Location = Helper::GetActorLocation(AllActor);
+
+				continue;
+	
+				// MF LOADOBJECT WORKS 1/100 TIMES
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_AthenaRift")
+				{
+					static auto RiftBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/Rift/ConsumableVersion/Athena_Foraged_Rift.Athena_Foraged_Rift");
+					std::cout << "Rift Location: " << Location.Describe() << '\n';
+					Helper::SpawnBGAConsumable(RiftBCWID, Location,
+						"/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
+				}
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_Glitch")
+				{
+					static auto GlitchedBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/Glitch/Athena_Foraged_Glitch.Athena_Foraged_Glitch");
+
+					// std::cout << "Rift Location: " << Location.Describe() << '\n';
+					Helper::SpawnBGAConsumable(GlitchedBCWID, Location,
+						"/Game/Athena/Items/ForagedItems/Glitch/CBGA_Glitch.CBGA_Glitch_C");
+				}
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_SpookyMist") // Cube Consumable
+				{
+					static auto SpookyMistBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/SpookyMist/Athena_Foraged_SpookyMist.Athena_Foraged_SpookyMist");
+					Helper::SpawnBGAConsumable(SpookyMistBCWID, Helper::GetActorLocation(AllActor),
+						"/Game/Athena/Items/ForagedItems/SpookyMist/CBGA_SpookyMist.CBGA_SpookyMist_C");
+				}
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_Grassland") // Apple
+				{
+					static auto GrasslandBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/HealthSmall/Athena_Foraged_HealthSmall.Athena_Foraged_HealthSmall");
+					Helper::SpawnBGAConsumable(GrasslandBCWID, Helper::GetActorLocation(AllActor),
+						"/Game/Athena/Items/ForagedItems/HealthSmall/CBGA_HealthSmall.CBGA_HealthSmall_C");
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Arid") // Apple again?
+				{
+					static auto AridBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/HealthSmall/Athena_Foraged_HealthSmall.Athena_Foraged_HealthSmall");
+					Helper::SpawnBGAConsumable(AridBCWID, Helper::GetActorLocation(AllActor),
+						"/Game/Athena/Items/ForagedItems/HealthSmall/CBGA_HealthSmall.CBGA_HealthSmall_C");
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Farmland")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_TempEvent")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Jungle")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Mountain")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Forest")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Swamp")
+				{
+
+				}
+			}
+		}
+	}
 }

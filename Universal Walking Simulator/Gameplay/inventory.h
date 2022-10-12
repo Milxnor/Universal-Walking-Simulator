@@ -2300,7 +2300,7 @@ bool IsDroppable(UObject* Controller, UObject* CurrentItemDefinition, bool bTake
 
 void ClearInventory(UObject* Controller, bool bTakePickaxe = false)
 {
-	if (Engine_Version >= 424)
+	if (FnVerDouble >= 10)
 		return;
 
 	static auto PickaxeDef = Helper::GetPickaxeDef(Controller);
