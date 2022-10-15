@@ -563,7 +563,7 @@ namespace LootingV2
 					auto Location = Helper::GetCorrectLocation(BuildingContainer);
 
 					auto DropCount = AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
-					Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount);
+					Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount, true, false);
 				}
 			}
 
