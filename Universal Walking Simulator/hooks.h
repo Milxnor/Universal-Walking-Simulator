@@ -523,7 +523,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 						int slotForSecondConsumable = 4;
 						int slotForThirdConsumable = 5;
 
-						if (FnVerDouble < 10)
+						if (FnVerDouble < 9)
 						{
 							if (distr(gen) > 6) // 2 heals
 							{
