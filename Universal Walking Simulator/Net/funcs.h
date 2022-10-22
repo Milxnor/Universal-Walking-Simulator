@@ -437,6 +437,10 @@ float (*PlayMontage)(UObject* AbilitySystemComponent, UObject* InAnimatingAbilit
 
 EServerStatus serverStatus = EServerStatus::Down;
 
+// gav shutashyuidasyadsyui:
+
+static bool bInfiniteShit = false;
+
 // modes:
 
 static bool bIsPlayground = false;

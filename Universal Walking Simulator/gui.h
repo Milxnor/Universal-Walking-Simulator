@@ -992,6 +992,11 @@ DWORD WINAPI GuiThread(LPVOID)
 					break;
 				case SETTINGS_TAB:
 
+					ImGui::Checkbox("Inf Ammo/Mats", &bInfiniteShit);
+					{
+
+					}
+
 					{
 						ImGui::InputText("CID", &CIDToUse);
 						ImGui::NewLine();
@@ -1065,6 +1070,11 @@ DWORD WINAPI GuiThread(LPVOID)
 							}
 
 							ImGui::NewLine();
+
+							if (ImGui::Button("Give Inf Mats/Ammo")) {
+								Inventory::GiveAllAmmo(Controller, 999, 999, 999, 999, 999);
+								Inventory::GiveMats(Controller, 999, 999, 999);
+							}
 
 							/* if (ImGui::Button(ICON_FA_HAMMER " Ban"))
 							{

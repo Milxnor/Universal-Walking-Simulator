@@ -374,7 +374,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			Inventory::CreateAndAddItem(PlayerController, Fourth, EFortQuickBars::Primary, 4, StartingSlot4.second, true);
 			Inventory::CreateAndAddItem(PlayerController, Fifth, EFortQuickBars::Primary, 5, StartingSlot5.second, true);
 
-			if (bIsPlayground)
+			if (bIsPlayground || bInfiniteShit)
 			{
 				Inventory::GiveAllAmmo(PlayerController);
 				Inventory::GiveMats(PlayerController);
