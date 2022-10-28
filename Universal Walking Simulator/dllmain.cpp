@@ -316,6 +316,7 @@ DWORD WINAPI Main(LPVOID)
     std::cout << "SendClientAdjustment: " << SendClientAdjustment << '\n';
     std::cout << "KickPlayer: " << KickPlayer << '\n';
     std::cout << "GiveAbilityOLDDD: " << GiveAbilityOLDDD << '\n';
+    std::cout << "LP_SpawnPlayActorAddr: " << LP_SpawnPlayActorAddr << '\n';
 
     if (FnVerDouble == 3.5)
     {
@@ -483,6 +484,7 @@ DWORD WINAPI Main(LPVOID)
     }
 
     GlobalPickaxeDefObject = FindObject(PickaxeDef);
+    bRandomCosmetics = !(std::floor(FnVerDouble) <= 4);
 
     if (false)
     {
@@ -524,9 +526,16 @@ DWORD WINAPI MainTest(LPVOID)
     auto Base = (uintptr_t)GetModuleHandleW(0);
     std::cout << dye::aqua(("[Base Address] ")) << std::format("0x{:x}\n", Base);
 
-    std::cout << "FortPlayerControllerAthena VTABLE: " << __int64(FindObject("FortPlayerControllerAthena /Script/FortniteGame.Default__FortPlayerControllerAthena")->VFTable) - Base << '\n';
-    std::cout << "FortPlayerPawnAthena VTABLE: " << __int64(FindObject("FortPlayerPawnAthena /Script/FortniteGame.Default__FortPlayerPawnAthena")->VFTable) - Base << '\n';
-    std::cout << "FortPlayerStateAthena VTABLE: " << __int64(FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena")->VFTable) - Base << '\n';
+    std::cout << "Default__FortPlayerControllerAthena VTABLE: " << __int64(FindObject("FortPlayerControllerAthena /Script/FortniteGame.Default__FortPlayerControllerAthena")->VFTable) - Base << '\n';
+    std::cout << "Default__FortPlayerPawnAthena VTABLE: " << __int64(FindObject("FortPlayerPawnAthena /Script/FortniteGame.Default__FortPlayerPawnAthena")->VFTable) - Base << '\n';
+    std::cout << "Default__FortPlayerStateAthena VTABLE: " << __int64(FindObject("FortPlayerStateAthena /Script/FortniteGame.Default__FortPlayerStateAthena")->VFTable) - Base << '\n';
+    std::cout << "Default__FortGameModeAthena VTABLE: " << __int64(FindObject("FortGameModeAthena /Script/FortniteGame.Default__FortGameModeAthena")->VFTable) - Base << '\n';
+    std::cout << "Default__BuildingSMActor VTABLE: " << __int64(FindObject("BuildingSMActor /Script/FortniteGame.Default__BuildingSMActor")->VFTable) - Base << '\n';
+    std::cout << "Default__FortWeapon VTABLE: " << __int64(FindObject("FortWeapon /Script/FortniteGame.Default__FortWeapon")->VFTable) - Base << '\n';
+    std::cout << "Default__FortAmmoItemDefinition VTABLE: " << __int64(FindObject("FortAmmoItemDefinition /Script/FortniteGame.Default__FortAmmoItemDefinition")->VFTable) - Base << '\n';
+    std::cout << "Default__FortPickup VTABLE: " << __int64(FindObject("FortPickup /Script/FortniteGame.Default__FortPickup")->VFTable) - Base << '\n';
+
+    return 0;
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,

@@ -4,7 +4,8 @@
 #include <Gameplay/abilities.h>
 
 namespace Carmine {
-	static bool SpanwedCarmine = false;
+	static bool SpawnedCarmine = false;
+
 	void HandleCarmine(UObject* Controller) {
 		if (!Controller || FnVerDouble >= 11.0)
 			return;
@@ -15,36 +16,43 @@ namespace Carmine {
 		*Pawn->Member<UObject*>("AnimBPOverride") = FindObject("AnimBlueprintGeneratedClass /Game/Characters/Player/Male/Male_Avg_Base/Gauntlet_Player_AnimBlueprint.Gauntlet_Player_AnimBlueprint_C", true);
 
 		UObject* AS = FindObject("FortAbilitySet /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AS_CarminePack.AS_CarminePack");
+
 		auto GrantedAbilities = AS->Member<TArray<UObject*>>("GameplayAbilities");
 
 		for (int i = 0; i < GrantedAbilities->Num(); i++) {
-			Abilities::GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
+			GrantGameplayAbility(Pawn, GrantedAbilities->At(i));
 		}
 		
-		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Speed.GE_Carmine_Speed_C"));
+		auto ASC = Helper::GetAbilitySystemComponent(Pawn);
+
+		ApplyGameplayEffect(ASC, FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Speed.GE_Carmine_Speed_C"));
 		//Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Health.GE_Carmine_Health_C"));
-		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_FallDamageImmune.GE_Carmine_FallDamageImmune_C"));
-		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_DisableCrouch.GE_Carmine_DisableCrouch_C"));
-		Abilities::ApplyGameplayEffect(*Pawn->Member<UObject*>("AbilitySystemComponent"), FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Equipped.GE_Carmine_Equipped_C"));
+		ApplyGameplayEffect(ASC, FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_FallDamageImmune.GE_Carmine_FallDamageImmune_C"));
+		ApplyGameplayEffect(ASC, FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_DisableCrouch.GE_Carmine_DisableCrouch_C"));
+		ApplyGameplayEffect(ASC, FindObject("BlueprintGeneratedClass /Game/Athena/Items/Gameplay/BackPacks/CarminePack/GE_Carmine_Equipped.GE_Carmine_Equipped_C"));
 		//UObject* Montage = FindObject("AnimMontage /Game/Animation/Game/MainPlayer/Skydive/Freefall/Custom/Jim/Transitions/Spawn_Montage.Spawn_Montage");
 	}
 
 	inline bool OnProjectileStop_Hook(UObject* Object, UFunction* Func, void* Params) {
 		auto LocOffset = FindOffsetStruct("ScriptStruct /Script/Engine.HitResult", "Location");
 		FVector* Loc = reinterpret_cast<FVector*>(__int64(Params) + LocOffset);
-		if (Object->GetName().contains("AthenaSupplyDrop_Meteor_Gauntlet") && SpanwedCarmine == false) {
+
+		if (Object->GetName().contains("AthenaSupplyDrop_Meteor_Gauntlet") && SpawnedCarmine == false) {
 			Helper::SummonPickup(nullptr, FindObject("AthenaGadgetItemDefinition /Game/Athena/Items/Gameplay/BackPacks/CarminePack/AGID_CarminePack.AGID_CarminePack"), *Loc, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
-			SpanwedCarmine = true;
+			SpawnedCarmine = true;
 			std::cout << "\Gauntlet Spawned!\n";
 		}
+
 		return false;
 	}
 
 	inline bool ReceiveBeginPlay_Hook(UObject* Object, UFunction* Func, void* Params) {
-		if (SpanwedCarmine == true) {
+
+		if (SpawnedCarmine == true) {
 			Helper::DestroyActor(Object);
 			return true;
 		}
+
 		return false;
 	}
 
@@ -78,10 +86,12 @@ namespace Ashton {
 		auto LocOffset = FindOffsetStruct("ScriptStruct /Script/Engine.HitResult", "Location");
 		FVector* Loc = reinterpret_cast<FVector*>(__int64(Params) + LocOffset);
 		UObject** ItemToSpawn = Object->Member<UObject*>("ItemDefToSpawn");
+
 		if (ItemToSpawn && *ItemToSpawn) {
 			std::cout << "\Stone Spawned!\n";
 			Helper::SummonPickup(nullptr, *ItemToSpawn, *Loc, EFortPickupSourceTypeFlag::Other, EFortPickupSpawnSource::Unset);
 		}
+
 		return false;
 	}
 

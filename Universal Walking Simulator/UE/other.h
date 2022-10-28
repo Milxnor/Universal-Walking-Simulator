@@ -27,6 +27,7 @@ struct FVector
 
 	FVector() : X(0), Y(0), Z(0) {}
 	FVector(float x, float y, float z) : X(x), Y(y), Z(z) {}
+	FVector(int x, int y, int z) : X(x), Y(y), Z(z) {}
 
 	FVector operator+(const FVector& A)
 	{
@@ -77,6 +78,13 @@ enum class EServerStatus : uint8_t
 	Down = 1,
 	Loading = 2,
 	Restarting = 3
+};
+
+enum class EMontagePlayReturnType : uint8_t
+{
+	MontageLength = 0,
+	Duration = 1,
+	EMontagePlayReturnType_MAX = 2
 };
 
 enum class EDeathCause : uint8_t

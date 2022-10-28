@@ -687,13 +687,6 @@ void InitializePatterns()
         CheckPattern(("SetWorld"), SetWorldAddr, &SetWorld);
     }
 
-    PlayMontageAddr = FindPattern(PlayMontageSig);
-
-    if (!PlayMontageAddr)
-        std::cout << ("[WARNING] Emoting will not work!\n");
-    else
-        PlayMontage = decltype(PlayMontage)(PlayMontageAddr);
-
     {
         PauseBeaconRequestsAddr = FindPattern(PauseBeaconRequestsSig);
 
