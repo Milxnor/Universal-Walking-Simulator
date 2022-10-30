@@ -34,15 +34,15 @@ bool POI3Hook(UObject* SequenceDirector, UFunction*, void* Parameters)
 	return false;
 }
 
-void InitializeEventHooks()
-{
-	if (FnVerDouble == 8.51)
-	{
-		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI1", POI1Hook); // Retail
-		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI2", POI2Hook); // Polar
-		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI3", POI3Hook); // Tilted
-	}
-}
+//void InitializeEventHooks()
+//{
+//	if (FnVerDouble == 8.51)
+//	{
+//		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI1", POI1Hook); // Retail
+//		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI2", POI2Hook); // Polar
+//		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI3", POI3Hook); // Tilted
+//	}
+//}
 
 namespace EventHelper
 {
@@ -161,54 +161,6 @@ namespace EventHelper
 		Helper::ShowBuilding(Lake2, bAfterEvent);
 
 		// OnRep_ShowLakeRainbow
-	}
-
-	void BoostUpTravis()
-	{
-		TArray<UObject*> Pawns;
-
-		auto World = Helper::GetWorld();
-		if (World)
-		{
-			auto NetDriver = *World->Member<UObject*>(("NetDriver"));
-			if (NetDriver)
-			{
-				auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
-
-				if (ClientConnections)
-				{
-					for (int i = 0; i < ClientConnections->Num(); i++)
-					{
-						auto Connection = ClientConnections->At(i);
-
-						if (!Connection)
-							continue;
-
-						auto Controller = *Connection->Member<UObject*>(("PlayerController"));
-
-						if (Controller)
-						{
-							auto NewPawn = *Controller->Member<UObject*>("Pawn");
-
-							if (NewPawn)
-							{
-								Pawns.Add(NewPawn);
-							}
-
-						}
-
-					}
-				}
-			}
-		}
-
-		auto fn = JerkyBPLoader->Function("PawnsAvailableFlyUp");
-		auto disablegliders = JerkyBPLoader->Function("ToggleParachute");
-
-		bool bdisabled = true;
-
-		JerkyBPLoader->ProcessEvent(fn, &Pawns);
-		JerkyBPLoader->ProcessEvent(disablegliders, &bdisabled);
 	}
 }
 
