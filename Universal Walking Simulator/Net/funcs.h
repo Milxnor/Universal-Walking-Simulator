@@ -437,6 +437,10 @@ float (*PlayMontage)(UObject* AbilitySystemComponent, UObject* InAnimatingAbilit
 
 EServerStatus serverStatus = EServerStatus::Down;
 
+// Give ammo and materials
+
+static bool bGiveAmmoAndMaterials = false;
+
 // modes:
 
 static bool bIsPlayground = false;

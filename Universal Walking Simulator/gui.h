@@ -1066,6 +1066,11 @@ DWORD WINAPI GuiThread(LPVOID)
 
 							ImGui::NewLine();
 
+							if (ImGui::Button("Give Max Materials/Ammo")) {
+								Inventory::GiveAllAmmo(Controller, 999, 999, 999, 999, 999);
+								Inventory::GiveMats(Controller, 999, 999, 999);
+							}
+
 							/* if (ImGui::Button(ICON_FA_HAMMER " Ban"))
 							{
 								auto IP = Helper::GetfIP(CurrentPlayer.second);

@@ -556,14 +556,34 @@ namespace LootingV2
 			else if (BuildingContainerName.contains(("Ammo")) || BuildingContainerName.contains("Tiered_Short"))
 			{
 				auto AmmoInRow = GetRandomItem(ItemType::Ammo);
+				auto AmmoInRow2 = GetRandomItem(ItemType::Ammo);
 				auto AmmoDef = AmmoInRow.Definition;
+				auto Ammo2Def = AmmoInRow2.Definition;
 
-				if (AmmoDef)
+
+				if (AmmoDef == Ammo2Def)
 				{
 					auto Location = Helper::GetCorrectLocation(BuildingContainer);
 
-					auto DropCount = AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
+					auto DropCount = 2 * AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
 					Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount, true, false);
+				}
+				else
+				{
+					if (AmmoDef)
+					{
+						auto Location = Helper::GetCorrectLocation(BuildingContainer);
+
+						auto DropCount = AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
+						Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount, true, false);
+					}
+					if (Ammo2Def)
+					{
+						auto Location = Helper::GetCorrectLocation(BuildingContainer);
+
+						auto DropCount = AmmoInRow2.DropCount; // *AmmoDef->Member<int>(("DropCount"));
+						Helper::SummonPickup(nullptr, Ammo2Def, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount, true, false);
+					}
 				}
 			}
 
