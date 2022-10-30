@@ -72,6 +72,20 @@ struct FVector
 	}
 };
 
+
+enum class EFortEmotePlayMode : uint8_t
+{
+	CheckIfOwned = 0,
+	ForcePlay = 1,
+	EFortEmotePlayMode_MAX = 2,
+};
+
+
+
+
+
+
+
 enum class EServerStatus : uint8_t
 {
 	Up = 0,
