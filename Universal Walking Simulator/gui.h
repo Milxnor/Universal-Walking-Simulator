@@ -35,6 +35,8 @@
 #define DUMP_TAB 7
 #define SETTINGS_TAB 8
 #define CREDITS_TAB 9
+#define MISC_TAB 9
+#define CREDITS_TAB 10
 
 // THE BASE CODE IS FROM IMGUI GITHUB
 
@@ -386,9 +388,17 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem(("Settings")))
+				if (ImGui::BeginTabItem((ICON_FA_COG " Settings")))
 				{
 					Tab = SETTINGS_TAB;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem((ICON_FA_MONEY_BILL " Misc")))
+				{
+					Tab = MISC_TAB;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
@@ -1023,6 +1033,61 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::InputText("Fifth Slot", &StartingSlot5.first);
 					ImGui::InputInt("Fifth Slot Amount", &StartingSlot5.second);
 					ImGui::NewLine();
+
+					break;
+				case MISC_TAB:
+					ImGui::NewLine();
+
+					if (ImGui::Button(ICON_FA_PLAY " Start Zone")) {
+						auto gameState = Helper::GetGameState();
+						FString test;
+						test.Set(L"startsafezone");
+						Helper::Console::ExecuteConsoleCommand(test);
+						*gameState->Member<float>("SafeZonesStartTime") = 0.f;
+					}
+
+					if (ImGui::Button(ICON_FA_FAST_FORWARD " Skip Zone"))
+					{
+						FString SkipSafeCmd;
+						SkipSafeCmd.Set(L"skipshrinksafezone");
+
+						Helper::Console::ExecuteConsoleCommand(SkipSafeCmd);
+					}
+
+					if (ImGui::Button(ICON_FA_PAUSE " Pause Zone"))
+					{
+						FString PauseZoneCmd;
+						PauseZoneCmd.Set(L"pausesafezone");
+
+						Helper::Console::ExecuteConsoleCommand(PauseZoneCmd);
+					}
+
+					ImGui::NewLine();
+					// time of day controls
+					ImGui::Text(("Time Of Day Controls"));
+					if (ImGui::Button(ICON_FA_SUN " Day"))
+					{
+						FString DayCmd;
+						DayCmd.Set(L"settimeofday 13");
+
+						Helper::Console::ExecuteConsoleCommand(DayCmd);
+					}
+
+					if (ImGui::Button(ICON_FA_CAMPFIRE " Afternoon"))
+					{
+						FString NoonCmd;
+						NoonCmd.Set(L"settimeofday 18");
+
+						Helper::Console::ExecuteConsoleCommand(NoonCmd);
+					}
+
+					if (ImGui::Button(ICON_FA_MOON " Night"))
+					{
+						FString NightCmd;
+						NightCmd.Set(L"settimeofday 23");
+
+						Helper::Console::ExecuteConsoleCommand(NightCmd);
+					}
 
 					break;
 				case CREDITS_TAB:

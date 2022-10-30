@@ -22,6 +22,9 @@ static bool bStarted = false;
 static bool bLogRpcs = false;
 static bool bLogProcessEvent = false;
 
+// Part Of Gav's Misc
+static bool bDemospeed = false;
+
 inline void initStuff()
 {
 	if (!bStarted && bTraveled && bIsReadyToRestart)
