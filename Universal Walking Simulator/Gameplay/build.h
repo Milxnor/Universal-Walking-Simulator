@@ -237,8 +237,8 @@ inline bool ServerBeginEditingBuildingActorHook(UObject* Controller, UFunction* 
 			{
 				auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-				*GetEditingPlayer(BuildingToEdit) = PlayerState;
 				*GetEditActor(EditTool) = BuildingToEdit;
+				*GetEditingPlayer(BuildingToEdit) = PlayerState;
 			}
 			else
 				std::cout << "Failed to equip edittool??\n";
@@ -381,7 +381,7 @@ inline bool ServerRepairBuildingActorHook(UObject* Controller, UFunction* Functi
 
 inline bool ServerSpawnDecoHook(UObject* DecoTool, UFunction*, void* Parameters)
 {
-	if (DecoTool)
+	if (DecoTool && Parameters)
 	{
 		// DecoTool->TryToPlace // TODO: Try
 
@@ -406,14 +406,21 @@ inline bool ServerSpawnDecoHook(UObject* DecoTool, UFunction*, void* Parameters)
 		UObject* BlueprintClass = nullptr;
 		TrapItemDefinition->ProcessEvent(GetBlueprintClass, &BlueprintClass);
 
+		if (!BlueprintClass)
+			return false;
+
 		auto NewTrap = Easy::SpawnActor(BlueprintClass, Params->Location, Params->Rotation);
+
+		if (!NewTrap)
+			return false;
 
 		Helper::InitializeBuildingActor(Controller, NewTrap);
 
 		static auto AttachedToOffset = GetOffset(NewTrap, "AttachedTo");
 		auto AttachedTo = (UObject**)(__int64(NewTrap) + AttachedToOffset);
 
-		*AttachedTo = Params->AttachedActor;
+		if (AttachedTo)
+			*AttachedTo = Params->AttachedActor;
 
 		// BuildingActor->BuildingAttachmentType = Params->InBuildingAttachmentType;
 
@@ -421,7 +428,9 @@ inline bool ServerSpawnDecoHook(UObject* DecoTool, UFunction*, void* Parameters)
 
 		static auto TrapDataOffset = GetOffset(NewTrap, "TrapData");
 		auto TrapData = (UObject**)(__int64(NewTrap) + TrapDataOffset);
-		*TrapData = TrapItemDefinition; // probably useless
+
+		if (TrapData)
+			*TrapData = TrapItemDefinition; // probably useless
 	}
 
 	return false;

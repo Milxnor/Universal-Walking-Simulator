@@ -27,6 +27,7 @@ struct FVector
 
 	FVector() : X(0), Y(0), Z(0) {}
 	FVector(float x, float y, float z) : X(x), Y(y), Z(z) {}
+	FVector(int x, int y, int z) : X(x), Y(y), Z(z) {}
 
 	FVector operator+(const FVector& A)
 	{
@@ -77,6 +78,13 @@ enum class EServerStatus : uint8_t
 	Down = 1,
 	Loading = 2,
 	Restarting = 3
+};
+
+enum class EMontagePlayReturnType : uint8_t
+{
+	MontageLength = 0,
+	Duration = 1,
+	EMontagePlayReturnType_MAX = 2
 };
 
 enum class EDeathCause : uint8_t
@@ -736,6 +744,19 @@ struct TEnumAsByte // https://github.com/EpicGames/UnrealEngine/blob/4.21/Engine
 	{
 		return (TEnum)Value;
 	}
+};
+
+struct bitfield
+{
+	uint8_t idk1;
+	uint8_t idk2;
+	uint8_t idk3;
+	uint8_t idk4;
+	uint8_t idk5;
+	uint8_t idk6;
+	uint8_t idk7;
+	uint8_t idk8;
+
 };
 
 enum class EVehicleType

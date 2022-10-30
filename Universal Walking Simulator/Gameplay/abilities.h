@@ -5,6 +5,11 @@
 #include "Net/funcs.h"
 #include "../anticheat.h"
 
+struct FGameplayEffectContextHandle
+{
+    char UKD_00[0x30];
+};
+
 __int64* GetActivatableAbilities(UObject* ASC)
 {
     static auto ActivatableAbilitiesOffset = GetOffset(ASC, "ActivatableAbilities");
@@ -217,6 +222,29 @@ void* GenerateNewSpec(UObject* DefaultObject)
     *(int*)(__int64(ptr) + InputIDOffset) = -1;
 
     return ptr;
+}
+
+void ApplyGameplayEffect(UObject* AbilitySystemComponent, UObject* GE)
+{
+    static UObject* Func = AbilitySystemComponent->Function("BP_ApplyGameplayEffectToSelf");
+
+    struct
+    {
+        UObject* GameplayEffect;
+        float Level;
+        FGameplayEffectContextHandle EffectContext;
+        FActiveGameplayEffectHandle Return;
+    } Params;
+    Params.GameplayEffect = GE;
+    Params.Level = 1.0f;
+    Params.EffectContext = FGameplayEffectContextHandle();
+
+    if (AbilitySystemComponent) {
+        AbilitySystemComponent->ProcessEvent(Func, &Params);
+    }
+    else {
+        std::cout << "Faield to apply GE!";
+    }
 }
 
 static inline UObject* GrantGameplayAbility(UObject* TargetPawn, UObject* GameplayAbilityClass, void** OutSpec = nullptr) // CREDITS: kem0x, raider3.5

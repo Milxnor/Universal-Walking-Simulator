@@ -10,8 +10,8 @@ namespace FortAI
 		auto world = Helper::GetWorld();
 		auto AuthGameMode = Helper::GetGameMode();
 
-		auto HenchmanSpawnerClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/AI/MANG/BP_MANG_Spawner.BP_MANG_Spawner_C");
-		auto HenchmanClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/AI/MANG/BP_MangPlayerPawn_Boss.BP_MangPlayerPawn_Boss_C");
+		auto HenchmanSpawnerClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/AI/MANG/BP_MANG_Spawner.BP_MANG_Spawner");
+		auto HenchmanClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/AI/MANG/BP_MangPlayerPawn_Boss.BP_MangPlayerPawn_Boss");
 
 		std::cout << "Henchman Class: " << HenchmanClass << '\n';
 		std::cout << "HenchmanSpawnerClass Class: " << HenchmanSpawnerClass << '\n';

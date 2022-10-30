@@ -325,6 +325,32 @@ namespace Events { // made by GD
 			}
 
 			if (Version == 12.61f) {
+				auto gamestate = Helper::GetGameState();
+				static auto loader = FindObject("BP_Fritter_Loader_C /Fritter/Level/FritterLoaderLevel.FritterLoaderLevel.PersistentLevel.BP_Fritter_Loader_0");
+
+				std::cout << "loader: " << loader << '\n';
+
+				struct
+				{
+					UObject* GameState;
+					UObject* Playlist;
+					FGameplayTagContainer PlaylistContextTags;
+				}Func1_params{ gamestate, Helper::GetPlaylist(), FGameplayTagContainer()};
+
+				auto Func1 = loader->Function("OnReady_1216203B4B63E3DFA03042A62380A674");
+
+				if (Func1)
+					loader->ProcessEvent(Func1, &Func1_params);
+
+				struct
+				{
+					float NewParam;
+				}Func2_params{ 0 };
+				static auto Func2 = loader->Function("startevent");
+
+				if (Func2)
+					loader->ProcessEvent(Func2, &Func2_params);
+				/*
 				static auto scripoting = FindObject("BP_Fritter_Script_C /Fritter/Level/FritterSequenceLevel_LevelInstance_1.FritterSequenceLevel.PersistentLevel.BP_Fritter_Script_2");
 
 				if (scripoting)
@@ -349,7 +375,7 @@ namespace Events { // made by GD
 					}
 					else
 						std::cout << "Failed to find Fritter AP!\n";
-				}
+				} */
 			}
 
 			if (Version == 12.41f) {
@@ -476,6 +502,15 @@ namespace Events { // made by GD
 							FestivusManager->ProcessEvent("StartFestivus");
 							FestivusManager->ProcessEvent("MulticastLoad");
 							FestivusManager->ProcessEvent("PlayConcert");
+
+							struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer Container; } parmaas{Helper::GetGameState(), Helper::GetPlaylist(), FGameplayTagContainer ()};
+
+							FestivusManager->ProcessEvent("OnReady_EE7676604ADFD92D7B2972AC0ABD4BB8", &parmaas);
+							FestivusManager->ProcessEvent("OnReady_0B1AD66A4F9D46C366C04FB29300CB0B");
+							FestivusManager->ProcessEvent("OnReady_BF08320243FE76C480E22BB6BF6BA40D");
+							
+							*FestivusManager->Member<bool>("LoadSubLevel") = true;
+							FestivusManager->ProcessEvent("OnRep_LoadSubLevel");
 						}
 					}
 				}

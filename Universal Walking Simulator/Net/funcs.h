@@ -131,7 +131,7 @@ void AddHook(const std::string& str, std::function<bool(UObject*, UFunction*, vo
         FunctionsToHook.insert({ funcObject, func });
 }
 
-static auto AircraftLocationToUse = FVector{ 3500, -9180, 10500 };
+static auto AircraftLocationToUse = FVector{ 3500, -10000, 10500 };
 
 // START ABILITIES
 
@@ -458,6 +458,11 @@ static bool bIsReadyToRestart = true; // i hate my life
 static bool bIsTrickshotting = false; // this is stupid
 static constexpr bool bAreVehicleWeaponsEnabled = false;
 static std::string PickaxeDef = "FortWeaponMeleeItemDefinition /Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01.WID_Harvest_Pickaxe_Athena_C_T01";
+static bool bAutoRestart = false;
+static int RestartSeconds = 10; // give them time to get slomo n stuff
+static bool bSiphonEnabled = false;
+static int maxAmountOfPlayersPerTeam = 1; // >S2
+static bool bRandomCosmetics = true;
 
 static std::string CIDToUse = "None";
 
@@ -466,11 +471,11 @@ std::string PlaylistToUse = "FortPlaylistAthena /Game/Athena/Playlists/Playlist_
 // "FortPlaylistAthena /Game/Athena/Playlists/Playground/Playlist_Playground.Playlist_Playground";
 // "FortPlaylistAthena /Game/Athena/Playlists/Low/Playlist_Low_Solo.Playlist_Low_Solo";
 
-static std::pair<std::string, int> StartingSlot1 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
-static std::pair<std::string, int> StartingSlot2 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03", 1 };
-static std::pair<std::string, int> StartingSlot3 = { "", 0 };
-static std::pair<std::string, int> StartingSlot4 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall", 3 };
-static std::pair<std::string, int> StartingSlot5 = { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff", 1 };
+static std::pair<std::string, int> StartingSlot1 = { "", 0 };// { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Assault_AutoHigh_Athena_SR_Ore_T03.WID_Assault_AutoHigh_Athena_SR_Ore_T03", 1 };
+static std::pair<std::string, int> StartingSlot2 = { "", 0 }; // { "FortWeaponRangedItemDefinition /Game/Athena/Items/Weapons/WID_Shotgun_Standard_Athena_UC_Ore_T03.WID_Shotgun_Standard_Athena_UC_Ore_T03", 1 };
+static std::pair<std::string, int> StartingSlot3 = { "", 0 }; // { "", 0 };
+static std::pair<std::string, int> StartingSlot4 = { "", 0 }; // { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/ShieldSmall/Athena_ShieldSmall.Athena_ShieldSmall", 3 };
+static std::pair<std::string, int> StartingSlot5 = { "", 0 }; // { "FortWeaponRangedItemDefinition /Game/Athena/Items/Consumables/PurpleStuff/Athena_PurpleStuff.Athena_PurpleStuff", 1 };
 
 // dont change these thanks
 
@@ -481,6 +486,7 @@ static UObject* GlobalPickaxeDefObject = nullptr;
 constexpr bool bEmotingEnabled = false;
 static bool bPrintFUnny = false;
 static constexpr double AboveVersionDisableAbilities = 19.00; // Any version Above this abilities will be disabled
+static bool zoneRet = false;
 
 // highly experimental
 
@@ -490,6 +496,7 @@ static constexpr bool bAutomaticPawnSpawning = false;
 static constexpr bool bExperimentalRespawning = false;
 static constexpr bool bAISpawningEnabled = false;
 static constexpr bool bSpawnAPC = true;
+static constexpr bool bTeamsEnabled = false;
 
 const wchar_t* GetMapName()
 {

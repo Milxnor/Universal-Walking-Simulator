@@ -18,9 +18,90 @@ static UObject* GetIslandScripting()
 	return FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3");
 }
 
+UObject* GetItemDefinitionw(UObject* ItemInstance)
+{
+	static UObject* GetDefFn = FindObject(("Function /Script/FortniteGame.FortItem.GetItemDefinitionBP"));
+	UObject* Def;
+
+	ItemInstance->ProcessEvent(GetDefFn, &Def);
+
+	return Def;
+}
+
+UObject* GetWorldInventwory(UObject* Controller)
+{
+	static auto WorldInventoryOffset = GetOffset(Controller, "WorldInventory");
+	auto WorldInventoryP = (UObject**)(__int64(Controller) + WorldInventoryOffset);
+
+	// return *Controller->Member<UObject*>(("WorldInventory"));
+	return !IsBadReadPtr(WorldInventoryP) ? *WorldInventoryP : nullptr;
+}
+
+__int64* GetInventorwy(UObject* Controller)
+{
+	auto WorldInventory = GetWorldInventwory(Controller);
+
+	if (WorldInventory)
+	{
+		static auto InventoryOffset = GetOffset(WorldInventory, "Inventory");
+		auto Inventorya = (__int64*)(__int64(WorldInventory) + InventoryOffset);
+		// auto Inventorya = WorldInventory->Member<__int64>(("Inventory"));
+
+		return Inventorya;
+	}
+
+	return nullptr;
+}
+
+
+TArray<UObject*>* GetItemInstancews(UObject* Controller)
+{
+	static __int64 ItemInstancesOffset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemList"), ("ItemInstances"));
+
+	auto Inventory = GetInventorwy(Controller);
+
+	// std::cout << ("ItemInstances Offset: ") << ItemInstancesOffset << '\n';
+
+	// ItemInstancesOffset = 0x110;
+
+	if (Inventory)
+		return (TArray<UObject*>*)(__int64(Inventory) + ItemInstancesOffset);
+	else
+		return nullptr;
+}
+
+std::pair<UObject*, int> GetAmmoForDefinition(UObject* Definition)
+{
+	static auto GetAmmoWorldItemDefinition_BP = Definition->Function(("GetAmmoWorldItemDefinition_BP"));
+	UObject* AmmoDef;
+	Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &AmmoDef);
+
+	static auto DropCountOffset = GetOffset(AmmoDef, "DropCount");
+
+	auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
+
+	return std::make_pair(AmmoDef, DropCount);
+
+	static std::unordered_map<UObject*, int> mapofammo;
+
+	auto it = mapofammo.find(AmmoDef);
+
+	if (it != mapofammo.end())
+		return std::make_pair(it->first, it->second);
+
+	/* for (auto& Def : LootingV2::Items[LootingV2::LootItems])
+	{
+		if (Def.Definition == AmmoDef)
+		{
+			mapofammo.emplace(AmmoDef, Def.DropCount);
+			return std::make_pair(AmmoDef, Def.DropCount);
+		}
+	} */
+}
+
 int GetMaxBullets(UObject* Definition)
 {
-	if (!Definition)
+	if (!Definition || Definition->IsA(FindObject("Class /Script/FortniteGame.FortGadgetItemDefinition")))
 		return 0;
 
 	struct FDataTableRowHandle
@@ -37,6 +118,9 @@ int GetMaxBullets(UObject* Definition)
 		return 0;
 
 	auto RangedWeaponsTable = statHandle->DataTable;
+
+	if (!RangedWeaponsTable)
+		return 0;
 
 	// auto RangedWeaponRows = GetRowMap(RangedWeaponsTable);
 
@@ -622,6 +706,42 @@ namespace Helper
 	void FixPOIs() {
 		float Version = std::stof(FN_Version);
 		int Season = (int)Version;
+		// Abducted POIs
+		if (Version == 17.50f) {
+			auto FarmAfter = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.farmbase_2"));
+			ShowBuilding(FarmAfter);
+
+			auto FarmPhase = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.Farm_Phase_03")); // Farm Phases (Farm_Phase_01, Farm_Phase_02 and Farm_Phase_03)
+			ShowBuilding(FarmPhase);
+		}
+
+		if (Version == 17.40f) {
+			auto AbductedCoral = FindObject(("LF_Athena_POI_75x75_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.CoralPhase_02")); // Coral Castle Phases (CoralPhase_01, CoralPhase_02 and CoralPhase_03)
+			ShowBuilding(AbductedCoral);
+
+			auto CoralFoundation_01 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation_0"));
+			ShowBuilding(CoralFoundation_01);
+
+			auto CoralFoundation_05 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation6"));
+			ShowBuilding(CoralFoundation_05);
+
+			auto CoralFoundation_07 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation3"));
+			ShowBuilding(CoralFoundation_07);
+
+			auto CoralFoundation_10 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation2_1"));
+			ShowBuilding(CoralFoundation_10);
+
+			auto CoralFoundation_13 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation4"));
+			ShowBuilding(CoralFoundation_13);
+
+			auto CoralFoundation_17 = FindObject(("LF_Athena_16x16_Foundation_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.LF_Athena_16x16_Foundation5"));
+			ShowBuilding(CoralFoundation_17);
+		}
+
+		if (Version == 17.30f) {
+			auto AbductedSlurpy = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_Mother.Apollo_Mother.PersistentLevel.Slurpy_Phase03")); // Slurpy Swamp Phases (Slurpy_Phase01, Slurpy_Phase02 and Slurpy_Phase03)
+			ShowBuilding(AbductedSlurpy);
+		}
 		//Volcano
 		if (Season == 13) {
 			static auto SpawnIsland = FindObject("LF_Athena_POI_50x50_C /Game/Athena/Apollo/Maps/Apollo_POI_Foundations.Apollo_POI_Foundations.PersistentLevel.Lobby_Foundation");
@@ -631,7 +751,19 @@ namespace Helper
 			auto Volcano = FindObject(("LF_Athena_POI_50x50_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_50x53_Volcano"));
 			ShowBuilding(Volcano);
 		}
-		//Pleasant
+
+		if (false) // tbh these might be enabled by default
+		{
+			if (FnVerDouble >= 8 && FnVerDouble <= 10.40) // pirate camps
+			{
+				auto pirateCamp = FnVerDouble == 8.51 ? FindObject("BuildingFoundation3x3 /Temp/Game/Athena/Maps/Streaming/Sublevel_X3Y4_e07a0439.Sublevel_X3Y4.PersistentLevel.BuildingFoundation3x51_2") : nullptr;
+
+				std::cout << "pirateCamp: " << pirateCamp << '\n';
+
+				ShowBuilding(pirateCamp);
+			}
+		}
+
 		if (Season == 7) {
 			auto idfk = FindObject(("LF_Athena_POI_25x25_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_POI_25x36")); // polar peak?
 			ShowBuilding(idfk);
@@ -683,6 +815,14 @@ namespace Helper
 			Block_25x25_AlienSanctuary - 8.50
 			s
 			*/
+		}
+
+		if (Version >= 10.20 && Version <= 10.40)
+		{
+			// TODO: Island
+
+			auto Island = FindObject("LF_Athena_POI_15x15_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.LF_Athena_StreamingTest16");
+			ShowBuilding(Island);
 		}
 
 		//Marshamello
@@ -747,6 +887,27 @@ namespace Helper
 		}
 	}
 
+	UObject* GetOurPlayerController()
+	{
+		auto Engine = GetEngine();
+		static auto GameInstanceOffset = GetOffset(Engine, "GameInstance");
+		auto GameInstance = *(UObject**)(__int64(Engine) + GameInstanceOffset);
+
+		static auto LocalPlayersOffset = GetOffset(GameInstance, "LocalPlayers");
+		auto& LocalPlayers = *(TArray<UObject*>*)(__int64(GameInstance) + LocalPlayersOffset);
+
+		if (LocalPlayers.Num() == 0)
+		{
+			std::cout << "No LocalPlayer!\n";
+			return nullptr;
+		}
+
+		static auto LocalPlayer_PlayerControllerOffset = GetOffset(LocalPlayers.At(0), "PlayerController");
+		auto PlayerController = *(UObject**)(__int64(LocalPlayers.At(0)) + LocalPlayer_PlayerControllerOffset);
+
+		return PlayerController;
+	}
+
 	void ForceNetUpdate(UObject* Actor)
 	{
 		static auto ForceNetUpdate = Actor->Function("ForceNetUpdate");
@@ -777,11 +938,36 @@ namespace Helper
 			static auto CurrentShieldOffset = GetOffset(HealthSet, "CurrentShield");
 
 			auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
-			auto CurrentShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+			auto CurrentShieldData = (__int64*)(__int64(HealthSet) + CurrentShieldOffset);
 
 			*(float*)(__int64(ShieldData) + CurrentValueOffset) = Shield;
 			*(float*)(__int64(CurrentShieldData) + CurrentValueOffset) = Shield;
+
+			static auto OnRep_Shield = HealthSet->Function("OnRep_Shield");
+
+			if (OnRep_Shield)
+				HealthSet->ProcessEvent(OnRep_Shield);
+
+			static auto OnRep_CurrentShield = HealthSet->Function("OnRep_CurrentShield");
+
+			if (OnRep_CurrentShield)
+				HealthSet->ProcessEvent(OnRep_CurrentShield);
 		}
+	}
+
+	float GetShield(UObject* Pawn)
+	{
+		static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+
+		auto HealthSet = GetHealthSet(Pawn);
+
+		static auto ShieldOffset = GetOffset(HealthSet, "Shield");
+		static auto CurrentShieldOffset = GetOffset(HealthSet, "CurrentShield");
+
+		auto ShieldData = (__int64*)(__int64(HealthSet) + ShieldOffset);
+		auto CurrentShieldData = (__int64*)(__int64(HealthSet) + CurrentShieldOffset);
+
+		return *(float*)(__int64(CurrentShieldData) + CurrentValueOffset);
 	}
 
 	static void ChoosePart(UObject* Pawn, TEnumAsByte<EFortCustomPartType> Part, UObject* ChosenCharacterPart)
@@ -955,8 +1141,54 @@ namespace Helper
 		return params.ReturnValue;
 	}
 
+	UObject* SpawnBGAConsumable(UObject* WrapperDefinition, FVector Location, std::string ClassOverride = "")
+	{
+		UObject* Item = nullptr;
+		
+		std::string ClassName = ClassOverride;
+
+		if (ClassOverride.empty())
+		{
+			auto ConsumableClassSoft = WrapperDefinition->Member<TSoftClassPtr>("ConsumableClass");
+
+			std::cout << "ConsumableClassSoft: " << ConsumableClassSoft << '\n';
+
+			if (!ConsumableClassSoft)
+				return Item;
+
+			auto AssetPathNameName = ConsumableClassSoft->ObjectID.AssetPathName;
+
+			std::cout << "AssetPathNameName: " << AssetPathNameName.ComparisonIndex << '\n';
+
+			if (AssetPathNameName.ComparisonIndex <= 0)
+				return Item;
+
+			auto ClassName = AssetPathNameName.ToString();
+		}
+
+		std::cout << "ClassName: " << ClassName << '\n';
+		UObject* ConsumableClass = StaticLoadObject(Helper::GetBGAClass(), nullptr, ClassName);
+		std::cout << "Class: " << ConsumableClass << '\n';
+
+		static auto RiftBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/Rift/ConsumableVersion/Athena_Foraged_Rift.Athena_Foraged_Rift");
+
+		if (ConsumableClass)
+		{
+			Item = Easy::SpawnActor(RiftBCWID == WrapperDefinition && ClassOverride.empty() ? nullptr : ConsumableClass, Location);
+		}
+
+		return Item;
+	}
+
 	UObject* SummonPickup(UObject* Pawn, UObject* Definition, FVector Location, EFortPickupSourceTypeFlag PickupSource, EFortPickupSpawnSource SpawnSource, int Count = 1, bool bTossPickup = true, bool bMaxAmmo = true, int ammo = 0)
 	{
+		static auto ConsumableWrapperClass = FindObject("Class /Script/FortniteGame.BGAConsumableWrapperItemDefinition");
+
+		if (Definition->ClassPrivate == ConsumableWrapperClass)
+		{
+			return SpawnBGAConsumable(Definition, Location);
+		}
+
 		static UObject* PickupClass = FindObject(("Class /Script/FortniteGame.FortPickupAthena")); // Class FortniteGame.FortGameModePickup
 
 		auto Pickup = Easy::SpawnActor(PickupClass, Location, FRotator());  //, false && FnVerDouble < 19.00);
@@ -1428,7 +1660,7 @@ namespace Helper
 		return bIsControllerAlive;
 	}
 
-	void LoopConnections(std::function<void(UObject* Controller)> fn)
+	void LoopConnections(std::function<void(UObject* Controller)> fn, bool bPassWithNoPawn = false)
 	{
 		auto World = Helper::GetWorld();
 
@@ -1458,15 +1690,8 @@ namespace Helper
 							// auto aaPlayerState = Helper::GetPlayerStateFromController(aaController);
 							auto aaPawn = Helper::GetPawnFromController(aaController);
 
-							if (aaPawn)
+							if (aaPawn || bPassWithNoPawn)
 							{
-								static auto IsActorBeingDestroyed = aaPawn->Function(("IsActorBeingDestroyed"));
-
-								bool bIsActorBeingDestroyed = true;
-
-								if (IsActorBeingDestroyed)
-									aaPawn->ProcessEvent(IsActorBeingDestroyed, &bIsActorBeingDestroyed);
-
 								fn(aaController);
 							}
 						}
@@ -1705,7 +1930,7 @@ namespace Helper
 
 	static bool IsSmallZoneEnabled()
 	{
-		return bIsLateGame || FnVerDouble >= 13.00;
+		return bIsLateGame; // || FnVerDouble >= 13.00;
 	}
 
 	UObject* GetWeaponForVehicle(UObject* Vehicle, EVehicleType* outType = nullptr)
@@ -1770,29 +1995,21 @@ namespace Helper
 
 	static UObject* GetRandomFoundation()
 	{
-		return nullptr;
+		static auto BuildingFoundationClass = FindObject("Class /Script/FortniteGame.BuildingFoundation");
 
-		srand(time(0));
+		auto AllBuildingFoundations = Helper::GetAllActorsOfClass(BuildingFoundationClass);
 
-		if (Helper::IsSmallZoneEnabled())
+		UObject* Foundation = nullptr;
+
+		while (!Foundation)
 		{
-			auto POIManager = *Helper::GetGameState()->Member<UObject*>("PoiManager");
+			auto random = rand();
 
-			if (POIManager)
-			{
-				auto AllPois = POIManager->Member<TArray<UObject*>>("AllPoiVolumes");
-
-				if (AllPois)
-				{
-					auto POI = AllPois->At(rand() % (AllPois->Num()));
-					
-					if (POI)
-						return POI;
-				}
-			}
+			if (random >= 1)
+				Foundation = AllBuildingFoundations[random % (AllBuildingFoundations.Num())];
 		}
 
-		return nullptr;
+		return Foundation;
 	}
 
 	static std::string GetPlayerName(UObject* Controller)
@@ -1853,13 +2070,10 @@ namespace Helper
 		return 0;
 	}
 
-	static UObject* GetPickaxeDef(UObject* Controller)
-	{
-		return GlobalPickaxeDefObject;
-	}
-
 	void SetHealth(UObject* Pawn, float Health)
 	{
+		auto HealthSet = GetHealthSet(Pawn);
+
 		static auto SetHealth = Pawn->Function("SetHealth");
 
 		if (SetHealth)
@@ -1868,14 +2082,30 @@ namespace Helper
 		{
 			static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
 
-			auto HealthSet = GetHealthSet(Pawn);
-
 			static auto HealthOffset = GetOffset(HealthSet, "Health");
 
 			auto HealthData = (__int64*)(__int64(HealthSet) + HealthOffset);
 
 			*(float*)(__int64(HealthData) + CurrentValueOffset) = Health;
 		}
+
+		static auto OnRep_Health = HealthSet->Function("OnRep_Health");
+
+		if (OnRep_Health)
+			HealthSet->ProcessEvent(OnRep_Health);
+	}
+
+	float GetHealth(UObject* Pawn)
+	{
+		static auto CurrentValueOffset = FindOffsetStruct("ScriptStruct /Script/GameplayAbilities.GameplayAttributeData", "CurrentValue");
+
+		auto HealthSet = GetHealthSet(Pawn);
+
+		static auto HealthOffset = GetOffset(HealthSet, "Health");
+
+		auto HealthData = (__int64*)(__int64(HealthSet) + HealthOffset);
+
+		return *(float*)(__int64(HealthData) + CurrentValueOffset);
 	}
 
 	void SetMaxHealth(UObject* Pawn, float MaxHealth)
@@ -1993,6 +2223,59 @@ namespace Helper
 		}
 	}
 
+	UObject* GetRandomSkin()
+	{
+		static auto CIDClass = FindObject("Class /Script/FortniteGame.AthenaCharacterItemDefinition");
+
+		auto AllObjects = Helper::GetAllObjectsOfClass(CIDClass);
+
+		UObject* skin = nullptr; // AllObjects.at(random);
+
+		while (!skin || skin->GetFullName().contains("Default") || skin->GetFullName().contains("Test"))
+		{
+			auto random = rand() % (AllObjects.size());
+			random = random <= 0 ? 1 : random; // we love default objects
+			skin = AllObjects.at(random);
+		}
+
+		return skin;
+	}
+
+	UObject* GetRandomPickaxe()
+	{
+		static auto PIDClass = FindObject("Class /Script/FortniteGame.AthenaPickaxeItemDefinition");
+
+		auto AllObjects = Helper::GetAllObjectsOfClass(PIDClass);
+
+		auto random = rand() % (AllObjects.size());
+		random = random <= 0 ? 1 : random;
+
+		auto pick = AllObjects.at(random);
+		static auto WeaponDefinitionOffset = GetOffset(pick, "WeaponDefinition");
+
+		auto Pickaxe = *(UObject**)(__int64(pick) + WeaponDefinitionOffset);
+
+		// std::cout << "Pcikaxe: " << Pickaxe->GetFullName() << '\n';
+
+		return Pickaxe;
+	}
+
+	static UObject* GetPickaxeDef(UObject* Controller, bool bGetNew = false)
+	{
+		if (!bGetNew)
+		{
+			auto ItemInstances = GetItemInstancews(Controller);
+
+			if (ItemInstances->Num() >= 6)
+			{
+				auto PickaxeInstance = ItemInstances->At(5); // cursed probs
+				return GetItemDefinitionw(PickaxeInstance);
+			}
+		}
+
+		return bRandomCosmetics ? GetRandomPickaxe() : GlobalPickaxeDefObject;
+	}
+
 	UObject* InitPawn(UObject* PC, bool bResetCharacterParts = false, FVector Location = Helper::GetPlayerStart(), bool bResetTeams = false)
 	{
 		UObject* PlayerState = GetPlayerStateFromController(PC);
@@ -2025,10 +2308,14 @@ namespace Helper
 
 		SetMaxShield(Pawn, 100, PlayerState);
 		SetMaxHealth(Pawn, 100);
-		// SetHealth(Pawn, 100);
-		// SetShield(Pawn, 0);
 
-		auto CIDObject = CIDToUse == "None" ? nullptr : FindObject(CIDToUse); // we need the check cuz if we dont have staticfindobject then it finds it
+		if (Engine_Version < 5)
+		{
+			SetHealth(Pawn, 100);
+			SetShield(Pawn, 0);
+		}
+
+		auto CIDObject = bRandomCosmetics ? GetRandomSkin() : (CIDToUse == "None" ? nullptr : FindObject(CIDToUse)); // we need the check cuz if we dont have staticfindobject then it finds it
 
 		// if (FnVerDouble < 4)
 		{
@@ -2136,12 +2423,16 @@ namespace Helper
 		else
 		{
 			static auto CurrentPlaylistDataOffset = GetOffset(gameState, "CurrentPlaylistData");
-			auto PlaylistData = (UObject**)(__int64(gameState) + CurrentPlaylistDataOffset);
 
-			if (outAddr)
-				*outAddr = PlaylistData;
+			if (CurrentPlaylistDataOffset != -1)
+			{
+				auto PlaylistData = (UObject**)(__int64(gameState) + CurrentPlaylistDataOffset);
 
-			return *PlaylistData;
+				if (outAddr)
+					*outAddr = PlaylistData;
+
+				return PlaylistData ? *PlaylistData : nullptr;
+			}
 		}
 
 		return nullptr;
@@ -2397,6 +2688,8 @@ namespace Helper
 
 	float GetRespawnHeight()
 	{
+		return 10000.f;
+
 		auto Playlist = GetPlaylist();
 
 		if (Playlist)

@@ -33,18 +33,6 @@ namespace Teams
 		return (uint8_t*)(__int64(PlayerState) + TeamIndexOffset);
 	}
 
-	int GetMaxPlayersPerTeam()
-	{
-		if (Engine_Version <= 419)
-			return 1;
-
-		auto Playlist = Helper::GetPlaylist();
-
-		static auto MaxTeamSizeOffset = GetOffset(Playlist, "MaxTeamSize");
-
-		return *(int*)(__int64(Playlist) + MaxTeamSizeOffset);
-	}
-
 	void AssignTeam(UObject* Controller)
 	{
 		auto World = Helper::GetWorld();
@@ -52,14 +40,20 @@ namespace Teams
 		auto GameMode = Helper::GetGameMode();
 		auto Playlist = Helper::GetPlaylist();
 
+		int MaxPlayersPerTeam = 1;
+
+		if (Playlist)
+		{
+			static auto MaxPlayersPerTeamOffset = GetOffset(Playlist, "MaxTeamSize");
+			MaxPlayersPerTeam = *(int*)(__int64(Playlist) + MaxPlayersPerTeamOffset);
+		}
+		else
+			MaxPlayersPerTeam = maxAmountOfPlayersPerTeam;
+
 		// we really shouldn't cache any of these as they aren't used anywhere else.
 
 		auto PlayerState = Helper::GetPlayerStateFromController(Controller);
 
-		static auto MaxPlayersPerTeamOffset = GetOffset(Playlist, "MaxTeamSize");
-
-		int MaxPlayersPerTeam = *(int*)(__int64(Playlist) + MaxPlayersPerTeamOffset);
-		int MaxTeams = GetMaxPlayersPerTeam();
 		// bool bAllowJoinInProgress = *Playlist->CachedMember<bool>("bAllowJoinInProgress");
 
 		static auto TeamsOffset = GetOffset(GameState, "Teams");
@@ -81,6 +75,7 @@ namespace Teams
 
 		static auto PlayerTeamOffset = GetOffset(PlayerState, "PlayerTeam");
 		auto PlayerTeam = (UObject**)(__int64(PlayerState) + PlayerTeamOffset);
+
 		AFortTeamInfo* CurrentTeam = AllTeams->At(NextTeamIndex); // *PlayerTeam;
 
 		std::cout << "NextTeamIndex: " << NextTeamIndex << '\n';
@@ -99,11 +94,12 @@ namespace Teams
 		std::cout << "CurrentTeamMembers->Num(): " << CurrentTeamMembers->Num() << '\n';
 		std::cout << "MaxPlayersPerTeam: " << MaxPlayersPerTeam << '\n';
 
-		/* if (CurrentTeamMembers->Num() >= (MaxPlayersPerTeam + (NextTeamIndex - StartingTeamIndex)))
+		if (CurrentTeamMembers->Num() >= MaxPlayersPerTeam)
 		{
-			CurrentTeam = AllTeams->At(++NextTeamIndex);
+			++NextTeamIndex;
+			CurrentTeam = AllTeams->At(NextTeamIndex);
 			CurrentTeamMembers = (TArray<AController*>*)(__int64(CurrentTeam) + TeamMembersOffset);
-		} */
+		}
 
 		// now we have the correct teaminfo and members
 
@@ -113,17 +109,23 @@ namespace Teams
 		*PlayerTeam = CurrentTeam;
 
 		auto TeamIndex = NextTeamIndex;
-		auto SquadId = NextTeamIndex - (Engine_Version < 423 ? 1 : 0); // (Engine_Version >= 424 ? 2 : 1); // nice one fortnite // -0 -1 -2 ??
+		auto SquadId = NextTeamIndex - (Engine_Version < 423 ? 0 : 0); // (Engine_Version >= 424 ? 2 : 1); // nice one fortnite // -0 -1 -2 ??
 
 		std::cout << std::format("New player going on {} as {} team member.\n", TeamIndex, SquadId);
 
 		auto PlayerStateTeamIDX = Teams::GetTeamIndex(PlayerState);
 		auto OldTeamIdx = *PlayerStateTeamIDX;
-		static auto SquadIdOffset = GetOffset(PlayerState, "SquadId");
-		auto PlayerStateSquadId = (uint8_t*)(__int64(PlayerState) + SquadIdOffset);
 
 		*PlayerStateTeamIDX = TeamIndex;
-		*PlayerStateSquadId = SquadId;
+
+		static auto SquadIdOffset = GetOffset(PlayerState, "SquadId");
+
+		auto PlayerStateSquadId = (uint8_t*)(__int64(PlayerState) + SquadIdOffset);
+
+		if (SquadIdOffset != -1 && PlayerStateSquadId)
+		{
+			*PlayerStateSquadId = SquadId;
+		}
 
 		// if (false)
 		{
@@ -135,7 +137,10 @@ namespace Teams
 			static auto PlayerTeamPrivateOffset = GetOffset(PlayerState, "PlayerTeamPrivate");
 			static auto PrivateInfoOffset = GetOffset(CurrentTeam, "PrivateInfo");
 
-			*(AFortTeamPrivateInfo**)(__int64(PlayerState) + PlayerTeamPrivateOffset) = *(AFortTeamPrivateInfo**)(__int64(CurrentTeam) + PrivateInfoOffset);
+			if (PlayerTeamPrivateOffset != -1 && PrivateInfoOffset != -1)
+			{
+				*(AFortTeamPrivateInfo**)(__int64(PlayerState) + PlayerTeamPrivateOffset) = *(AFortTeamPrivateInfo**)(__int64(CurrentTeam) + PrivateInfoOffset);
+			}
 
 			static auto OnRep_PlayerTeam = PlayerState->Function("OnRep_PlayerTeam");
 			PlayerState->ProcessEvent(OnRep_PlayerTeam);
@@ -146,16 +151,26 @@ namespace Teams
 				PlayerState->ProcessEvent("OnRep_PlayerTeamPrivate");
 		}
 
-		static auto OnRep_SquadId = PlayerState->Function("OnRep_SquadId");
-		PlayerState->ProcessEvent(OnRep_SquadId);
-
 		static auto OnRep_TeamIndex = PlayerState->Function("OnRep_TeamIndex");
 
 		if (OnRep_TeamIndex)
 			PlayerState->ProcessEvent(OnRep_TeamIndex, &OldTeamIdx);
 
-		// PlayerState->FriendsInSquad
-		// OnRep_SquadListUpdateValue
+		static auto OnRep_SquadId = PlayerState->Function("OnRep_SquadId");
+
+		if (OnRep_SquadId)
+			PlayerState->ProcessEvent(OnRep_SquadId);
+		
+		/* auto FriendsInSquad = PlayerState->Member<TArray<UObject*>>("FriendsInSquad");
+		auto SquadPlayerStates = PlayerState->Member<TArray<UObject*>>("SquadPlayerStates");
+
+		for (int i = 0; i < CurrentTeamMembers->Num(); i++)
+		{
+			FriendsInSquad->Add(CurrentTeamMembers->At(i));
+			SquadPlayerStates->Add(CurrentTeamMembers->At(i));
+			(*PlayerState->Member<int>("SquadListUpdateValue"))++;
+			PlayerState->ProcessEvent("OnRep_SquadListUpdateValue");
+		} */
 
 		// (*PlayerTeam)->CachedMember<TArray<AController*>>("TeamMembers")->Add(Controller);
 
@@ -163,6 +178,8 @@ namespace Teams
 
 		std::cout << "PlayerTeam: " << *PlayerState->Member<UObject*>("PlayerTeam") << '\n';
 		std::cout << "Team Members size: " << CurrentTeamMembers->Num() << '\n'; */
+
+		std::cout << "Team Members size: " << CurrentTeamMembers->Num() << '\n';
 
 		if (Engine_Version >= 422)
 		{
@@ -182,7 +199,7 @@ namespace Teams
 				static auto MembersOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.GameMemberInfoArray", "Members");
 				auto Members = (TArray<FGameMemberInfo>*)(__int64(GameMemberInfoArray) + MembersOffset);
 
-				if (GameMemberInfoArray && Members)
+				if (Members)
 				{
 					Members->Add(MemberInfo);
 					MarkArrayDirty(GameMemberInfoArray);
@@ -190,6 +207,6 @@ namespace Teams
 			}
 		}
 
-		++NextTeamIndex;
+		// ++NextTeamIndex;
 	}
 }

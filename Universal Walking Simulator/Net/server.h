@@ -57,7 +57,8 @@ void AllowConnections(UObject* NetDriver)
 
     if (NetDriver)
     {
-        *NetDriver->Member<UObject*>(("World")) = World;
+        static auto NetDriver_WorldOffset = GetOffset(NetDriver, "World");
+        *(UObject**)(__int64(NetDriver) + NetDriver_WorldOffset) = World;
 
         if (SetWorld)
             SetWorld(NetDriver, World);
@@ -153,12 +154,14 @@ void Listen(int Port = 7777)
 
         std::cout << ("Spawned Beacon!\n");
 
+        static auto ListenPortOffset = GetOffset(BeaconHost, "ListenPort");
+
         // if (FnVerDouble < 16.00)
         {
             if (Engine_Version < 426)
-                *BeaconHost->Member<int>(("ListenPort")) = Port - 1;
+                *(int*)(__int64(BeaconHost) + ListenPortOffset) = Port - 1;
             else
-                *BeaconHost->Member<int>(("ListenPort")) = Port;
+                *(int*)(__int64(BeaconHost) + ListenPortOffset) = Port;
         }
 
         bool bInitBeacon = false;
@@ -182,26 +185,12 @@ void Listen(int Port = 7777)
         else
         {
             std::cout << ("Initialized Beacon!\n");
-            NetDriver = *BeaconHost->Member<UObject*>(("NetDriver"));
+            static auto Beacon_NetDriverOffset = GetOffset(BeaconHost, "NetDriver");
+            NetDriver = *(UObject**)(__int64(BeaconHost) + Beacon_NetDriverOffset);
         }
-        
-        /* FName GameNetDriverName = FName(282);
-
-        *BeaconHost->Member<FName>(("NetDriverName")) = GameNetDriverName;
-        NetDriver = *BeaconHost->Member<UObject*>(("NetDriver"));
-        static auto ReplicationDriverClass = FindObject(("Class /Script/FortniteGame.FortReplicationGraph"));
-        *NetDriver->Member<UObject*>(("ReplicationDriverClass")) = ReplicationDriverClass;
-        *NetDriver->Member<FName>(("NetDriverName")) = GameNetDriverName;
-        // FString string;
-        // string.Set(L"GameNetDriver");
-        // auto GameNetDriverName = Helper::StringToName(string);
-
-        InitListen(NetDriver, World, InURL, true, Error);
-        *NetDriver->Member<UObject*>(("World")) = World;
-        PauseBeaconRequests(BeaconHost, true);
-        *NetDriver->Member<UObject*>(("World")) = World;
-        *NetDriver->Member<FName>(("NetDriverName")) = GameNetDriverName; */
     }
+
+    static auto World_NetDriverOffset = GetOffset(World, "NetDriver");
 
     if (!NetDriver)
     {
@@ -217,9 +206,14 @@ void Listen(int Port = 7777)
         FString string;
         string.Set(L"GameNetDriver");
         auto GameNetDriverName = Helper::StringToName(string);
-        *NetDriver->Member<FName>(("NetDriverName")) = GameNetDriverName;
-        *NetDriver->Member<UObject*>(("World")) = World;
-        *World->Member<UObject*>(("NetDriver")) = NetDriver;
+
+        static auto NetDriverNameOffset = GetOffset(NetDriver, "NetDriverName");
+        *(FName*)(__int64(NetDriver) + NetDriverNameOffset) = GameNetDriverName;
+
+        static auto NetDriver_WorldOffset = GetOffset(NetDriver, "World");
+        *(UObject**)(__int64(NetDriver) + NetDriver_WorldOffset) = World;
+
+        *(UObject**)(__int64(World) + World_NetDriverOffset) = NetDriver;
 
         FString Error;
         auto InURL = FURL();
@@ -243,7 +237,8 @@ void Listen(int Port = 7777)
 
     if (NetDriver && Engine_Version >= 420)
     {
-        ReplicationDriver = NetDriver->Member<UObject*>(("ReplicationDriver"));
+        static auto ReplicationDriverOffset = GetOffset(NetDriver, "ReplicationDriver");
+        ReplicationDriver = (UObject**)(__int64(NetDriver) + ReplicationDriverOffset);
 
         if (Engine_Version >= 424)
         {
@@ -267,8 +262,9 @@ void Listen(int Port = 7777)
     else
         std::cout << dye::red(("\n\n[ERROR] NO ReplicationDriver\n\n\n"));
 
-    auto LevelCollections = World->Member<TArray<__int64>>(("LevelCollections"));
-    // auto LevelCollectionsDa = World->Member<TArray<FLevelCollection>>(("LevelCollections"));
+    static auto LevelCollectionsOffset = GetOffset(World, "LevelCollections");
+    auto LevelCollections = (TArray<__int64>*)(__int64(World) + LevelCollectionsOffset);
+
     static auto LevelCollectionsSize = GetSizeOfStruct(FindObject("ScriptStruct /Script/Engine.LevelCollection"));
     static auto NetDriverOffset = FindOffsetStruct("ScriptStruct /Script/Engine.LevelCollection", "NetDriver");
 
@@ -281,7 +277,7 @@ void Listen(int Port = 7777)
         *(UObject**)(__int64((TheLevelCollection*)(__int64(LevelCollections->GetData()) + (LevelCollectionsSize * 1))) + NetDriverOffset) = NetDriver;
     }
 
-    *World->Member<UObject*>(("NetDriver")) = NetDriver;
+    *(UObject**)(__int64(World) + World_NetDriverOffset) = NetDriver;
 
     bListening = true;
     std::cout << std::format(("Listening for connections on port {}!\n"), bRestarting ? std::to_string(Port + AmountOfRestarts) : std::to_string(Port));

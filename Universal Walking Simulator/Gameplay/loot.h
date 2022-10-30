@@ -11,7 +11,8 @@ enum class ItemType
 	Weapon,
 	Consumable,
 	Ammo,
-	Resource
+	Resource,
+	Trap
 };
 
 std::string ItemTypeToString(ItemType type)
@@ -27,6 +28,8 @@ std::string ItemTypeToString(ItemType type)
 		return "Ammo";
 	case Resource:
 		return "Resource";
+	case Trap:
+		return "Trap";
 	default:
 		return "NULL ItemType";
 	}
@@ -68,7 +71,7 @@ const DefinitionInRow* cumulative_weighted_choice(const std::vector<float>& weig
 	return &values[result_idx];
 }
 
-bool RandomBoolWithWeight(float Weight)
+bool RandomBoolWithWeight(float Weight, float Min = 0.f, float Max = 1.f)
 {
 	//If the Weight equals to 0.0f then always return false
 	if (Weight <= 0.0f)
@@ -81,10 +84,9 @@ bool RandomBoolWithWeight(float Weight)
 		std::random_device rd; // obtain a random number from hardware
 		std::mt19937 gen(rd()); // seed the generator
 
-		std::uniform_int_distribution<> distr(0.0f, 1.0f);
+		std::uniform_int_distribution<> distr(Min, Max);
 		return Weight >= distr(gen);
 	}
-
 }
 
 namespace LootingV2
@@ -213,6 +215,8 @@ namespace LootingV2
 
 					// brain damage
 
+					constexpr bool bAllowContextTraps = false;
+
 					if (DefinitionString.contains("Weapon"))
 						currentItem.Type = ItemType::Weapon;
 					else if (DefinitionString.contains("Consumable"))
@@ -221,6 +225,8 @@ namespace LootingV2
 						currentItem.Type = ItemType::Ammo;
 					else if (DefinitionString.contains("ResourcePickups"))
 						currentItem.Type = ItemType::Resource;
+					else if (DefinitionString.contains("TID") && bAllowContextTraps ? true : !DefinitionString.contains("Context"))
+						currentItem.Type = ItemType::Trap;
 
 					if (Weight)
 						AddItemAndWeight(Index, currentItem, *Weight);
@@ -283,33 +289,40 @@ namespace LootingV2
 
 					UObject* MainPickup = nullptr;
 
-					if (RandomBoolWithWeight(0.85f))
+					if (RandomBoolWithWeight(6, 1, 100))
+					{
+						auto Ammo = GetRandomItem(ItemType::Ammo);
+
+						MainPickup = Helper::SummonPickup(nullptr, Ammo.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+							EFortPickupSpawnSource::Unset, Ammo.DropCount, bTossPickup, false);
+					}
+
+					else if (RandomBoolWithWeight(5, 1, 100))
+					{
+						auto Trap = GetRandomItem(ItemType::Trap);
+
+						MainPickup = Helper::SummonPickup(nullptr, Trap.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+							EFortPickupSpawnSource::Unset, Trap.DropCount, bTossPickup, false);
+					}
+
+					else if (RandomBoolWithWeight(26, 1, 100))
 					{
 						auto Consumable = GetRandomItem(ItemType::Consumable);
 
 						MainPickup = Helper::SummonPickup(nullptr, Consumable.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
-							EFortPickupSpawnSource::Unset, Consumable.DropCount, bTossPickup);
+							EFortPickupSpawnSource::Unset, Consumable.DropCount, bTossPickup, true);
 					}
+
 					else
 					{
 						auto Weapon = GetRandomItem(ItemType::Weapon);
 
 						MainPickup = Helper::SummonPickup(nullptr, Weapon.Definition, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot, EFortPickupSpawnSource::Unset, 1, bTossPickup);
 
-						static auto GetAmmoWorldItemDefinition_BP = Weapon.Definition->Function(("GetAmmoWorldItemDefinition_BP"));
+						auto AmmoDef = GetAmmoForDefinition(Weapon.Definition);
 
-						if (GetAmmoWorldItemDefinition_BP && MainPickup)
-						{
-							struct { UObject* AmmoDefinition; }GetAmmoWorldItemDefinition_BP_Params{};
-							Weapon.Definition->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
-							auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
-							static auto DropCountOffset = GetOffset(AmmoDef, "DropCount");
-
-							auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
-
-							Helper::SummonPickup(nullptr, AmmoDef, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
-								EFortPickupSpawnSource::Unset, DropCount, bTossPickup, false);
-						}
+						Helper::SummonPickup(nullptr, AmmoDef.first, CorrectLocation, EFortPickupSourceTypeFlag::FloorLoot,
+							EFortPickupSpawnSource::Unset, AmmoDef.second, bTossPickup, false);
 					}
 
 					if (!MainPickup)
@@ -317,7 +330,7 @@ namespace LootingV2
 
 					std::cout << "I: " << i << '\n';
 
-					Sleep(Engine_Version >= 422 ? SleepTimer : 0);
+					Sleep(Engine_Version >= 422 ? SleepTimer : 1);
 				}
 			}
 		}
@@ -345,8 +358,8 @@ namespace LootingV2
 		// BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_CartSpawner.Athena_CartSpawner_C
 		// World /Game/Athena/Maps/Athena_DroneSpawners.Athena_DroneSpawners
 
-		static auto FortVehicleSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Athena_QuadSpawner.Athena_QuadSpawner_C"); // FindObject("Class /Script/FortniteGame.FortAthenaVehicleSpawner");
-		static auto BoatSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Meatball/Athena_Meatball_L_Spawner.Athena_Meatball_L_Spawner_C");
+		static auto FortVehicleSpawnerClass = FindObject("Class /Script/FortniteGame.FortAthenaVehicleSpawner");
+		static auto BoatSpawnerClass = FindObject("BlueprintGeneratedClass /Game/Athena/DrivableVehicles/Meatball/Athena_Meatball_L_Spawner.Athena_Meatball_L_Spawner_C"); // Boat
 
 		auto spawnerClass = BoatSpawnerClass;
 
@@ -365,7 +378,9 @@ namespace LootingV2
 				{
 					auto SpawnerLoc = Helper::GetActorLocation(Spawner);
 					// std::cout << std::format("Spawning {} at {} {} {}", VehicleName, SpawnerLoc.X, SpawnerLoc.Y, SpawnerLoc.Z);
-					UObject* VehicleClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/DrivableVehicles/Meatball/Meatball_Large/MeatballVehicle_L.MeatballVehicle_L_C");
+					std::cout << "Loading!\n";
+					UObject* VehicleClass = LoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/DrivableVehicles/Meatball/Meatball_Large/MeatballVehicle_L.MeatballVehicle_L");
+					std::cout << "Loaded: " << VehicleClass << '\n';
 
 					if (VehicleClass)
 					{
@@ -465,7 +480,7 @@ namespace LootingV2
 		else */
 		{
 			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_Warmup.Tiered_Athena_FloorLoot_Warmup_C"), 13);
-			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"), 13); // we can take our time
+			amountSpawned += SpawnFloorLoot(FindObject("BlueprintGeneratedClass /Game/Athena/Environments/Blueprints/Tiered_Athena_FloorLoot_01.Tiered_Athena_FloorLoot_01_C"), 15); // we can take our time
 		}
 
 		std::cout << "Finished spawning " << amountSpawned << " floorloot!\n";
@@ -478,6 +493,10 @@ namespace LootingV2
 		auto GetCorrectLocation = [BuildingContainer]() -> FVector {
 			auto Location = Helper::GetActorLocation(BuildingContainer);
 			auto RightVector = Helper::GetActorRightVector(BuildingContainer);
+
+			// static auto LootSpawnLocationOffset = GetOffset(BuildingContainer, "LootSpawnLocation");
+
+			// return Location + RightVector * 70.0f + *(FVector*)(__int64(BuildingContainer) + LootSpawnLocationOffset);
 
 			return Location + RightVector * 70.0f + FVector{0, 0, 50};
 		};
@@ -494,12 +513,9 @@ namespace LootingV2
 				{
 					auto WeaponDef = DefInRow.Definition;
 
-					static auto GetAmmoWorldItemDefinition_BP = WeaponDef->Function(("GetAmmoWorldItemDefinition_BP"));
-					if (GetAmmoWorldItemDefinition_BP)
+					auto Ammo = GetAmmoForDefinition(WeaponDef);
+
 					{
-						struct { UObject* AmmoDefinition; }GetAmmoWorldItemDefinition_BP_Params{};
-						WeaponDef->ProcessEvent(GetAmmoWorldItemDefinition_BP, &GetAmmoWorldItemDefinition_BP_Params);
-						auto AmmoDef = GetAmmoWorldItemDefinition_BP_Params.AmmoDefinition;
 
 						{
 							auto Location = Helper::GetCorrectLocation(BuildingContainer);
@@ -507,14 +523,11 @@ namespace LootingV2
 							if (WeaponDef)
 								Helper::SummonPickup(nullptr, WeaponDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DefInRow.DropCount);
 
-							if (AmmoDef)
 							{
-								static auto DropCountOffset = GetOffset(AmmoDef, "DropCount");
-								auto DropCount = *(int*)(__int64(AmmoDef) + DropCountOffset);
-								Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, DropCount, true, false);
+								Helper::SummonPickup(nullptr, Ammo.first, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::Chest, Ammo.second, true, false);
 							}
 
-							auto ConsumableInRow = GetRandomItem(ItemType::Consumable);
+							auto ConsumableInRow = RandomBoolWithWeight(5, 1, 100) ? GetRandomItem(ItemType::Trap) : GetRandomItem(ItemType::Consumable);
 
 							if (ConsumableInRow.Definition)
 							{
@@ -550,7 +563,7 @@ namespace LootingV2
 					auto Location = Helper::GetCorrectLocation(BuildingContainer);
 
 					auto DropCount = AmmoInRow.DropCount; // *AmmoDef->Member<int>(("DropCount"));
-					Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount);
+					Helper::SummonPickup(nullptr, AmmoDef, Location, EFortPickupSourceTypeFlag::Container, EFortPickupSpawnSource::AmmoBox, DropCount, true, false);
 				}
 			}
 
@@ -683,4 +696,98 @@ namespace LootingV2
 		return 0;
 	}
 
+	void SpawnForagedItems()
+	{
+		static auto BGAConsumableSpawnerClass = FindObject("Class /Script/FortniteGame.BGAConsumableSpawner");
+
+		auto AllActors = Helper::GetAllActorsOfClass(BGAConsumableSpawnerClass);
+
+		for (int i = 0; i < AllActors.Num(); i++)
+		{
+			auto AllActor = AllActors.At(i);
+
+			if (AllActor)
+			{
+				auto SpawnLootTierGroupFName = AllActor->Member<FName>("SpawnLootTierGroup");
+
+				auto SpawnLootTierGroup = SpawnLootTierGroupFName->ToString();
+
+				std::cout << "SpawnLootTierGroup: " << SpawnLootTierGroup << '\n';
+
+				auto Location = Helper::GetActorLocation(AllActor);
+
+				continue;
+	
+				// MF LOADOBJECT WORKS 1/100 TIMES
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_AthenaRift")
+				{
+					static auto RiftBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/Rift/ConsumableVersion/Athena_Foraged_Rift.Athena_Foraged_Rift");
+					std::cout << "Rift Location: " << Location.Describe() << '\n';
+					Helper::SpawnBGAConsumable(RiftBCWID, Location,
+						"/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
+				}
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_Glitch")
+				{
+					static auto GlitchedBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/Glitch/Athena_Foraged_Glitch.Athena_Foraged_Glitch");
+
+					// std::cout << "Rift Location: " << Location.Describe() << '\n';
+					Helper::SpawnBGAConsumable(GlitchedBCWID, Location,
+						"/Game/Athena/Items/ForagedItems/Glitch/CBGA_Glitch.CBGA_Glitch_C");
+				}
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_SpookyMist") // Cube Consumable
+				{
+					static auto SpookyMistBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/SpookyMist/Athena_Foraged_SpookyMist.Athena_Foraged_SpookyMist");
+					Helper::SpawnBGAConsumable(SpookyMistBCWID, Helper::GetActorLocation(AllActor),
+						"/Game/Athena/Items/ForagedItems/SpookyMist/CBGA_SpookyMist.CBGA_SpookyMist_C");
+				}
+
+				if (SpawnLootTierGroup == "Loot_ForagedItem_Grassland") // Apple
+				{
+					static auto GrasslandBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/HealthSmall/Athena_Foraged_HealthSmall.Athena_Foraged_HealthSmall");
+					Helper::SpawnBGAConsumable(GrasslandBCWID, Helper::GetActorLocation(AllActor),
+						"/Game/Athena/Items/ForagedItems/HealthSmall/CBGA_HealthSmall.CBGA_HealthSmall_C");
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Arid") // Apple again?
+				{
+					static auto AridBCWID = FindObject("BGAConsumableWrapperItemDefinition /Game/Athena/Items/ForagedItems/HealthSmall/Athena_Foraged_HealthSmall.Athena_Foraged_HealthSmall");
+					Helper::SpawnBGAConsumable(AridBCWID, Helper::GetActorLocation(AllActor),
+						"/Game/Athena/Items/ForagedItems/HealthSmall/CBGA_HealthSmall.CBGA_HealthSmall_C");
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Farmland")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_TempEvent")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Jungle")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Mountain")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Forest")
+				{
+
+				}
+
+				else if (SpawnLootTierGroup == "Loot_ForagedItem_Swamp")
+				{
+
+				}
+			}
+		}
+	}
 }

@@ -6,12 +6,25 @@
 
 void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.f)
 {
+	static auto ResourceTypeOffset = GetOffset(BuildingActor, "ResourceType");
+	auto ResourceType = *(TEnumAsByte<EFortResourceType>*)(__int64(BuildingActor) + ResourceTypeOffset);
+
+	// static auto bDestroyedOffset = GetOffset(BuildingActor, "bDestroyed");
+	// static auto bDestroyedBI = GetBitIndex(GetProperty(BuildingActor, "bDestroyed"));
+
+	auto bDestroyed = false; // readd((uint8_t*)(__int64(BuildingActor) + bDestroyedOffset), bDestroyedBI);
+
+	if (bDestroyed)
+		return;
+
 	static auto CarClass = FindObject("BlueprintGeneratedClass /Game/Building/ActorBlueprints/Prop/Car_DEFAULT.Car_DEFAULT_C");
 
 	if (!CarClass)
 		CarClass = FindObject("BlueprintGeneratedClass /Game/Building/ActorBlueprints/Prop/Car_Copper.Car_Copper_C");
 
 	bool bIsCar = BuildingActor->IsA(CarClass);
+
+	std::cout << "pock rtock!\n";
 
 	// HasDestructionLoot
 
@@ -101,9 +114,6 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 	// std::cout << "StaticGameplayTags: " << BuildingActor->Member<FGameplayTagContainer>("StaticGameplayTags")->ToStringSimple(true) << '\n';
 
-	static auto ResourceTypeOffset = GetOffset(BuildingActor, "ResourceType");
-	auto ResourceType = *(TEnumAsByte<EFortResourceType>*)(__int64(BuildingActor) + ResourceTypeOffset);
-
 	struct
 	{
 		UObject* BuildingSMActor;                                          // (Parm, ZeroConstructor, IsPlainOldData)
@@ -113,7 +123,7 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		bool                                               bJustHitWeakspot;                                         // (Parm, ZeroConstructor, IsPlainOldData)
 	} AFortPlayerController_ClientReportDamagedResourceBuilding_Params{ BuildingActor, 
 		bIsCar ? EFortResourceType::Metal : ResourceType,
-		 funne, false, HitWeakspot }; // ender weakspotrs
+		 funne, bDestroyed, HitWeakspot }; // ender weakspotrs
 
 	static auto ClientReportDamagedResourceBuilding = Controller->Function(("ClientReportDamagedResourceBuilding"));
 
@@ -144,9 +154,8 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 		// IMPROPER, we should account weakspot here.
 
 		auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Controller));
-		static auto PickaxeDef = Helper::GetPickaxeDef(Controller);
 
-		if (CurrentWeapon && Helper::GetWeaponData(CurrentWeapon) == PickaxeDef)
+		if (CurrentWeapon)
 		{
 			if (MaterialInstance && Pawn)
 			{
@@ -162,6 +171,8 @@ void DoHarvesting(UObject* Controller, UObject* BuildingActor, float Damage = 0.
 
 			Inventory::GiveItem(Controller, ItemDef, EFortQuickBars::Secondary, -1, AmountToGive);
 		}
+		else
+			std::cout << "ky!\n";
 	}
 }
 
@@ -193,21 +204,28 @@ inline bool OnDamageServerHook(UObject* BuildingActor, UFunction* Function, void
 		static auto MeleeClass = FnVerDouble < 10.00 ? FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_Melee/Blueprints/B_Melee_Generic.B_Melee_Generic_C") :
 			FindObject("BlueprintGeneratedClass /Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C");
 		
-		// std::cout << "AA!\n";
+		std::cout << "AA!\n";
 
 		if (DamageCauser && InstigatedBy && InstigatedBy->IsA(FortPlayerControllerAthenaClass))
 		{
-			// std::cout << "DamageCauser name: " << DamageCauser->GetFullName() << '\n';
+			std::cout << "DamageCauser name: " << DamageCauser->GetFullName() << '\n';
 
 			if (DamageCauser->IsA(MeleeClass))
 			{
-				static auto PickaxeDef = Helper::GetPickaxeDef(InstigatedBy);
+				std::cout << "mann!\n";
 
-				auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(InstigatedBy));
+				// auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(InstigatedBy));
 
-				if (CurrentWeapon && Helper::GetWeaponData(CurrentWeapon) == PickaxeDef)
+				// if (CurrentWeapon)
 				{
 					DoHarvesting(InstigatedBy, BuildingActor, *Damage);
+				}
+			}
+			else
+			{
+				for (auto SuperStruct = GetSuperStructOfClass(DamageCauser->ClassPrivate); SuperStruct; SuperStruct = GetSuperStructOfClass(SuperStruct))
+				{
+					std::cout << "SuperStruct: " << SuperStruct->GetFullName() << '\n';
 				}
 			}
 		}
@@ -235,7 +253,7 @@ inline bool BlueprintCanAttemptGenerateResourcesHook(UObject* BuildingActor, UFu
 	if (!Params || !Params->InstigatorController || !Params->InstigatorController->IsA(PlayerControllerClass)) // thanks s18
 		return true;
 
-	static auto PickaxeDef = Helper::GetPickaxeDef(Params->InstigatorController);
+	auto PickaxeDef = Helper::GetPickaxeDef(Params->InstigatorController);
 	auto CurrentWeapon = Helper::GetCurrentWeapon(Helper::GetPawnFromController(Params->InstigatorController));
 
 	if (CurrentWeapon && Helper::GetWeaponData(CurrentWeapon) == PickaxeDef)

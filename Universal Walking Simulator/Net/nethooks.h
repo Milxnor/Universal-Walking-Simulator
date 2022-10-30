@@ -174,6 +174,13 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 		// Helper::SetGamePhase(EAthenaGamePhase::Warmup); // i hate u nomcp
 
+		static auto func1 = FindObject("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange");
+
+		if (func1)
+			AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
+		else
+			AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
+
 		if (Engine_Version >= 423)
 		{
 			Helper::GetGameState()->ProcessEvent("OnRep_CurrentPlaylistInfo"); // fix battle bus lol
@@ -302,7 +309,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	// todo: not do this for invicibility
 
-	if (Engine_Version <= 421 || NoMcpAddr)
+	// if (Engine_Version <= 421 || NoMcpAddr)
 	{
 		static auto CheatManagerOffset = GetOffset(PlayerController, "CheatManager");
 		auto CheatManager = (UObject**)(__int64(PlayerController) + CheatManagerOffset);
@@ -316,9 +323,9 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			(*CheatManager)->ProcessEvent(God);
 	}
 
-	if (false)
+	if (bTeamsEnabled)
 	{
-		if (FnVerDouble >= 8 && FnVerDouble < 13)
+		// if (FnVerDouble >= 8 && FnVerDouble < 13)
 		{
 			Teams::AssignTeam(PlayerController);
 		}
@@ -334,7 +341,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 	{
 		Inventory::GiveStartingItems(PlayerController); // Gives the needed items like edit tool and builds
 
-		auto PickaxeDef = Helper::GetPickaxeDef(PlayerController);
+		auto PickaxeDef = Helper::GetPickaxeDef(PlayerController, true);
 
 		std::cout << "PickaxeDef: " << PickaxeDef << '\n';
 
@@ -367,8 +374,11 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 			Inventory::CreateAndAddItem(PlayerController, Fourth, EFortQuickBars::Primary, 4, StartingSlot4.second, true);
 			Inventory::CreateAndAddItem(PlayerController, Fifth, EFortQuickBars::Primary, 5, StartingSlot5.second, true);
 
-			Inventory::GiveAllAmmo(PlayerController);
-			Inventory::GiveMats(PlayerController);
+			if (bIsPlayground)
+			{
+				Inventory::GiveAllAmmo(PlayerController);
+				Inventory::GiveMats(PlayerController);
+			}
 		}
 	}
 
@@ -382,7 +392,7 @@ UObject* SpawnPlayActorDetour(UObject* World, UObject* NewPlayer, ENetRole Remot
 
 	std::cout << ("Spawned Player!\n");
 
-	/* if (FnVerDouble >= 8) // just make the color blue // bruh it sets it to 2 after ??
+	/* if (FnVerDouble >= 8) // just make the color blue // bruh it sets it to team idx 2 after ??
 	{
 		auto CurrentTeamIdx = Teams::StartingTeamIndex;
 		*Teams::GetTeamIndex(PlayerState) = CurrentTeamIdx;
