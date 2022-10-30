@@ -428,7 +428,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
 					ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
-					ImGui::Checkbox(std::format("Restart {} seconds after someone wins", RestartSeconds).c_str(), &bAutoRestart);
+					ImGui::Checkbox(std::format("Restart Server {} Seconds After Someone Wins", RestartSeconds).c_str(), &bAutoRestart);
 					ImGui::Checkbox("Siphon", &bSiphonEnabled);
 
 					if (FnVerDouble == 19.10)
@@ -674,22 +674,6 @@ DWORD WINAPI GuiThread(LPVOID)
 					{
 						Helper::DestroyActor(FindObjectOld("B_BaseGlider_C /Game/Athena/Maps/Athena_Terrain.Athena_Terrain.PersistentLevel.B_BaseGlider_C_"));
 					} */
-
-					if (ImGui::Button("SKid"))
-					{
-						static auto BGAConsumableSpawnerClass = FindObject("Class /Script/FortniteGame.BGAConsumableSpawner");
-						auto ConsumableClass = StaticLoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
-
-						std::cout << "ConsumableClass: " << ConsumableClass << '\n';
-
-						if (ConsumableClass)
-							std::cout << "ConsumableClass Name: " << ConsumableClass->GetFullName() << '\n';
-					}
-
-					if (ImGui::Button("bbb"))
-					{
-						LootingV2::SpawnForagedItems();
-					}
 
 					if (false && ImGui::Button("ee"))
 					{
