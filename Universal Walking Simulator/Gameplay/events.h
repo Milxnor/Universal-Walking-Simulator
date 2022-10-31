@@ -34,29 +34,28 @@ bool POI3Hook(UObject* SequenceDirector, UFunction*, void* Parameters)
 	return false;
 }
 
-//void InitializeEventHooks()
-//{
-//	if (FnVerDouble == 8.51)
-//	{
-//		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI1", POI1Hook); // Retail
-//		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI2", POI2Hook); // Polar
-//		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI3", POI3Hook); // Tilted
-//	}
-//}
+void InitializeEventHooks()
+{
+	if (FnVerDouble == 8.51)
+	{
+		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI1", POI1Hook); // Retail
+		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI2", POI2Hook); // Polar
+		AddHook("Function /Game/Athena/Prototype/Blueprints/White/SnowEndSequence.SequenceDirector_C.POI3", POI3Hook); // Tilted
+	}
+}
 
 namespace EventHelper
 {
 	std::string UV_ItemName = "DrumGun";
 	void UnvaultItem(FName ItemName) {
-		UObject* BSS = GetSnowScripting();
+		UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
 		UObject* Func = BSS->Function("PillarsConcluded");
 		BSS->ProcessEvent(Func, &ItemName);
-		BSS->ProcessEvent("PillarsAlreadyConcluded");
 	}
 
 	void TeleportPlayersToButterfly()
 	{
-		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3");
+		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
 
 		if (!scripting)
 		{
