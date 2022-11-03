@@ -48,15 +48,14 @@ namespace EventHelper
 {
 	std::string UV_ItemName = "DrumGun";
 	void UnvaultItem(FName ItemName) {
-		UObject* BSS = GetSnowScripting();
+		UObject* BSS = FindObject("BP_SnowScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_SnowScripting_2");
 		UObject* Func = BSS->Function("PillarsConcluded");
 		BSS->ProcessEvent(Func, &ItemName);
-		BSS->ProcessEvent("PillarsAlreadyConcluded");
 	}
 
 	void TeleportPlayersToButterfly()
 	{
-		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3");
+		static auto scripting = FindObject("BP_IslandScripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_IslandScripting3", true);
 
 		if (!scripting)
 		{
@@ -65,7 +64,7 @@ namespace EventHelper
 		}
 
 		UObject* ButterflyBP = *scripting->Member<UObject*>("ButterflyBP");
-		
+
 		auto PlayersArrayPawns = ButterflyBP->Member<TArray<UObject*>>("PlayersArray");
 
 		std::cout << "PlayersArrayPawns: " << PlayersArrayPawns->Num() << '\n';
@@ -106,7 +105,7 @@ namespace EventHelper
 			}
 		} */
 	}
-	
+
 	void ApplyGEsTravis()
 	{
 		auto World = Helper::GetWorld();
@@ -163,59 +162,30 @@ namespace EventHelper
 		// OnRep_ShowLakeRainbow
 	}
 
-	void BoostUpTravis()
+	// 5.30 Event hook for spawning the Cube
+	bool SpawnCube(UObject* EventComponents, UFunction*, void* Parameters)
 	{
-		TArray<UObject*> Pawns;
+		static auto bAlreadySpawned = false;
 
-		auto World = Helper::GetWorld();
-		if (World)
+		if (!bAlreadySpawned)
 		{
-			auto NetDriver = *World->Member<UObject*>(("NetDriver"));
-			if (NetDriver)
-			{
-				auto ClientConnections = NetDriver->Member<TArray<UObject*>>(("ClientConnections"));
+			auto Cube = FindObject(("CUBE_C /Game/Athena/Maps/Test/Level_CUBE.Level_CUBE.PersistentLevel.CUBE_2"));
 
-				if (ClientConnections)
-				{
-					for (int i = 0; i < ClientConnections->Num(); i++)
-					{
-						auto Connection = ClientConnections->At(i);
-
-						if (!Connection)
-							continue;
-
-						auto Controller = *Connection->Member<UObject*>(("PlayerController"));
-
-						if (Controller)
-						{
-							auto NewPawn = *Controller->Member<UObject*>("Pawn");
-
-							if (NewPawn)
-							{
-								Pawns.Add(NewPawn);
-							}
-
-						}
-
-					}
-				}
+			if (Cube) {
+				auto Func = Cube->Function(("SpawnCube"));
+				Cube->ProcessEvent(Func);
 			}
+
+			bAlreadySpawned = true;
 		}
-
-		auto fn = JerkyBPLoader->Function("PawnsAvailableFlyUp");
-		auto disablegliders = JerkyBPLoader->Function("ToggleParachute");
-
-		bool bdisabled = true;
-
-		JerkyBPLoader->ProcessEvent(fn, &Pawns);
-		JerkyBPLoader->ProcessEvent(disablegliders, &bdisabled);
+		return false;
 	}
 }
 
 namespace Events { // made by GD
 	inline bool HasEvent() {
 		float Version = std::stof(FN_Version);
-		return (Version == 13.40f || Version == 13.30f || Version == 12.61f ||  Version == 12.41f ||  Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 4.5f);
+		return (Version == 13.40f || Version == 13.30f || Version == 12.61f || Version == 12.41f || Version == 10.40f || Version == 9.40f || Version == 8.51f || Version == 7.30f || Version == 7.20f || Version == 6.21f || Version == 5.30f || Version == 4.5f);
 	}
 
 	void LoadEvents() {
@@ -277,6 +247,21 @@ namespace Events { // made by GD
 				UObject* Func = BF->Function(("LoadButterflySublevel"));
 				BF->ProcessEvent(Func);
 			}
+			if (Version == 5.30f) {
+				//Cube Spawn
+				UObject* AEC = FindObject(("BP_Athena_Event_Components_C /Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
+
+				UObject* Func = AEC->Function(("OnRep_CrackProgression"));
+				UObject* Func2 = AEC->Function(("OnRep_Corruption"));
+
+				*AEC->Member<float>(("CrackOpacity")) = 0.0f; // Hide the initial crack
+				AEC->ProcessEvent(Func);
+				*AEC->Member<float>(("Corruption")) = 1.0f; // Show the smaller purple crack
+				AEC->ProcessEvent(Func2);
+
+				//Hooked it here because it's not loaded in yet when hooking other functions in hooks.h
+				AddHook("Function /Game/Athena/Events/BP_Athena_Event_Components.BP_Athena_Event_Components_C.DisableFinalLightning", EventHelper::SpawnCube);
+			}
 		}
 	}
 
@@ -302,7 +287,7 @@ namespace Events { // made by GD
 					UObject* GameState;
 					UObject* Playlist;
 					FGameplayTagContainer PlaylistContextTags;
-				}Func1_params{ gamestate, Helper::GetPlaylist(), FGameplayTagContainer()};
+				}Func1_params{ gamestate, Helper::GetPlaylist(), FGameplayTagContainer() };
 
 				auto Func1 = loader->Function("OnReady_1216203B4B63E3DFA03042A62380A674");
 
@@ -323,7 +308,7 @@ namespace Events { // made by GD
 				if (scripoting)
 				{
 					static auto startevent = scripoting->Function("startevent");
-					
+
 					if (startevent)
 						scripoting->ProcessEvent(startevent);
 					else
@@ -348,7 +333,7 @@ namespace Events { // made by GD
 			if (Version == 12.41f) {
 				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
 				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
-			
+
 				JerkyPlayerInteraction = FindObject(("BP_Jerky_PlayerInteraction_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_PlayerInteraction_2"));
 				JerkyBPLoader = FindObject(("BP_Jerky_Scripting_C /CycloneJerky/Levels/JerkySequenceMap_LevelInstance_1.JerkySequenceMap.PersistentLevel.BP_Jerky_Scripting_2"));
 
@@ -362,7 +347,7 @@ namespace Events { // made by GD
 					JerkyBPLoader->ProcessEvent(TeleportDistant);
 					JerkyBPLoader->ProcessEvent(DebugStartSequence, &SequenceTime);
 					EventHelper::ApplyGEsTravis();
-					
+
 					auto World = Helper::GetWorld();
 					if (World)
 					{
@@ -403,7 +388,7 @@ namespace Events { // made by GD
 
 			else if (Version == 10.40f) {
 				// UObject* NN = FindObject("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight_3.AnimationPlayer"); // FindObject(("LevelSequencePlayer /Game/Athena/Maps/Test/S10/NightNightSequenceMap.NightNightSequenceMap.PersistentLevel.NightNight.AnimationPlayer"));
-				
+
 				UObject* NNScripting = FindObjectOld("BP_NightNight_Scripting_C /Game/Athena/Maps/Athena_POI_Foundations.Athena_POI_Foundations.PersistentLevel.BP_NightNight_Scripting_");
 
 				if (NNScripting)
@@ -470,12 +455,12 @@ namespace Events { // made by GD
 							FestivusManager->ProcessEvent("MulticastLoad");
 							FestivusManager->ProcessEvent("PlayConcert");
 
-							struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer Container; } parmaas{Helper::GetGameState(), Helper::GetPlaylist(), FGameplayTagContainer ()};
+							struct { UObject* GameState; UObject* Playlist; FGameplayTagContainer Container; } parmaas{ Helper::GetGameState(), Helper::GetPlaylist(), FGameplayTagContainer() };
 
 							FestivusManager->ProcessEvent("OnReady_EE7676604ADFD92D7B2972AC0ABD4BB8", &parmaas);
 							FestivusManager->ProcessEvent("OnReady_0B1AD66A4F9D46C366C04FB29300CB0B");
 							FestivusManager->ProcessEvent("OnReady_BF08320243FE76C480E22BB6BF6BA40D");
-							
+
 							*FestivusManager->Member<bool>("LoadSubLevel") = true;
 							FestivusManager->ProcessEvent("OnRep_LoadSubLevel");
 						}
@@ -507,12 +492,21 @@ namespace Events { // made by GD
 				//(TODO) Fix screen going white when cube explodes
 
 				/*
-				
+
 					void ButterflyScriptingReady();
 					void ButterflyStart();
 					void CubeEvent();
 
-				*/			
+				*/
+
+
+			}
+			else if (Version == 5.30f) {
+				//Cube Spawn
+				UObject* AEC = FindObject(("BP_Athena_Event_Components_C /Game/Athena/Maps/Streaming/Athena_GameplayActors.Athena_GameplayActors.PersistentLevel.BP_Athena_Event_Components_54"));
+				UObject* Func = AEC->Function(("Final"));
+				AEC->ProcessEvent(Func);
+
 			}
 			else if (Version == 4.5f) {
 				//Rocket

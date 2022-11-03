@@ -35,6 +35,8 @@
 #define DUMP_TAB 7
 #define SETTINGS_TAB 8
 #define CREDITS_TAB 9
+#define MISC_TAB 9
+#define CREDITS_TAB 10
 
 // THE BASE CODE IS FROM IMGUI GITHUB
 
@@ -386,9 +388,17 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem(("Settings")))
+				if (ImGui::BeginTabItem((ICON_FA_COG " Settings")))
 				{
 					Tab = SETTINGS_TAB;
+					PlayerTab = -1;
+					bInformationTab = false;
+					ImGui::EndTabItem();
+				}
+
+				if (ImGui::BeginTabItem((ICON_FA_MONEY_BILL " Misc")))
+				{
+					Tab = MISC_TAB;
 					PlayerTab = -1;
 					bInformationTab = false;
 					ImGui::EndTabItem();
@@ -418,7 +428,7 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::Checkbox(("Log RPCS"), &bLogRpcs);
 					ImGui::Checkbox(("Log ProcessEvent"), &bLogProcessEvent);
 					ImGui::Checkbox("Log SpawnActor", &bPrintSpawnActor);
-					ImGui::Checkbox(std::format("Restart {} seconds after someone wins", RestartSeconds).c_str(), &bAutoRestart);
+					ImGui::Checkbox(std::format("Restart Server {} Seconds After Someone Wins", RestartSeconds).c_str(), &bAutoRestart);
 					ImGui::Checkbox("Siphon", &bSiphonEnabled);
 
 					if (FnVerDouble == 19.10)
@@ -665,22 +675,6 @@ DWORD WINAPI GuiThread(LPVOID)
 						Helper::DestroyActor(FindObjectOld("B_BaseGlider_C /Game/Athena/Maps/Athena_Terrain.Athena_Terrain.PersistentLevel.B_BaseGlider_C_"));
 					} */
 
-					if (ImGui::Button("SKid"))
-					{
-						static auto BGAConsumableSpawnerClass = FindObject("Class /Script/FortniteGame.BGAConsumableSpawner");
-						auto ConsumableClass = StaticLoadObject(Helper::GetBGAClass(), nullptr, "/Game/Athena/Items/ForagedItems/Rift/BGA_RiftPortal_Athena.BGA_RiftPortal_Athena_C");
-
-						std::cout << "ConsumableClass: " << ConsumableClass << '\n';
-
-						if (ConsumableClass)
-							std::cout << "ConsumableClass Name: " << ConsumableClass->GetFullName() << '\n';
-					}
-
-					if (ImGui::Button("bbb"))
-					{
-						LootingV2::SpawnForagedItems();
-					}
-
 					if (false && ImGui::Button("ee"))
 					{
 						InitializeHarvestingHooks();
@@ -842,9 +836,6 @@ DWORD WINAPI GuiThread(LPVOID)
 							EventHelper::UnvaultItem(Helper::Conversion::StringToName(InStr));
 						}
 					}
-
-					if (FnVerDouble == 12.41 && ImGui::Button("Fly players up"))
-						EventHelper::BoostUpTravis();
 
 					if (FnVerDouble == 6.21)
 					{
@@ -1025,6 +1016,61 @@ DWORD WINAPI GuiThread(LPVOID)
 					ImGui::NewLine();
 
 					break;
+				case MISC_TAB:
+					ImGui::NewLine();
+
+					if (ImGui::Button(ICON_FA_PLAY " Start Zone")) {
+						auto gameState = Helper::GetGameState();
+						FString test;
+						test.Set(L"startsafezone");
+						Helper::Console::ExecuteConsoleCommand(test);
+						*gameState->Member<float>("SafeZonesStartTime") = 0.f;
+					}
+
+					if (ImGui::Button(ICON_FA_FAST_FORWARD " Skip Zone"))
+					{
+						FString SkipSafeCmd;
+						SkipSafeCmd.Set(L"skipshrinksafezone");
+
+						Helper::Console::ExecuteConsoleCommand(SkipSafeCmd);
+					}
+
+					if (ImGui::Button(ICON_FA_PAUSE " Pause Zone"))
+					{
+						FString PauseZoneCmd;
+						PauseZoneCmd.Set(L"pausesafezone");
+
+						Helper::Console::ExecuteConsoleCommand(PauseZoneCmd);
+					}
+
+					ImGui::NewLine();
+					// time of day controls
+					ImGui::Text(("Time Of Day Controls"));
+					if (ImGui::Button(ICON_FA_SUN " Day"))
+					{
+						FString DayCmd;
+						DayCmd.Set(L"settimeofday 13");
+
+						Helper::Console::ExecuteConsoleCommand(DayCmd);
+					}
+
+					if (ImGui::Button(ICON_FA_CAMPFIRE " Afternoon"))
+					{
+						FString NoonCmd;
+						NoonCmd.Set(L"settimeofday 18");
+
+						Helper::Console::ExecuteConsoleCommand(NoonCmd);
+					}
+
+					if (ImGui::Button(ICON_FA_MOON " Night"))
+					{
+						FString NightCmd;
+						NightCmd.Set(L"settimeofday 23");
+
+						Helper::Console::ExecuteConsoleCommand(NightCmd);
+					}
+
+					break;
 				case CREDITS_TAB:
 					TextCentered(("Credits:"));
 					TextCentered(("Milxnor: Made the base, main developer"));
@@ -1065,6 +1111,11 @@ DWORD WINAPI GuiThread(LPVOID)
 							}
 
 							ImGui::NewLine();
+
+							if (ImGui::Button("Give Max Materials/Ammo")) {
+								Inventory::GiveAllAmmo(Controller, 999, 999, 999, 999, 999);
+								Inventory::GiveMats(Controller, 999, 999, 999);
+							}
 
 							/* if (ImGui::Button(ICON_FA_HAMMER " Ban"))
 							{
