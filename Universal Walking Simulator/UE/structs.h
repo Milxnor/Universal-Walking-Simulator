@@ -34,6 +34,23 @@ namespace FMemory
 	void* (*Realloc)(void* Original, SIZE_T Count, uint32_t Alignment /* = DEFAULT_ALIGNMENT */);
 }
 
+
+
+namespace AthenaGamemode {
+	enum FAthenaGamemode
+	{
+		BattleRoyal = 0,
+		SaveTheWorld = 1,
+	};
+}
+
+
+
+
+
+
+
+
 struct Timer
 {
 	time_point<std::chrono::steady_clock> start, end;
