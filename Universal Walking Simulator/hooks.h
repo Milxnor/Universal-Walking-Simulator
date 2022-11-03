@@ -467,7 +467,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 					auto Pawn = Helper::InitPawn(PlayerController, false, ExitLocation);
 
-					static auto CSRfn = PlayerController->Function(("ClientSetRotation"));
+					/* static auto CSRfn = PlayerController->Function(("ClientSetRotation"));
 
 					struct {
 						FRotator NewRotation;
@@ -475,7 +475,7 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 					} CSRparams{ Params->ClientRotation, false };
 
 					if (CSRfn)
-						PlayerController->ProcessEvent(CSRfn, &CSRparams);
+						PlayerController->ProcessEvent(CSRfn, &CSRparams); */
 
 					if (Pawn)
 					{
@@ -484,10 +484,15 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 
 					if (bIsLateGame && LootingV2::bInitialized) // give random loot
 					{
-						ClearInventory(PlayerController);
+						if (!(bClearInventoryOnAircraftJump && FnVerDouble < 19.00)) // dont clear twice
+							ClearInventory(PlayerController);
+
+						std::cout << "A!\n";
 
 						Inventory::GiveAllAmmo(PlayerController, 15, 50, 350, 300, 50);
 						Inventory::GiveMats(PlayerController, 500, 500, 500);
+
+						std::cout << "C!\n";
 
 						auto AR = LootingV2::GetRandomItem(ItemType::Weapon);
 
@@ -496,6 +501,8 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 							AR = LootingV2::GetRandomItem(ItemType::Weapon);
 						}
 
+						std::cout << "B!\n";
+
 						auto Shotgun = LootingV2::GetRandomItem(ItemType::Weapon);
 
 						while (!Shotgun.Definition || !Shotgun.Definition->GetFullName().contains("Shotgun"))
@@ -503,8 +510,12 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 							Shotgun = LootingV2::GetRandomItem(ItemType::Weapon);
 						}
 
+						std::cout << "D!\n";
+
 						Inventory::CreateAndAddItem(PlayerController, AR.Definition, EFortQuickBars::Primary, 1, 1, true);
 						Inventory::CreateAndAddItem(PlayerController, Shotgun.Definition, EFortQuickBars::Primary, 2, 1, true);
+
+						std::cout << "CC!\n";
 
 						std::random_device rd; // obtain a random number from hardware
 						std::mt19937 gen(rd()); // seed the generator
@@ -515,62 +526,69 @@ bool ServerAttemptAircraftJumpHook(UObject* PlayerController, UFunction* Functio
 						int slotForSecondConsumable = 4;
 						int slotForThirdConsumable = 5;
 
-						if (distr(gen) > 6) // 2 heals
+						if (FnVerDouble < 9)
 						{
-							if (distr(gen) >= 4) // 40/60 sniper or smg
+							if (distr(gen) > 6) // 2 heals
 							{
-								auto SMG = LootingV2::GetRandomItem(ItemType::Weapon);
-
-								while (!SMG.Definition || !SMG.Definition->GetFullName().contains("PDW")) // bad
+								if (distr(gen) >= 4) // 40/60 sniper or smg
 								{
-									SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+									auto SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+
+									while (!SMG.Definition || IsBadReadPtr(SMG.Definition) || !SMG.Definition->GetFullName().contains("PDW")) // bad
+									{
+										SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+									}
+
+									Inventory::CreateAndAddItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
+								}
+								else
+								{
+									auto Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+
+									while (!Sniper.Definition || IsBadReadPtr(Sniper.Definition) || !Sniper.Definition->GetFullName().contains("Sniper"))
+									{
+										Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+									}
+
+									Inventory::CreateAndAddItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 3, 1, true);
 								}
 
-								Inventory::CreateAndAddItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
-							}
-							else
-							{
-								auto Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+								std::cout << "E!\n";
 
-								while (!Sniper.Definition || !Sniper.Definition->GetFullName().contains("Sniper"))
+								slotForFirstConsumable = 4;
+								slotForSecondConsumable = 5;
+								slotForThirdConsumable = -1;
+							}
+							else // 1 heal
+							{
 								{
-									Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+									auto SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+
+									while (!SMG.Definition || IsBadReadPtr(SMG.Definition) || !SMG.Definition->GetFullName().contains("PDW")) // bad
+									{
+										SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+									}
+
+									Inventory::CreateAndAddItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
 								}
 
-								Inventory::CreateAndAddItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 3, 1, true);
-							}
-
-							slotForFirstConsumable = 4;
-							slotForSecondConsumable = 5;
-							slotForThirdConsumable = -1;
-						}
-						else // 1 heal
-						{
-							{
-								auto SMG = LootingV2::GetRandomItem(ItemType::Weapon);
-
-								while (!SMG.Definition || !SMG.Definition->GetFullName().contains("PDW")) // bad
 								{
-									SMG = LootingV2::GetRandomItem(ItemType::Weapon);
+									auto Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+
+									while (!Sniper.Definition || IsBadReadPtr(Sniper.Definition) || !Sniper.Definition->GetFullName().contains("Sniper"))
+									{
+										Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
+									}
+
+									Inventory::CreateAndAddItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 4, 1, true);
 								}
 
-								Inventory::CreateAndAddItem(PlayerController, SMG.Definition, EFortQuickBars::Primary, 3, 1, true);
+								std::cout << "G!\n";
+
+								slotForFirstConsumable = 5;
+								slotForSecondConsumable = -1;
+								slotForThirdConsumable = -1;
 							}
-							
-							{
-								auto Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
-
-								while (!Sniper.Definition || !Sniper.Definition->GetFullName().contains("Sniper"))
-								{
-									Sniper = LootingV2::GetRandomItem(ItemType::Weapon);
-								}
-
-								Inventory::CreateAndAddItem(PlayerController, Sniper.Definition, EFortQuickBars::Primary, 4, 1, true);
-							}
-
-							slotForFirstConsumable = 5;
-							slotForSecondConsumable = -1;
-							slotForThirdConsumable = -1;
 						}
 
 						if (slotForFirstConsumable != -1)
@@ -626,114 +644,9 @@ bool ReadyToStartMatchHook(UObject* Object, UFunction* Function, void* Parameter
 	return false;
 }
 
-void StartServerMatch() {
-	Sleep(35000);
-
-	Helper::SetGamePhase(EAthenaGamePhase::Warmup);
-
-	auto AircraftStartTime = Helper::GetGameState()->Member<float>(("AircraftStartTime"));
-
-	if (AircraftStartTime)
-	{
-		auto WillSkipAircraft = Helper::GetGameState()->Member<bool>(("bGameModeWillSkipAircraft"));
-
-		if (WillSkipAircraft)
-			*WillSkipAircraft = true;
-
-		*AircraftStartTime = 0;
-		*Helper::GetGameState()->Member<float>(("WarmupCountdownEndTime")) = 60000;
-	}
-	else
-	{
-		FString StartAircraftCmd;
-		StartAircraftCmd.Set(L"startaircraft");
-
-		Helper::Console::ExecuteConsoleCommand(StartAircraftCmd);
-	}
-
-	if (Helper::IsSmallZoneEnabled())
-	{
-		if (AircraftStartTime)
-			Sleep(1000); // stupid
-
-		auto gameState = Helper::GetGameState();
-
-		auto Aircrafts = gameState->Member<TArray<UObject*>>(("Aircrafts"));
-
-		if (Aircrafts && Aircrafts->IsValid())
-		{
-			auto Aircraft = Aircrafts->At(0);
-
-			if (Aircraft)
-			{
-				auto FlightInfo = Aircraft->Member<__int64>("FlightInfo");
-
-				if (FlightInfo)
-				{
-					static auto FlightSpeedOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightSpeed");
-					static auto FlightStartLocationOffset = FindOffsetStruct("ScriptStruct /Script/FortniteGame.AircraftFlightInfo", "FlightStartLocation");
-
-					auto FlightSpeed = (float*)(__int64(FlightInfo) + FlightSpeedOffset);
-					auto FlightStartLocation = (FVector*)(__int64(FlightInfo) + FlightStartLocationOffset);
-
-					if (FlightSpeed)
-						*FlightSpeed = 0;
-
-					auto RandomFoundation = Helper::GetRandomFoundation();
-
-					if (RandomFoundation)
-					{
-						AircraftLocationToUse = Helper::GetActorLocation(RandomFoundation) + FVector{ 0, 0, 10000 };
-
-						*FlightStartLocation = AircraftLocationToUse;
-						Helper::SetActorLocation(Aircraft, AircraftLocationToUse);
-						std::cout << std::format("Set aircraft location to {} {} {}\n", AircraftLocationToUse.X, AircraftLocationToUse.Y, AircraftLocationToUse.Z);
-					}
-					else
-						std::cout << "No POI!\n";
-
-					struct wtf {
-						uint8_t ahh : 1;
-						uint8_t ahh4 : 1;
-						uint8_t ahh2 : 1;
-						uint8_t ahh3 : 1;
-					};
-
-					gameState->Member<wtf>("bAircraftIsLocked")->ahh = false;
-
-					FString ifrogor;
-					ifrogor.Set(L"startsafezone");
-					Helper::Console::ExecuteConsoleCommand(ifrogor);
-					*gameState->Member<float>("SafeZonesStartTime") = 0.f;
-				}
-			}
-			else
-				std::cout << "No Aircraft!\n";
-		}
-	}
-
-	std::cout << ("Started aircraft!\n");
-
-	Sleep(4000);
-
-	//LootingV2::SummonFloorLoot(nullptr);
-
-	Sleep(10000);
-
-}
-
-void LoadInMatch(AthenaGamemode::FAthenaGamemode Gamemode = AthenaGamemode::FAthenaGamemode::BattleRoyal)
+void LoadInMatch()
 {
 	auto PlayerController = Helper::GetOurPlayerController();
-
-	switch (Gamemode) {
-		case AthenaGamemode::FAthenaGamemode::BattleRoyal:
-			bIsSTW = false;
-			break;
-		case AthenaGamemode::FAthenaGamemode::SaveTheWorld:
-			bIsSTW = true;
-			break;
-	};
 
 	if (PlayerController)
 	{
@@ -858,6 +771,7 @@ void Restart()
 	bListening = false;
 	bTraveled = false;
 	bRestarting = true;
+	Carmine::SpawnedCarmine = false;
 	AmountOfRestarts++;
 	serverStatus = EServerStatus::Restarting;
 
@@ -1281,6 +1195,7 @@ inline bool ClientOnPawnDiedHook(UObject* DeadPC, UFunction* Function, void* Par
 
 									if (aaPlayerState && aaPlayerState != DeadPlayerState && aaPawn) // && !bIsActorBeingDestroyed)
 									{
+										// BeginSpectating(DeadPlayerState, KillerPlayerState ? KillerPlayerState : aaPlayerState);
 										std::cout << "wtf!\n";
 										break;
 									}
@@ -1523,7 +1438,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* function, vo
 
 			if (ToyClass)
 			{
-				
+
 			}
 			else
 				std::cout << "Unable to find ToyClass!\n";
@@ -1562,7 +1477,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* function, vo
 				FName                                              StartSectionName;                                          // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 				bool                                               bNoBlend;                                   // (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 				float                                              ReturnValue;
-			} Montage_New_Params{ Montage, 1.0f, FName(0), false};
+			} Montage_New_Params{ Montage, 1.0f, FName(0), false };
 
 			struct {
 				UObject* AnimMontage;
@@ -1594,7 +1509,7 @@ inline bool ServerPlayEmoteItemHook(UObject* Controller, UFunction* function, vo
 				struct {
 					UObject* EmoteAsset;
 					EFortEmotePlayMode PlayMode;
-				} EmotePlayParams {EmoteAsset, EFortEmotePlayMode::ForcePlay};
+				} EmotePlayParams{ EmoteAsset, EFortEmotePlayMode::ForcePlay };
 
 				Controller->ProcessEvent(PlayEmoteItem, &EmotePlayParams);
 			}
@@ -1633,7 +1548,7 @@ UObject* CreateNewInstanceOfAbilityDetour(UObject* ASC, FGameplayAbilitySpec<FGa
 		struct {
 			FGameplayAbilityTargetDataHandle aa;
 			FGameplayTag aplai;
-		} afhfw8u{ FGameplayAbilityTargetDataHandle (), FGameplayTag()};
+		} afhfw8u{ FGameplayAbilityTargetDataHandle(), FGameplayTag() };
 
 		newiNstanceavg->ProcessEvent("Triggered_DE7019AA4E006879EDD264899869FEE2", &afhfw8u);
 		newiNstanceavg->ProcessEvent("K2_ActivateAbility");
@@ -2280,7 +2195,6 @@ inline bool ReceiveActorEndOverlapHook(UObject* Actor, UFunction*, void* Paramet
 inline bool PlayButtonHook(UObject* Object, UFunction* Function, void* Parameters)
 {
 	LoadInMatch();
-	StartServerMatch();
 	return false;
 }
 
@@ -3024,20 +2938,13 @@ void FinishInitializeUHooks()
 	AddHook("Function /Script/FortniteGame.FortPlayerControllerZone.ServerRequestSeatChange", ServerRequestSeatChangeHook);
 
 	if (Engine_Version < 422)
-		AddHook(("Function AthenaMatchmakingPlay_C:BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
+		AddHook(("BndEvt__BP_PlayButton_K2Node_ComponentBoundEvent_1_CommonButtonClicked__DelegateSignature"), PlayButtonHook);
 
 	if (Engine_Version >= 424)
 		AddHook("Function /Game/Athena/Items/Consumables/Parents/B_Prj_Athena_Consumable_Thrown.B_Prj_Athena_Consumable_Thrown_C.OnBounce", OnBounceHook);
 
 	if (bExperimentalRespawning)
 		AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerClientIsReadyToRespawn", ServerClientIsReadyToRespawnHook);
-
-	static auto func1 = FindObject("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange");
-
-	if (func1)
-		AddHook("Function /Game/Athena/SafeZone/SafeZoneIndicator.SafeZoneIndicator_C.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
-	else
-		AddHook("Function /Script/FortniteGame.FortSafeZoneIndicator.OnSafeZoneStateChange", OnSafeZoneStateChangeHook);
 
 	AddHook("Function /Script/FortniteGame.FortPlayerControllerAthena.ServerTeleportToPlaygroundLobbyIsland", ServerTeleportToPlaygroundLobbyIslandHook);
 	AddHook("Function /Script/FortniteGame.FortPawn.NetMulticast_InvokeGameplayCueExecuted_WithParams", NetMulticast_InvokeGameplayCueExecuted_WithParamsHook);
@@ -3208,7 +3115,8 @@ void* ProcessEventDetour(UObject* Object, UFunction* Function, void* Parameters)
 					!strstr(FunctionName.c_str(), "SetRenderCustomDepth") &&
 					!strstr(FunctionName.c_str(), "K2_UpdateCustomMovement") &&
 					!strstr(FunctionName.c_str(), "AthenaHitPointBar_C.Update") &&
-					!strstr(FunctionName.c_str(), "ExecuteUbergraph_Farm_WeatherVane_01"))
+					!strstr(FunctionName.c_str(), "ExecuteUbergraph_Farm_WeatherVane_01") &&
+					!strstr(FunctionName.c_str(), "HandleOnHUDElementVisibilityChanged"))
 				{
 					std::cout << ("Function called: ") << FunctionName << '\n';
 				}
