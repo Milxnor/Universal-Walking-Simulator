@@ -1,5 +1,6 @@
 #  Modifed Universal Walking Simulator
 Basically Universal Walking Simulator but with some pull requests.
+
 Feel free to make any pull requests. That may be useful.
 
 # CREDITS
