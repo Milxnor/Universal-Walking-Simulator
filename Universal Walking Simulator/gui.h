@@ -988,6 +988,31 @@ DWORD WINAPI GuiThread(LPVOID)
 						else
 							std::cout << "Failed to open playlist file!\n";
 					}
+						
+					if (ImGui::Button("Dump Pickaxes (Pickaxes.txt)"))
+					{
+						std::ofstream PickaxesFile("Pickaxes.txt");
+
+						if (PickaxesFile.is_open())
+						{
+							PickaxesFile << "Fortnite Version: " + FN_Version << "\n\n";
+							static auto FortWeaponMeleeItemDefinition = FindObjectOld("Class /Script/FortniteGame.FortWeaponMeleeItemDefinition", true);
+
+							for (int32_t i = 0; i < (ObjObjects ? ObjObjects->Num() : OldObjects->Num()); i++)
+							{
+								auto Object = GetByIndex(i);
+
+								if (Object && Object->IsA(FortWeaponMeleeItemDefinition))
+								{
+									std::string ItemDefinitionName = Helper::Conversion::TextToString(*Object->Member<FText>("DisplayName"));
+
+									PickaxesFile << std::format("[{}] {}\n", ItemDefinitionName, Object->GetFullName());
+								}
+							}
+						}
+						else
+							std::cout << "Failed to open pickaxes file!\n";
+					}
 
 					break;
 				case SETTINGS_TAB:
