@@ -1734,7 +1734,7 @@ inline bool ServerAttemptInteractHook(UObject* Controllera, UFunction* Function,
 				if (offset == -1)
 					return false;
 
-				if (FnVerDouble != 10.40)
+				if (FnVerDouble < 10.00 || FnVerDouble > 10.40)
 				{
 					auto Actual = (__int64*)(__int64(ReceivingActor) + offset);
 
