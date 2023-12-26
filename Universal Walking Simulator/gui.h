@@ -1273,7 +1273,7 @@ DWORD WINAPI GuiThread(LPVOID)
 
 												auto CurrentGuid = Inventory::GetItemGuid(ItemInstance);
 
-												if (CurrentGuid == Guid)
+												if (CurrentGuid.operator== ( Guid ))
 												{
 													Definition = Inventory::GetItemDefinition(ItemInstance);
 													Count = *FFortItemEntry::GetCount(ItemInstance->Member<__int64>(("ItemEntry"))); // lets hope its a UFortWorldItem*
