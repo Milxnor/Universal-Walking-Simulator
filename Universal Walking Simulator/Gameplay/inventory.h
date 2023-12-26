@@ -817,7 +817,10 @@ namespace Inventory
 		{
 			auto& ItemEntry = ReplicatedEntries->At(x);
 
-			if (*FFortItemEntry::GetGuid((__int64*)&ItemEntry) == Inventory::GetItemGuid(Instance))
+			auto EntryGuid = *FFortItemEntry::GetGuid((__int64*)&ItemEntry);
+			auto InstanceGuid = Inventory::GetItemGuid(Instance);
+
+			if (EntryGuid.operator== ( InstanceGuid ) )
 			{
 				auto Offset = FindOffsetStruct(("ScriptStruct /Script/FortniteGame.FortItemEntry"), Name); // todo: idk like make this faster
 				*(Type*)(__int64(&ItemEntry) + Offset) = NewVal;
