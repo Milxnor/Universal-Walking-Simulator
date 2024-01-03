@@ -1271,7 +1271,7 @@ struct FGuid
 	unsigned int C;
 	unsigned int D;
 
-	bool operator==(const FGuid& other)
+	bool operator==(const FGuid other)
 	{
 		return A == other.A && B == other.B && C == other.C && D == other.D;
 	}
